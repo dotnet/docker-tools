@@ -30,6 +30,11 @@ public interface IFileSystem
     Stream CreateFile(string path);
 
     /// <summary>
+    /// Sets the Unix file mode for the specified file.
+    /// </summary>
+    void SetUnixFileMode(string path, UnixFileMode mode);
+
+    /// <summary>
     /// Opens a binary file, reads the contents into a byte array, and then closes the file.
     /// </summary>
     byte[] ReadAllBytes(string path);

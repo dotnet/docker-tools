@@ -26,6 +26,14 @@ public static class InfrastructureContent
 
     private static readonly Assembly s_assembly = typeof(InfrastructureContent).Assembly;
 
+    private static readonly IReadOnlySet<string> s_executableRelativePaths = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "skill-helpers/Get-BuildLog.ps1",
+        "skill-helpers/Get-FailingPipelines.ps1",
+        "skill-helpers/Show-BuildTimeline.ps1",
+        "skill-helpers/Show-PullRequestComments.ps1"
+    };
+
     /// <summary>
     /// Maps each content file's path (relative to the embedded content root, using '/' separators)
     /// to its underlying manifest resource name.
@@ -37,6 +45,12 @@ public static class InfrastructureContent
     /// '/' as the directory separator (for example, <c>templates/jobs/build-images.yml</c>).
     /// </summary>
     public static IReadOnlyList<string> GetRelativePaths() => [.. s_resourceNamesByPath.Keys];
+
+    /// <summary>
+    /// Determines whether an embedded content file should be executable when written to disk.
+    /// </summary>
+    public static bool IsExecutable(string relativePath) =>
+        s_executableRelativePaths.Contains(relativePath);
 
     /// <summary>
     /// Opens a stream over the raw bytes of an embedded content file. The caller owns the returned

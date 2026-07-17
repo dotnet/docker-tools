@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +29,17 @@ public sealed class FileSystem : IFileSystem
     /// <inheritdoc/>
     public Stream CreateFile(string path) =>
         File.Create(path);
+
+    /// <inheritdoc/>
+    public void SetUnixFileMode(string path, UnixFileMode mode)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("Unix file modes are not supported on Windows.");
+        }
+
+        File.SetUnixFileMode(path, mode);
+    }
 
     /// <inheritdoc/>
     public byte[] ReadAllBytes(string path) =>

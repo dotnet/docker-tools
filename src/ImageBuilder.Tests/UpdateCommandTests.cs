@@ -20,6 +20,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class UpdateCommandTests
 {
+    private const UnixFileMode ExecutableFileMode =
+        UnixFileMode.UserRead |
+        UnixFileMode.UserWrite |
+        UnixFileMode.UserExecute |
+        UnixFileMode.GroupRead |
+        UnixFileMode.GroupExecute |
+        UnixFileMode.OtherRead |
+        UnixFileMode.OtherExecute;
+
     // Use the platform's directory separator for the fake root so that paths derived via
     // Path.Combine and Path.GetDirectoryName stay consistent (Path.GetDirectoryName normalizes
     // a leading '/' to '\' on Windows, which would otherwise not match the in-memory entries).
@@ -56,6 +65,34 @@ public class UpdateCommandTests
         }
 
         renderedDestinations.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_PreservesExecutableFileModes()
+    {
+        string[] executableRelativePaths =
+        [
+            "skill-helpers/Get-BuildLog.ps1",
+            "skill-helpers/Get-FailingPipelines.ps1",
+            "skill-helpers/Show-BuildTimeline.ps1",
+            "skill-helpers/Show-PullRequestComments.ps1"
+        ];
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(s_outputPath);
+        UpdateCommand command = CreateCommand(fileSystem);
+
+        await command.ExecuteAsync();
+
+        foreach (string relativePath in InfrastructureContent.GetRelativePaths())
+        {
+            string destination = PathHelper.SafeCombine(s_outputPath, relativePath);
+            bool isExecutable = executableRelativePaths.Contains(relativePath);
+            InfrastructureContent.IsExecutable(relativePath).ShouldBe(isExecutable);
+            UnixFileMode? expectedMode = !OperatingSystem.IsWindows() && isExecutable
+                ? ExecutableFileMode
+                : null;
+            fileSystem.GetUnixFileMode(destination).ShouldBe(expectedMode);
+        }
     }
 
     [TestMethod]

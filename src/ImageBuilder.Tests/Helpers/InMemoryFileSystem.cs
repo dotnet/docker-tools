@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 internal sealed class InMemoryFileSystem : IFileSystem
 {
     private readonly Dictionary<string, byte[]> _files = [];
+    private readonly Dictionary<string, UnixFileMode> _unixFileModes = [];
     private readonly HashSet<string> _directories = [];
 
     /// <summary>
@@ -82,6 +83,9 @@ internal sealed class InMemoryFileSystem : IFileSystem
     }
 
     public Stream CreateFile(string path) => new CommitOnDisposeStream(this, path);
+
+    public void SetUnixFileMode(string path, UnixFileMode mode) =>
+        _unixFileModes[path] = mode;
 
     public byte[] ReadAllBytes(string path)
     {
@@ -188,6 +192,12 @@ internal sealed class InMemoryFileSystem : IFileSystem
     /// Gets the binary content of a file, for test assertions.
     /// </summary>
     public byte[] GetFileBytes(string path) => _files[path];
+
+    /// <summary>
+    /// Gets the Unix mode assigned to a file, for test assertions.
+    /// </summary>
+    public UnixFileMode? GetUnixFileMode(string path) =>
+        _unixFileModes.TryGetValue(path, out UnixFileMode mode) ? mode : null;
 
     /// <summary>
     /// Writable stream returned by <see cref="CreateFile"/> that commits its contents to the

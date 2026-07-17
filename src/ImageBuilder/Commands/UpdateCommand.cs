@@ -30,14 +30,6 @@ public class UpdateCommand : Command<UpdateOptions>
     // the same form to compare directly without re-normalizing per file.
     private const string DockerImagesRelativePath = "templates/variables/docker-images.yml";
     private const string ImageBuilderRefTemplateVariableName = "IMAGEBUILDER_REF";
-    private const UnixFileMode ExecutableFileMode =
-        UnixFileMode.UserRead |
-        UnixFileMode.UserWrite |
-        UnixFileMode.UserExecute |
-        UnixFileMode.GroupRead |
-        UnixFileMode.GroupExecute |
-        UnixFileMode.OtherRead |
-        UnixFileMode.OtherExecute;
 
     // Used when no reference is supplied. Mirrors the published image's 'latest' shared tag.
     private const string DefaultImageBuilderRef = "mcr.microsoft.com/dotnet-buildtools/image-builder:latest";
@@ -139,9 +131,9 @@ public class UpdateCommand : Command<UpdateOptions>
                 source.CopyTo(destination);
             }
 
-            if (!OperatingSystem.IsWindows() && InfrastructureContent.IsExecutable(relativePath))
+            if (!OperatingSystem.IsWindows())
             {
-                _fileSystem.SetUnixFileMode(destinationPath, ExecutableFileMode);
+                _fileSystem.SetUnixFileMode(destinationPath, InfrastructureContent.GetUnixFileMode(relativePath));
             }
         }
 

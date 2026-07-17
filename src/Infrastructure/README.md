@@ -19,6 +19,13 @@ See [issue #2130](https://github.com/dotnet/docker-tools/issues/2130) for backgr
 The embedded copy lives in `Content/`, under `src/`, because the ImageBuilder Docker build
 context is `src/`, so `eng/docker-tools/` is not reachable from the container build.
 
+`ContentFileModes.txt` records the Unix modes from Git's index because .NET embedded resources
+do not carry filesystem metadata. After changing a file's executable bit, regenerate it with:
+
+```pwsh
+./src/Infrastructure/Generate-ContentFileModes.ps1
+```
+
 ## Relationship to `eng/docker-tools/`
 
 `Content/` is the copy that ships inside ImageBuilder, so infrastructure changes are made here.

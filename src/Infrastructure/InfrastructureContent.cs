@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace Microsoft.DotNet.DockerTools.Infrastructure;
@@ -23,22 +24,17 @@ public static class InfrastructureContent
     /// Prefix applied to the <c>LogicalName</c> of every embedded content resource.
     /// </summary>
     private const string ResourcePrefix = "Content/";
+    private const string FileModesResourceName = "ContentFileModes.txt";
 
     private static readonly Assembly s_assembly = typeof(InfrastructureContent).Assembly;
-
-    private static readonly IReadOnlySet<string> s_executableRelativePaths = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "skill-helpers/Get-BuildLog.ps1",
-        "skill-helpers/Get-FailingPipelines.ps1",
-        "skill-helpers/Show-BuildTimeline.ps1",
-        "skill-helpers/Show-PullRequestComments.ps1"
-    };
 
     /// <summary>
     /// Maps each content file's path (relative to the embedded content root, using '/' separators)
     /// to its underlying manifest resource name.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> s_resourceNamesByPath = BuildIndex();
+
+    private static readonly IReadOnlyDictionary<string, UnixFileMode> s_fileModesByPath = BuildFileModes();
 
     /// <summary>
     /// Gets the paths of all embedded content files, relative to the content root and using
@@ -47,10 +43,16 @@ public static class InfrastructureContent
     public static IReadOnlyList<string> GetRelativePaths() => [.. s_resourceNamesByPath.Keys];
 
     /// <summary>
-    /// Determines whether an embedded content file should be executable when written to disk.
+    /// Gets the Unix file mode captured for an embedded content file.
     /// </summary>
-    public static bool IsExecutable(string relativePath) =>
-        s_executableRelativePaths.Contains(relativePath);
+    public static UnixFileMode GetUnixFileMode(string relativePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
+
+        return s_fileModesByPath.TryGetValue(relativePath, out UnixFileMode mode)
+            ? mode
+            : throw new KeyNotFoundException($"No embedded infrastructure content found for path '{relativePath}'.");
+    }
 
     /// <summary>
     /// Opens a stream over the raw bytes of an embedded content file. The caller owns the returned
@@ -96,5 +98,35 @@ public static class InfrastructureContent
         }
 
         return resourceNamesByPath;
+    }
+
+    private static Dictionary<string, UnixFileMode> BuildFileModes()
+    {
+        using Stream stream = s_assembly.GetManifestResourceStream(FileModesResourceName)
+            ?? throw new InvalidOperationException($"Embedded resource '{FileModesResourceName}' could not be opened.");
+        using StreamReader reader = new(stream);
+        Dictionary<string, UnixFileMode> fileModesByPath = new(StringComparer.Ordinal);
+
+        while (reader.ReadLine() is { } line)
+        {
+            int separatorIndex = line.IndexOf(' ');
+            if (separatorIndex <= 0 || separatorIndex == line.Length - 1)
+            {
+                throw new InvalidOperationException($"Invalid infrastructure file mode entry '{line}'.");
+            }
+
+            string mode = line[..separatorIndex];
+            string relativePath = line[(separatorIndex + 1)..];
+            fileModesByPath.Add(relativePath, (UnixFileMode)Convert.ToInt32(mode, 8));
+        }
+
+        if (fileModesByPath.Count != s_resourceNamesByPath.Count
+            || !fileModesByPath.Keys.All(s_resourceNamesByPath.ContainsKey))
+        {
+            throw new InvalidOperationException(
+                "Embedded infrastructure content and file mode metadata do not contain the same paths.");
+        }
+
+        return fileModesByPath;
     }
 }

@@ -27,7 +27,15 @@
     <EmbeddedResource Include="Content/**/*">
       <LogicalName>Content/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="ContentFileModes.txt" LogicalName="ContentFileModes.txt" />
     <None Remove="Content/**/*" />
   </ItemGroup>
+
+  <Target
+    Name="ValidateContentFileModes"
+    BeforeTargets="CoreCompile"
+    Condition="Exists('$(MSBuildProjectDirectory)\..\..\.git')">
+    <Exec Command="pwsh -NoProfile -File &quot;$(MSBuildProjectDirectory)\Generate-ContentFileModes.ps1&quot; -Check" />
+  </Target>
 
 </Project>

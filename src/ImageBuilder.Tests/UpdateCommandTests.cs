@@ -30,6 +30,13 @@ public class UpdateCommandTests
         UnixFileMode.OtherRead |
         UnixFileMode.OtherExecute;
 
+    // Unix file mode 0644: rw-r--r--.
+    private const UnixFileMode RegularFileMode =
+        UnixFileMode.UserRead |
+        UnixFileMode.UserWrite |
+        UnixFileMode.GroupRead |
+        UnixFileMode.OtherRead;
+
     // Use the platform's directory separator for the fake root so that paths derived via
     // Path.Combine and Path.GetDirectoryName stay consistent (Path.GetDirectoryName normalizes
     // a leading '/' to '\' on Windows, which would otherwise not match the in-memory entries).
@@ -69,9 +76,9 @@ public class UpdateCommandTests
     }
 
     [TestMethod]
-    public async Task UpdateCommand_PreservesExecutableFileModes()
+    public async Task UpdateCommand_PreservesUnixFileModes()
     {
-        string[] executableRelativePaths =
+        string[] expectedExecutableRelativePaths =
         [
             "skill-helpers/Get-BuildLog.ps1",
             "skill-helpers/Get-FailingPipelines.ps1",
@@ -87,12 +94,12 @@ public class UpdateCommandTests
         foreach (string relativePath in InfrastructureContent.GetRelativePaths())
         {
             string destination = PathHelper.SafeCombine(s_outputPath, relativePath);
-            bool isExecutable = executableRelativePaths.Contains(relativePath);
-            InfrastructureContent.IsExecutable(relativePath).ShouldBe(isExecutable);
-            UnixFileMode? expectedMode = !OperatingSystem.IsWindows() && isExecutable
+            UnixFileMode expectedMode = expectedExecutableRelativePaths.Contains(relativePath)
                 ? ExecutableFileMode
-                : null;
-            fileSystem.GetUnixFileMode(destination).ShouldBe(expectedMode);
+                : RegularFileMode;
+            InfrastructureContent.GetUnixFileMode(relativePath).ShouldBe(expectedMode);
+            fileSystem.GetUnixFileMode(destination).ShouldBe(
+                OperatingSystem.IsWindows() ? null : expectedMode);
         }
     }
 

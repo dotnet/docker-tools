@@ -37,11 +37,12 @@ jobs:
       Write-Host "$image refers to $imageBuilderRef"
 
       Write-Host "##[section]Building ImageBuilder.Updater"
-      & pwsh ./eng/common/build.ps1 `
-          -restore `
-          -build `
-          -configuration Release `
-          -projects src/ImageBuilder.Updater/ImageBuilder.Updater.csproj
+      & bash ./eng/common/build.sh `
+          --ci `
+          --restore `
+          --build `
+          --configuration Release `
+          --projects "$env:BUILD_SOURCESDIRECTORY/src/ImageBuilder.Updater/ImageBuilder.Updater.csproj"
 
       if ($LASTEXITCODE -ne 0) {
           Write-Host "##vso[task.logissue type=error]Failed to build ImageBuilder.Updater."

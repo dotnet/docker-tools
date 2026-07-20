@@ -43,12 +43,23 @@ public interface IImageCacheService
         string? sourceRepoUrl,
         bool isLocalBaseImageExpected,
         bool isDryRun);
+
+    /// <summary>
+    /// Gets the Dockerfile paths that need to be rebuilt because their external base images
+    /// no longer match the digests recorded in image-info.
+    /// </summary>
+    Task<IReadOnlyCollection<string>> GetStaleBaseImagePathsAsync(
+        ManifestInfo manifest,
+        ImageArtifactDetails imageArtifactDetails,
+        ImageDigestCache imageDigestCache,
+        ImageNameResolver imageNameResolver,
+        bool isDryRun);
 }
 
 /// <inheritdoc/>
 public class ImageCacheService : IImageCacheService
 {
-    private readonly ILogger<ImageCacheService> _logger;
+    private readonly ILogger _logger;
     private readonly IGitService _gitService;
 
     private readonly object _cachedPlatformsLock = new();
@@ -60,6 +71,11 @@ public class ImageCacheService : IImageCacheService
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
 
     public ImageCacheService(ILogger<ImageCacheService> logger, IGitService gitService)
+        : this((ILogger)logger, gitService)
+    {
+    }
+
+    internal ImageCacheService(ILogger logger, IGitService gitService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
@@ -142,6 +158,56 @@ public class ImageCacheService : IImageCacheService
         return new ImageCacheResult(cacheState, isNewCacheHit, srcPlatformData);
     }
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyCollection<string>> GetStaleBaseImagePathsAsync(
+        ManifestInfo manifest,
+        ImageArtifactDetails imageArtifactDetails,
+        ImageDigestCache imageDigestCache,
+        ImageNameResolver imageNameResolver,
+        bool isDryRun)
+    {
+        List<string> pathsToRebuild = [];
+
+        foreach (RepoInfo repo in manifest.FilteredRepos)
+        {
+            IEnumerable<PlatformInfo> platforms = repo.FilteredImages
+                .SelectMany(image => image.FilteredPlatforms)
+                .Where(platform =>
+                    platform.FinalStageFromImage is not null &&
+                    !platform.IsInternalFromImage(platform.FinalStageFromImage));
+
+            foreach (PlatformInfo platform in platforms)
+            {
+                (PlatformData Platform, ImageData Image)? matchingPlatform =
+                    ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
+
+                if (matchingPlatform is null)
+                {
+                    _logger.LogWarning(
+                        "Image info not found for '{DockerfilePath}'. It will be marked as stale.",
+                        platform.DockerfilePath);
+
+                    pathsToRebuild.AddRange(GetPathsToRebuild(platform, manifest));
+                    continue;
+                }
+
+                if (!await IsBaseImageDigestUpToDateAsync(
+                        platform,
+                        matchingPlatform.Value.Platform,
+                        imageDigestCache,
+                        imageNameResolver,
+                        isLocalImageExpected: false,
+                        matchImageName: true,
+                        isDryRun))
+                {
+                    pathsToRebuild.AddRange(GetPathsToRebuild(platform, manifest));
+                }
+            }
+        }
+
+        return pathsToRebuild.Distinct().ToArray();
+    }
+
     /// <summary>
     /// Checks whether the source platform data has all its expected tags published.
     /// </summary>
@@ -149,6 +215,14 @@ public class ImageCacheService : IImageCacheService
         (srcPlatformData.PlatformInfo?.Tags ?? [])
             .Select(tag => tag.Name)
             .AreEquivalent(srcPlatformData.SimpleTags);
+
+    private static IEnumerable<string> GetPathsToRebuild(PlatformInfo platform, ManifestInfo manifest) =>
+        manifest.GetDescendants(
+                platform,
+                manifest.GetAllPlatforms().ToList(),
+                includeAncestorsOfDescendants: true)
+            .Prepend(platform)
+            .Select(dependentPlatform => dependentPlatform.Model.Dockerfile);
 
     /// <summary>
     /// Determines whether a previously published image can be reused by comparing the base image
@@ -168,7 +242,13 @@ public class ImageCacheService : IImageCacheService
         // If the previously published image was based on an image that is still the latest version AND
         // the Dockerfile hasn't changed since it was last published
         if (await IsBaseImageDigestUpToDateAsync(
-                platform, srcPlatformData, imageDigestCache, imageNameResolver, isLocalBaseImageExpected, isDryRun) &&
+                platform,
+                srcPlatformData,
+                imageDigestCache,
+                imageNameResolver,
+                isLocalBaseImageExpected,
+                matchImageName: false,
+                isDryRun) &&
             IsDockerfileUpToDate(platform, srcPlatformData, sourceRepoUrl))
         {
             return true;
@@ -190,6 +270,7 @@ public class ImageCacheService : IImageCacheService
         ImageDigestCache imageDigestCache,
         ImageNameResolver imageNameResolver,
         bool isLocalImageExpected,
+        bool matchImageName,
         bool isDryRun)
     {
         _logger.LogInformation(string.Empty);
@@ -227,14 +308,20 @@ public class ImageCacheService : IImageCacheService
             }
         }
 
-        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
-            DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
-            null;
+        string? currentBaseImageDigest = currentSha is null ?
+            null :
+            DockerHelper.GetDigestString(
+                DockerHelper.GetRepo(imageNameResolver.GetFromImagePublicTag(platform.FinalStageFromImage)),
+                currentSha);
 
-        bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
+        bool baseImageDigestMatches = matchImageName ?
+            srcPlatformData.BaseImageDigest?.Equals(currentBaseImageDigest, StringComparison.OrdinalIgnoreCase) == true :
+            srcPlatformData.BaseImageDigest is not null &&
+                DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)
+                    .Equals(currentSha, StringComparison.OrdinalIgnoreCase);
 
-        _logger.LogInformation("Image info's base image digest SHA: {ImageInfoSha}", imageInfoSha);
-        _logger.LogInformation("Latest base image digest SHA: {CurrentSha}", currentSha);
+        _logger.LogInformation("Image info's base image digest: {ImageInfoDigest}", srcPlatformData.BaseImageDigest);
+        _logger.LogInformation("Latest base image digest: {CurrentDigest}", currentBaseImageDigest);
         _logger.LogInformation("Base image digests match: {BaseImageDigestMatches}", baseImageDigestMatches);
         return baseImageDigestMatches;
     }

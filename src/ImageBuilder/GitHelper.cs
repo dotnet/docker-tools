@@ -24,29 +24,34 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
-            // Don't make the assumption that the current working directory is a Git repository
-            // Find the Git repo that contains the file being checked.
-            DirectoryInfo directory = new FileInfo(filePath).Directory;
-            while (!directory.GetDirectories(".git").Any())
-            {
-                directory = directory.Parent;
-
-                if (directory is null)
-                {
-                    throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
-                }
-            }
-
-            filePath = Path.GetRelativePath(directory.FullName, filePath);
+            string repoRoot = GetRepoRoot(filePath);
+            filePath = Path.GetRelativePath(repoRoot, filePath);
 
             string format = useFullHash ? "H" : "h";
             return ExecuteHelper.Execute(
                 new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}")
                 {
-                    WorkingDirectory = directory.FullName
+                    WorkingDirectory = repoRoot
                 },
                 false,
                 $"Unable to retrieve the latest commit SHA for {filePath}");
+        }
+
+        // Don't make the assumption that the current working directory is a Git repository.
+        // Walk up from the given path to find the root of the containing Git repository.
+        public static string GetRepoRoot(string path)
+        {
+            DirectoryInfo directory = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path).Directory;
+
+            // The repository root is marked by a ".git" entry. It's a directory in a normal
+            // checkout, but a file (a gitdir pointer) in linked worktrees and submodules.
+            while (!directory.EnumerateFileSystemInfos(".git").Any())
+            {
+                directory = directory.Parent
+                    ?? throw new InvalidOperationException($"'{path}' is not contained within a Git repository.");
+            }
+
+            return directory.FullName;
         }
 
         public static Uri GetArchiveUrl(IGitHubBranchRef branchRef) =>

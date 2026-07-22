@@ -117,6 +117,51 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that the failure label is included in the notification when there are too many recent failed builds.
+        /// </summary>
+        [Fact]
+        public async Task QueueBuildCommand_RecentFailedBuilds_IncludesFailureLabel()
+        {
+            const string path1 = "path1";
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription("repo1")
+            };
+
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
+            {
+                new List<SubscriptionImagePaths>
+                {
+                    new SubscriptionImagePaths
+                    {
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
+                        {
+                            path1
+                        }
+                    }
+                }
+            };
+
+            PagedList<WebApi.Build> allBuilds = new();
+
+            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
+            {
+                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
+                failedBuild.Status = WebApi.BuildStatus.Completed;
+                failedBuild.Result = WebApi.BuildResult.Failed;
+                allBuilds.Add(failedBuild);
+            }
+
+            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await context.ExecuteCommandAsync();
+
+            context.VerifyNotificationLabelsContain(NotificationLabels.Failure);
+        }
+
+        /// <summary>
         /// Verifies that a build is queued even if there are recent failed builds but not enough to meet the threshold.
         /// </summary>
         [TestMethod]
@@ -586,6 +631,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         }
                     }
                 }
+            }
+
+            public void VerifyNotificationLabelsContain(string expectedLabel)
+            {
+                _notificationServiceMock
+                    .Verify(o => o.PostAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<string>(),
+                            It.Is<IEnumerable<string>>(labels => labels.Contains(expectedLabel)),
+                            It.IsAny<string>(),
+                            It.IsAny<string>(),
+                            It.IsAny<GitHubAuthOptions>(),
+                            It.IsAny<bool>(),
+                            It.IsAny<IEnumerable<string>>()));
             }
 
             private string SerializeJsonObjectToTempFile(object jsonObject)

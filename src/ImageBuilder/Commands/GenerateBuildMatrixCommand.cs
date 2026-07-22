@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IImageCacheService _imageCacheService;
         private readonly ILogger<GenerateBuildMatrixCommand> _logger;
         private readonly ImageDigestCache _imageDigestCache;
-        private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
+        private readonly Lazy<IImageNameResolver> _imageNameResolver;
 
         public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
         {
@@ -42,8 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _imageDigestCache = new ImageDigestCache(
                 new Lazy<IManifestService>(
                     () => manifestServiceFactory.Create(Options.CredentialsOptions)));
-            _imageNameResolver = new Lazy<ImageNameResolverForMatrix>(() =>
-                new ImageNameResolverForMatrix(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
+            _imageNameResolver = new Lazy<IImageNameResolver>(() =>
+                new ImageNameResolver(DigestResolutionMode.Public, Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
         }
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";

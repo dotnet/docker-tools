@@ -39,7 +39,7 @@ public interface IImageCacheService
         ImageData? srcImageData,
         PlatformData platformData,
         ImageDigestCache imageDigestCache,
-        ImageNameResolver imageNameResolver,
+        IImageNameResolver imageNameResolver,
         string? sourceRepoUrl,
         bool isLocalBaseImageExpected,
         bool isDryRun);
@@ -82,7 +82,7 @@ public class ImageCacheService : IImageCacheService
         ImageData? srcImageData,
         PlatformData platformData,
         ImageDigestCache imageDigestCache,
-        ImageNameResolver imageNameResolver,
+        IImageNameResolver imageNameResolver,
         string? sourceRepoUrl,
         bool isLocalBaseImageExpected,
         bool isDryRun)
@@ -158,7 +158,7 @@ public class ImageCacheService : IImageCacheService
         PlatformInfo platform,
         PlatformData srcPlatformData,
         ImageDigestCache imageDigestCache,
-        ImageNameResolver imageNameResolver,
+        IImageNameResolver imageNameResolver,
         string? sourceRepoUrl,
         bool isLocalBaseImageExpected,
         bool isDryRun)
@@ -188,7 +188,7 @@ public class ImageCacheService : IImageCacheService
         PlatformInfo platform,
         PlatformData srcPlatformData,
         ImageDigestCache imageDigestCache,
-        ImageNameResolver imageNameResolver,
+        IImageNameResolver imageNameResolver,
         bool isLocalImageExpected,
         bool isDryRun)
     {

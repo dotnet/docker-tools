@@ -5,6 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.DotNet.GitAutomation.GitHub;
 
 namespace Microsoft.DotNet.GitAutomation.Tests;
 
@@ -37,13 +38,12 @@ public sealed class DependencyInjectionTests
             processRunnerResolved = true;
             return new StubProcessRunner();
         });
-        services.AddSingleton<IGitAccessTokenProvider>(_ =>
+        services.AddSingleton<IGitHubAccessProvider>(_ =>
         {
             accessTokenProviderResolved = true;
-            return new StaticGitAccessTokenProvider("token");
+            return new StaticGitHubAccessProvider("token", new AutomationIdentity("bot", "bot@example.com"));
         });
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        services.AddSingleton(new AutomationIdentity("bot", "bot@example.com"));
         services.AddSingleton<PullRequestManager>();
 
         using ServiceProvider serviceProvider = services.BuildServiceProvider();

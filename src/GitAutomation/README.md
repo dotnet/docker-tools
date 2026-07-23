@@ -98,10 +98,37 @@ For more control, register each dependency directly:
 ```csharp
 services.AddLogging(builder => builder.AddSimpleConsole());
 services.AddSingleton<IProcessRunner, CustomProcessRunner>();
-services.AddSingleton<IGitAccessTokenProvider, GitHubAppTokenProvider>();
-services.AddSingleton(new AutomationIdentity("bot", "bot@example.com"));
+
+var identity = new AutomationIdentity("bot", "bot@example.com");
+var accessProvider = new StaticGitHubAccessProvider(yourTokenHere, identity)
+services.AddSingleton<IGitHubAccessProvider>(accessProvider);
+
 services.AddSingleton<PullRequestManager>();
 ```
 
-`IGitAccessTokenProvider` is queried before each operation, so implementations
-can refresh credentials such as GitHub App installation tokens.
+`IGitHubAccessProvider` is queried before each operation, so implementations
+can refresh credentials and resolve the identity represented by them.
+
+### GitHub App authentication
+
+`GitAutomation` can authenticate as a GitHub App using a private key stored in
+Azure Key Vault.
+
+The Azure identity used by the application needs the **Key Vault Crypto User**
+role. The caller is responsible for authenticating to Azure and providing a
+suitable `CryptographyClient` for the correct key.
+
+The GitHub App must be installed on all repositories that are accessed.
+
+```csharp
+using Azure.Identity;
+using Azure.Security.KeyVault.Keys.Cryptography;
+using Microsoft.DotNet.GitAutomation;
+using Microsoft.DotNet.GitAutomation.GitHub;
+
+var secret = new Uri("https://your-azure-key-vault.vault.azure.net/keys/github-app-key");
+var credential = new AzureCliCredential();
+var cryptographyClient = new CryptographyClient(secret, credential);
+var accessProvider = new GitHubAppAccessProvider(yourAppClientId, cryptographyClient);
+var pullRequestManager = new PullRequestManager(accessProvider);
+```

@@ -6,6 +6,13 @@ namespace Microsoft.DotNet.GitAutomation;
 
 internal interface IRepoHost
 {
+    AutomationIdentity Identity { get; }
+
+    Task<string> GetTokenAsync();
+
     Task<ExistingPullRequest?> GetPullRequest(string key, CancellationToken cancellationToken);
-    Task<IReadOnlyList<IOperationResult>> ExecuteAsync(IEnumerable<IOperation> operations, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<IOperationResult>> ExecuteAsync(
+        IEnumerable<IOperation> operations,
+        CancellationToken cancellationToken);
 }

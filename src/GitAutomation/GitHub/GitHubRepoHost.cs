@@ -10,13 +10,16 @@ namespace Microsoft.DotNet.GitAutomation.GitHub;
 internal sealed class GitHubRepoHost(
     GitHubRepo targetRepo,
     GitHubRepo sourceRepo,
-    string token,
-    IGitHubClient client,
+    GitHubAccess access,
     ILoggerFactory loggerFactory,
     Git git
 ) : IRepoHost
 {
     private readonly ILogger<GitHubRepoHost> _logger = loggerFactory.CreateLogger<GitHubRepoHost>();
+
+    public AutomationIdentity Identity => access.Identity;
+
+    public async Task<string> GetTokenAsync() => (await access.Credentials.GetCredentials()).Password;
 
     public async Task<ExistingPullRequest?> GetPullRequest(string key, CancellationToken cancellationToken)
     {
@@ -29,7 +32,7 @@ internal sealed class GitHubRepoHost(
         };
 
         IReadOnlyList<PullRequest> pullRequests =
-            await client.PullRequest.GetAllForRepository(targetRepo.Owner, targetRepo.Name, query);
+            await access.Client.PullRequest.GetAllForRepository(targetRepo.Owner, targetRepo.Name, query);
 
         if (pullRequests.Count == 0)
         {
@@ -51,11 +54,11 @@ internal sealed class GitHubRepoHost(
 
         PullRequest pullRequest = pullRequests[0];
         cancellationToken.ThrowIfCancellationRequested();
-        Commit headCommit = await client.Git.Commit.Get(sourceRepo.Owner, sourceRepo.Name, pullRequest.Head.Sha);
+        Commit headCommit = await access.Client.Git.Commit.Get(sourceRepo.Owner, sourceRepo.Name, pullRequest.Head.Sha);
 
         cancellationToken.ThrowIfCancellationRequested();
         IReadOnlyList<PullRequestCommit> pullRequestCommits =
-            await client.PullRequest.Commits(targetRepo.Owner, targetRepo.Name, pullRequest.Number);
+            await access.Client.PullRequest.Commits(targetRepo.Owner, targetRepo.Name, pullRequest.Number);
 
         IReadOnlyList<CommitInfo> commits = pullRequestCommits
             .Select(commit => new CommitInfo(commit.Sha, commit.Commit.Author.Name, commit.Commit.Author.Email))
@@ -108,6 +111,7 @@ internal sealed class GitHubRepoHost(
 
     private async Task<CommitsPushed> PushAsync(PushCommitsOperation operation, CancellationToken cancellationToken)
     {
+        string token = await GetTokenAsync();
         string authUrl = sourceRepo.GetAuthenticatedCloneUrl(token).AbsoluteUri;
         string branch = operation.SourceBranch;
         string dir = operation.WorkspaceDirectory;
@@ -157,7 +161,7 @@ internal sealed class GitHubRepoHost(
             targetRepo.Owner,
             targetRepo.Name);
 
-        PullRequest created = await client.PullRequest.Create(targetRepo.Owner, targetRepo.Name, newPullRequest);
+        PullRequest created = await access.Client.PullRequest.Create(targetRepo.Owner, targetRepo.Name, newPullRequest);
 
         _logger.LogInformation("Created pull request #{Number}: {Url}.", created.Number, created.HtmlUrl);
         return new PullRequestCreated(created.Number, new Uri(created.HtmlUrl));
@@ -201,6 +205,6 @@ internal sealed class GitHubRepoHost(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var update = new PullRequestUpdate { Title = title, Body = body, Base = baseBranch };
-        await client.PullRequest.Update(targetRepo.Owner, targetRepo.Name, number, update);
+        await access.Client.PullRequest.Update(targetRepo.Owner, targetRepo.Name, number, update);
     }
 }

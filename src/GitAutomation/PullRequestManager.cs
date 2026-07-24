@@ -5,7 +5,6 @@
 using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Octokit;
 
 namespace Microsoft.DotNet.GitAutomation;
 
@@ -16,56 +15,46 @@ namespace Microsoft.DotNet.GitAutomation;
 /// </summary>
 public sealed class PullRequestManager
 {
-    private readonly IGitAccessTokenProvider _accessTokenProvider;
-    private readonly AutomationIdentity _identity;
+    private readonly IRepoHostProvider _repoHostProvider;
     private readonly Git _git;
     private readonly ILogger _gitLogger;
-    private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PullRequestManager> _logger;
 
     /// <summary>
     /// Creates a manager with caller-provided services.
     /// </summary>
-    /// <param name="accessTokenProvider">Provides tokens for repository host operations.</param>
-    /// <param name="identity">The git identity used for the automation's commits.</param>
+    /// <param name="accessProvider">Provides credentials and identity for GitHub operations.</param>
     /// <param name="processRunner">Runs the git processes used during reconciliation.</param>
     /// <param name="loggerFactory">Creates the loggers used to trace the reconciliation.</param>
     public PullRequestManager(
-        IGitAccessTokenProvider accessTokenProvider,
-        AutomationIdentity identity,
+        IGitHubAccessProvider accessProvider,
         IProcessRunner processRunner,
         ILoggerFactory loggerFactory)
     {
-        ArgumentNullException.ThrowIfNull(accessTokenProvider);
-        ArgumentNullException.ThrowIfNull(identity);
+        ArgumentNullException.ThrowIfNull(accessProvider);
         ArgumentNullException.ThrowIfNull(processRunner);
         ArgumentNullException.ThrowIfNull(loggerFactory);
 
-        _accessTokenProvider = accessTokenProvider;
-        _identity = identity;
-        _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<PullRequestManager>();
         _gitLogger = loggerFactory.CreateLogger(nameof(Git));
         _git = new Git(processRunner, _gitLogger);
+        _repoHostProvider = new GitHubRepoHostProvider(accessProvider, loggerFactory, _git);
     }
 
     /// <summary>
-    /// Creates a manager with a caller-provided token provider and the default
+    /// Creates a manager with a caller-provided repository access provider and the default
     /// <see cref="ProcessRunner"/>.
     /// </summary>
-    /// <param name="accessTokenProvider">Provides tokens for repository host operations.</param>
-    /// <param name="identity">The git identity used for the automation's commits.</param>
+    /// <param name="accessProvider">Provides credentials and identity for GitHub operations.</param>
     /// <param name="loggerFactory">
     /// Creates the loggers used to trace the reconciliation. Omit (or pass
     /// <see langword="null"/>) to disable logging.
     /// </param>
     public PullRequestManager(
-        IGitAccessTokenProvider accessTokenProvider,
-        AutomationIdentity identity,
+        IGitHubAccessProvider accessProvider,
         ILoggerFactory? loggerFactory = null)
         : this(
-            accessTokenProvider,
-            identity,
+            accessProvider,
             CreateDefaultProcessRunner(loggerFactory),
             loggerFactory ?? NullLoggerFactory.Instance)
     {
@@ -85,8 +74,7 @@ public sealed class PullRequestManager
         AutomationIdentity identity,
         ILoggerFactory? loggerFactory = null)
         : this(
-            new StaticGitAccessTokenProvider(token),
-            identity,
+            new StaticGitHubAccessProvider(token, identity),
             loggerFactory)
     {
     }
@@ -115,15 +103,8 @@ public sealed class PullRequestManager
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(upstream);
 
-        string token = await _accessTokenProvider.GetTokenAsync(cancellationToken);
-
-        IRepoHost host = new GitHubRepoHost(
-            targetRepo: upstream,
-            sourceRepo: fork ?? upstream,
-            token,
-            CreateClient(token),
-            _loggerFactory,
-            _git);
+        IRepoHost host = await _repoHostProvider.OpenAsync(upstream, fork ?? upstream, cancellationToken);
+        AutomationIdentity identity = host.Identity;
 
         _logger.LogInformation(
             "Creating or updating pull request for branch '{Key}' into '{TargetBranch}'.",
@@ -156,6 +137,7 @@ public sealed class PullRequestManager
         GitHubRepo pullRequestSourceRepo = fork ?? upstream;
         GitHubRepo cloneRepo = appendToExistingPullRequest ? pullRequestSourceRepo : upstream;
         string cloneBranch = appendToExistingPullRequest ? definition.Key : definition.TargetBranch;
+        string token = await host.GetTokenAsync();
 
         _logger.LogInformation("Cloning {Url} branch '{Branch}'.", cloneRepo.GetCloneUrl(), cloneBranch);
 
@@ -164,8 +146,8 @@ public sealed class PullRequestManager
             _gitLogger,
             cloneRepo.GetAuthenticatedCloneUrl(token),
             cloneBranch,
-            _identity.AuthorName,
-            _identity.AuthorEmail,
+            identity.AuthorName,
+            identity.AuthorEmail,
             cancellationToken);
 
         GitContext gitContext = new(workspace.WorkingDirectory, _git, _gitLogger);
@@ -211,7 +193,7 @@ public sealed class PullRequestManager
 
         IOperation[] operations = Planner.Plan(
             workspace.WorkingDirectory,
-            _identity,
+            identity,
             desired,
             targetBranch,
             existing,
@@ -245,13 +227,6 @@ public sealed class PullRequestManager
         // alongside the existing pull request — null when none exists.
         PullRequestAction action = results.Count > 0 ? PullRequestAction.Updated : PullRequestAction.NoChange;
         return new PullRequestResult(action, existing?.Url);
-    }
-
-    private static IGitHubClient CreateClient(string token)
-    {
-        var productHeaderValue = new ProductHeaderValue("Microsoft.DotNet.GitAutomation");
-        var credentials = new Credentials(token);
-        return new GitHubClient(productHeaderValue) { Credentials = credentials };
     }
 
     private static IProcessRunner CreateDefaultProcessRunner(ILoggerFactory? loggerFactory)

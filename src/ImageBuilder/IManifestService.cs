@@ -38,6 +38,20 @@ public interface IManifestService
             .Reverse();
     }
 
+    /// <summary>
+    /// Gets the current published digest for a locally available image and verifies that the
+    /// digest is present in the local image's repository digests.
+    /// </summary>
+    /// <param name="image">Image tag to inspect locally and query from its registry.</param>
+    /// <param name="isDryRun">Whether external operations should be simulated.</param>
+    /// <returns>
+    /// The repository-qualified published digest when it matches a local repository digest;
+    /// otherwise, <see langword="null"/> when the local image has no repository digests.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// The registry tag's current digest does not match any digest associated with the local
+    /// image, which indicates that the tag changed after the image was pulled.
+    /// </exception>
     public async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun)
     {
         IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);

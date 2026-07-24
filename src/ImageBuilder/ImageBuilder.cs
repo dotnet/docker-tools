@@ -96,7 +96,7 @@ public static class ImageBuilder
                 "image-builder-oras-timeout",
                 pipeline => pipeline.AddTimeout(TimeSpan.FromSeconds(10)));
 
-        builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
+        builder.Services.AddSingleton<IBuildPlanner, BuildPlanner>();
         builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
         builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
         builder.Services.AddMemoryCache();

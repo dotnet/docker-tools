@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -21,14 +20,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
-        private readonly IImageCacheService _imageCacheService;
+        private readonly IBuildPlanner _buildPlanner;
         private readonly ILogger<GenerateBuildMatrixCommand> _logger;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
+        private readonly Lazy<BaseImageResolver> _baseImageResolver;
 
-        public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
+        public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IBuildPlanner buildPlanner, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
         {
-            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _buildPlanner = buildPlanner ?? throw new ArgumentNullException(nameof(buildPlanner));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
@@ -44,6 +44,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     () => manifestServiceFactory.Create(Options.CredentialsOptions)));
             _imageNameResolver = new Lazy<ImageNameResolverForMatrix>(() =>
                 new ImageNameResolverForMatrix(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
+            _baseImageResolver = new Lazy<BaseImageResolver>(() =>
+                BaseImageResolver.CreateForRegistryImages(
+                    _imageDigestCache,
+                    _imageNameResolver.Value,
+                    Options.IsDryRun));
         }
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";
@@ -442,62 +447,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // treat the hierarchy as a unit. For example, if runtime-deps is cached but runtime (which is a descendant of
             // runtime-deps) is not, then we need to ensure that both runtime-deps and runtime is included. We do not want to
             // trim just the runtime-deps platform in that case.
-            IEnumerable<IEnumerable<(PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData)>> subgraphs =
-                platformMappings.GetCompleteSubgraphs(
-                    platformGrouping =>
-                        Manifest.GetParents(
-                            platformGrouping.PlatformInfo,
-                            platformMappings.Select(m => m.PlatformInfo)
-                        ).Select(platformInfo => platformMappings.First(mapping => mapping.PlatformInfo == platformInfo)));
+            PlatformInfo[] plannedPlatforms = platformMappings
+                .Select(mapping => mapping.PlatformInfo)
+                .ToArray();
+            BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
+                Manifest,
+                plannedPlatforms,
+                plannedPlatforms,
+                _imageArtifactDetails.Value,
+                _baseImageResolver.Value,
+                Options.SourceRepoUrl,
+                BuildPlanCheck.Default);
+            IReadOnlyCollection<PlatformInfo> scheduledPlatforms = plan.GetPlatformsToSchedule();
 
-            ConcurrentBag<PlatformInfo> nonCachedPlatforms = [];
-            await Parallel.ForEachAsync(subgraphs, async (subgraph, _) =>
-            {
-                ConcurrentBag<PlatformInfo> subgraphNonCachedPlatforms = [];
-                await Parallel.ForEachAsync(subgraph, async (platformMapping, _) =>
-                {
-                    if (platformMapping.PlatformData is null)
-                    {
-                        _logger.LogInformation($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
-                        subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
-                        return;
-                    }
-
-                    ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
-                        platformMapping.ImageData,
-                        platformMapping.PlatformData,
-                        _imageDigestCache,
-                        _imageNameResolver.Value,
-                        Options.SourceRepoUrl,
-                        isLocalBaseImageExpected: false,
-                        Options.IsDryRun);
-
-                    bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
-
-                    _logger.LogInformation(
-                        $"Image '{platformMapping.PlatformInfo.DockerfilePath}' cache state is {cacheResult.State}. Included in matrix: {includePlatformInMatrix}");
-
-                    if (includePlatformInMatrix)
-                    {
-                        subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
-                    }
-                });
-
-                // As mentioned above, we need to treat the hierarchy as a unit so even though a subset of the platforms
-                // in the hierarchy may be cached, they all need to be included. Only in the case where they're all
-                // cached, should they be excluded. To determine what needs to be included, it can be simplified to just
-                // check whether there are any platforms identified within the hierarchy as not being cached. If so, then
-                // include the whole hierarchy as non-cached platforms.
-                if (!subgraphNonCachedPlatforms.IsEmpty)
-                {
-                    foreach ((PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData) platformMapping in subgraph)
-                    {
-                        nonCachedPlatforms.Add(platformMapping.PlatformInfo);
-                    }
-                }
-            });
-
-            return nonCachedPlatforms.OrderBy(platform => platform.DockerfilePath);
+            return scheduledPlatforms.OrderBy(platform => platform.DockerfilePath);
         }
 
         public async Task<IEnumerable<BuildMatrixInfo>> GenerateMatrixInfoAsync()

@@ -25,11 +25,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-        private readonly IImageCacheService _imageCacheService;
+        private readonly IBuildPlanner _buildPlanner;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
         private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
+        private readonly Lazy<BaseImageResolver> _baseImageResolver;
         private readonly Lazy<string?> _storageAccountToken;
 
         /// <summary>
@@ -39,6 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Dictionary<string, string> _sourceDigestCopyLocationMapping = new();
 
         private ImageArtifactDetails? _imageArtifactDetails;
+        private BuildPlan? _buildPlan;
 
         public BuildCommand(
             IManifestJsonService manifestJsonService,
@@ -50,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService) : base(manifestJsonService)
+            IBuildPlanner buildPlanner) : base(manifestJsonService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -59,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
-            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _buildPlanner = buildPlanner ?? throw new ArgumentNullException(nameof(buildPlanner));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -73,6 +75,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Manifest,
                     Options.RepoPrefix,
                     Options.SourceRepoPrefix));
+            _baseImageResolver = new Lazy<BaseImageResolver>(() =>
+                BaseImageResolver.CreateForLocalImages(
+                    _imageDigestCache,
+                    _imageNameResolver.Value,
+                    Options.IsDryRun));
 
             _storageAccountToken = new Lazy<string?>(() =>
             {
@@ -103,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync);
             await BuildImagesAsync();
 
-            if (_processedTags.Count > 0 || _imageCacheService.HasAnyCachedPlatforms)
+            if (_processedTags.Count > 0 || _buildPlan?.HasReusablePlatforms == true)
             {
                 // Log in again to refresh token as it may have expired from a long build
                 await ExecuteWithDockerCredentialsAsync(async () =>
@@ -310,17 +317,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoSourcePath, Manifest, skipManifestValidation: true);
             }
 
+            _buildPlan = await _buildPlanner.CreateBuildPlanAsync(
+                Manifest,
+                Manifest.GetFilteredPlatforms(),
+                Manifest.GetFilteredPlatforms(),
+                srcImageArtifactDetails,
+                _baseImageResolver.Value,
+                Options.SourceRepoUrl,
+                Options.NoCache ? BuildPlanCheck.NoCache : BuildPlanCheck.Default);
+
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
                 RepoData repoData = CreateRepoData(repoInfo);
-                RepoData? srcRepoData = srcImageArtifactDetails?.Repos.FirstOrDefault(srcRepo => srcRepo.Repo == repoInfo.Name);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
                     ImageData imageData = CreateImageData(image);
                     repoData.Images.Add(imageData);
-
-                    ImageData? srcImageData = srcRepoData?.Images.FirstOrDefault(srcImage => srcImage.ManifestImage == image);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
@@ -338,27 +351,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData platformData = CreatePlatformData(image, platform);
                         imageData.Platforms.Add(platformData);
 
-                        bool isCachedImage = false;
-                        if (!Options.NoCache)
+                        BuildPlanEntry planEntry = _buildPlan.GetEntry(platform);
+                        bool isCachedImage =
+                            planEntry.Disposition is
+                                BuildDisposition.Reuse or
+                                BuildDisposition.ReuseAndPublish;
+                        if (isCachedImage)
                         {
-                            ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
-                                srcImageData,
-                                platformData,
-                                _imageDigestCache,
-                                _imageNameResolver.Value,
-                                sourceRepoUrl: Options.SourceRepoUrl,
-                                isLocalBaseImageExpected: true,
-                                isDryRun: Options.IsDryRun);
+                            PlatformData cachedPlatform = planEntry.CachedPlatform ??
+                                throw new InvalidOperationException(
+                                    $"Build plan did not provide cached metadata for '{platform.DockerfilePath}'.");
+                            CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
+                            platformData.IsUnchanged =
+                                planEntry.Disposition == BuildDisposition.Reuse;
 
-                            if (cacheResult.State.HasFlag(ImageCacheState.Cached))
-                            {
-                                isCachedImage = true;
-
-                                CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
-                                platformData.IsUnchanged = cacheResult.State != ImageCacheState.CachedWithMissingTags;
-
-                                await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest);
-                            }
+                            bool pullImage =
+                                !_sourceDigestCopyLocationMapping.ContainsKey(cachedPlatform.Digest);
+                            await OnCacheHitAsync(
+                                repoInfo,
+                                allTagInfos,
+                                pullImage,
+                                cachedPlatform.Digest);
                         }
 
                         if (!isCachedImage)

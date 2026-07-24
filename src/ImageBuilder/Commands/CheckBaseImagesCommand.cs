@@ -12,14 +12,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
 {
     private readonly IEnvironmentService _environmentService;
-    private readonly IImageCacheService _imageCacheService;
+    private readonly IBuildPlanner _buildPlanner;
     private readonly ImageDigestCache _imageDigestCache;
     private readonly ILogger<CheckBaseImagesCommand> _logger;
 
     public CheckBaseImagesCommand(
         IManifestJsonService manifestJsonService,
         IManifestServiceFactory manifestServiceFactory,
-        IImageCacheService imageCacheService,
+        IBuildPlanner buildPlanner,
         IEnvironmentService environmentService,
         ILogger<CheckBaseImagesCommand> logger)
         : base(manifestJsonService)
@@ -28,8 +28,7 @@ public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
 
         _environmentService =
             environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-        _imageCacheService =
-            imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+        _buildPlanner = buildPlanner ?? throw new ArgumentNullException(nameof(buildPlanner));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _imageDigestCache = new ImageDigestCache(
             new Lazy<IManifestService>(
@@ -53,14 +52,24 @@ public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
             Manifest,
             Options.RepoPrefix,
             Options.SourceRepoPrefix);
+        BaseImageResolver baseImageResolver = BaseImageResolver.CreateForRegistryImages(
+            _imageDigestCache,
+            imageNameResolver,
+            Options.IsDryRun);
+        BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
+            Manifest,
+            Manifest.GetFilteredPlatformsWithExternalBaseImage(),
+            Manifest.GetAllPlatforms(),
+            imageArtifactDetails,
+            baseImageResolver,
+            sourceRepoUrl: null,
+            BuildPlanCheck.Default);
 
-        string[] pathsToRebuild =
-            (await _imageCacheService.GetStaleBaseImagePathsAsync(
-                Manifest,
-                imageArtifactDetails,
-                _imageDigestCache,
-                imageNameResolver,
-                Options.IsDryRun))
+        string[] pathsToRebuild = plan
+            .GetPlatformsToSchedule(
+                [BuildPlanReason.MissingImageInfo, BuildPlanReason.BaseImageChanged])
+            .Select(platform => platform.Model.Dockerfile)
+            .Distinct()
             .OrderBy(path => path)
             .ToArray();
 

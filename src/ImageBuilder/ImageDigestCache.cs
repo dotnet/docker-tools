@@ -17,6 +17,13 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly SemaphoreSlim _localDigestCacheLock = new(1);
         private readonly SemaphoreSlim _manifestDigestCacheLock = new(1);
 
+        /// <summary>
+        /// Records a known digest for a local tag without querying a registry.
+        /// </summary>
+        /// <remarks>
+        /// This supports images produced or copied during the current build before their tags are
+        /// available from the registry.
+        /// </remarks>
         public void AddDigest(string tag, string digest)
         {
             _localDigestCacheLock.Wait();
@@ -30,6 +37,15 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
+        /// <summary>
+        /// Gets and caches a digest known to identify a locally available image.
+        /// </summary>
+        /// <remarks>
+        /// On a cache miss, the lookup verifies that the registry tag's current digest is present
+        /// among the local image's repository digests. Null results are not cached because an image
+        /// built locally may acquire a repository digest after it is pushed. A digest supplied
+        /// through <see cref="AddDigest"/> is already trusted and does not require registry validation.
+        /// </remarks>
         public Task<string?> GetLocalImageDigestAsync(string tag, bool isDryRun) =>
             LockHelper.DoubleCheckedLockLookupAsync(_localDigestCacheLock, _localDigestCache, tag,
                 () => _inner.Value.GetLocalImageDigestAsync(tag, isDryRun),

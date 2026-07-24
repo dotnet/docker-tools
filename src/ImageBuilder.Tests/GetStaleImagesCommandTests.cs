@@ -1522,6 +1522,67 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
+        [TestMethod]
+        public async Task GetStaleImagesCommand_EquivalentBuild_MissingAliasImageInfo()
+        {
+            const string repo1 = "test-repo";
+            const string repo2 = "test-repo-alias";
+            const string dockerfilePath = "dockerfile1/Dockerfile";
+
+            SubscriptionInfo[] subscriptionInfos =
+            [
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(CreatePlatform(dockerfilePath, ["tag1"]))),
+                        CreateRepo(
+                            repo2,
+                            CreateImage(CreatePlatform(dockerfilePath, ["tag2"])))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfilePath,
+                                                baseImageDigest: "base1@base1digest",
+                                                simpleTags: ["tag1"])
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    })
+            ];
+
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos = new()
+            {
+                {
+                    subscriptionInfos[0].Subscription.Manifest,
+                    [
+                        new DockerfileInfo(
+                            dockerfilePath,
+                            new FromImageInfo("base1", "base1digest"))
+                    ]
+                }
+            };
+
+            using TestFixture fixture = new(subscriptionInfos, dockerfileInfos);
+            await fixture.ExecuteCommandAsync();
+
+            fixture.Verify(new Dictionary<Subscription, IList<string>>());
+        }
+
         /// <summary>
         /// Verifies that the check for a stale base image is done by targeting the tag override rather than the tag
         /// defined in the Dockerfile.
@@ -1769,7 +1830,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
+                    this.ManifestServiceFactoryMock.Object,
+                    TestHelper.CreateManifestJsonService(),
+                    this.loggerServiceMock.Object,
+                    this.octokitClientFactory,
+                    this.gitService,
+                    new BuildPlanner(Mock.Of<ILogger<BuildPlanner>>(), this.gitService));
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;

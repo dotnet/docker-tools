@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
     {
-        private readonly IImageCacheService _imageCacheService;
+        private readonly IBuildPlanner _buildPlanner;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly IManifestJsonService _manifestJsonService;
         private readonly ILogger<GetStaleImagesCommand> _logger;
@@ -27,30 +27,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestJsonService manifestJsonService,
             ILogger<GetStaleImagesCommand> logger,
             IOctokitClientFactory octokitClientFactory,
-            IGitService gitService)
-            : this(
-                manifestServiceFactory,
-                manifestJsonService,
-                logger,
-                octokitClientFactory,
-                gitService,
-                new ImageCacheService(logger, gitService))
-        {
-        }
-
-        public GetStaleImagesCommand(
-            IManifestServiceFactory manifestServiceFactory,
-            IManifestJsonService manifestJsonService,
-            ILogger<GetStaleImagesCommand> logger,
-            IOctokitClientFactory octokitClientFactory,
             IGitService gitService,
-            IImageCacheService imageCacheService)
+            IBuildPlanner buildPlanner)
         {
             _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _buildPlanner = buildPlanner ?? throw new ArgumentNullException(nameof(buildPlanner));
 
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _imageDigestCache = new ImageDigestCache(
@@ -110,13 +94,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 manifest,
                 repoPrefix: null,
                 sourceRepoPrefix: Options.SourceRepoPrefix);
-
-            return await _imageCacheService.GetStaleBaseImagePathsAsync(
-                manifest,
-                imageArtifactDetails,
+            BaseImageResolver baseImageResolver = BaseImageResolver.CreateForRegistryImages(
                 _imageDigestCache,
                 imageNameResolver,
                 Options.IsDryRun);
+            BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
+                manifest,
+                manifest.GetFilteredPlatformsWithExternalBaseImage(),
+                manifest.GetAllPlatforms(),
+                imageArtifactDetails,
+                baseImageResolver,
+                sourceRepoUrl: null,
+                BuildPlanCheck.Default);
+
+            return plan
+                .GetPlatformsToSchedule(
+                    [BuildPlanReason.MissingImageInfo, BuildPlanReason.BaseImageChanged])
+                .Select(platform => platform.Model.Dockerfile)
+                .Distinct();
         }
 
         private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)

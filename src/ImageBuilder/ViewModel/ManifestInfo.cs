@@ -92,6 +92,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .SelectMany(image => image.FilteredPlatforms);
         }
 
+        /// <summary>
+        /// Returns the filtered platforms whose final stage is based on an externally-owned image.
+        /// </summary>
+        /// <remarks>
+        /// Platforms based on internally-owned images are excluded because their freshness follows
+        /// from the platform that produces the base image, not from an external registry.
+        /// </remarks>
+        public IEnumerable<PlatformInfo> GetFilteredPlatformsWithExternalBaseImage() =>
+            GetFilteredPlatforms()
+                .Where(platform =>
+                    platform.FinalStageFromImage is not null &&
+                    !platform.IsInternalFromImage(platform.FinalStageFromImage));
+
         public IEnumerable<TagInfo> GetFilteredPlatformTags()
         {
             return GetFilteredPlatforms()

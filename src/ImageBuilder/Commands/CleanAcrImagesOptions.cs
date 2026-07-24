@@ -17,6 +17,7 @@ public class CleanAcrImagesOptions : Options
     public int Age { get; set; }
     public string RegistryName { get; set; }
     public string[] ImagesToExclude { get; set; } = [];
+    public ushort? TimeLimitMinutes { get; set; }
 
     private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
     private const int DefaultAge = 30;
@@ -50,6 +51,11 @@ public class CleanAcrImagesOptions : Options
         AllowMultipleArgumentsPerToken = false
     };
 
+    private static readonly Option<ushort?> TimeLimitMinutesOption = new("--time-limit-minutes")
+    {
+        Description = "Maximum cleanup duration before stopping after the current manifest batch (default: unlimited)"
+    };
+
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
@@ -63,6 +69,7 @@ public class CleanAcrImagesOptions : Options
             ActionOption,
             AgeOption,
             ImagesToExcludeOption,
+            TimeLimitMinutesOption,
         ];
 
     public override void Bind(ParseResult result)
@@ -73,6 +80,7 @@ public class CleanAcrImagesOptions : Options
         Action = result.GetValue(ActionOption);
         Age = result.GetValue(AgeOption);
         ImagesToExclude = result.GetValue(ImagesToExcludeOption) ?? [];
+        TimeLimitMinutes = result.GetValue(TimeLimitMinutesOption);
     }
 }
 

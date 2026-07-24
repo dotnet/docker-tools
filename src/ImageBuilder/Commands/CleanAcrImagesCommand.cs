@@ -29,6 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly PublishConfiguration _publishConfig;
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
+        private const int ManifestBatchSize = 250;
 
         public CleanAcrImagesCommand(
             IAcrClientFactory acrClientFactory,
@@ -53,6 +54,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 throw new NotSupportedException("Excluding images is not supported when deleting repositories");
             }
 
+            if (Options.TimeLimitMinutes is not null && Options.Action == CleanAcrImagesAction.Delete)
+            {
+                throw new NotSupportedException("Time-limited cleanup is not supported when deleting repositories");
+            }
+
             Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
             _logger.LogInformation("FINDING IMAGES TO CLEAN");
@@ -67,35 +73,89 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
-
-            await foreach (string repoName in repositoryNames
-                .Where(repoName => repoNameFilterRegex.IsMatch(repoName)))
+            using CancellationTokenSource timeLimitCancellation = new();
+            if (Options.TimeLimitMinutes is ushort timeLimitMinutes)
             {
-                ContainerRepository repo = acrClient.GetRepository(repoName);
-                Acr acr = Acr.Parse(Options.RegistryName);
-                IAcrContentClient acrContentClient = CreateAcrContentClient(acr, repo.Name);
-                await ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
+                if (timeLimitMinutes == 0)
+                {
+                    timeLimitCancellation.Cancel();
+                }
+                else
+                {
+                    timeLimitCancellation.CancelAfter(TimeSpan.FromMinutes(timeLimitMinutes));
+                }
+            }
+
+            try
+            {
+                await foreach (string repoName in repositoryNames
+                    .Where(repoName => repoNameFilterRegex.IsMatch(repoName))
+                    .WithCancellation(timeLimitCancellation.Token))
+                {
+                    timeLimitCancellation.Token.ThrowIfCancellationRequested();
+                    ContainerRepository repo = acrClient.GetRepository(repoName);
+                    Acr acr = Acr.Parse(Options.RegistryName);
+                    IAcrContentClient acrContentClient = CreateAcrContentClient(acr, repo.Name);
+                    await ProcessRepoAsync(
+                        acrClient,
+                        acrContentClient,
+                        repo,
+                        deletedRepos,
+                        deletedImages,
+                        timeLimitCancellation.Token);
+                }
+            }
+            catch (OperationCanceledException) when (timeLimitCancellation.IsCancellationRequested)
+            {
+                LogTimeLimitReached(Options.RegistryName, Options.TimeLimitMinutes.GetValueOrDefault());
             }
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }
 
         private async Task ProcessRepoAsync(
-            IAcrClient acrClient, IAcrContentClient acrContentClient, ContainerRepository repository, List<string> deletedRepos, List<string> deletedImages)
+            IAcrClient acrClient,
+            IAcrContentClient acrContentClient,
+            ContainerRepository repository,
+            List<string> deletedRepos,
+            List<string> deletedImages,
+            CancellationToken cancellationToken)
         {
             switch (Options.Action)
             {
                 case CleanAcrImagesAction.PruneDangling:
-                    await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        manifest => Task.FromResult(!manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age)));
+                    await ProcessManifestsAsync(
+                        acrClient,
+                        acrContentClient,
+                        deletedImages,
+                        deletedRepos,
+                        repository,
+                        (manifest, _) => Task.FromResult(
+                            !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age)),
+                        cancellationToken);
                     break;
                 case CleanAcrImagesAction.PruneEol:
-                    await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => !(await IsAnnotationManifestAsync(manifest, acrContentClient)) && await HasExpiredEolAsync(manifest, Options.Age));
+                    await ProcessManifestsAsync(
+                        acrClient,
+                        acrContentClient,
+                        deletedImages,
+                        deletedRepos,
+                        repository,
+                        async (manifest, ct) =>
+                            !await IsAnnotationManifestAsync(manifest, acrContentClient)
+                            && await HasExpiredEolAsync(manifest, Options.Age, ct),
+                        cancellationToken);
                     break;
                 case CleanAcrImagesAction.PruneAll:
-                    await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        manifest => Task.FromResult(IsExpired(manifest.LastUpdatedOn, Options.Age)));
+                    await ProcessManifestsAsync(
+                        acrClient,
+                        acrContentClient,
+                        deletedImages,
+                        deletedRepos,
+                        repository,
+                        (manifest, _) => Task.FromResult(
+                            IsExpired(manifest.LastUpdatedOn, Options.Age)),
+                        cancellationToken);
                     break;
                 case CleanAcrImagesAction.Delete:
                     ContainerRepositoryProperties repoProperties = repository.GetProperties().Value;
@@ -145,50 +205,74 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation($"Total repos deleted: {deletedRepos.Count}");
             _logger.LogInformation(string.Empty);
 
-            _logger.LogInformation("<Querying remaining data...>");
+            if (Options.TimeLimitMinutes is null)
+            {
+                _logger.LogInformation("<Querying remaining data...>");
 
-            // Requery the catalog to get the latest info after things have been deleted
-            IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
-
-            _logger.LogInformation($"Total repos remaining: {await repositoryNames.CountAsync()}");
-
+                // Requery the catalog to get the latest info after things have been deleted
+                int repositoryCount = await acrClient.GetRepositoryNamesAsync().CountAsync();
+                _logger.LogInformation($"Total repos remaining: {repositoryCount}");
+            }
         }
 
         private async Task ProcessManifestsAsync(
-            IAcrClient acrClient, IAcrContentClient acrContentClient, List<string> deletedImages, List<string> deletedRepos, ContainerRepository repository,
-            Func<ArtifactManifestProperties, Task<bool>> canDeleteManifest)
+            IAcrClient acrClient,
+            IAcrContentClient acrContentClient,
+            List<string> deletedImages,
+            List<string> deletedRepos,
+            ContainerRepository repository,
+            Func<ArtifactManifestProperties, CancellationToken, Task<bool>> canDeleteManifest,
+            CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Querying manifests for repo '{repository.Name}'");
-            IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync();
-            ArtifactManifestProperties[] allManifests = await manifestProperties.ToArrayAsync();
-            int manifestCount = allManifests.Length;
+
+            IAsyncEnumerable<ArtifactManifestProperties> manifests = repository.GetAllManifestPropertiesAsync();
+            int manifestCount = 0;
+
+            await foreach (IList<ArtifactManifestProperties> batch in
+                manifests.Buffer(ManifestBatchSize).WithCancellation(cancellationToken))
+            {
+                manifestCount += batch.Count;
+                ConcurrentBag<string> digestsToDelete =
+                    await FindManifestsToDeleteAsync(batch, canDeleteManifest, cancellationToken);
+                await DeleteManifestsAsync(acrContentClient, deletedImages, repository, digestsToDelete);
+            }
+
             _logger.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
 
-            if (!allManifests.Any())
+            if (manifestCount == 0)
             {
-                await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
-                return;
+                await DeleteRepositoryAsync(acrClient, deletedRepos, repository, []);
             }
-
-            ConcurrentBag<ArtifactManifestProperties> expiredImages = [];
-            await Parallel.ForEachAsync(allManifests, async (manifest, token) =>
-            {
-                if (!IsExcludedManifest(manifest) && await canDeleteManifest(manifest))
-                {
-                    expiredImages.Add(manifest);
-                }
-            });
-
-            // If all the images in the repo are expired, delete the whole repo instead of
-            // deleting each individual image.
-            if (expiredImages.Count == manifestCount)
-            {
-                await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
-                return;
-            }
-
-            await DeleteManifestsAsync(acrContentClient, deletedImages, repository, expiredImages);
         }
+
+        private async Task<ConcurrentBag<string>> FindManifestsToDeleteAsync(
+            IEnumerable<ArtifactManifestProperties> manifests,
+            Func<ArtifactManifestProperties, CancellationToken, Task<bool>> canDeleteManifest,
+            CancellationToken cancellationToken)
+        {
+            ConcurrentBag<string> digestsToDelete = [];
+
+            await Parallel.ForEachAsync(
+                manifests,
+                cancellationToken,
+                async (manifest, ct) =>
+                {
+                    if (!IsExcludedManifest(manifest) && await canDeleteManifest(manifest, ct))
+                    {
+                        digestsToDelete.Add(manifest.Digest);
+                    }
+                }
+            );
+
+            return digestsToDelete;
+        }
+
+        private void LogTimeLimitReached(string target, ushort timeLimitMinutes) =>
+            _logger.LogInformation(
+                "Cleanup time limit of {TimeLimitMinutes} minutes reached; stopping cleanup for '{Target}'",
+                timeLimitMinutes,
+                target);
 
         private bool IsExcludedManifest(ArtifactManifestProperties manifest) =>
             Options.ImagesToExclude
@@ -196,7 +280,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Any(exclusion => exclusion.Repo == manifest.RepositoryName && (exclusion.Digest == manifest.Digest || manifest.Tags.Contains(exclusion.Tag)));
 
         private async Task DeleteManifestsAsync(
-            IAcrContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, IEnumerable<ArtifactManifestProperties> manifests)
+            IAcrContentClient acrContentClient,
+            List<string> deletedImages,
+            ContainerRepository repository,
+            IEnumerable<string> digests)
         {
             ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
                 // Allow any number of tasks to be queued up but only allow X number of them to execute concurrently
@@ -204,23 +291,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Build();
 
             IEnumerable<Task> tasks =
-                manifests.Select(manifest =>
+                digests.Select(digest =>
                     pipeline.ExecuteAsync(async cancellationToken =>
-                        await DeleteManifestAsync(acrContentClient, deletedImages, repository, manifest))
+                        await DeleteManifestAsync(acrContentClient, deletedImages, repository, digest))
                     .AsTask());
 
             await Task.WhenAll(tasks);
         }
 
         private async Task DeleteManifestAsync(
-            IAcrContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, ArtifactManifestProperties manifest)
+            IAcrContentClient acrContentClient,
+            List<string> deletedImages,
+            ContainerRepository repository,
+            string digest)
         {
             if (!Options.IsDryRun)
             {
-                await acrContentClient.DeleteManifestAsync(manifest.Digest);
+                await acrContentClient.DeleteManifestAsync(digest);
             }
 
-            string imageId = $"{repository.Name}@{manifest.Digest}";
+            string imageId = $"{repository.Name}@{digest}";
 
             _logger.LogInformation($"Deleted image '{imageId}'");
 
@@ -233,9 +323,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task DeleteRepositoryAsync(IAcrClient acrClient, List<string> deletedRepos, ContainerRepository repository)
         {
             IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync();
-
             ArtifactManifestProperties[] allManifests = await manifestProperties.ToArrayAsync();
+            await DeleteRepositoryAsync(acrClient, deletedRepos, repository, allManifests);
+        }
 
+        private async Task DeleteRepositoryAsync(
+            IAcrClient acrClient,
+            List<string> deletedRepos,
+            ContainerRepository repository,
+            ArtifactManifestProperties[] allManifests)
+        {
             string[] manifestsDeleted = allManifests
                 .Select(manifest => manifest.Digest)
                 .ToArray();
@@ -282,15 +379,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestResult.Manifest["subject"] is not null;
         }
 
-        private async Task<bool> HasExpiredEolAsync(ArtifactManifestProperties manifest, int expirationDays)
+        private async Task<bool> HasExpiredEolAsync(
+            ArtifactManifestProperties manifest,
+            int expirationDays,
+            CancellationToken cancellationToken)
         {
             Manifest? lifecycleArtifactManifest = await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(
                 $"{manifest.RegistryLoginServer}/{manifest.RepositoryName}@{manifest.Digest}",
-                CancellationToken.None);
+                cancellationToken);
 
-            if (lifecycleArtifactManifest?.Annotations != null &&
-                lifecycleArtifactManifest.Annotations.TryGetValue(LifecycleMetadataService.EndOfLifeAnnotation, out string? endOfLifeValue) &&
-                DateTimeOffset.TryParse(endOfLifeValue, out DateTimeOffset endOfLifeDateTime))
+            if (lifecycleArtifactManifest?.Annotations is not null
+                && lifecycleArtifactManifest.Annotations.TryGetValue(
+                    LifecycleMetadataService.EndOfLifeAnnotation,
+                    out string? endOfLifeValue)
+                && DateTimeOffset.TryParse(endOfLifeValue, out DateTimeOffset endOfLifeDateTime))
             {
                 return IsExpired(endOfLifeDateTime, expirationDays);
             }

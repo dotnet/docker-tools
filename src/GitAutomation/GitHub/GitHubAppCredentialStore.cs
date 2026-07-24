@@ -36,7 +36,7 @@ internal sealed class GitHubAppCredentialStore(string clientId, CryptographyClie
 
             DateTimeOffset now = DateTimeOffset.UtcNow;
             // GitHub's maximum expiration time is 10 minutes, stay a little under that.
-            _expiresAt = now.AddMinutes(9);
+            DateTimeOffset expiresAt = now.AddMinutes(9);
 
             var header = new JwtHeader
             {
@@ -49,7 +49,7 @@ internal sealed class GitHubAppCredentialStore(string clientId, CryptographyClie
                 audience: null,
                 claims: null,
                 notBefore: null,
-                expires: _expiresAt.UtcDateTime,
+                expires: expiresAt.UtcDateTime,
                 // Backdate issue time so differences between this machine's clock and GitHub's
                 // server clock cannot make the JWT appear to come from the future.
                 issuedAt: now.AddMinutes(-1).UtcDateTime);
@@ -60,9 +60,12 @@ internal sealed class GitHubAppCredentialStore(string clientId, CryptographyClie
             // Sign the JWT with the private key in Azure Key Vault.
             SignResult signature = await cryptographyClient.SignDataAsync(algorithm, data);
 
+            // Only advance expiration once signing has succeeded. Otherwise a failure would leave
+            // the store thinking it has fresh credentials, causing repeated 401s until it expires.
             _credentials = new Credentials(
                 $"{unsignedJwt}.{Base64UrlEncoder.Encode(signature.Signature)}",
                 AuthenticationType.Bearer);
+            _expiresAt = expiresAt;
 
             return _credentials;
         }

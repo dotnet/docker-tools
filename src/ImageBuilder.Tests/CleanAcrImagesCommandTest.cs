@@ -451,7 +451,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1Digest1 = "sha256:digest1";
             const string repo1Digest2 = "sha256:digest2";
             const string repo1Digest3 = "sha256:digest3";
-            const string annotationdigest = "annotationdigest";
+            const string annotationDigest = "sha256:annotation";
 
             const int age = 30;
 
@@ -462,7 +462,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8)), tags: ["latest"], registryLoginServer: AcrName),
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)), tags: ["latest"], registryLoginServer: AcrName),
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: annotationdigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: annotationDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
                 ]);
 
             Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
@@ -475,12 +475,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
                             { repo1Digest2, new ManifestQueryResult(string.Empty, []) },
                             { repo1Digest3, new ManifestQueryResult(string.Empty, []) },
-                            { annotationdigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
+                            { annotationDigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
                         });
 
             IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock]);
 
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(age, repo1Name);
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock =
+                CreateLifecycleMetadataServiceMock(age, repo1Name);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
@@ -495,7 +496,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationDigest), Times.Never);
         }
 
         [TestMethod]
@@ -569,7 +570,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return lifecycleMetadataServiceMock;
         }
 
-        private static void SetupIsDigestAnnotatedForEolMethod(Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock, string repoName, string digest, bool digestAlreadyAnnotated, DateOnly eolDate)
+        private static void SetupIsDigestAnnotatedForEolMethod(
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock,
+            string repoName,
+            string digest,
+            bool digestAlreadyAnnotated,
+            DateOnly eolDate)
         {
             string reference = $"{AcrName}/{repoName}@{digest}";
 
@@ -580,9 +586,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     Annotations = new Dictionary<string, string>
                     {
-                        { LifecycleMetadataService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
-                    },
-                    Reference = reference
+                        [LifecycleMetadataService.EndOfLifeAnnotation] = eolDate.ToString("yyyy-MM-dd")
+                    }
                 };
             }
 

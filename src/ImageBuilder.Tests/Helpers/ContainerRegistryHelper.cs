@@ -40,7 +40,9 @@ internal static class ContainerRegistryHelper
         {
             foreach (KeyValuePair<string, ManifestQueryResult> kvp in imageNameToQueryResultsMapping)
             {
-                acrClientContentMock.Setup(o => o.GetManifestAsync(kvp.Key)).ReturnsAsync(kvp.Value);
+                acrClientContentMock
+                    .Setup(o => o.GetManifestAsync(kvp.Key))
+                    .ReturnsAsync(kvp.Value);
             }
         }
 

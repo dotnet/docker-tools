@@ -134,6 +134,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age)),
                         cancellationToken);
                     break;
+
                 case CleanAcrImagesAction.PruneEol:
                     await ProcessManifestsAsync(
                         acrClient,
@@ -146,6 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             && await HasExpiredEolAsync(manifest, Options.Age, ct),
                         cancellationToken);
                     break;
+
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(
                         acrClient,
@@ -157,6 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             IsExpired(manifest.LastUpdatedOn, Options.Age)),
                         cancellationToken);
                     break;
+
                 case CleanAcrImagesAction.Delete:
                     ContainerRepositoryProperties repoProperties = repository.GetProperties().Value;
                     bool isDeleting = IsExpired(repoProperties.LastUpdatedOn, Options.Age);
@@ -170,17 +173,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         isDeleting
                             ? $"LastUpdatedOn is older than {Options.Age} days"
                             : $"LastUpdatedOn is within {Options.Age} days");
+
                     if (isDeleting)
                     {
                         await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
                     }
                     break;
+
                 default:
                     throw new NotSupportedException($"Unsupported action: {Options.Action}");
             }
         }
 
-        private async Task LogSummaryAsync(IAcrClient acrClient, List<string> deletedRepos, List<string> deletedImages)
+        private async Task LogSummaryAsync(
+            IAcrClient acrClient,
+            List<string> deletedRepos,
+            List<string> deletedImages)
         {
             _logger.LogInformation("SUMMARY");
 
@@ -277,7 +285,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private bool IsExcludedManifest(ArtifactManifestProperties manifest) =>
             Options.ImagesToExclude
                 .Select(exclusion => ImageName.Parse(exclusion))
-                .Any(exclusion => exclusion.Repo == manifest.RepositoryName && (exclusion.Digest == manifest.Digest || manifest.Tags.Contains(exclusion.Tag)));
+                .Any(exclusion =>
+                    exclusion.Repo == manifest.RepositoryName
+                    && (exclusion.Digest == manifest.Digest || manifest.Tags.Contains(exclusion.Tag)));
 
         private async Task DeleteManifestsAsync(
             IAcrContentClient acrContentClient,
@@ -371,7 +381,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
 
-        private async Task<bool> IsAnnotationManifestAsync(ArtifactManifestProperties manifest, IAcrContentClient acrContentClient)
+        private async Task<bool> IsAnnotationManifestAsync(
+            ArtifactManifestProperties manifest,
+            IAcrContentClient acrContentClient)
         {
             ManifestQueryResult manifestResult = await acrContentClient.GetManifestAsync(manifest.Digest);
 

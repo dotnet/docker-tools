@@ -174,10 +174,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger.LogInformation($"Querying manifests for repo '{repository.Name}'");
             IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync();
-            int manifestCount = await manifestProperties.CountAsync();
-            _logger.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
-
             ArtifactManifestProperties[] allManifests = await manifestProperties.ToArrayAsync();
+            int manifestCount = allManifests.Length;
+            _logger.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
 
             if (!allManifests.Any())
             {

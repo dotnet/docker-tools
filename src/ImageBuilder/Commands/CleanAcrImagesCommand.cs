@@ -26,7 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAcrContentClientFactory _acrContentClientFactory;
         private readonly ILogger<CleanAcrImagesCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
-        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly PublishConfiguration _publishConfig;
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
@@ -36,14 +35,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrContentClientFactory acrContentClientFactory,
             ILogger<CleanAcrImagesCommand> logger,
             ILifecycleMetadataService lifecycleMetadataService,
-            IRegistryCredentialsProvider registryCredentialsProvider,
             IOptions<PublishConfiguration> publishConfigOptions)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
-            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _publishConfig = publishConfigOptions.Value;
         }
 
@@ -71,25 +68,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
 
-            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                isDryRun: false,
-                async () =>
-                {
-                    IEnumerable<Task> cleanupTasks = await repositoryNames
-                        .Where(repoName => repoNameFilterRegex.IsMatch(repoName))
-                        .Select(repoName => acrClient.GetRepository(repoName))
-                        .Select(repo =>
-                        {
-                            Acr acr = Acr.Parse(Options.RegistryName);
-                            IAcrContentClient acrContentClient = CreateAcrContentClient(acr, repo.Name);
-                            return ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
-                        })
-                        .ToArrayAsync();
-
-                    await Task.WhenAll(cleanupTasks);
-                },
-                Options.CredentialsOptions,
-                registryName: Options.RegistryName);
+            await foreach (string repoName in repositoryNames
+                .Where(repoName => repoNameFilterRegex.IsMatch(repoName)))
+            {
+                ContainerRepository repo = acrClient.GetRepository(repoName);
+                Acr acr = Acr.Parse(Options.RegistryName);
+                IAcrContentClient acrContentClient = CreateAcrContentClient(acr, repo.Name);
+                await ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
+            }
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }

@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "build-staging/*";
             command.Options.Action = CleanAcrImagesAction.Delete;
@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "public/dotnet/*nightly/*";
             command.Options.Action = CleanAcrImagesAction.PruneDangling;
@@ -166,7 +166,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
@@ -214,6 +214,76 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync();
 
             acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name));
+        }
+
+        [TestMethod]
+        public async Task ProcessesRepositoriesSequentially()
+        {
+            const string repo1Name = "test/repo1";
+            const string repo2Name = "test/repo2";
+            const string repo1Digest = "sha256:repo1digest";
+            const string repo2Digest = "sha256:repo2digest";
+
+            ContainerRepository repo1 = CreateContainerRepository(
+                repo1Name,
+                CreateContainerRepositoryProperties(),
+                [
+                    CreateArtifactManifestProperties(
+                        repositoryName: repo1Name,
+                        digest: repo1Digest,
+                        lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8))),
+                    CreateArtifactManifestProperties(
+                        repositoryName: repo1Name,
+                        digest: "sha256:repo1current",
+                        lastUpdatedOn: DateTimeOffset.Now)
+                ]);
+            ContainerRepository repo2 = CreateContainerRepository(
+                repo2Name,
+                CreateContainerRepositoryProperties(),
+                [
+                    CreateArtifactManifestProperties(
+                        repositoryName: repo2Name,
+                        digest: repo2Digest,
+                        lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8))),
+                    CreateArtifactManifestProperties(
+                        repositoryName: repo2Name,
+                        digest: "sha256:repo2current",
+                        lastUpdatedOn: DateTimeOffset.Now)
+                ]);
+
+            Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name);
+            Mock<IAcrContentClient> repo2ContentClientMock = CreateAcrContentClientMock(repo2Name);
+            TaskCompletionSource repo1DeleteStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource allowRepo1Delete = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            repo1ContentClientMock
+                .Setup(o => o.DeleteManifestAsync(repo1Digest))
+                .Returns(async () =>
+                {
+                    repo1DeleteStarted.SetResult();
+                    await allowRepo1Delete.Task;
+                });
+
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
+            CleanAcrImagesCommand command = new(
+                CreateAcrClientFactory(AcrName, acrClientMock.Object),
+                CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]),
+                Mock.Of<ILogger<CleanAcrImagesCommand>>(),
+                Mock.Of<ILifecycleMetadataService>(),
+                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+            command.Options.RegistryName = AcrName;
+            command.Options.RepoName = "test/*";
+            command.Options.Action = CleanAcrImagesAction.PruneAll;
+            command.Options.Age = 7;
+
+            Task cleanupTask = command.ExecuteAsync();
+            await repo1DeleteStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(It.IsAny<string>()), Times.Never);
+
+            allowRepo1Delete.SetResult();
+            await cleanupTask;
+
+            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest));
         }
 
         [TestMethod]
@@ -254,7 +324,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
@@ -311,7 +381,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(age, repo1Name);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneEol;
@@ -361,7 +431,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "public/dotnet/nightly/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;

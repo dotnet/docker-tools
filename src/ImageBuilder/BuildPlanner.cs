@@ -81,15 +81,19 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
         foreach (IGrouping<string, PlatformInfo> group in platformGroups)
         {
-            PlatformInfo representative = SelectContentRepresentative(group, previousPlatforms);
+            PlatformInfo[] groupPlatforms = [..group];
+            PlatformInfo representative = SelectContentRepresentative(groupPlatforms, previousPlatforms);
             PlatformData? reusedPlatform = previousPlatforms[representative];
+
+            LogContentCheckScope(logger, groupPlatforms, representative);
+
             IReadOnlyList<EvaluatedBuildPlanCheck> contentResults = await EvaluateChecksAsync(
                 contentChecks,
                 CreateContext(representative, reusedPlatform));
             bool requiresBuild = contentResults.Any(result =>
                 result.Disposition == BuildPlanCheckDisposition.Build);
 
-            foreach (PlatformInfo platform in group)
+            foreach (PlatformInfo platform in groupPlatforms)
             {
                 PlatformData? previousPlatform = previousPlatforms[platform];
                 List<EvaluatedBuildPlanCheck> results = [..contentResults];
@@ -119,11 +123,88 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
         PlannedPlatform[] plannedResults =
             [..platformsToEvaluate.Select(platform => plannedByPlatform[platform])];
-        return new BuildPlan(PropagateBuildCauses(plannedResults, dependencyGraph), dependencyGraph);
+        BuildPlan plan = new(PropagateBuildCauses(plannedResults, dependencyGraph), dependencyGraph);
+        LogPlan(logger, plan);
+        return plan;
 
         BuildPlanCheckContext CreateContext(PlatformInfo platform, PlatformData? previousPlatform) =>
             new(platform, previousPlatform, baseImageResolver, gitService, logger, sourceRepoUrl);
     }
+
+    /// <summary>
+    /// Logs which Dockerfile the content checks are about so that the check output that follows can
+    /// be attributed, including the platforms that share the answer when there is more than one.
+    /// </summary>
+    private static void LogContentCheckScope(
+        ILogger logger,
+        IReadOnlyCollection<PlatformInfo> group,
+        PlatformInfo representative)
+    {
+        logger.LogInformation(string.Empty);
+        logger.LogInformation(
+            "Checking image content of '{DockerfilePath}'",
+            representative.DockerfilePathRelativeToManifest);
+
+        if (group.Count > 1)
+        {
+            logger.LogInformation(
+                "Shared by {PlatformCount} platforms using this Dockerfile: {Tags}",
+                group.Count,
+                string.Join(", ", group.Select(DescribeTag)));
+        }
+    }
+
+    /// <summary>
+    /// Logs the entire plan before any action is taken on it.
+    /// </summary>
+    private static void LogPlan(ILogger logger, BuildPlan plan)
+    {
+        logger.LogInformation(string.Empty);
+        logger.LogInformation("BUILD PLAN");
+        logger.LogInformation(
+            "{BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to reuse and publish tags",
+            plan.Platforms.Count(planned => planned.Action == BuildAction.Build),
+            plan.Platforms.Count(planned => planned.Action == BuildAction.Reuse),
+            plan.Platforms.Count(planned => planned.Action == BuildAction.ReuseAndPublishTags));
+        logger.LogInformation(string.Empty);
+
+        foreach (PlannedPlatform planned in plan.Platforms)
+        {
+            logger.LogInformation(
+                "{Action}: {DockerfilePath} ({Tag})",
+                planned.Action,
+                planned.Platform.DockerfilePathRelativeToManifest,
+                DescribeTag(planned.Platform));
+
+            foreach (BuildCause cause in planned.Causes)
+            {
+                if (cause.DependencyPath.Count > 1)
+                {
+                    logger.LogInformation(
+                        "    {Reason} in dependency '{OriginDockerfilePath}' ({DependencyPath})",
+                        cause.Reason,
+                        cause.Origin.DockerfilePathRelativeToManifest,
+                        string.Join(
+                            " -> ",
+                            cause.DependencyPath.Select(platform =>
+                                platform.DockerfilePathRelativeToManifest)));
+                }
+                else
+                {
+                    logger.LogInformation("    {Reason}", cause.Reason);
+                }
+            }
+        }
+
+        logger.LogInformation(string.Empty);
+    }
+
+    /// <summary>
+    /// Describes a platform by its first tag, which distinguishes manifest entries that share a
+    /// Dockerfile.
+    /// </summary>
+    private static string DescribeTag(PlatformInfo platform) =>
+        platform.Tags.FirstOrDefault()?.FullyQualifiedName ?? "untagged";
 
     private static PlatformData? GetPreviousPlatform(
         ManifestInfo manifest,

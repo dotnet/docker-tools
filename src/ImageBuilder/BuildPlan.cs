@@ -13,23 +13,20 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Describes how a platform should be handled by build execution.
 /// </summary>
-public enum BuildDisposition
+public enum BuildAction
 {
-    /// <summary>The platform is outside the selected planning policy.</summary>
-    Skip,
-
     /// <summary>The platform must be built.</summary>
     Build,
 
     /// <summary>The previously published platform can be reused without changes.</summary>
     Reuse,
 
-    /// <summary>The previously published image can be reused but must be published for this platform.</summary>
-    ReuseAndPublish
+    /// <summary>The previously published image can be reused but this platform's tags must be published.</summary>
+    ReuseAndPublishTags
 }
 
 /// <summary>
-/// Identifies a condition that affected a platform's build disposition.
+/// Identifies a condition that affected a platform's build action.
 /// </summary>
 public enum BuildPlanReason
 {
@@ -42,7 +39,7 @@ public enum BuildPlanReason
 }
 
 /// <summary>
-/// Explains a condition that caused a platform to receive its build disposition.
+/// Explains a condition that caused a platform to receive its build action.
 /// </summary>
 /// <param name="Reason">The condition that initiated the decision.</param>
 /// <param name="Origin">The platform where the condition was observed.</param>
@@ -55,16 +52,16 @@ public sealed record BuildCause(
     IReadOnlyList<PlatformInfo> DependencyPath);
 
 /// <summary>
-/// The planned build disposition and supporting data for one platform.
+/// The planned build action and supporting data for one platform.
 /// </summary>
 /// <param name="Platform">The platform being planned.</param>
-/// <param name="Disposition">How the platform should be handled.</param>
-/// <param name="CachedPlatform">Previously published metadata to reuse, when available.</param>
-/// <param name="Causes">Conditions that produced the disposition.</param>
-public sealed record BuildPlanEntry(
+/// <param name="Action">How the platform should be handled.</param>
+/// <param name="ImageToReuse">Previously published metadata to reuse, when available.</param>
+/// <param name="Causes">Conditions that produced the action.</param>
+public sealed record PlannedPlatform(
     PlatformInfo Platform,
-    BuildDisposition Disposition,
-    PlatformData? CachedPlatform,
+    BuildAction Action,
+    PlatformData? ImageToReuse,
     IReadOnlyList<BuildCause> Causes);
 
 /// <summary>
@@ -75,13 +72,16 @@ public sealed class PlatformDependencyGraph
 {
     private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _children;
     private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _parents;
+    private readonly IReadOnlyDictionary<PlatformInfo, int> _depths;
 
     private PlatformDependencyGraph(
         IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> children,
-        IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> parents)
+        IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> parents,
+        IReadOnlyDictionary<PlatformInfo, int> depths)
     {
         _children = children;
         _parents = parents;
+        _depths = depths;
     }
 
     /// <summary>
@@ -109,13 +109,38 @@ public sealed class PlatformDependencyGraph
             }
         }
 
+        Dictionary<PlatformInfo, int> depths = [];
+        foreach (PlatformInfo platform in platforms)
+        {
+            GetDepth(platform);
+        }
+
         return new PlatformDependencyGraph(
             children.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()),
-            parents);
+            parents,
+            depths);
+
+        int GetDepth(PlatformInfo platform)
+        {
+            if (!depths.TryGetValue(platform, out int depth))
+            {
+                depth = parents[platform].Length == 0 ? 0 : parents[platform].Max(GetDepth) + 1;
+                depths[platform] = depth;
+            }
+
+            return depth;
+        }
     }
 
     /// <summary>Gets the platforms that directly depend on the given platform.</summary>
     public IReadOnlyList<PlatformInfo> GetChildren(PlatformInfo platform) => _children[platform];
+
+    /// <summary>
+    /// Gets the number of dependency edges between the platform and the furthest platform it
+    /// depends on. Because a platform's depth is always greater than its parents' depths, ordering
+    /// by this value puts every platform after everything it depends on.
+    /// </summary>
+    public int GetDependencyDepth(PlatformInfo platform) => _depths[platform];
 
     /// <summary>
     /// Gets the platforms reachable from the given platform through dependency edges in either
@@ -150,35 +175,30 @@ public sealed class PlatformDependencyGraph
 /// </summary>
 public sealed class BuildPlan
 {
-    private readonly IReadOnlyDictionary<PlatformInfo, BuildPlanEntry> _entriesByPlatform;
     private readonly PlatformDependencyGraph _dependencyGraph;
 
     /// <summary>
     /// Creates a plan from decisions for unique manifest platforms and the dependency edges
     /// between them.
     /// </summary>
-    public BuildPlan(IEnumerable<BuildPlanEntry> entries, PlatformDependencyGraph dependencyGraph)
+    public BuildPlan(IEnumerable<PlannedPlatform> platforms, PlatformDependencyGraph dependencyGraph)
     {
-        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(platforms);
         _dependencyGraph = dependencyGraph ?? throw new ArgumentNullException(nameof(dependencyGraph));
-        Entries = entries.ToArray();
-        _entriesByPlatform = Entries.ToDictionary(entry => entry.Platform);
+        Platforms =
+            [..platforms.OrderBy(planned => dependencyGraph.GetDependencyDepth(planned.Platform))];
     }
 
-    /// <summary>Gets the platform decisions in planning order.</summary>
-    public IReadOnlyList<BuildPlanEntry> Entries { get; }
+    /// <summary>
+    /// Gets the planned platforms in dependency order: every platform comes after the platforms it
+    /// depends on.
+    /// </summary>
+    public IReadOnlyList<PlannedPlatform> Platforms { get; }
 
     /// <summary>Gets whether any platform will reuse previously published metadata.</summary>
     public bool HasReusablePlatforms =>
-        Entries.Any(entry => entry.Disposition is
-            BuildDisposition.Reuse or BuildDisposition.ReuseAndPublish);
-
-    /// <summary>Gets the decision for a platform included in this plan.</summary>
-    public BuildPlanEntry GetEntry(PlatformInfo platform) =>
-        _entriesByPlatform.TryGetValue(platform, out BuildPlanEntry? entry) ?
-            entry :
-            throw new InvalidOperationException(
-                $"Platform '{platform.DockerfilePathRelativeToManifest}' is not part of this build plan.");
+        Platforms.Any(planned => planned.Action is
+            BuildAction.Reuse or BuildAction.ReuseAndPublishTags);
 
     /// <summary>
     /// Gets platforms that must be scheduled to execute planned builds, including their ancestors.
@@ -194,9 +214,9 @@ public sealed class BuildPlan
         HashSet<BuildPlanReason> reasonSet = reasons.ToHashSet();
         HashSet<PlatformInfo> addedPlatforms = [];
         List<PlatformInfo> platforms = [];
-        IEnumerable<PlatformInfo> origins = Entries
-            .Where(entry => entry.Disposition == BuildDisposition.Build)
-            .SelectMany(entry => entry.Causes)
+        IEnumerable<PlatformInfo> origins = Platforms
+            .Where(planned => planned.Action == BuildAction.Build)
+            .SelectMany(planned => planned.Causes)
             .Where(cause =>
                 cause.DependencyPath.Count == 1 &&
                 reasonSet.Contains(cause.Reason))

@@ -162,10 +162,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private sealed class TestBuildPlanner : IBuildPlanner
         {
-            private readonly Dictionary<string, BuildDisposition> _dispositions = [];
+            private readonly Dictionary<string, BuildAction> _actions = [];
 
-            public void SetDisposition(string dockerfilePath, BuildDisposition disposition) =>
-                _dispositions[dockerfilePath] = disposition;
+            public void SetAction(string dockerfilePath, BuildAction action) =>
+                _actions[dockerfilePath] = action;
 
             public Task<BuildPlan> CreateBuildPlanAsync(
                 ManifestInfo manifest,
@@ -178,34 +178,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 HashSet<PlatformInfo> evaluatedPlatforms = platforms.ToHashSet();
                 PlatformInfo[] plannedPlatforms = dependencyPlatforms.ToArray();
-                BuildPlanEntry[] entries = plannedPlatforms
+                PlannedPlatform[] plan = plannedPlatforms
+                    .Where(evaluatedPlatforms.Contains)
                     .Select(platform =>
                     {
-                        if (!evaluatedPlatforms.Contains(platform))
-                        {
-                            return new BuildPlanEntry(
-                                platform,
-                                BuildDisposition.Skip,
-                                null,
-                                []);
-                        }
-
-                        BuildDisposition disposition = _dispositions.GetValueOrDefault(
+                        BuildAction action = _actions.GetValueOrDefault(
                             platform.Model.Dockerfile,
-                            BuildDisposition.Build);
-                        IReadOnlyList<BuildCause> causes = disposition == BuildDisposition.Build ?
+                            BuildAction.Build);
+                        IReadOnlyList<BuildCause> causes = action == BuildAction.Build ?
                             [new BuildCause(
                                 BuildPlanReason.MissingImageInfo,
                                 platform,
                                 [platform])] :
                             [];
 
-                        return new BuildPlanEntry(platform, disposition, null, causes);
+                        return new PlannedPlatform(platform, action, null, causes);
                     })
                     .ToArray();
 
                 return Task.FromResult(new BuildPlan(
-                    entries,
+                    plan,
                     PlatformDependencyGraph.Create(manifest, plannedPlatforms)));
             }
 
@@ -213,40 +205,40 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         [TestMethod]
         [DataRow(
-            BuildDisposition.Build,
-            BuildDisposition.Build,
+            BuildAction.Build,
+            BuildAction.Build,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            BuildDisposition.Reuse,
-            BuildDisposition.Reuse,
+            BuildAction.Reuse,
+            BuildAction.Reuse,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            BuildDisposition.Reuse,
-            BuildDisposition.Reuse,
+            BuildAction.Reuse,
+            BuildAction.Reuse,
             "--path 1.0/standalone/os/amd64/Dockerfile",
             "--path 2.0/standalone/os/amd64/Dockerfile",
             null,
             "*standalone*")]
         [DataRow(
-            BuildDisposition.ReuseAndPublish,
-            BuildDisposition.Reuse,
+            BuildAction.ReuseAndPublishTags,
+            BuildAction.Reuse,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            BuildDisposition.Reuse,
-            BuildDisposition.Build,
+            BuildAction.Reuse,
+            BuildAction.Build,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            BuildDisposition.Build,
-            BuildDisposition.Build,
+            BuildAction.Build,
+            BuildAction.Build,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 1.0/standalone/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
             "")] // Clear out the path filters to ensure all images are included
         public async Task FilterOutCachedImages(
-            BuildDisposition runtime1Disposition,
-            BuildDisposition sdk1Disposition,
+            BuildAction runtime1Action,
+            BuildAction sdk1Action,
             string leg1ExpectedPaths,
             string leg2ExpectedPaths = null,
             string leg3ExpectedPaths = null,
@@ -290,11 +282,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             );
 
             TestBuildPlanner buildPlanner = new();
-            buildPlanner.SetDisposition(dockerfileStandalone1Path, BuildDisposition.Build);
-            buildPlanner.SetDisposition(dockerfileRuntime1Path, runtime1Disposition);
-            buildPlanner.SetDisposition(dockerfileSdk1Path, sdk1Disposition);
-            buildPlanner.SetDisposition(dockerfileRuntime2Path, BuildDisposition.Build);
-            buildPlanner.SetDisposition(dockerfileSdk2Path, BuildDisposition.Build);
+            buildPlanner.SetAction(dockerfileStandalone1Path, BuildAction.Build);
+            buildPlanner.SetAction(dockerfileRuntime1Path, runtime1Action);
+            buildPlanner.SetAction(dockerfileSdk1Path, sdk1Action);
+            buildPlanner.SetAction(dockerfileRuntime2Path, BuildAction.Build);
+            buildPlanner.SetAction(dockerfileSdk2Path, BuildAction.Build);
 
             GenerateBuildMatrixCommand command = new(TestHelper.CreateManifestJsonService(), buildPlanner, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");

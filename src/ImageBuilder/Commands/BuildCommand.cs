@@ -326,75 +326,87 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.SourceRepoUrl,
                 Options.NoCache ? BuildPlanCheck.NoCache : BuildPlanCheck.Default);
 
-            foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
+            Dictionary<RepoInfo, RepoData> repoDataByRepo = [];
+            Dictionary<ImageInfo, ImageData> imageDataByImage = [];
+
+            // The plan is ordered so that a platform is built after everything it depends on.
+            foreach (PlannedPlatform plannedPlatform in _buildPlan.Platforms)
             {
-                RepoData repoData = CreateRepoData(repoInfo);
+                PlatformInfo platform = plannedPlatform.Platform;
+                ImageInfo image = Manifest.GetImageByPlatform(platform);
+                RepoInfo repoInfo = Manifest.GetRepoByImage(image);
 
-                foreach (ImageInfo image in repoInfo.FilteredImages)
+                if (!imageDataByImage.TryGetValue(image, out ImageData? imageData))
                 {
-                    ImageData imageData = CreateImageData(image);
-                    repoData.Images.Add(imageData);
+                    imageData = CreateImageData(image);
+                    imageDataByImage.Add(image, imageData);
+                    GetOrCreateRepoData(repoInfo).Images.Add(imageData);
+                }
 
-                    foreach (PlatformInfo platform in image.FilteredPlatforms)
+                // Tag the built images with the shared tags as well as the platform tags.
+                // Some tests and image FROM instructions depend on these tags.
+
+                IEnumerable<TagInfo> allTagInfos = platform.Tags
+                    .Concat(image.SharedTags)
+                    .ToList();
+
+                IEnumerable<string> allTags = allTagInfos
+                    .Select(tag => tag.FullyQualifiedName)
+                    .ToList();
+
+                PlatformData platformData = CreatePlatformData(image, platform);
+                imageData.Platforms.Add(platformData);
+
+                bool isCachedImage =
+                    plannedPlatform.Action is
+                        BuildAction.Reuse or
+                        BuildAction.ReuseAndPublishTags;
+                if (isCachedImage)
+                {
+                    PlatformData cachedPlatform = plannedPlatform.ImageToReuse ??
+                        throw new InvalidOperationException(
+                            $"Build plan did not provide cached metadata for '{platform.DockerfilePath}'.");
+                    CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
+                    platformData.IsUnchanged =
+                        plannedPlatform.Action == BuildAction.Reuse;
+
+                    bool pullImage =
+                        !_sourceDigestCopyLocationMapping.ContainsKey(cachedPlatform.Digest);
+                    await OnCacheHitAsync(
+                        repoInfo,
+                        allTagInfos,
+                        pullImage,
+                        cachedPlatform.Digest);
+                }
+
+                if (!isCachedImage)
+                {
+                    _processedTags.AddRange(allTagInfos);
+
+                    BuildImage(platform, allTags);
+                    _builtPlatforms.Add(platformData);
+
+                    if (Options.IsPushEnabled && platform.FinalStageFromImage is not null)
                     {
-                        // Tag the built images with the shared tags as well as the platform tags.
-                        // Some tests and image FROM instructions depend on these tags.
-
-                        IEnumerable<TagInfo> allTagInfos = platform.Tags
-                            .Concat(image.SharedTags)
-                            .ToList();
-
-                        IEnumerable<string> allTags = allTagInfos
-                            .Select(tag => tag.FullyQualifiedName)
-                            .ToList();
-
-                        PlatformData platformData = CreatePlatformData(image, platform);
-                        imageData.Platforms.Add(platformData);
-
-                        BuildPlanEntry planEntry = _buildPlan.GetEntry(platform);
-                        bool isCachedImage =
-                            planEntry.Disposition is
-                                BuildDisposition.Reuse or
-                                BuildDisposition.ReuseAndPublish;
-                        if (isCachedImage)
-                        {
-                            PlatformData cachedPlatform = planEntry.CachedPlatform ??
-                                throw new InvalidOperationException(
-                                    $"Build plan did not provide cached metadata for '{platform.DockerfilePath}'.");
-                            CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
-                            platformData.IsUnchanged =
-                                planEntry.Disposition == BuildDisposition.Reuse;
-
-                            bool pullImage =
-                                !_sourceDigestCopyLocationMapping.ContainsKey(cachedPlatform.Digest);
-                            await OnCacheHitAsync(
-                                repoInfo,
-                                allTagInfos,
-                                pullImage,
-                                cachedPlatform.Digest);
-                        }
-
-                        if (!isCachedImage)
-                        {
-                            _processedTags.AddRange(allTagInfos);
-
-                            BuildImage(platform, allTags);
-                            _builtPlatforms.Add(platformData);
-
-                            if (Options.IsPushEnabled && platform.FinalStageFromImage is not null)
-                            {
-                                platformData.BaseImageDigest =
-                                   await _imageDigestCache.GetLocalImageDigestAsync(
-                                       _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
-                            }
-                        }
+                        platformData.BaseImageDigest =
+                           await _imageDigestCache.GetLocalImageDigestAsync(
+                               _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
                     }
                 }
+            }
 
-                if (repoData?.Images.Any() == true)
+            // A repo is only recorded once it has an image, which is guaranteed here because repo
+            // data is only created while adding the image data that belongs to it.
+            RepoData GetOrCreateRepoData(RepoInfo repoInfo)
+            {
+                if (!repoDataByRepo.TryGetValue(repoInfo, out RepoData? repoData))
                 {
+                    repoData = CreateRepoData(repoInfo);
+                    repoDataByRepo.Add(repoInfo, repoData);
                     _imageArtifactDetails?.Repos.Add(repoData);
                 }
+
+                return repoData;
             }
         }
 

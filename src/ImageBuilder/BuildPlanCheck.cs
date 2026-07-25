@@ -21,6 +21,23 @@ public enum BuildPlanCheckDisposition
 }
 
 /// <summary>
+/// What a check's answer depends on.
+/// </summary>
+public enum BuildPlanCheckScope
+{
+    /// <summary>
+    /// Depends only on the Dockerfile and its base image, so the answer is shared by every platform
+    /// built from the same Dockerfile and build args.
+    /// </summary>
+    ImageContent,
+
+    /// <summary>
+    /// Depends on an individual platform's published tags and recorded digest.
+    /// </summary>
+    PlatformPublication
+}
+
+/// <summary>
 /// Input available to one build-plan check.
 /// </summary>
 /// <param name="Platform">Platform being evaluated.</param>
@@ -49,6 +66,9 @@ public interface IBuildPlanCheck
     /// <summary>Gets the reason produced when this check fails.</summary>
     BuildPlanReason Reason { get; }
 
+    /// <summary>Gets what this check's answer depends on.</summary>
+    BuildPlanCheckScope Scope { get; }
+
     /// <summary>
     /// Evaluates the condition and returns its required disposition when it affects the plan.
     /// </summary>
@@ -64,30 +84,37 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
 
     private BuildPlanCheck(
         BuildPlanReason reason,
+        BuildPlanCheckScope scope,
         Func<BuildPlanCheckContext, Task<BuildPlanCheckDisposition?>> evaluate)
     {
         Reason = reason;
+        Scope = scope;
         _evaluate = evaluate;
     }
 
     private static BuildPlanCheck CacheDisabled { get; } = new(
         BuildPlanReason.CacheDisabled,
+        BuildPlanCheckScope.ImageContent,
         context => BuildResult());
 
     public static BuildPlanCheck MissingImageInfo { get; } = new(
         BuildPlanReason.MissingImageInfo,
+        BuildPlanCheckScope.ImageContent,
         context => BuildResultWhen(context.PreviousPlatform is null));
 
     public static BuildPlanCheck BaseImageChanged { get; } = new(
         BuildPlanReason.BaseImageChanged,
+        BuildPlanCheckScope.ImageContent,
         EvaluateBaseImageAsync);
 
     public static BuildPlanCheck DockerfileChanged { get; } = new(
         BuildPlanReason.DockerfileChanged,
+        BuildPlanCheckScope.ImageContent,
         EvaluateDockerfile);
 
     public static BuildPlanCheck MissingTags { get; } = new(
         BuildPlanReason.MissingTags,
+        BuildPlanCheckScope.PlatformPublication,
         EvaluateMissingTags);
 
     /// <summary>
@@ -108,6 +135,9 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
 
     /// <inheritdoc/>
     public BuildPlanReason Reason { get; }
+
+    /// <inheritdoc/>
+    public BuildPlanCheckScope Scope { get; }
 
     /// <inheritdoc/>
     public Task<BuildPlanCheckDisposition?> EvaluateAsync(BuildPlanCheckContext context)

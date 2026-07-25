@@ -71,8 +71,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             platform => platform,
             platform => GetPreviousPlatform(manifest, platform, imageArtifactDetails));
 
-        IBuildPlanCheck[] contentChecks = [..checks.Where(IsContentCheck)];
-        IBuildPlanCheck[] publishChecks = [..checks.Where(check => !IsContentCheck(check))];
+        IBuildPlanCheck[] contentChecks =
+            [..checks.Where(check => check.Scope is BuildPlanCheckScope.ImageContent)];
+        IBuildPlanCheck[] publishChecks =
+            [..checks.Where(check => check.Scope is BuildPlanCheckScope.PlatformPublication)];
 
         // Platforms that share a Dockerfile and build args produce the same image content, so the
         // content checks are evaluated once per group. Groups are evaluated in dependency order so
@@ -123,7 +125,9 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         BuildPlanEntry[] entries = [..plannedPlatforms.Select(platform => entriesByPlatform[platform])];
-        return new BuildPlan(manifest, PropagateBuildCauses(manifest, entries, plannedPlatforms));
+        PlatformDependencyGraph dependencyGraph =
+            PlatformDependencyGraph.Create(manifest, plannedPlatforms);
+        return new BuildPlan(PropagateBuildCauses(entries, dependencyGraph), dependencyGraph);
 
         BuildPlanCheckContext CreateContext(PlatformInfo platform, PlatformData? previousPlatform) =>
             new(platform, previousPlatform, baseImageResolver, gitService, logger, sourceRepoUrl);
@@ -143,14 +147,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         return ImageInfoHelper
             .GetMatchingPlatformData(platform, repo, imageArtifactDetails)?.Platform;
     }
-
-    /// <summary>
-    /// Indicates whether a check answers whether the image content is still valid. Content depends
-    /// only on the Dockerfile and its base image; the remaining checks answer whether an individual
-    /// platform's copy of that content is published correctly.
-    /// </summary>
-    private static bool IsContentCheck(IBuildPlanCheck check) =>
-        check.Reason is not BuildPlanReason.MissingTags;
 
     /// <summary>
     /// Selects the platform whose previously published metadata represents the content shared by
@@ -247,9 +243,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     }
 
     private static IReadOnlyList<BuildPlanEntry> PropagateBuildCauses(
-        ManifestInfo manifest,
         IEnumerable<BuildPlanEntry> entries,
-        IReadOnlyCollection<PlatformInfo> plannedPlatforms)
+        PlatformDependencyGraph dependencyGraph)
     {
         Dictionary<PlatformInfo, BuildPlanEntry> entriesByPlatform =
             entries.ToDictionary(entry => entry.Platform);
@@ -265,10 +260,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
             while (queue.TryDequeue(out (PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path) current))
             {
-                IEnumerable<PlatformInfo> children = plannedPlatforms.Where(candidate =>
-                    manifest.GetParents(candidate, plannedPlatforms).Contains(current.Platform));
-
-                foreach (PlatformInfo child in children.Where(visited.Add))
+                foreach (PlatformInfo child in
+                    dependencyGraph.GetChildren(current.Platform).Where(visited.Add))
                 {
                     PlatformInfo[] childPath = [..current.Path, child];
                     BuildPlanEntry childEntry = entriesByPlatform[child];

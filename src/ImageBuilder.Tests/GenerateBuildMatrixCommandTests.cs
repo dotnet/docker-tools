@@ -177,7 +177,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IReadOnlyList<IBuildPlanCheck> checks)
             {
                 HashSet<PlatformInfo> evaluatedPlatforms = platforms.ToHashSet();
-                BuildPlanEntry[] entries = dependencyPlatforms
+                PlatformInfo[] plannedPlatforms = dependencyPlatforms.ToArray();
+                BuildPlanEntry[] entries = plannedPlatforms
                     .Select(platform =>
                     {
                         if (!evaluatedPlatforms.Contains(platform))
@@ -203,7 +204,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     })
                     .ToArray();
 
-                return Task.FromResult(new BuildPlan(manifest, entries));
+                return Task.FromResult(new BuildPlan(
+                    entries,
+                    PlatformDependencyGraph.Create(manifest, plannedPlatforms)));
             }
 
         }

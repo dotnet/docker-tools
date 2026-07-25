@@ -68,20 +68,99 @@ public sealed record BuildPlanEntry(
     IReadOnlyList<BuildCause> Causes);
 
 /// <summary>
+/// The dependency edges between a set of planned platforms, materialized so that scheduling
+/// questions can be answered without consulting the manifest.
+/// </summary>
+public sealed class PlatformDependencyGraph
+{
+    private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _children;
+    private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _parents;
+
+    private PlatformDependencyGraph(
+        IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> children,
+        IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> parents)
+    {
+        _children = children;
+        _parents = parents;
+    }
+
+    /// <summary>
+    /// Creates the graph for the given platforms, resolving each platform's parents once and
+    /// inverting them to get its children.
+    /// </summary>
+    public static PlatformDependencyGraph Create(
+        ManifestInfo manifest,
+        IReadOnlyCollection<PlatformInfo> platforms)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentNullException.ThrowIfNull(platforms);
+
+        Dictionary<PlatformInfo, PlatformInfo[]> parents = platforms.ToDictionary(
+            platform => platform,
+            platform => manifest.GetParents(platform, platforms).ToArray());
+        Dictionary<PlatformInfo, List<PlatformInfo>> children =
+            platforms.ToDictionary(platform => platform, _ => new List<PlatformInfo>());
+
+        foreach (PlatformInfo platform in platforms)
+        {
+            foreach (PlatformInfo parent in parents[platform])
+            {
+                children[parent].Add(platform);
+            }
+        }
+
+        return new PlatformDependencyGraph(
+            children.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()),
+            parents);
+    }
+
+    /// <summary>Gets the platforms that directly depend on the given platform.</summary>
+    public IReadOnlyList<PlatformInfo> GetChildren(PlatformInfo platform) => _children[platform];
+
+    /// <summary>
+    /// Gets the platforms reachable from the given platform through dependency edges in either
+    /// direction, starting with the platform itself. Because a build affects everything connected to
+    /// it, these platforms must be scheduled together.
+    /// </summary>
+    public IReadOnlyList<PlatformInfo> GetConnectedPlatforms(PlatformInfo platform)
+    {
+        HashSet<PlatformInfo> visited = [];
+        List<PlatformInfo> connected = [];
+        Visit(platform);
+        return connected;
+
+        void Visit(PlatformInfo current)
+        {
+            if (!visited.Add(current))
+            {
+                return;
+            }
+
+            connected.Add(current);
+            foreach (PlatformInfo related in _children[current].Concat(_parents[current]))
+            {
+                Visit(related);
+            }
+        }
+    }
+}
+
+/// <summary>
 /// Immutable decisions for a set of manifest platforms.
 /// </summary>
 public sealed class BuildPlan
 {
     private readonly IReadOnlyDictionary<PlatformInfo, BuildPlanEntry> _entriesByPlatform;
-    private readonly ManifestInfo _manifest;
+    private readonly PlatformDependencyGraph _dependencyGraph;
 
     /// <summary>
-    /// Creates a plan from decisions for unique manifest platforms.
+    /// Creates a plan from decisions for unique manifest platforms and the dependency edges
+    /// between them.
     /// </summary>
-    public BuildPlan(ManifestInfo manifest, IEnumerable<BuildPlanEntry> entries)
+    public BuildPlan(IEnumerable<BuildPlanEntry> entries, PlatformDependencyGraph dependencyGraph)
     {
-        _manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
         ArgumentNullException.ThrowIfNull(entries);
+        _dependencyGraph = dependencyGraph ?? throw new ArgumentNullException(nameof(dependencyGraph));
         Entries = entries.ToArray();
         _entriesByPlatform = Entries.ToDictionary(entry => entry.Platform);
     }
@@ -113,7 +192,6 @@ public sealed class BuildPlan
     public IReadOnlyCollection<PlatformInfo> GetPlatformsToSchedule(IEnumerable<BuildPlanReason> reasons)
     {
         HashSet<BuildPlanReason> reasonSet = reasons.ToHashSet();
-        PlatformInfo[] plannedPlatforms = Entries.Select(entry => entry.Platform).ToArray();
         HashSet<PlatformInfo> addedPlatforms = [];
         List<PlatformInfo> platforms = [];
         IEnumerable<PlatformInfo> origins = Entries
@@ -127,14 +205,8 @@ public sealed class BuildPlan
 
         foreach (PlatformInfo origin in origins)
         {
-            IEnumerable<PlatformInfo> requiredPlatforms = _manifest
-                .GetDescendants(
-                    origin,
-                    plannedPlatforms,
-                    includeAncestorsOfDescendants: true)
-                .Prepend(origin);
-
-            platforms.AddRange(requiredPlatforms.Where(addedPlatforms.Add));
+            platforms.AddRange(
+                _dependencyGraph.GetConnectedPlatforms(origin).Where(addedPlatforms.Add));
         }
 
         return platforms;

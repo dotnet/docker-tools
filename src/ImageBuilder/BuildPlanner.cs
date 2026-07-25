@@ -57,57 +57,127 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     {
         HashSet<PlatformInfo> evaluatedPlatforms = platforms.ToHashSet();
         PlatformInfo[] plannedPlatforms = dependencyPlatforms.Distinct().ToArray();
-        List<BuildPlanEntry> entries = [];
-        Dictionary<PlatformInfo, (PlatformData Platform, ImageData Image)?> matchingPlatforms = [];
+        Dictionary<PlatformInfo, BuildPlanEntry> entriesByPlatform = [];
 
-        foreach (PlatformInfo platform in plannedPlatforms)
+        foreach (PlatformInfo platform in
+            plannedPlatforms.Where(platform => !evaluatedPlatforms.Contains(platform)))
         {
-            if (!evaluatedPlatforms.Contains(platform))
+            entriesByPlatform[platform] = new BuildPlanEntry(platform, BuildDisposition.Skip, null, []);
+        }
+
+        PlatformInfo[] platformsToEvaluate =
+            [..plannedPlatforms.Where(evaluatedPlatforms.Contains)];
+        Dictionary<PlatformInfo, PlatformData?> previousPlatforms = platformsToEvaluate.ToDictionary(
+            platform => platform,
+            platform => GetPreviousPlatform(manifest, platform, imageArtifactDetails));
+
+        IBuildPlanCheck[] contentChecks = [..checks.Where(IsContentCheck)];
+        IBuildPlanCheck[] publishChecks = [..checks.Where(check => !IsContentCheck(check))];
+
+        // Platforms that share a Dockerfile and build args produce the same image content, so the
+        // content checks are evaluated once per group. Groups are evaluated in dependency order so
+        // that a parent's reuse decision is recorded before its children resolve their base image.
+        IEnumerable<IGrouping<string, PlatformInfo>> platformGroups = platformsToEvaluate
+            .GroupBy(GetBuildCacheKey)
+            .OrderBy(group => group.Max(platform => manifest
+                .GetAncestors(platform, plannedPlatforms)
+                .Distinct()
+                .Count()));
+
+        foreach (IGrouping<string, PlatformInfo> group in platformGroups)
+        {
+            PlatformInfo representative = SelectContentRepresentative(group, previousPlatforms);
+            PlatformData? reusedPlatform = previousPlatforms[representative];
+            IReadOnlyList<EvaluatedBuildPlanCheck> contentResults = await EvaluateChecksAsync(
+                contentChecks,
+                CreateContext(representative, reusedPlatform));
+            bool requiresBuild = contentResults.Any(result =>
+                result.Disposition == BuildPlanCheckDisposition.Build);
+
+            foreach (PlatformInfo platform in group)
             {
-                entries.Add(new BuildPlanEntry(platform, BuildDisposition.Skip, null, []));
-                continue;
-            }
+                PlatformData? previousPlatform = previousPlatforms[platform];
+                List<EvaluatedBuildPlanCheck> results = [..contentResults];
+                results.AddRange(
+                    await EvaluateChecksAsync(publishChecks, CreateContext(platform, previousPlatform)));
 
-            RepoInfo repo = manifest.GetRepoByImage(manifest.GetImageByPlatform(platform));
-            (PlatformData Platform, ImageData Image)? matchingPlatform =
-                imageArtifactDetails is null ?
-                    null :
-                    ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
-            matchingPlatforms[platform] = matchingPlatform;
+                if (!requiresBuild && HasEquivalentBuildChanged(previousPlatform, reusedPlatform))
+                {
+                    results.Add(new EvaluatedBuildPlanCheck(
+                        BuildPlanReason.EquivalentBuildChanged,
+                        BuildPlanCheckDisposition.ReuseAndPublish));
+                }
 
-            BuildPlanCheckContext context = new(
-                platform,
-                matchingPlatform?.Platform,
-                baseImageResolver,
-                gitService,
-                logger,
-                sourceRepoUrl);
-            IReadOnlyList<EvaluatedBuildPlanCheck> results =
-                await EvaluateChecksAsync(checks, context);
-            BuildPlanEntry entry = CreateEntry(platform, matchingPlatform?.Platform, results);
-            entries.Add(entry);
+                BuildPlanEntry entry = CreateEntry(platform, reusedPlatform, results);
+                entriesByPlatform[platform] = entry;
 
-            if (entry.CachedPlatform is not null)
-            {
-                RecordAvailableImage(
-                    manifest,
-                    platform,
-                    entry.CachedPlatform,
-                    baseImageResolver);
+                if (entry.CachedPlatform is not null)
+                {
+                    RecordAvailableImage(
+                        manifest,
+                        platform,
+                        entry.CachedPlatform,
+                        baseImageResolver);
+                }
             }
         }
 
-        entries = (await ReuseEquivalentBuildsAsync(
-            manifest,
-            entries,
-            matchingPlatforms,
-            baseImageResolver,
-            sourceRepoUrl,
-            checks))
-            .ToList();
-
+        BuildPlanEntry[] entries = [..plannedPlatforms.Select(platform => entriesByPlatform[platform])];
         return new BuildPlan(manifest, PropagateBuildCauses(manifest, entries, plannedPlatforms));
+
+        BuildPlanCheckContext CreateContext(PlatformInfo platform, PlatformData? previousPlatform) =>
+            new(platform, previousPlatform, baseImageResolver, gitService, logger, sourceRepoUrl);
     }
+
+    private static PlatformData? GetPreviousPlatform(
+        ManifestInfo manifest,
+        PlatformInfo platform,
+        ImageArtifactDetails? imageArtifactDetails)
+    {
+        if (imageArtifactDetails is null)
+        {
+            return null;
+        }
+
+        RepoInfo repo = manifest.GetRepoByImage(manifest.GetImageByPlatform(platform));
+        return ImageInfoHelper
+            .GetMatchingPlatformData(platform, repo, imageArtifactDetails)?.Platform;
+    }
+
+    /// <summary>
+    /// Indicates whether a check answers whether the image content is still valid. Content depends
+    /// only on the Dockerfile and its base image; the remaining checks answer whether an individual
+    /// platform's copy of that content is published correctly.
+    /// </summary>
+    private static bool IsContentCheck(IBuildPlanCheck check) =>
+        check.Reason is not BuildPlanReason.MissingTags;
+
+    /// <summary>
+    /// Selects the platform whose previously published metadata represents the content shared by
+    /// the group. Platforms with previously published metadata are preferred because the content
+    /// checks need it to have an opinion.
+    /// </summary>
+    private static PlatformInfo SelectContentRepresentative(
+        IEnumerable<PlatformInfo> group,
+        IReadOnlyDictionary<PlatformInfo, PlatformData?> previousPlatforms) =>
+        group
+            .OrderByDescending(platform => previousPlatforms[platform] is not null)
+            .ThenBy(platform => platform.DockerfilePathRelativeToManifest, StringComparer.Ordinal)
+            .ThenBy(platform => platform.Tags.FirstOrDefault()?.Name, StringComparer.Ordinal)
+            .First();
+
+    /// <summary>
+    /// Indicates whether a platform's previously published image differs from the equivalent build
+    /// being reused, which requires the platform's tags to be published against the reused image.
+    /// </summary>
+    private static bool HasEquivalentBuildChanged(
+        PlatformData? previousPlatform,
+        PlatformData? reusedPlatform) =>
+        previousPlatform is not null &&
+        reusedPlatform is not null &&
+        !DockerHelper.GetDigestSha(previousPlatform.Digest).Equals(
+            DockerHelper.GetDigestSha(reusedPlatform.Digest),
+            StringComparison.OrdinalIgnoreCase);
 
     private static BuildPlanEntry CreateEntry(
         PlatformInfo platform,
@@ -176,151 +246,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
     }
 
-    private async Task<IReadOnlyList<BuildPlanEntry>> ReuseEquivalentBuildsAsync(
-        ManifestInfo manifest,
-        IReadOnlyCollection<BuildPlanEntry> entries,
-        IReadOnlyDictionary<PlatformInfo, (PlatformData Platform, ImageData Image)?> matchingPlatforms,
-        BaseImageResolver baseImageResolver,
-        string? sourceRepoUrl,
-        IReadOnlyList<IBuildPlanCheck> checks)
-    {
-        Dictionary<PlatformInfo, BuildPlanEntry> entriesByPlatform =
-            entries.ToDictionary(entry => entry.Platform);
-
-        IGrouping<string, BuildPlanEntry>[] sharedBuildGroups = entriesByPlatform.Values
-            .Where(entry => entry.Disposition != BuildDisposition.Skip)
-            .GroupBy(entry => GetBuildCacheKey(entry.Platform))
-            .ToArray();
-        foreach (IGrouping<string, BuildPlanEntry> group in sharedBuildGroups)
-        {
-            ApplyEquivalentBuildReuse(
-                manifest,
-                group,
-                matchingPlatforms,
-                baseImageResolver,
-                entriesByPlatform);
-        }
-
-        // ponytail: repeated graph walks keep this simple; topologically sort once if manifests grow large.
-        IEnumerable<PlatformInfo> dependencyOrderedPlatforms = entries
-            .Select(entry => entry.Platform)
-            .OrderBy(platform => manifest
-                .GetAncestors(platform, entriesByPlatform.Keys)
-                .Distinct()
-                .Count());
-
-        foreach (PlatformInfo platform in dependencyOrderedPlatforms)
-        {
-            BuildPlanEntry entry = entriesByPlatform[platform];
-            if (entry.Disposition != BuildDisposition.Build ||
-                !entry.Causes.Any(cause => cause.Reason == BuildPlanReason.BaseImageChanged) ||
-                !matchingPlatforms.TryGetValue(
-                    platform,
-                    out (PlatformData Platform, ImageData Image)? matchingPlatform) ||
-                matchingPlatform is null)
-            {
-                continue;
-            }
-
-            BuildPlanCheckContext context = new(
-                platform,
-                matchingPlatform.Value.Platform,
-                baseImageResolver,
-                gitService,
-                logger,
-                sourceRepoUrl);
-            IReadOnlyList<EvaluatedBuildPlanCheck> reevaluatedResults =
-                await EvaluateChecksAsync(checks, context);
-            BuildPlanEntry reevaluatedEntry = CreateEntry(
-                platform,
-                matchingPlatform.Value.Platform,
-                reevaluatedResults);
-            if (AreEquivalent(entry, reevaluatedEntry))
-            {
-                continue;
-            }
-
-            entriesByPlatform[platform] = reevaluatedEntry;
-            if (reevaluatedEntry.CachedPlatform is null)
-            {
-                continue;
-            }
-
-            RecordAvailableImage(
-                manifest,
-                platform,
-                reevaluatedEntry.CachedPlatform,
-                baseImageResolver);
-
-            BuildPlanEntry[] equivalentEntries = entriesByPlatform.Values
-                .Where(entry =>
-                    entry.Disposition != BuildDisposition.Skip &&
-                    GetBuildCacheKey(entry.Platform) == GetBuildCacheKey(platform))
-                .ToArray();
-            ApplyEquivalentBuildReuse(
-                manifest,
-                equivalentEntries,
-                matchingPlatforms,
-                baseImageResolver,
-                entriesByPlatform);
-        }
-
-        return entries
-            .Select(entry => entriesByPlatform[entry.Platform])
-            .ToArray();
-    }
-
-    private static void ApplyEquivalentBuildReuse(
-        ManifestInfo manifest,
-        IEnumerable<BuildPlanEntry> entries,
-        IReadOnlyDictionary<PlatformInfo, (PlatformData Platform, ImageData Image)?> matchingPlatforms,
-        BaseImageResolver baseImageResolver,
-        IDictionary<PlatformInfo, BuildPlanEntry> entriesByPlatform)
-    {
-        BuildPlanEntry[] equivalentEntries = entries.ToArray();
-        BuildPlanEntry? reusableEntry = equivalentEntries.FirstOrDefault(entry =>
-            entry.Disposition is BuildDisposition.Reuse or BuildDisposition.ReuseAndPublish &&
-            entry.CachedPlatform is not null);
-
-        if (reusableEntry?.CachedPlatform is not PlatformData sharedCachedPlatform)
-        {
-            return;
-        }
-
-        foreach (BuildPlanEntry entry in equivalentEntries)
-        {
-            matchingPlatforms.TryGetValue(
-                entry.Platform,
-                out (PlatformData Platform, ImageData Image)? matchingPlatform);
-            PlatformData? aliasPlatform = matchingPlatform?.Platform;
-            List<EvaluatedBuildPlanCheck> sharedReuseResults = [];
-            if (aliasPlatform is null || !HasAllTagsPublished(aliasPlatform))
-            {
-                sharedReuseResults.Add(new EvaluatedBuildPlanCheck(
-                    BuildPlanReason.MissingTags,
-                    BuildPlanCheckDisposition.ReuseAndPublish));
-            }
-
-            if (aliasPlatform is not null &&
-                !DockerHelper.GetDigestSha(aliasPlatform.Digest).Equals(
-                    DockerHelper.GetDigestSha(sharedCachedPlatform.Digest),
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                sharedReuseResults.Add(new EvaluatedBuildPlanCheck(
-                    BuildPlanReason.EquivalentBuildChanged,
-                    BuildPlanCheckDisposition.ReuseAndPublish));
-            }
-
-            entriesByPlatform[entry.Platform] =
-                CreateEntry(entry.Platform, sharedCachedPlatform, sharedReuseResults);
-            RecordAvailableImage(
-                manifest,
-                entry.Platform,
-                sharedCachedPlatform,
-                baseImageResolver);
-        }
-    }
-
     private static IReadOnlyList<BuildPlanEntry> PropagateBuildCauses(
         ManifestInfo manifest,
         IEnumerable<BuildPlanEntry> entries,
@@ -367,17 +292,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             .Select(entry => entriesByPlatform[entry.Platform])
             .ToArray();
     }
-
-    private static bool AreEquivalent(BuildPlanEntry left, BuildPlanEntry right) =>
-        left.Disposition == right.Disposition &&
-        left.CachedPlatform == right.CachedPlatform &&
-        left.Causes.Select(cause => (cause.Reason, cause.Origin))
-            .SequenceEqual(right.Causes.Select(cause => (cause.Reason, cause.Origin)));
-
-    private static bool HasAllTagsPublished(PlatformData platform) =>
-        (platform.PlatformInfo?.Tags ?? [])
-            .Select(tag => tag.Name)
-            .AreEquivalent(platform.SimpleTags);
 
     /// <summary>
     /// Builds a cache key that uniquely identifies a platform build based on its Dockerfile path

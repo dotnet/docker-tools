@@ -3,6 +3,9 @@ trigger:
   branches:
     include:
     - main
+    # Feature branches publish images under a tag prefix derived from the
+    # branch name. See src/README.md.
+    - feature/*
   paths:
     include:
     - src/*
@@ -45,7 +48,8 @@ extends:
     stages:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
-        enableSigning: true
+        # Feature branch builds are not signed.
+        enableSigning: ${{ not(startsWith(variables['Build.SourceBranch'], 'refs/heads/feature/')) }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
         stagesTemplateParameters:

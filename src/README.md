@@ -54,3 +54,25 @@ Then, create the manifest list and push it:
 docker manifest create "${REPO}:${TAG}" "${REPO}@sha256:abcde12345" "${REPO}@sha256:fghij67890"
 docker manifest push "${REPO}:${TAG}"
 ```
+
+## Feature branch builds
+
+Pushing a `feature/<name>` branch to the internal Azure DevOps repo queues the
+official pipeline and publishes images tagged with `<name>` as a prefix, so
+they never collide with the tags built from `main`. Any slashes after
+`feature/` are flattened to `-`, so `feature/foo/bar` publishes as `foo-bar`.
+
+| `main` | `feature/foobar` |
+| --- | --- |
+| `latest` | `foobar` |
+| `<buildId>` | `foobar-<buildId>` |
+| `linux-amd64` | `foobar-linux-amd64` |
+| `linux-amd64-<buildId>` | `foobar-linux-amd64-<buildId>` |
+
+Point `imageNames.imageBuilder` at one of these tags to try the build in a
+consuming repo before merging to `main`.
+
+Feature branch builds are not signed, and they don't publish image info to
+[dotnet/versions](https://github.com/dotnet/versions), ingest Kusto telemetry,
+or post publish notifications. Tags are published to the public MCR repo, so
+don't use branch names you wouldn't want to be public.

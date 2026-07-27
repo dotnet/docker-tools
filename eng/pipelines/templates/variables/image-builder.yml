@@ -9,8 +9,6 @@ variables:
   value: src/manifest.json
 - name: publishReadme
   value: false
-- name: manifestVariables
-  value: --var UniqueId=${{ parameters.sourceBuildPipelineRunId }}
 - name: imageInfoVariant
   value: "-imagebuilder"
 - name: testScriptPath
@@ -19,3 +17,27 @@ variables:
   value: src/ImageBuilder.Tests/TestResults/
 - name: preBuildTestScriptPath
   value: ./src/run-tests.ps1
+
+# Builds from feature/<name> branches publish under a <name> tag prefix so they
+# don't collide with the tags built from main. See src/README.md.
+- ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/feature/') }}:
+  # The branch name after "feature/" becomes the tag prefix. Any remaining
+  # slashes are flattened so the result is a valid Docker tag.
+  - name: manifestVariables
+    value: >-
+      --var UniqueId=${{ parameters.sourceBuildPipelineRunId }}
+      --var TagPrefix=${{ replace(replace(variables['Build.SourceBranch'], 'refs/heads/feature/', ''), '/', '-') }}-
+      --var LatestTag=${{ replace(replace(variables['Build.SourceBranch'], 'refs/heads/feature/', ''), '/', '-') }}
+  # Allow publishing to an official repo prefix from feature branches.
+  - name: officialBranchPrefixes
+    value: feature/
+  # Feature branch images aren't part of the official record.
+  - name: publishImageInfo
+    value: false
+  - name: ingestKustoImageInfo
+    value: false
+  - name: publishNotificationsEnabled
+    value: false
+- ${{ else }}:
+  - name: manifestVariables
+    value: --var UniqueId=${{ parameters.sourceBuildPipelineRunId }}

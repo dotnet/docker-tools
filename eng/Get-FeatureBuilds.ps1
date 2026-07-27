@@ -26,23 +26,17 @@ $ErrorActionPreference = "Stop"
 $PlatformTagPattern =
     '^(?<name>.+)-(linux-(amd64|arm64)|windowsservercore-[\w.]+-amd64|nanoserver-[\w.]+-amd64)$'
 
-function Get-FeatureNameFromTags {
-    param([string[]] $Tags)
-
+function Get-FeatureNameFromTags([string[]] $Tags) {
     $Tags |
         ForEach-Object { if ($_ -match $PlatformTagPattern) { $Matches.name } } |
         Sort-Object -Unique
 }
 
-function ConvertTo-FeatureName {
-    param([string] $Branch)
-
+function ConvertTo-FeatureName([string] $Branch) {
     ($Branch -replace '^feature/', '') -replace '/', '-'
 }
 
-function Invoke-Native {
-    param([scriptblock] $Command)
-
+function Invoke-Native([scriptblock] $Command) {
     $output = & $Command
     if ($LASTEXITCODE -ne 0) {
         throw "Command failed with exit code ${LASTEXITCODE}: $Command"
@@ -50,9 +44,7 @@ function Invoke-Native {
     $output
 }
 
-function Get-FeatureBranch {
-    param([string] $Remote)
-
+function Get-FeatureBranch([string] $Remote) {
     $branches = @{}
     $refs = Invoke-Native { git ls-remote --heads $Remote 'refs/heads/feature/*' }
     foreach ($ref in $refs) {
@@ -62,9 +54,7 @@ function Get-FeatureBranch {
     $branches
 }
 
-function Get-ImagePublishDate {
-    param([string] $Repository, [string] $Tag)
-
+function Get-ImagePublishDate([string] $Repository, [string] $Tag) {
     try {
         $manifest = Invoke-Native { oras manifest fetch "${Repository}:${Tag}" } | ConvertFrom-Json
 
@@ -88,15 +78,8 @@ function Get-ImagePublishDate {
     }
 }
 
-function New-FeatureRow {
-    param(
-        [string] $Feature,
-        [string] $Branch,
-        [string] $Image,
-        # A [datetime], or $null when the feature has never published.
-        [object] $PublishDate
-    )
-
+# $PublishDate is a [datetime], or $null when the feature has never published.
+function New-FeatureRow([string] $Feature, [string] $Branch, [string] $Image, [object] $PublishDate) {
     [PSCustomObject]@{
         Feature          = $Feature
         Branch           = if ($Branch) { $Branch } else { "(missing)" }

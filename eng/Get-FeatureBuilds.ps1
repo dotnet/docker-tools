@@ -19,6 +19,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
 
 # A published feature image always includes the unsuffixed platform tags, e.g.
 # "foobar-linux-amd64". Anchoring on a platform suffix is what separates a
@@ -26,7 +27,7 @@ $ErrorActionPreference = "Stop"
 $PlatformTagPattern =
     '^(?<name>.+)-(linux-(amd64|arm64)|windowsservercore-[\w.]+-amd64|nanoserver-[\w.]+-amd64)$'
 
-function Get-FeatureNameFromTags([string[]] $Tags) {
+function Get-PublishedFeatureName([string[]] $Tags) {
     $Tags |
         ForEach-Object { if ($_ -match $PlatformTagPattern) { $Matches.name } } |
         Sort-Object -Unique
@@ -36,18 +37,9 @@ function ConvertTo-FeatureName([string] $Branch) {
     ($Branch -replace '^feature/', '') -replace '/', '-'
 }
 
-function Invoke-Native([scriptblock] $Command) {
-    $output = & $Command
-    if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code ${LASTEXITCODE}: $Command"
-    }
-    $output
-}
-
 function Get-FeatureBranch([string] $Remote) {
     $branches = @{}
-    $refs = Invoke-Native { git ls-remote --heads $Remote 'refs/heads/feature/*' }
-    foreach ($ref in $refs) {
+    foreach ($ref in git ls-remote --heads $Remote 'refs/heads/feature/*') {
         $branch = ($ref -split "`t")[1] -replace '^refs/heads/', ''
         $branches[(ConvertTo-FeatureName $branch)] = $branch
     }
@@ -56,18 +48,16 @@ function Get-FeatureBranch([string] $Remote) {
 
 function Get-ImagePublishDate([string] $Repository, [string] $Tag) {
     try {
-        $manifest = Invoke-Native { oras manifest fetch "${Repository}:${Tag}" } | ConvertFrom-Json
+        $manifest = oras manifest fetch "${Repository}:${Tag}" | ConvertFrom-Json
 
         # Multi-platform tags point at an index; any child carries the build time.
         if ($manifest.manifests) {
-            $manifest = Invoke-Native {
-                oras manifest fetch "${Repository}@$($manifest.manifests[0].digest)"
-            } | ConvertFrom-Json
+            $manifest = oras manifest fetch "${Repository}@$($manifest.manifests[0].digest)" |
+                ConvertFrom-Json
         }
 
-        $config = Invoke-Native {
-            oras blob fetch --output - "${Repository}@$($manifest.config.digest)"
-        } | ConvertFrom-Json
+        $config = oras blob fetch --output - "${Repository}@$($manifest.config.digest)" |
+            ConvertFrom-Json
 
         if ($config.created) {
             ([datetime]$config.created).ToUniversalTime()
@@ -78,22 +68,12 @@ function Get-ImagePublishDate([string] $Repository, [string] $Tag) {
     }
 }
 
-# $PublishDate is a [datetime], or $null when the feature has never published.
-function New-FeatureRow([string] $Feature, [string] $Branch, [string] $Image, [object] $PublishDate) {
-    [PSCustomObject]@{
-        Feature          = $Feature
-        Branch           = if ($Branch) { $Branch } else { "(missing)" }
-        Image            = if ($Image) { $Image } else { "Not yet published" }
-        'Last Published' = if ($PublishDate) { ([datetime]$PublishDate).ToString('yyyy-MM-dd HH:mm') + " UTC" } else { "-" }
-    }
-}
-
 $branches = Get-FeatureBranch -Remote $Remote
-$published = Get-FeatureNameFromTags (Invoke-Native { oras repo tags $Repository })
+$published = Get-PublishedFeatureName -Tags (oras repo tags $Repository)
 
 $features = @($branches.Keys) + @($published) | Sort-Object -Unique
 if (-not $features) {
-    Write-Host "No feature branches or published feature images found."
+    Write-Warning "No feature branches or published feature images found."
     return
 }
 
@@ -101,9 +81,10 @@ foreach ($feature in $features) {
     $isPublished = $published -contains $feature
     $publishDate = if ($isPublished) { Get-ImagePublishDate -Repository $Repository -Tag $feature }
 
-    New-FeatureRow `
-        -Feature $feature `
-        -Branch $branches[$feature] `
-        -Image $(if ($isPublished) { "${Repository}:${feature}" }) `
-        -PublishDate $publishDate
+    [PSCustomObject]@{
+        Feature          = $feature
+        Branch           = if ($branches[$feature]) { $branches[$feature] } else { "(missing)" }
+        Image            = if ($isPublished) { "${Repository}:${feature}" } else { "Not yet published" }
+        'Last Published' = if ($publishDate) { $publishDate.ToString('yyyy-MM-dd HH:mm') + " UTC" } else { "-" }
+    }
 }

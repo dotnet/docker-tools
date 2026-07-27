@@ -207,8 +207,13 @@ public sealed class BuildPlan
         GetPlatformsToSchedule(Enum.GetValues<BuildPlanReason>());
 
     /// <summary>
-    /// Gets platforms required to execute builds caused by any of the specified reasons.
+    /// Gets platforms required to execute builds caused by any of the specified reasons, including
+    /// everything connected to them.
     /// </summary>
+    /// <remarks>
+    /// Filtering by reason lets a caller act on only the changes it is responsible for. A reason
+    /// that is left out does not suppress a build; it just does not, by itself, cause one.
+    /// </remarks>
     public IReadOnlyCollection<PlatformInfo> GetPlatformsToSchedule(IEnumerable<BuildPlanReason> reasons)
     {
         HashSet<BuildPlanReason> reasonSet = reasons.ToHashSet();

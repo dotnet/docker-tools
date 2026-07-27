@@ -72,6 +72,19 @@ they never collide with the tags built from `main`. Any slashes after
 Point `imageNames.imageBuilder` at one of these tags to try the build in a
 consuming repo before merging to `main`.
 
+To see which feature branches exist and what they've published, run
+[`eng/Get-FeatureBuilds.ps1`](../eng/Get-FeatureBuilds.ps1) (needs git and the
+[oras CLI](https://oras.land); MCR allows anonymous reads, so no login is
+required):
+
+```console
+$ pwsh -File eng/Get-FeatureBuilds.ps1
+
+Feature  Branch          Image                                                    Last Published
+-------  ------          -----                                                    --------------
+foobar   feature/foobar  mcr.microsoft.com/dotnet-buildtools/image-builder:foobar  2026-07-24 22:12 UTC
+```
+
 Feature branch builds don't publish image info to
 [dotnet/versions](https://github.com/dotnet/versions), ingest Kusto telemetry,
 or post publish notifications. Tags are published to the public MCR repo, so

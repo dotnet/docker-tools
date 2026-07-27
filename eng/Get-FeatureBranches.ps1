@@ -19,10 +19,10 @@ Git remote to query for feature/* branches.
 Show this help text.
 
 .EXAMPLE
-./Get-FeatureBuilds.ps1
+./Get-FeatureBranches.ps1
 
 .EXAMPLE
-./Get-FeatureBuilds.ps1 -Remote internal | Format-Table -AutoSize
+./Get-FeatureBranches.ps1 -Remote internal | Format-Table -AutoSize
 #>
 
 [CmdletBinding()]
@@ -59,7 +59,7 @@ function ConvertTo-FeatureName([string] $Branch) {
     ($Branch -replace '^feature/', '') -replace '/', '-'
 }
 
-function Get-FeatureBranch([string] $Remote) {
+function Get-FeatureBranchMap([string] $Remote) {
     $branches = @{}
     foreach ($ref in git ls-remote --heads $Remote 'refs/heads/feature/*') {
         $branch = ($ref -split "`t")[1] -replace '^refs/heads/', ''
@@ -90,7 +90,7 @@ function Get-ImagePublishDate([string] $Repository, [string] $Tag) {
     }
 }
 
-$branches = Get-FeatureBranch -Remote $Remote
+$branches = Get-FeatureBranchMap -Remote $Remote
 $published = Get-PublishedFeatureName -Tags (oras repo tags $Repository)
 
 $features = @($branches.Keys) + @($published) | Sort-Object -Unique

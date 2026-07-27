@@ -73,12 +73,12 @@ Point `imageNames.imageBuilder` at one of these tags to try the build in a
 consuming repo before merging to `main`.
 
 To see which feature branches exist and what they've published, run
-[`eng/Get-FeatureBuilds.ps1`](../eng/Get-FeatureBuilds.ps1) (needs git and the
+[`eng/Get-FeatureBranches.ps1`](../eng/Get-FeatureBranches.ps1) (needs git and the
 [oras CLI](https://oras.land); MCR allows anonymous reads, so no login is
 required):
 
 ```console
-$ pwsh -File eng/Get-FeatureBuilds.ps1
+$ pwsh -File eng/Get-FeatureBranches.ps1
 
 Feature  Branch          Image                                                    Last Published
 -------  ------          -----                                                    --------------

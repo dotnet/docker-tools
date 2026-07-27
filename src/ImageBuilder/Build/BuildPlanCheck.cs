@@ -163,7 +163,9 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
 
         if (context.Platform.FinalStageFromImage is null)
         {
-            context.Logger.LogInformation("Image does not have a base image. By default, it is considered up-to-date.");
+            context.Logger.LogInformation(
+                "Dockerfile '{DockerfilePath}' has no base image, so it is considered up-to-date",
+                context.Platform.DockerfilePathRelativeToManifest);
             return null;
         }
 
@@ -175,11 +177,23 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
         bool baseImageDigestMatches =
             previousDigestSha?.Equals(currentDigestSha, StringComparison.OrdinalIgnoreCase) == true;
 
-        context.Logger.LogInformation("Image info's base image digest SHA: {ImageInfoDigestSha}", previousDigestSha);
-        context.Logger.LogInformation("Latest base image digest SHA: {CurrentDigestSha}", currentDigestSha);
-        context.Logger.LogInformation("Base image digests match: {BaseImageDigestMatches}", baseImageDigestMatches);
+        if (baseImageDigestMatches)
+        {
+            context.Logger.LogInformation(
+                "Base image of '{DockerfilePath}' is unchanged at digest {BaseImageDigestSha}",
+                context.Platform.DockerfilePathRelativeToManifest,
+                currentDigestSha);
+            return null;
+        }
 
-        return baseImageDigestMatches ?  null : BuildPlanCheckDisposition.Build;
+        context.Logger.LogInformation(
+            "Base image of '{DockerfilePath}' changed from digest {PreviousBaseImageDigestSha} to " +
+            "{CurrentBaseImageDigestSha}",
+            context.Platform.DockerfilePathRelativeToManifest,
+            previousDigestSha,
+            currentDigestSha);
+
+        return BuildPlanCheckDisposition.Build;
     }
 
     private static Task<BuildPlanCheckDisposition?> EvaluateDockerfile(BuildPlanCheckContext context)
@@ -195,9 +209,21 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
         string currentCommitUrl = context.GitService.GetDockerfileCommitUrl(context.Platform, context.SourceRepoUrl);
         bool commitShaMatches = context.PreviousPlatform.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
 
-        context.Logger.LogInformation("Image info's Dockerfile commit: {CommitUrl}", context.PreviousPlatform.CommitUrl);
-        context.Logger.LogInformation("Latest Dockerfile commit: {CurrentCommitUrl}", currentCommitUrl);
-        context.Logger.LogInformation("Dockerfile commits match: {CommitShaMatches}", commitShaMatches);
+        if (commitShaMatches)
+        {
+            context.Logger.LogInformation(
+                "Dockerfile '{DockerfilePath}' is unchanged since commit {CommitUrl}",
+                context.Platform.DockerfilePathRelativeToManifest,
+                currentCommitUrl);
+        }
+        else
+        {
+            context.Logger.LogInformation(
+                "Dockerfile '{DockerfilePath}' changed from commit {PreviousCommitUrl} to {CurrentCommitUrl}",
+                context.Platform.DockerfilePathRelativeToManifest,
+                context.PreviousPlatform.CommitUrl,
+                currentCommitUrl);
+        }
 
         return BuildResultWhen(!commitShaMatches);
     }

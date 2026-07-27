@@ -310,8 +310,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task BuildImagesAsync()
         {
-            _logger.LogInformation("BUILDING IMAGES");
-
             ImageArtifactDetails? srcImageArtifactDetails = null;
             if (Options.ImageInfoSourcePath != null)
             {
@@ -528,7 +526,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (firstTag is not null)
                 {
                     long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun);
-                    _logger.LogInformation($"Image size (on disk): {size} bytes");
+                    _logger.LogInformation(
+                        "Built image {Tag} with an on-disk size of {ImageSizeInBytes} bytes",
+                        firstTag,
+                        size);
                 }
 
                 if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
@@ -586,9 +587,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
         {
-            _logger.LogInformation(string.Empty);
-            _logger.LogInformation("CACHE HIT");
-            _logger.LogInformation(string.Empty);
+            _logger.LogInformation(
+                "Reusing published image {SourceDigest} instead of building {Tags}",
+                sourceDigest,
+                string.Join(", ", allTags.Select(tag => tag.FullyQualifiedName)));
 
             // When a cache hit occurs on an image, we copy the image from its source location (e.g. mcr.microsoft.com) to its
             // destination location (e.g. staging repo in ACR). Copying only occurs if push is enabled since it will result in
@@ -768,7 +770,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.QualifiedName);
-                    _logger.LogInformation($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    _logger.LogInformation(
+                        "Replacing FROM '{FromImage}' with '{NewFromImage}'",
+                        fromImage,
+                        newFromImage);
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\s\r\n]*");
                     dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
                     updateDockerfile = true;
@@ -778,7 +783,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // Don't overwrite the original dockerfile - write it to a new path.
                     dockerfilePath += ".temp";
-                    _logger.LogInformation($"Writing updated Dockerfile: {dockerfilePath}");
+                    _logger.LogInformation("Writing updated Dockerfile {DockerfilePath}", dockerfilePath);
                     _logger.LogInformation(dockerfileContents);
                     File.WriteAllText(dockerfilePath, dockerfileContents);
                 }
@@ -789,21 +794,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteBuildSummary()
         {
-            _logger.LogInformation("IMAGES BUILT");
-
             if (_processedTags.Any())
             {
-                foreach (TagInfo tag in _processedTags)
-                {
-                    _logger.LogInformation(tag.FullyQualifiedName);
-                }
+                _logger.LogInformation(
+                    "Built {TagCount} image tags: {Tags}",
+                    _processedTags.Count,
+                    string.Join(", ", _processedTags.Select(tag => tag.FullyQualifiedName)));
             }
             else
             {
-                _logger.LogInformation("No images built");
+                _logger.LogInformation("No images were built");
             }
-
-            _logger.LogInformation(string.Empty);
         }
     }
 }

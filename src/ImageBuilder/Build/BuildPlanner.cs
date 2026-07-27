@@ -85,7 +85,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             PlatformInfo representative = SelectContentRepresentative(groupPlatforms, previousPlatforms);
             PlatformData? reusedPlatform = previousPlatforms[representative];
 
-            LogContentCheckScope(logger, groupPlatforms, representative);
+            LogSharedContentScope(logger, groupPlatforms, representative);
 
             IReadOnlyList<EvaluatedBuildPlanCheck> contentResults = await EvaluateChecksAsync(
                 contentChecks,
@@ -132,23 +132,20 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     }
 
     /// <summary>
-    /// Logs which Dockerfile the content checks are about so that the check output that follows can
-    /// be attributed, including the platforms that share the answer when there is more than one.
+    /// Logs that one content result covers several platforms, so that a single set of check results
+    /// for a Dockerfile is not mistaken for a result about a single platform.
     /// </summary>
-    private static void LogContentCheckScope(
+    private static void LogSharedContentScope(
         ILogger logger,
         IReadOnlyCollection<PlatformInfo> group,
         PlatformInfo representative)
     {
-        logger.LogInformation(string.Empty);
-        logger.LogInformation(
-            "Checking image content of '{DockerfilePath}'",
-            representative.DockerfilePathRelativeToManifest);
-
         if (group.Count > 1)
         {
             logger.LogInformation(
-                "Shared by {PlatformCount} platforms using this Dockerfile: {Tags}",
+                "Dockerfile '{DockerfilePath}' is shared by {PlatformCount} platforms, which are planned "
+                    + "together: {Tags}",
+                representative.DockerfilePathRelativeToManifest,
                 group.Count,
                 string.Join(", ", group.Select(DescribeTag)));
         }
@@ -159,45 +156,38 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// </summary>
     private static void LogPlan(ILogger logger, BuildPlan plan)
     {
-        logger.LogInformation(string.Empty);
-        logger.LogInformation("BUILD PLAN");
         logger.LogInformation(
-            "{BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to reuse and publish tags",
+            "Build plan: {BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to "
+                + "reuse and publish tags",
             plan.Platforms.Count(planned => planned.Action == BuildAction.Build),
             plan.Platforms.Count(planned => planned.Action == BuildAction.Reuse),
             plan.Platforms.Count(planned => planned.Action == BuildAction.ReuseAndPublishTags));
-        logger.LogInformation(string.Empty);
 
         foreach (PlannedPlatform planned in plan.Platforms)
         {
             logger.LogInformation(
-                "{Action}: {DockerfilePath} ({Tag})",
+                "Planned {Action} of '{DockerfilePath}' ({Tag}) because {Causes}",
                 planned.Action,
                 planned.Platform.DockerfilePathRelativeToManifest,
-                DescribeTag(planned.Platform));
-
-            foreach (BuildCause cause in planned.Causes)
-            {
-                if (cause.DependencyPath.Count > 1)
-                {
-                    logger.LogInformation(
-                        "    {Reason} in dependency '{OriginDockerfilePath}' ({DependencyPath})",
-                        cause.Reason,
-                        cause.Origin.DockerfilePathRelativeToManifest,
-                        string.Join(
-                            " -> ",
-                            cause.DependencyPath.Select(platform =>
-                                platform.DockerfilePathRelativeToManifest)));
-                }
-                else
-                {
-                    logger.LogInformation("    {Reason}", cause.Reason);
-                }
-            }
+                DescribeTag(planned.Platform),
+                DescribeCauses(planned.Causes));
         }
-
-        logger.LogInformation(string.Empty);
     }
+
+    /// <summary>
+    /// Describes why a platform received its action. A cause that was propagated from a platform it
+    /// depends on includes the path it was propagated along.
+    /// </summary>
+    private static string DescribeCauses(IReadOnlyList<BuildCause> causes) =>
+        causes.Count == 0
+            ? "nothing about it changed"
+            : string.Join(
+                ", ",
+                causes.Select(cause => cause.DependencyPath.Count > 1
+                    ? $"{cause.Reason} via " + string.Join(
+                        " -> ",
+                        cause.DependencyPath.Select(platform => platform.DockerfilePathRelativeToManifest))
+                    : cause.Reason.ToString()));
 
     /// <summary>
     /// Describes a platform by its first tag, which distinguishes manifest entries that share a

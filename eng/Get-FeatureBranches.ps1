@@ -2,27 +2,7 @@
 
 <#
 .SYNOPSIS
-Lists ImageBuilder feature branches alongside the images they've published to MCR.
-
-.DESCRIPTION
-Feature branches are named feature/<name> and publish images tagged with <name> as a
-prefix. See src/README.md. This joins the feature/* branches on a git remote with the
-feature tags published to the registry, so a branch that hasn't published yet and an
-image whose branch is gone are both visible.
-
-Requires git and the oras CLI. MCR allows anonymous reads, so no login is needed.
-
-.PARAMETER Remote
-Git remote to query for feature/* branches.
-
-.PARAMETER Help
-Show this help text.
-
-.EXAMPLE
-./Get-FeatureBranches.ps1
-
-.EXAMPLE
-./Get-FeatureBranches.ps1 -Remote internal | Format-Table -AutoSize
+Lists feature branches and the images they've published. Requires git and the oras CLI.
 #>
 
 [CmdletBinding()]
@@ -34,7 +14,8 @@ param(
 )
 
 if ($Help) {
-    Get-Help $PSCommandPath -Detailed
+    (Get-Help $PSCommandPath).Synopsis
+    "Usage: ./$(Split-Path -Leaf $PSCommandPath) [-Remote <name>] [-Help]"
     return
 }
 

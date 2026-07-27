@@ -54,10 +54,3 @@ Then, create the manifest list and push it:
 docker manifest create "${REPO}:${TAG}" "${REPO}@sha256:abcde12345" "${REPO}@sha256:fghij67890"
 docker manifest push "${REPO}:${TAG}"
 ```
-
-## Feature branch builds
-
-Pushing a `feature/<name>` branch queues the official pipeline and publishes images
-tagged with `<name>` as a prefix, so they never collide with the tags built from `main`.
-Run [`eng/Get-FeatureBranches.ps1`](../eng/Get-FeatureBranches.ps1) to see which feature
-branches exist and what they've published.

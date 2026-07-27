@@ -57,35 +57,7 @@ docker manifest push "${REPO}:${TAG}"
 
 ## Feature branch builds
 
-Pushing a `feature/<name>` branch to the internal Azure DevOps repo queues the
-official pipeline and publishes images tagged with `<name>` as a prefix, so
-they never collide with the tags built from `main`. Any slashes after
-`feature/` are flattened to `-`, so `feature/foo/bar` publishes as `foo-bar`.
-
-| `main` | `feature/foobar` |
-| --- | --- |
-| `latest` | `foobar` |
-| `<buildId>` | `foobar-<buildId>` |
-| `linux-amd64` | `foobar-linux-amd64` |
-| `linux-amd64-<buildId>` | `foobar-linux-amd64-<buildId>` |
-
-Point `imageNames.imageBuilder` at one of these tags to try the build in a
-consuming repo before merging to `main`.
-
-To see which feature branches exist and what they've published, run
-[`eng/Get-FeatureBranches.ps1`](../eng/Get-FeatureBranches.ps1) (needs git and the
-[oras CLI](https://oras.land); MCR allows anonymous reads, so no login is
-required):
-
-```console
-$ pwsh -File eng/Get-FeatureBranches.ps1
-
-Feature  Branch          Image                                                    Last Published
--------  ------          -----                                                    --------------
-foobar   feature/foobar  mcr.microsoft.com/dotnet-buildtools/image-builder:foobar  2026-07-24 22:12 UTC
-```
-
-Feature branch builds don't publish image info to
-[dotnet/versions](https://github.com/dotnet/versions), ingest Kusto telemetry,
-or post publish notifications. Tags are published to the public MCR repo, so
-don't use branch names you wouldn't want to be public.
+Pushing a `feature/<name>` branch queues the official pipeline and publishes images
+tagged with `<name>` as a prefix, so they never collide with the tags built from `main`.
+Run [`eng/Get-FeatureBranches.ps1`](../eng/Get-FeatureBranches.ps1) to see which feature
+branches exist and what they've published.

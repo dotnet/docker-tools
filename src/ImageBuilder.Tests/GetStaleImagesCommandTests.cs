@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using System.Text;
 using System.Threading.Tasks;
 using LibGit2Sharp;
+using Microsoft.DotNet.ImageBuilder.Build;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;

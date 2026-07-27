@@ -8,7 +8,7 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
 /// Describes how a platform should be handled by build execution.

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
 /// A disposition that an individual build-plan check may require.

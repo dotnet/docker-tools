@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Azure;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
 /// Resolves the current canonical identity of a platform's base image.

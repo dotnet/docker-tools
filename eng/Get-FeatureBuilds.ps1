@@ -1,18 +1,32 @@
 #!/usr/bin/env pwsh
-# Lists ImageBuilder feature branches alongside the images they've published to MCR.
-# Feature branches are named feature/<name> and publish images tagged with <name>
-# as a prefix. See src/README.md.
-#
-# Usage:
-#   ./Get-FeatureBuilds.ps1
-#   ./Get-FeatureBuilds.ps1 -Remote internal
-#   ./Get-FeatureBuilds.ps1 | Format-Table -AutoSize
-#
-# Requires git and the oras CLI. MCR allows anonymous reads, so no login is needed.
+
+<#
+.SYNOPSIS
+Lists ImageBuilder feature branches alongside the images they've published to MCR.
+
+.DESCRIPTION
+Feature branches are named feature/<name> and publish images tagged with <name> as a
+prefix. See src/README.md. This joins the feature/* branches on a git remote with the
+feature tags published to the registry, so a branch that hasn't published yet and an
+image whose branch is gone are both visible.
+
+Requires git and the oras CLI. MCR allows anonymous reads, so no login is needed.
+
+.PARAMETER Remote
+Git remote to query for feature/* branches.
+
+.PARAMETER Repository
+Registry repository that feature builds publish to.
+
+.EXAMPLE
+./Get-FeatureBuilds.ps1
+
+.EXAMPLE
+./Get-FeatureBuilds.ps1 -Remote internal | Format-Table -AutoSize
+#>
 
 [CmdletBinding()]
 param(
-    # Git remote to query for feature/* branches.
     [string] $Remote = "origin",
 
     [string] $Repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"

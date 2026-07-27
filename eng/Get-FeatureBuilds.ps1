@@ -15,8 +15,8 @@ Requires git and the oras CLI. MCR allows anonymous reads, so no login is needed
 .PARAMETER Remote
 Git remote to query for feature/* branches.
 
-.PARAMETER Repository
-Registry repository that feature builds publish to.
+.PARAMETER Help
+Show this help text.
 
 .EXAMPLE
 ./Get-FeatureBuilds.ps1
@@ -29,11 +29,19 @@ Registry repository that feature builds publish to.
 param(
     [string] $Remote = "origin",
 
-    [string] $Repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"
+    [Alias('h')]
+    [switch] $Help
 )
+
+if ($Help) {
+    Get-Help $PSCommandPath -Detailed
+    return
+}
 
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
+
+$Repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"
 
 # A published feature image always includes the unsuffixed platform tags, e.g.
 # "foobar-linux-amd64". Anchoring on a platform suffix is what separates a

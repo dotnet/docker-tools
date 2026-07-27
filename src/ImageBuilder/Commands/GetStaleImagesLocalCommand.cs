@@ -9,19 +9,26 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
+/// <summary>
+/// Reports images whose base images are out-of-date, using the manifest in the current repo.
+/// </summary>
+/// <remarks>
+/// This answers the same question as <see cref="GetStaleImagesCommand"/> for a single local
+/// manifest, rather than for the manifests named by a set of subscriptions.
+/// </remarks>
+public class GetStaleImagesLocalCommand : ManifestCommand<GetStaleImagesLocalOptions>
 {
     private readonly IEnvironmentService _environmentService;
     private readonly IBuildPlanner _buildPlanner;
     private readonly ImageDigestCache _imageDigestCache;
-    private readonly ILogger<CheckBaseImagesCommand> _logger;
+    private readonly ILogger<GetStaleImagesLocalCommand> _logger;
 
-    public CheckBaseImagesCommand(
+    public GetStaleImagesLocalCommand(
         IManifestJsonService manifestJsonService,
         IManifestServiceFactory manifestServiceFactory,
         IBuildPlanner buildPlanner,
         IEnvironmentService environmentService,
-        ILogger<CheckBaseImagesCommand> logger)
+        ILogger<GetStaleImagesLocalCommand> logger)
         : base(manifestJsonService)
     {
         ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -36,7 +43,7 @@ public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
     }
 
     protected override string Description =>
-        "Checks whether images in the current repo use up-to-date base images";
+        "Gets paths to images in the current repo whose base images are out-of-date";
 
     public override async Task ExecuteAsync()
     {
@@ -47,30 +54,15 @@ public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
             Manifest,
             skipManifestValidation: true);
 
-        ImageNameResolverForMatrix imageNameResolver = new(
-            Options.BaseImageOverrideOptions,
-            Manifest,
-            Options.RepoPrefix,
-            Options.SourceRepoPrefix);
-        BaseImageResolver baseImageResolver = BaseImageResolver.CreateForRegistryImages(
-            _imageDigestCache,
-            imageNameResolver,
-            Options.IsDryRun);
-        BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
-            Manifest,
-            Manifest.GetFilteredPlatformsWithExternalBaseImage(),
-            Manifest.GetAllPlatforms(),
-            imageArtifactDetails,
-            baseImageResolver,
-            sourceRepoUrl: null,
-            BuildPlanCheck.Default);
-
-        string[] pathsToRebuild = plan
-            .GetPlatformsToSchedule([BuildPlanReason.MissingImageInfo, BuildPlanReason.BaseImageChanged])
-            .Select(platform => platform.Model.Dockerfile)
-            .Distinct()
-            .OrderBy(path => path)
-            .ToArray();
+        string[] pathsToRebuild = [..(await StaleImageHelper.GetStaleDockerfilePathsAsync(
+                _buildPlanner,
+                Manifest,
+                imageArtifactDetails,
+                _imageDigestCache,
+                Options.BaseImageOverrideOptions,
+                Options.SourceRepoPrefix,
+                Options.IsDryRun))
+            .OrderBy(path => path)];
 
         if (pathsToRebuild.Length == 0)
         {

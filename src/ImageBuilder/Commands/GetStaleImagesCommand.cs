@@ -89,29 +89,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
-            ImageNameResolverForMatrix imageNameResolver = new(
-                Options.BaseImageOverrideOptions,
+            return await StaleImageHelper.GetStaleDockerfilePathsAsync(
+                _buildPlanner,
                 manifest,
-                repoPrefix: null,
-                sourceRepoPrefix: Options.SourceRepoPrefix);
-            BaseImageResolver baseImageResolver = BaseImageResolver.CreateForRegistryImages(
-                _imageDigestCache,
-                imageNameResolver,
-                Options.IsDryRun);
-            BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
-                manifest,
-                manifest.GetFilteredPlatformsWithExternalBaseImage(),
-                manifest.GetAllPlatforms(),
                 imageArtifactDetails,
-                baseImageResolver,
-                sourceRepoUrl: null,
-                BuildPlanCheck.Default);
-
-            return plan
-                .GetPlatformsToSchedule(
-                    [BuildPlanReason.MissingImageInfo, BuildPlanReason.BaseImageChanged])
-                .Select(platform => platform.Model.Dockerfile)
-                .Distinct();
+                _imageDigestCache,
+                Options.BaseImageOverrideOptions,
+                Options.SourceRepoPrefix,
+                Options.IsDryRun);
         }
 
         private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)

@@ -120,7 +120,6 @@ public static class ImageBuilder
         // Commands
         builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
         builder.Services.AddSingleton<ICommand, BuildCommand>();
-        builder.Services.AddSingleton<ICommand, CheckBaseImagesCommand>();
         builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
         builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();
         builder.Services.AddSingleton<ICommand, CopyBaseImagesCommand>();
@@ -132,6 +131,7 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
         builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
         builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();
+        builder.Services.AddSingleton<ICommand, GetStaleImagesLocalCommand>();
         builder.Services.AddSingleton<ICommand, IngestKustoImageInfoCommand>();
         builder.Services.AddSingleton<ICommand, MergeImageInfoCommand>();
         builder.Services.AddSingleton<ICommand, PostPublishNotificationCommand>();

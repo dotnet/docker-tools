@@ -8,7 +8,7 @@ using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class CheckBaseImagesOptions : ImageInfoOptions, IFilterableOptions
+public class GetStaleImagesLocalOptions : ImageInfoOptions, IFilterableOptions
 {
     public ManifestFilterOptions FilterOptions { get; set; } = new();
 

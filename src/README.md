@@ -72,7 +72,7 @@ they never collide with the tags built from `main`. Any slashes after
 Point `imageNames.imageBuilder` at one of these tags to try the build in a
 consuming repo before merging to `main`.
 
-Feature branch builds are not signed, and they don't publish image info to
+Feature branch builds don't publish image info to
 [dotnet/versions](https://github.com/dotnet/versions), ingest Kusto telemetry,
 or post publish notifications. Tags are published to the public MCR repo, so
 don't use branch names you wouldn't want to be public.

@@ -8,6 +8,11 @@
     "custom.regex"
   ],
 
+  // Vulnerability alerts are handled separately and are not available to the Renovate bot
+  "vulnerabilityAlerts": {
+    "enabled": false
+  },
+
   // Extend the base config with additional presets
   // https://docs.renovatebot.com/configuration-options/#extends
   // https://docs.renovatebot.com/key-concepts/presets/

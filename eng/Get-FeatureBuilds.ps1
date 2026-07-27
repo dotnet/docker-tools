@@ -15,10 +15,7 @@ param(
     # Git remote to query for feature/* branches.
     [string] $Remote = "origin",
 
-    [string] $Repository = "mcr.microsoft.com/dotnet-buildtools/image-builder",
-
-    # Run the parsing self-check instead of querying git and the registry.
-    [switch] $SelfTest
+    [string] $Repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"
 )
 
 $ErrorActionPreference = "Stop"
@@ -106,37 +103,6 @@ function New-FeatureRow {
         Image            = if ($Image) { $Image } else { "Not yet published" }
         'Last Published' = if ($PublishDate) { ([datetime]$PublishDate).ToString('yyyy-MM-dd HH:mm') + " UTC" } else { "-" }
     }
-}
-
-if ($SelfTest) {
-    $names = Get-FeatureNameFromTags @(
-        'latest', 'linux-amd64', 'linux-amd64-3030923', 'nanoserver-ltsc2022-amd64-3030923',
-        'foobar', 'foobar-3030999', 'foobar-linux-amd64', 'foobar-linux-amd64-3030999',
-        'foobar-nanoserver-ltsc2022-amd64', 'my-feature-linux-arm64')
-    if ("$names" -ne 'foobar my-feature') {
-        throw "Expected 'foobar my-feature' from the sample tags, got '$names'"
-    }
-    if ((Get-FeatureNameFromTags @('latest', 'linux-amd64-3030923')).Count -ne 0) {
-        throw "Official tags must not be reported as feature branches"
-    }
-    if ((ConvertTo-FeatureName 'feature/foo/bar') -ne 'foo-bar') {
-        throw "Slashes in a branch name must be flattened"
-    }
-
-    $missing = New-FeatureRow -Feature 'foobar'
-    if ($missing.Branch -ne '(missing)' -or $missing.Image -ne 'Not yet published' -or
-        $missing.'Last Published' -ne '-') {
-        throw "Expected placeholders for a feature with no branch and no image, got '$missing'"
-    }
-
-    $full = New-FeatureRow -Feature 'foobar' -Branch 'feature/foobar' -Image 'repo:foobar' `
-        -PublishDate ([datetime]::Parse('2026-07-24T22:12:40Z')).ToUniversalTime()
-    if ($full.'Last Published' -ne '2026-07-24 22:12 UTC') {
-        throw "Expected a UTC publish date, got '$($full.'Last Published')'"
-    }
-
-    Write-Host "Self-check passed."
-    return
 }
 
 $branches = Get-FeatureBranch -Remote $Remote

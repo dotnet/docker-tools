@@ -66,8 +66,7 @@ public class CheckBaseImagesCommand : ManifestCommand<CheckBaseImagesOptions>
             BuildPlanCheck.Default);
 
         string[] pathsToRebuild = plan
-            .GetPlatformsToSchedule(
-                [BuildPlanReason.MissingImageInfo, BuildPlanReason.BaseImageChanged])
+            .GetPlatformsToSchedule([BuildPlanReason.MissingImageInfo, BuildPlanReason.BaseImageChanged])
             .Select(platform => platform.Model.Dockerfile)
             .Distinct()
             .OrderBy(path => path)

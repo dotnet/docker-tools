@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public IEnumerable<ImageInfo> GetAllImages() => AllRepos.SelectMany(repo => repo.AllImages);
-        
+
         public ImageInfo GetImageByPlatform(PlatformInfo platform) =>
             GetAllImages()
                 .FirstOrDefault(image => image.AllPlatforms.Contains(platform));
@@ -102,8 +102,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<PlatformInfo> GetFilteredPlatformsWithExternalBaseImage() =>
             GetFilteredPlatforms()
                 .Where(platform =>
-                    platform.FinalStageFromImage is not null &&
-                    !platform.IsInternalFromImage(platform.FinalStageFromImage));
+                    platform.FinalStageFromImage is not null
+                    && !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
         public IEnumerable<TagInfo> GetFilteredPlatformTags()
         {

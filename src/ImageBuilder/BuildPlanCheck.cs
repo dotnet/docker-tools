@@ -154,48 +154,35 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
             BuildResult() :
             Task.FromResult<BuildPlanCheckDisposition?>(null);
 
-    private static async Task<BuildPlanCheckDisposition?> EvaluateBaseImageAsync(
-        BuildPlanCheckContext context)
+    private static async Task<BuildPlanCheckDisposition?> EvaluateBaseImageAsync(BuildPlanCheckContext context)
     {
         if (context.PreviousPlatform is null)
         {
             return null;
         }
 
-        context.Logger.LogInformation(string.Empty);
-
         if (context.Platform.FinalStageFromImage is null)
         {
-            context.Logger.LogInformation(
-                "Image does not have a base image. By default, it is considered up-to-date.");
+            context.Logger.LogInformation("Image does not have a base image. By default, it is considered up-to-date.");
             return null;
         }
 
-        string? currentDigestSha =
-            await context.BaseImageResolver.ResolveDigestShaAsync(context.Platform);
-        string? previousDigestSha = context.PreviousPlatform.BaseImageDigest is string previousDigest ?
-            DockerHelper.GetDigestSha(previousDigest) :
-            null;
+        string? currentDigestSha = await context.BaseImageResolver.ResolveDigestShaAsync(context.Platform);
+        string? previousDigestSha = context.PreviousPlatform.BaseImageDigest is string previousDigest
+            ?  DockerHelper.GetDigestSha(previousDigest)
+            : null;
+
         bool baseImageDigestMatches =
             previousDigestSha?.Equals(currentDigestSha, StringComparison.OrdinalIgnoreCase) == true;
 
-        context.Logger.LogInformation(
-            "Image info's base image digest SHA: {ImageInfoDigestSha}",
-            previousDigestSha);
-        context.Logger.LogInformation(
-            "Latest base image digest SHA: {CurrentDigestSha}",
-            currentDigestSha);
-        context.Logger.LogInformation(
-            "Base image digests match: {BaseImageDigestMatches}",
-            baseImageDigestMatches);
+        context.Logger.LogInformation("Image info's base image digest SHA: {ImageInfoDigestSha}", previousDigestSha);
+        context.Logger.LogInformation("Latest base image digest SHA: {CurrentDigestSha}", currentDigestSha);
+        context.Logger.LogInformation("Base image digests match: {BaseImageDigestMatches}", baseImageDigestMatches);
 
-        return baseImageDigestMatches ?
-            null :
-            BuildPlanCheckDisposition.Build;
+        return baseImageDigestMatches ?  null : BuildPlanCheckDisposition.Build;
     }
 
-    private static Task<BuildPlanCheckDisposition?> EvaluateDockerfile(
-        BuildPlanCheckContext context)
+    private static Task<BuildPlanCheckDisposition?> EvaluateDockerfile(BuildPlanCheckContext context)
     {
         // Comparing Dockerfile commits requires the Dockerfile to be present on disk and a source
         // repo URL to form the commit URL recorded in image info. Contexts that plan against a
@@ -205,22 +192,12 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
             return Task.FromResult<BuildPlanCheckDisposition?>(null);
         }
 
-        string currentCommitUrl =
-            context.GitService.GetDockerfileCommitUrl(context.Platform, context.SourceRepoUrl);
-        bool commitShaMatches = context.PreviousPlatform.CommitUrl?.Equals(
-            currentCommitUrl,
-            StringComparison.OrdinalIgnoreCase) == true;
+        string currentCommitUrl = context.GitService.GetDockerfileCommitUrl(context.Platform, context.SourceRepoUrl);
+        bool commitShaMatches = context.PreviousPlatform.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
 
-        context.Logger.LogInformation(string.Empty);
-        context.Logger.LogInformation(
-            "Image info's Dockerfile commit: {CommitUrl}",
-            context.PreviousPlatform.CommitUrl);
-        context.Logger.LogInformation(
-            "Latest Dockerfile commit: {CurrentCommitUrl}",
-            currentCommitUrl);
-        context.Logger.LogInformation(
-            "Dockerfile commits match: {CommitShaMatches}",
-            commitShaMatches);
+        context.Logger.LogInformation("Image info's Dockerfile commit: {CommitUrl}", context.PreviousPlatform.CommitUrl);
+        context.Logger.LogInformation("Latest Dockerfile commit: {CurrentCommitUrl}", currentCommitUrl);
+        context.Logger.LogInformation("Dockerfile commits match: {CommitShaMatches}", commitShaMatches);
 
         return BuildResultWhen(!commitShaMatches);
     }
@@ -230,17 +207,13 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
     {
         if (context.PreviousPlatform is null)
         {
-            return Task.FromResult<BuildPlanCheckDisposition?>(
-                BuildPlanCheckDisposition.ReuseAndPublish);
+            return Task.FromResult<BuildPlanCheckDisposition?>(BuildPlanCheckDisposition.ReuseAndPublish);
         }
 
         bool hasAllTags = (context.PreviousPlatform.PlatformInfo?.Tags ?? [])
             .Select(tag => tag.Name)
             .AreEquivalent(context.PreviousPlatform.SimpleTags);
 
-        return Task.FromResult<BuildPlanCheckDisposition?>(
-            hasAllTags ?
-                null :
-                BuildPlanCheckDisposition.ReuseAndPublish);
+        return Task.FromResult<BuildPlanCheckDisposition?>(hasAllTags ? null : BuildPlanCheckDisposition.ReuseAndPublish);
     }
 }

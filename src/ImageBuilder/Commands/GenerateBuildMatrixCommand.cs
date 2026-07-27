@@ -447,9 +447,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // treat the hierarchy as a unit. For example, if runtime-deps is cached but runtime (which is a descendant of
             // runtime-deps) is not, then we need to ensure that both runtime-deps and runtime is included. We do not want to
             // trim just the runtime-deps platform in that case.
-            PlatformInfo[] plannedPlatforms = platformMappings
-                .Select(mapping => mapping.PlatformInfo)
-                .ToArray();
+            PlatformInfo[] plannedPlatforms = platformMappings.Select(mapping => mapping.PlatformInfo).ToArray();
+
             BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
                 Manifest,
                 plannedPlatforms,
@@ -458,6 +457,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _baseImageResolver.Value,
                 Options.SourceRepoUrl,
                 BuildPlanCheck.Default);
+
             IReadOnlyCollection<PlatformInfo> scheduledPlatforms = plan.GetPlatformsToSchedule();
 
             return scheduledPlatforms.OrderBy(platform => platform.DockerfilePath);

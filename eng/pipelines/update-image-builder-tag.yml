@@ -22,49 +22,53 @@ jobs:
   pool:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
-  - pwsh: |
-      Write-Host "##[section]Resolving ImageBuilder digest"
-      $repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"
-      $image = "${repository}:latest"
-      $digest = (docker buildx imagetools inspect $image --format '{{.Manifest.Digest}}')
-
-      if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($digest)) {
-          Write-Host "##vso[task.logissue type=error]Unable to resolve a multi-platform digest for '$image'."
-          exit 1
-      }
-
-      $imageBuilderRef = "$repository@$($digest.Trim())"
-      Write-Host "$image refers to $imageBuilderRef"
-
-      Write-Host "##[section]Building ImageBuilder.Updater"
-      & bash ./eng/common/build.sh `
-          --ci `
-          --restore `
-          --build `
-          --configuration Release `
-          --projects "$env:BUILD_SOURCESDIRECTORY/src/ImageBuilder.Updater/ImageBuilder.Updater.csproj"
-
-      if ($LASTEXITCODE -ne 0) {
-          Write-Host "##vso[task.logissue type=error]Failed to build ImageBuilder.Updater."
-          exit 1
-      }
-
-      Write-Host "##[section]Running ImageBuilder.Updater"
-      & ./.dotnet/dotnet run `
-          --no-build `
-          --configuration Release `
-          --project src/ImageBuilder.Updater/ImageBuilder.Updater.csproj `
-          -- `
-          $imageBuilderRef
-
-      if ($LASTEXITCODE -ne 0) {
-          Write-Host "##vso[task.logissue type=error]ImageBuilder.Updater failed."
-          exit 1
-      }
-
-      Write-Host "ImageBuilder.Updater finished"
+  - task: AzureCLI@2
     displayName: Run ImageBuilder Updater
+    inputs:
+      azureSubscription: DotnetContainersGitHubBot
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        Write-Host "##[section]Resolving ImageBuilder digest"
+        $repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"
+        $image = "${repository}:latest"
+        $digest = (docker buildx imagetools inspect $image --format '{{.Manifest.Digest}}')
+
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($digest)) {
+            Write-Host "##vso[task.logissue type=error]Unable to resolve a multi-platform digest for '$image'."
+            exit 1
+        }
+
+        $imageBuilderRef = "$repository@$($digest.Trim())"
+        Write-Host "$image refers to $imageBuilderRef"
+
+        Write-Host "##[section]Building ImageBuilder.Updater"
+        & bash ./eng/common/build.sh `
+            --ci `
+            --restore `
+            --build `
+            --configuration Release `
+            --projects "$env:BUILD_SOURCESDIRECTORY/src/ImageBuilder.Updater/ImageBuilder.Updater.csproj"
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "##vso[task.logissue type=error]Failed to build ImageBuilder.Updater."
+            exit 1
+        }
+
+        Write-Host "##[section]Running ImageBuilder.Updater"
+        & ./.dotnet/dotnet run `
+            --no-build `
+            --configuration Release `
+            --project src/ImageBuilder.Updater/ImageBuilder.Updater.csproj `
+            -- `
+            $imageBuilderRef
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "##vso[task.logissue type=error]ImageBuilder.Updater failed."
+            exit 1
+        }
+
+        Write-Host "ImageBuilder.Updater finished"
     env:
-      GITHUB_TOKEN: $(BotAccount-dotnet-docker-bot-PAT)
-      GITHUB_USER: $(dotnetDockerBot.userName)
-      GITHUB_EMAIL: $(dotnetDockerBot.email)
+      GITHUB_APP_KEY_URI: $(dotnetContainersBot.gitHubApp.privateKeyUri)
+      GITHUB_APP_CLIENT_ID: $(dotnetContainersBot.gitHubApp.clientId)

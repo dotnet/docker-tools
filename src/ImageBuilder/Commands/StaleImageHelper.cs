@@ -19,10 +19,11 @@ public static class StaleImageHelper
     /// them.
     /// </summary>
     /// <remarks>
-    /// Only platforms based on an external image are evaluated, because the freshness of a platform
-    /// based on an internal image follows from the platform that produces that image. Dockerfile
-    /// commits are not compared: the manifest may come from another repository, so no source repo
-    /// URL is available and that check has no opinion.
+    /// The whole manifest forms the dependency graph so that a stale base image can be traced to
+    /// every Dockerfile affected by it, but only platforms that survive the command's filters and
+    /// are based on an external image are evaluated. Dockerfile commits are not compared: the
+    /// manifest may come from another repository, so no source repo URL is available and that check
+    /// has no opinion.
     /// </remarks>
     public static async Task<IEnumerable<string>> GetStaleDockerfilePathsAsync(
         IBuildPlanner buildPlanner,
@@ -44,8 +45,8 @@ public static class StaleImageHelper
             isDryRun);
         BuildPlan plan = await buildPlanner.CreateBuildPlanAsync(
             manifest,
-            manifest.GetFilteredPlatformsWithExternalBaseImage(),
-            manifest.GetAllPlatforms(),
+            allPlatforms: manifest.GetAllPlatforms(),
+            platformsToEvaluate: manifest.GetFilteredPlatformsWithExternalBaseImage(),
             imageArtifactDetails,
             baseImageResolver,
             sourceRepoUrl: null,

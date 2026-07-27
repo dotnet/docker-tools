@@ -17,15 +17,20 @@ namespace Microsoft.DotNet.ImageBuilder.Build;
 public interface IBuildPlanner
 {
     /// <summary>
-    /// Evaluates the selected platforms and returns their build actions and causes.
+    /// Decides how each platform should be handled and explains why.
     /// </summary>
-    /// <param name="manifest">Manifest containing the platforms and their dependency graph.</param>
-    /// <param name="platforms">Platforms whose state should be evaluated.</param>
-    /// <param name="dependencyPlatforms">
-    /// Platforms that may be included in dependency propagation and plan projections.
+    /// <param name="manifest">Manifest that the platforms belong to.</param>
+    /// <param name="allPlatforms">
+    /// Every platform that forms the dependency graph. This is usually wider than
+    /// <paramref name="platformsToEvaluate"/> so that a build can be traced through platforms that
+    /// were not themselves evaluated, and it must contain all of them.
+    /// </param>
+    /// <param name="platformsToEvaluate">
+    /// The platforms to decide about. Platforms outside this set still take part in the dependency
+    /// graph, but no decision is made about them.
     /// </param>
     /// <param name="imageArtifactDetails">Previously published image metadata, when available.</param>
-    /// <param name="baseImageResolver">Resolver for current base-image identities.</param>
+    /// <param name="baseImageResolver">Resolver for current base-image digests.</param>
     /// <param name="sourceRepoUrl">
     /// Source repository URL used to compare Dockerfile commits. When null, the Dockerfile
     /// comparison is not performed.
@@ -33,8 +38,8 @@ public interface IBuildPlanner
     /// <param name="checks">Checks to evaluate for each platform.</param>
     Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
-        IEnumerable<PlatformInfo> platforms,
-        IEnumerable<PlatformInfo> dependencyPlatforms,
+        IEnumerable<PlatformInfo> allPlatforms,
+        IEnumerable<PlatformInfo> platformsToEvaluate,
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,
@@ -48,21 +53,20 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// <inheritdoc/>
     public async Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
-        IEnumerable<PlatformInfo> platforms,
-        IEnumerable<PlatformInfo> dependencyPlatforms,
+        IEnumerable<PlatformInfo> allPlatforms,
+        IEnumerable<PlatformInfo> platformsToEvaluate,
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,
         IReadOnlyList<IBuildPlanCheck> checks)
     {
-        HashSet<PlatformInfo> evaluatedPlatforms = platforms.ToHashSet();
-        PlatformInfo[] plannedPlatforms = dependencyPlatforms.Distinct().ToArray();
+        HashSet<PlatformInfo> evaluatedPlatforms = platformsToEvaluate.ToHashSet();
+        PlatformInfo[] graphPlatforms = [..allPlatforms.Distinct()];
         PlatformDependencyGraph dependencyGraph =
-            PlatformDependencyGraph.Create(manifest, plannedPlatforms);
+            PlatformDependencyGraph.Create(manifest, graphPlatforms);
 
-        PlatformInfo[] platformsToEvaluate =
-            [..plannedPlatforms.Where(evaluatedPlatforms.Contains)];
-        Dictionary<PlatformInfo, PlatformData?> previousPlatforms = platformsToEvaluate.ToDictionary(
+        PlatformInfo[] evaluationOrder = [..graphPlatforms.Where(evaluatedPlatforms.Contains)];
+        Dictionary<PlatformInfo, PlatformData?> previousPlatforms = evaluationOrder.ToDictionary(
             platform => platform,
             platform => GetPreviousPlatform(manifest, platform, imageArtifactDetails));
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform = [];
@@ -75,7 +79,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         // Platforms that share a Dockerfile and build args produce the same image content, so the
         // content checks are evaluated once per group. Groups are evaluated in dependency order so
         // that a parent's reuse decision is recorded before its children resolve their base image.
-        IEnumerable<IGrouping<string, PlatformInfo>> platformGroups = platformsToEvaluate
+        IEnumerable<IGrouping<string, PlatformInfo>> platformGroups = evaluationOrder
             .GroupBy(GetBuildCacheKey)
             .OrderBy(group => group.Max(dependencyGraph.GetDependencyDepth));
 
@@ -122,7 +126,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         PlannedPlatform[] plannedResults =
-            [..platformsToEvaluate.Select(platform => plannedByPlatform[platform])];
+            [..evaluationOrder.Select(platform => plannedByPlatform[platform])];
         BuildPlan plan = new(PropagateBuildCauses(plannedResults, dependencyGraph), dependencyGraph);
         LogPlan(logger, plan);
         return plan;

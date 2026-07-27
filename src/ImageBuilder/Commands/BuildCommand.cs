@@ -318,8 +318,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             _buildPlan = await _buildPlanner.CreateBuildPlanAsync(
                 Manifest,
-                Manifest.GetFilteredPlatforms(),
-                Manifest.GetFilteredPlatforms(),
+                allPlatforms: Manifest.GetFilteredPlatforms(),
+                platformsToEvaluate: Manifest.GetFilteredPlatforms(),
                 srcImageArtifactDetails,
                 _baseImageResolver.Value,
                 Options.SourceRepoUrl,

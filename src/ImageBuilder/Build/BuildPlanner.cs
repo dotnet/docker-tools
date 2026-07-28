@@ -27,14 +27,18 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         // Build effects may pass through unselected platforms, so preserve the full dependency graph.
         HashSet<PlatformInfo> selectedPlatformSet = selectedPlatforms.ToHashSet();
         PlatformInfo[] allUniquePlatforms = [..allPlatforms.Distinct()];
+
         IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform =
             allUniquePlatforms.ToDictionary(
                 platform => platform,
                 platform => (IReadOnlyList<PlatformInfo>)manifest.GetParents(platform, allUniquePlatforms).ToArray());
+
         IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform =
             GetDependentsByPlatform(allUniquePlatforms, dependenciesByPlatform);
+
         IReadOnlyDictionary<PlatformInfo, int> dependencyDepths =
             GetDependencyDepths(allUniquePlatforms, dependenciesByPlatform);
+
         PlatformInfo[] platformsToPlan = [..allUniquePlatforms.Where(selectedPlatformSet.Contains)];
 
         Dictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform =

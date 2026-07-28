@@ -15,10 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
     {
         private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
+        private readonly IArtifactService _artifactService;
 
-        public TrimUnchangedPlatformsCommand(ILogger<TrimUnchangedPlatformsCommand> logger)
+        public TrimUnchangedPlatformsCommand(
+            ILogger<TrimUnchangedPlatformsCommand> logger,
+            IArtifactService artifactService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Trims platforms marked as unchanged from the image info file";
@@ -26,6 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
+            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
             if (!File.Exists(Options.ImageInfoPath))
             {

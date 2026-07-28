@@ -240,7 +240,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
-            TrimUnchangedPlatformsCommand command = new TrimUnchangedPlatformsCommand(Mock.Of<ILogger<TrimUnchangedPlatformsCommand>>());
+            TrimUnchangedPlatformsCommand command = new(
+                Mock.Of<ILogger<TrimUnchangedPlatformsCommand>>(),
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
 
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(input));

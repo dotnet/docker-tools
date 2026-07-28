@@ -29,6 +29,13 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         HashSet<PlatformInfo> selectedPlatformSet = selectedPlatforms.ToHashSet();
         PlatformInfo[] platformsToPlan =
             [..dependencyGraph.PlatformsInDependencyOrder.Where(selectedPlatformSet.Contains)];
+        PlatformInfo[][] imageBuilds = platformsToPlan
+            .GroupBy(GetBuildCacheKey)
+            .Select(group => group.ToArray())
+            .ToArray();
+        IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> imageBuildByPlatform = imageBuilds
+            .SelectMany(imageBuild => imageBuild.Select(platform => (platform, imageBuild)))
+            .ToDictionary(item => item.platform, item => item.imageBuild);
 
         Dictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform =
             platformsToPlan.ToDictionary(
@@ -36,10 +43,52 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 platform => GetPublishedPlatformMetadata(manifest, platform, imageArtifactDetails));
 
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform = [];
+        HashSet<PlatformInfo[]> plannedImageBuilds = [];
+        HashSet<PlatformInfo[]> imageBuildsBeingPlanned = [];
 
-        foreach (PlatformInfo[] platformsSharingImage in GetImageBuildsInDependencyOrder(
-            platformsToPlan,
-            dependencyGraph))
+        foreach (PlatformInfo[] imageBuild in imageBuilds)
+        {
+            await VisitImageBuildAsync(imageBuild);
+        }
+
+        PropagateBuildCauses(plannedByPlatform, dependencyGraph);
+
+        BuildPlan buildPlan = dependencyGraph.CreateBuildPlan(plannedByPlatform.Values);
+        LogPlan(logger, buildPlan);
+        return buildPlan;
+
+        async Task VisitImageBuildAsync(PlatformInfo[] imageBuild)
+        {
+            if (plannedImageBuilds.Contains(imageBuild))
+            {
+                return;
+            }
+
+            if (!imageBuildsBeingPlanned.Add(imageBuild))
+            {
+                throw new InvalidOperationException(
+                    $"Shared image build dependency cycle detected at " +
+                    $"'{imageBuild[0].DockerfilePathRelativeToManifest}'.");
+            }
+
+            IEnumerable<PlatformInfo[]> dependencyImageBuilds = imageBuild
+                .SelectMany(dependencyGraph.GetDependencies)
+                .Where(imageBuildByPlatform.ContainsKey)
+                .Select(dependency => imageBuildByPlatform[dependency])
+                .Where(dependencyImageBuild => dependencyImageBuild != imageBuild)
+                .Distinct();
+
+            foreach (PlatformInfo[] dependencyImageBuild in dependencyImageBuilds)
+            {
+                await VisitImageBuildAsync(dependencyImageBuild);
+            }
+
+            await PlanImageBuildAsync(imageBuild);
+            imageBuildsBeingPlanned.Remove(imageBuild);
+            plannedImageBuilds.Add(imageBuild);
+        }
+
+        async Task PlanImageBuildAsync(PlatformInfo[] platformsSharingImage)
         {
             PlatformInfo representativePlatform =
                 SelectRepresentativePlatform(platformsSharingImage, publishedMetadataByPlatform);
@@ -82,12 +131,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 }
             }
         }
-
-        PropagateBuildCauses(plannedByPlatform, dependencyGraph);
-
-        BuildPlan buildPlan = dependencyGraph.CreateBuildPlan(plannedByPlatform.Values);
-        LogPlan(logger, buildPlan);
-        return buildPlan;
     }
 
     /// <summary>
@@ -381,60 +424,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                     queue.Enqueue((dependent, dependencyPath));
                 }
             }
-        }
-    }
-
-    private static IEnumerable<PlatformInfo[]> GetImageBuildsInDependencyOrder(
-        IReadOnlyCollection<PlatformInfo> platforms,
-        PlatformDependencyGraph dependencyGraph)
-    {
-        PlatformInfo[][] imageBuilds = platforms
-            .GroupBy(GetBuildCacheKey)
-            .Select(group => group.ToArray())
-            .ToArray();
-        IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> imageBuildByPlatform = imageBuilds
-            .SelectMany(imageBuild => imageBuild.Select(platform => (platform, imageBuild)))
-            .ToDictionary(item => item.platform, item => item.imageBuild);
-        HashSet<PlatformInfo[]> visited = [];
-        HashSet<PlatformInfo[]> visiting = [];
-        List<PlatformInfo[]> imageBuildsInDependencyOrder = [];
-
-        foreach (PlatformInfo[] imageBuild in imageBuilds)
-        {
-            VisitDependencies(imageBuild);
-        }
-
-        return imageBuildsInDependencyOrder;
-
-        void VisitDependencies(PlatformInfo[] imageBuild)
-        {
-            if (visited.Contains(imageBuild))
-            {
-                return;
-            }
-
-            if (!visiting.Add(imageBuild))
-            {
-                throw new InvalidOperationException(
-                    $"Shared image build dependency cycle detected at " +
-                    $"'{imageBuild[0].DockerfilePathRelativeToManifest}'.");
-            }
-
-            IEnumerable<PlatformInfo[]> dependencyBuilds = imageBuild
-                .SelectMany(dependencyGraph.GetDependencies)
-                .Where(imageBuildByPlatform.ContainsKey)
-                .Select(dependency => imageBuildByPlatform[dependency])
-                .Where(dependencyBuild => dependencyBuild != imageBuild)
-                .Distinct();
-
-            foreach (PlatformInfo[] dependencyBuild in dependencyBuilds)
-            {
-                VisitDependencies(dependencyBuild);
-            }
-
-            visiting.Remove(imageBuild);
-            visited.Add(imageBuild);
-            imageBuildsInDependencyOrder.Add(imageBuild);
         }
     }
 

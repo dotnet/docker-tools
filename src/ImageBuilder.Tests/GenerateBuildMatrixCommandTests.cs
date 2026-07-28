@@ -170,15 +170,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public Task<BuildPlan> CreateBuildPlanAsync(
                 ManifestInfo manifest,
-                IEnumerable<PlatformInfo> allPlatforms,
-                IEnumerable<PlatformInfo> platformsToEvaluate,
+                IEnumerable<PlatformInfo> dependencyPlatforms,
+                IEnumerable<PlatformInfo> selectedPlatforms,
                 ImageArtifactDetails imageArtifactDetails,
                 BaseImageResolver baseImageResolver,
                 string sourceRepoUrl,
                 bool useCache)
             {
-                HashSet<PlatformInfo> evaluatedPlatforms = platformsToEvaluate.ToHashSet();
-                PlatformInfo[] graphPlatforms = allPlatforms.ToArray();
+                HashSet<PlatformInfo> evaluatedPlatforms = selectedPlatforms.ToHashSet();
+                PlatformInfo[] graphPlatforms = dependencyPlatforms.ToArray();
                 PlannedPlatform[] plan = graphPlatforms
                     .Where(evaluatedPlatforms.Contains)
                     .Select(platform =>

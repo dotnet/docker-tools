@@ -18,12 +18,12 @@ public interface IBuildPlanner
     /// Decides how each platform should be handled and explains why.
     /// </summary>
     /// <param name="manifest">Manifest that the platforms belong to.</param>
-    /// <param name="allPlatforms">
+    /// <param name="dependencyPlatforms">
     /// Every platform that forms the dependency graph. This is usually wider than
-    /// <paramref name="platformsToEvaluate"/> so that a build can be traced through platforms that
+    /// <paramref name="selectedPlatforms"/> so that a build can be traced through platforms that
     /// were not themselves evaluated, and it must contain all of them.
     /// </param>
-    /// <param name="platformsToEvaluate">
+    /// <param name="selectedPlatforms">
     /// The platforms to decide about. Platforms outside this set still take part in the dependency
     /// graph, but no decision is made about them.
     /// </param>
@@ -36,8 +36,8 @@ public interface IBuildPlanner
     /// <param name="useCache">Whether previously published images may be reused.</param>
     Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
-        IEnumerable<PlatformInfo> allPlatforms,
-        IEnumerable<PlatformInfo> platformsToEvaluate,
+        IEnumerable<PlatformInfo> dependencyPlatforms,
+        IEnumerable<PlatformInfo> selectedPlatforms,
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,

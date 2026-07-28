@@ -66,6 +66,10 @@ public sealed class FileSystem : IFileSystem
         Directory.CreateDirectory(path);
 
     /// <inheritdoc/>
+    public string? GetDirectoryName(string path) =>
+        Path.GetDirectoryName(path);
+
+    /// <inheritdoc/>
     public string GetCurrentDirectory() =>
         Directory.GetCurrentDirectory();
 }

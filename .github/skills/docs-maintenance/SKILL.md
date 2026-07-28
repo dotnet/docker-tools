@@ -1,8 +1,8 @@
 ---
 name: docs-maintenance
 description: >-
-  Updates or reviews repository documentation after changes to user behavior,
-  shared contracts, pipelines, workflows, or agent guidance.
+  Reviews or updates repository documentation as a dedicated task after implementation is
+  complete. Use before submitting a pull request or when reviewing a pull request.
 ---
 
 # Documentation maintenance

@@ -183,23 +183,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Where(evaluatedPlatforms.Contains)
                     .Select(platform =>
                     {
-                        BuildAction action = _actions.GetValueOrDefault(
-                            platform.Model.Dockerfile,
-                            BuildAction.Build);
+                        BuildAction action = _actions.GetValueOrDefault(platform.Model.Dockerfile, BuildAction.Build);
                         IReadOnlyList<BuildCause> causes = action == BuildAction.Build ?
-                            [new BuildCause(
-                                BuildPlanReason.MissingImageInfo,
-                                platform,
-                                [platform])] :
+                            [new BuildCause(BuildPlanReason.MissingImageInfo, platform, [platform])] :
                             [];
 
                         return new PlannedPlatform(platform, action, null, causes);
                     })
                     .ToArray();
 
-                return Task.FromResult(new BuildPlan(
-                    plan,
-                    PlatformDependencyGraph.Create(manifest, graphPlatforms)));
+                return Task.FromResult(new BuildPlan(plan, PlatformDependencyGraph.Create(manifest, graphPlatforms)));
             }
 
         }

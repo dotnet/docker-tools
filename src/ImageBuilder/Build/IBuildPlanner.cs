@@ -20,18 +20,17 @@ public interface IBuildPlanner
     /// <param name="manifest">Manifest that the platforms belong to.</param>
     /// <param name="dependencyPlatforms">
     /// Every platform that forms the dependency graph. This is usually wider than
-    /// <paramref name="selectedPlatforms"/> so that a build can be traced through platforms that
-    /// were not themselves evaluated, and it must contain all of them.
+    /// <paramref name="selectedPlatforms"/> so that a build can be traced through platforms that were not themselves
+    /// evaluated, and it must contain all of them.
     /// </param>
     /// <param name="selectedPlatforms">
-    /// The platforms to decide about. Platforms outside this set still take part in the dependency
-    /// graph, but no decision is made about them.
+    /// The platforms to decide about. Platforms outside this set still take part in the dependency graph, but no
+    /// decision is made about them.
     /// </param>
     /// <param name="imageArtifactDetails">Previously published image metadata, when available.</param>
     /// <param name="baseImageResolver">Resolver for current base-image digests.</param>
     /// <param name="sourceRepoUrl">
-    /// Source repository URL used to compare Dockerfile commits. When null, the Dockerfile
-    /// comparison is not performed.
+    /// Source repository URL used to compare Dockerfile commits. When null, the Dockerfile comparison is not performed.
     /// </param>
     /// <param name="useCache">Whether previously published images may be reused.</param>
     Task<BuildPlan> CreateBuildPlanAsync(

@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     })
                     .ToArray();
 
-                return Task.FromResult(new BuildPlan(plan, PlatformDependencyGraph.Create(manifest, graphPlatforms)));
+                return Task.FromResult(new BuildPlan(manifest, graphPlatforms, plan));
             }
 
         }

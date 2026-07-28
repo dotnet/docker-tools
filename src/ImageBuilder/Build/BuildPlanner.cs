@@ -27,7 +27,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         // Build effects may pass through unselected platforms, so preserve the full dependency graph.
         HashSet<PlatformInfo> selectedPlatformSet = selectedPlatforms.ToHashSet();
         PlatformInfo[] allUniquePlatforms = [..allPlatforms.Distinct()];
-        PlatformDependencyGraph dependencyGraph = PlatformDependencyGraph.Create(manifest, allUniquePlatforms);
+        BuildPlan buildPlan = new(manifest, allUniquePlatforms);
         PlatformInfo[] platformsToPlan = [..allUniquePlatforms.Where(selectedPlatformSet.Contains)];
 
         Dictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform =
@@ -41,7 +41,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         // available when evaluating children.
         IEnumerable<PlatformInfo[]> platformGroupsSharingImageContent = platformsToPlan
             .GroupBy(GetBuildCacheKey)
-            .OrderBy(build => build.Max(dependencyGraph.GetDependencyDepth))
+            .OrderBy(build => build.Max(buildPlan.GetDependencyDepth))
             .Select(build => build.ToArray());
 
         foreach (PlatformInfo[] platformsSharingImageContent in platformGroupsSharingImageContent)
@@ -86,9 +86,9 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         // A rebuilt image invalidates its descendants even if they were otherwise reusable.
         PlannedPlatform[] initialDecisions =
             [..platformsToPlan.Select(platform => initialDecisionsByPlatform[platform])];
-        BuildPlan plan = new(PropagateBuildCauses(initialDecisions, dependencyGraph), dependencyGraph);
-        LogPlan(logger, plan);
-        return plan;
+        buildPlan = buildPlan.WithDecisions(PropagateBuildCauses(initialDecisions, buildPlan));
+        LogPlan(logger, buildPlan);
+        return buildPlan;
     }
 
     /// <summary>
@@ -343,7 +343,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
     private static IReadOnlyList<PlannedPlatform> PropagateBuildCauses(
         IEnumerable<PlannedPlatform> plannedPlatforms,
-        PlatformDependencyGraph dependencyGraph)
+        BuildPlan buildPlan)
     {
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform =
             plannedPlatforms.ToDictionary(planned => planned.Platform);
@@ -360,7 +360,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
             while (queue.TryDequeue(out (PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path) current))
             {
-                foreach (PlatformInfo child in dependencyGraph.GetChildren(current.Platform).Where(visited.Add))
+                foreach (PlatformInfo child in buildPlan.GetDependents(current.Platform).Where(visited.Add))
                 {
                     PlatformInfo[] childPath = [..current.Path, child];
 

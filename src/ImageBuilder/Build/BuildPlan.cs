@@ -10,30 +10,103 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
-/// Immutable decisions for a set of manifest platforms.
+/// Platforms, their dependencies, and the build decision for each selected platform.
 /// </summary>
 public sealed class BuildPlan
 {
-    private readonly PlatformDependencyGraph _dependencyGraph;
+    private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _dependencies;
     private readonly IReadOnlyDictionary<PlatformInfo, PlannedPlatform> _decisionsByPlatform;
+    private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _dependents;
+    private readonly IReadOnlyDictionary<PlatformInfo, int> _dependencyDepths;
+    private readonly IReadOnlyCollection<PlatformInfo> _platforms;
 
     /// <summary>
-    /// Creates a plan from the decisions for selected platforms and the relationships between all platforms.
+    /// Creates a plan containing all given platforms and build decisions for the selected platforms.
     /// </summary>
-    public BuildPlan(IEnumerable<PlannedPlatform> decisions, PlatformDependencyGraph dependencyGraph)
+    /// <param name="manifest">Manifest that defines the platform dependencies.</param>
+    /// <param name="platforms">Every platform needed to determine build order.</param>
+    /// <param name="decisions">Build decisions for the selected platforms.</param>
+    public BuildPlan(
+        ManifestInfo manifest,
+        IReadOnlyCollection<PlatformInfo> platforms,
+        IEnumerable<PlannedPlatform> decisions)
     {
+        ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentNullException.ThrowIfNull(platforms);
         ArgumentNullException.ThrowIfNull(decisions);
-        _dependencyGraph = dependencyGraph ?? throw new ArgumentNullException(nameof(dependencyGraph));
+
+        _dependencies = platforms.ToDictionary(
+            platform => platform,
+            platform => manifest.GetParents(platform, platforms).ToArray());
+
+        Dictionary<PlatformInfo, List<PlatformInfo>> dependents =
+            platforms.ToDictionary(platform => platform, _ => new List<PlatformInfo>());
+
+        foreach (PlatformInfo platform in platforms)
+        {
+            foreach (PlatformInfo dependency in _dependencies[platform])
+            {
+                dependents[dependency].Add(platform);
+            }
+        }
+
+        _dependents = dependents.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray());
+        Dictionary<PlatformInfo, int> dependencyDepths = [];
+        foreach (PlatformInfo platform in platforms)
+        {
+            GetDependencyDepth(platform);
+        }
+
+        _dependencyDepths = dependencyDepths;
+        _platforms = _dependencies.Keys.ToArray();
+        _decisionsByPlatform = decisions.ToDictionary(planned => planned.Platform);
+
+        if (_decisionsByPlatform.Keys.Any(platform => !_dependencies.ContainsKey(platform)))
+        {
+            throw new ArgumentException("Build decisions must belong to a platform in the plan.", nameof(decisions));
+        }
+
+        DecisionsInBuildOrder =
+            [.._decisionsByPlatform.Values.OrderBy(decision => _dependencyDepths[decision.Platform])];
+
+        int GetDependencyDepth(PlatformInfo platform)
+        {
+            if (!dependencyDepths.TryGetValue(platform, out int depth))
+            {
+                depth = _dependencies[platform].Length == 0 ? 0 : _dependencies[platform].Max(GetDependencyDepth) + 1;
+                dependencyDepths[platform] = depth;
+            }
+
+            return depth;
+        }
+    }
+
+    private BuildPlan(BuildPlan graph, IEnumerable<PlannedPlatform> decisions)
+    {
+        _dependencies = graph._dependencies;
+        _dependents = graph._dependents;
+        _dependencyDepths = graph._dependencyDepths;
+        _platforms = graph._platforms;
         _decisionsByPlatform = decisions.ToDictionary(planned => planned.Platform);
         DecisionsInBuildOrder =
-            [.._decisionsByPlatform.Values.OrderBy(planned => dependencyGraph.GetDependencyDepth(planned.Platform))];
+            [.._decisionsByPlatform.Values.OrderBy(decision => _dependencyDepths[decision.Platform])];
     }
+
+    /// <summary>Creates the platform graph before build decisions have been made.</summary>
+    internal BuildPlan(ManifestInfo manifest, IReadOnlyCollection<PlatformInfo> platforms)
+        : this(manifest, platforms, [])
+    {
+    }
+
+    /// <summary>Returns this platform graph with its completed build decisions.</summary>
+    internal BuildPlan WithDecisions(IEnumerable<PlannedPlatform> decisions) =>
+        new(this, decisions);
 
     /// <summary>
     /// Gets every platform in the plan, including platforms that connect selected platforms but do not have a build
     /// decision of their own.
     /// </summary>
-    public IReadOnlyCollection<PlatformInfo> Platforms => _dependencyGraph.Platforms;
+    public IReadOnlyCollection<PlatformInfo> Platforms => _platforms;
 
     /// <summary>
     /// Gets the build decisions in execution order: every platform comes after the platforms it depends on.
@@ -53,11 +126,11 @@ public sealed class BuildPlan
 
     /// <summary>Gets the platforms that the given platform directly depends on.</summary>
     public IReadOnlyList<PlatformInfo> GetDependencies(PlatformInfo platform) =>
-        _dependencyGraph.GetParents(platform);
+        _dependencies[platform];
 
     /// <summary>Gets the platforms that directly depend on the given platform.</summary>
     public IReadOnlyList<PlatformInfo> GetDependents(PlatformInfo platform) =>
-        _dependencyGraph.GetChildren(platform);
+        _dependents[platform];
 
     /// <summary>
     /// Gets every platform connected to a planned build.
@@ -89,10 +162,33 @@ public sealed class BuildPlan
 
         foreach (PlatformInfo origin in origins)
         {
-            platforms.AddRange(
-                _dependencyGraph.GetConnectedPlatforms(origin).Where(addedPlatforms.Add));
+            platforms.AddRange(GetConnectedPlatforms(origin).Where(addedPlatforms.Add));
         }
 
         return platforms;
+    }
+
+    internal int GetDependencyDepth(PlatformInfo platform) => _dependencyDepths[platform];
+
+    private IReadOnlyList<PlatformInfo> GetConnectedPlatforms(PlatformInfo platform)
+    {
+        HashSet<PlatformInfo> visited = [];
+        List<PlatformInfo> connected = [];
+        Visit(platform);
+        return connected;
+
+        void Visit(PlatformInfo current)
+        {
+            if (!visited.Add(current))
+            {
+                return;
+            }
+
+            connected.Add(current);
+            foreach (PlatformInfo related in _dependents[current].Concat(_dependencies[current]))
+            {
+                Visit(related);
+            }
+        }
     }
 }

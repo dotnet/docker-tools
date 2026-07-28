@@ -73,8 +73,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
-            using CancellationTokenSource timeLimitCancellation =
-                CreateTimeLimitCancellation(Options.TimeLimitMinutes);
+            TimeSpan? timeLimit = Options.TimeLimitMinutes is ushort timeLimitMinutes
+                ? TimeSpan.FromMinutes(timeLimitMinutes)
+                : null;
+            using CancellationTokenSource timeLimitCancellation = CreateTimeLimitCancellation(timeLimit);
 
             try
             {
@@ -97,24 +99,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             catch (OperationCanceledException) when (timeLimitCancellation.IsCancellationRequested)
             {
-                LogTimeLimitReached(Options.RegistryName, Options.TimeLimitMinutes.GetValueOrDefault());
+                LogTimeLimitReached(Options.RegistryName, timeLimit.GetValueOrDefault());
             }
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }
 
-        private static CancellationTokenSource CreateTimeLimitCancellation(ushort? timeLimitMinutes)
+        private static CancellationTokenSource CreateTimeLimitCancellation(TimeSpan? timeLimit)
         {
             CancellationTokenSource cancellation = new();
-            if (timeLimitMinutes is ushort minutes)
+            if (timeLimit is TimeSpan limit)
             {
-                if (minutes == 0)
+                if (limit <= TimeSpan.Zero)
                 {
                     cancellation.Cancel();
                 }
                 else
                 {
-                    cancellation.CancelAfter(TimeSpan.FromMinutes(minutes));
+                    cancellation.CancelAfter(limit);
                 }
             }
 
@@ -284,10 +286,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return digestsToDelete;
         }
 
-        private void LogTimeLimitReached(string target, ushort timeLimitMinutes) =>
+        private void LogTimeLimitReached(string target, TimeSpan timeLimit) =>
             _logger.LogInformation(
                 "Cleanup time limit of {TimeLimitMinutes} minutes reached; stopping cleanup for '{Target}'",
-                timeLimitMinutes,
+                timeLimit.TotalMinutes,
                 target);
 
         private bool IsExcludedManifest(ArtifactManifestProperties manifest) =>

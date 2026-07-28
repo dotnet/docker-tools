@@ -194,7 +194,7 @@ jobs:
     parameters:
       acr: ${{ parameters.publishConfig.PublishRegistry }}
       dataFile: eol-annotation-data/eol-annotation-data.json
-      publishArtifact: false
+      skipArtifactPublish: true
 
   - script: >
       $(runImageBuilderCmd) publishImageInfo

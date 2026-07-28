@@ -11,7 +11,6 @@ public interface IArtifactService
 {
     /// <summary>
     /// Resolves <paramref name="artifactPath"/> beneath the configured artifact staging directory.
-    /// Rooted paths are returned unchanged for backward compatibility.
     /// </summary>
     string ResolvePath(string artifactPath);
 

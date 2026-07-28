@@ -31,8 +31,6 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
 
     private string GetOutputPath(string artifactPath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(artifactPath);
-
         if (string.IsNullOrWhiteSpace(_buildConfig.ArtifactStagingDirectory))
         {
             throw new InvalidOperationException(

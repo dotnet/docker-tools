@@ -17,14 +17,14 @@ public class GenerateEolAnnotationDataForAllImagesCommand :
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider,
-        IOutputService outputService)
+        IArtifactService artifactService)
         : base(
             logger,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,
             registryCredentialsProvider,
-            outputService)
+            artifactService)
     {
     }
 

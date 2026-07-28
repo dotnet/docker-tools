@@ -12,9 +12,19 @@ using Shouldly;
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 [TestClass]
-public class OutputServiceTests
+public class ArtifactServiceTests
 {
     private static readonly string s_outputRoot = Path.Combine(Path.GetTempPath(), "artifacts");
+
+    [TestMethod]
+    public void ResolvePath_RelativePath_ResolvesUnderArtifactStagingDirectory()
+    {
+        var service = CreateService(new InMemoryFileSystem());
+
+        string path = service.ResolvePath(Path.Combine("image-info", "input.json"));
+
+        path.ShouldBe(Path.Combine(s_outputRoot, "image-info", "input.json"));
+    }
 
     [TestMethod]
     public void WriteAllText_WritesUnderArtifactStagingDirectory()
@@ -32,7 +42,7 @@ public class OutputServiceTests
     [TestMethod]
     public void WriteAllText_MissingArtifactStagingDirectory_Throws()
     {
-        var service = new OutputService(
+        var service = new ArtifactService(
             new InMemoryFileSystem(),
             Options.Create(new BuildConfiguration()));
 
@@ -63,7 +73,7 @@ public class OutputServiceTests
         fileSystem.GetFileText(outputPath).ShouldBe("contents");
     }
 
-    private static OutputService CreateService(IFileSystem fileSystem) =>
+    private static ArtifactService CreateService(IFileSystem fileSystem) =>
         new(
             fileSystem,
             Options.Create(

@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<AnnotateEolDigestsCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-        private readonly IOutputService _outputService;
+        private readonly IArtifactService _artifactService;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _existingAnnotationImageDigests = [];
@@ -38,12 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ILogger<AnnotateEolDigestsCommand> logger,
             ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider,
-            IOutputService outputService)
+            IArtifactService artifactService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
-            _outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Annotates EOL digests in Docker Registry";
@@ -87,7 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 annotationDigests += Environment.NewLine;
             }
 
-            _outputService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
+            _artifactService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
         }
 
         private void WriteNonEmptySummaryForAnnotationDigests(IEnumerable<string> annotationDigests, string message)

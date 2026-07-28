@@ -22,8 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 fileSystem: new FileSystem(),
                 logger: new LoggerFactory().CreateLogger<ManifestJsonService>());
 
-        public static IOutputService CreateOutputService(string artifactStagingDirectory) =>
-            new OutputService(
+        public static IArtifactService CreateArtifactService(string artifactStagingDirectory) =>
+            new ArtifactService(
                 new FileSystem(),
                 Options.Create(
                     new BuildConfiguration

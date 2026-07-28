@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 loggerServiceMock.Object,
                 lifecycleMetadataServiceMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                TestHelper.CreateOutputService(tempFolderContext.Path));
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.AcrName = AcrName;
             command.Options.EolDigestsListPath = eolDigestsListPath;

@@ -26,7 +26,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
     private readonly IAcrClientFactory _acrClientFactory;
     private readonly ILifecycleMetadataService _lifecycleMetadataService;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-    private readonly IOutputService _outputService;
+    private readonly IArtifactService _artifactService;
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
 
     protected GenerateEolAnnotationDataCommandBase(
@@ -35,14 +35,14 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider,
-        IOutputService outputService)
+        IArtifactService artifactService)
     {
         _logger = logger;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;
         _registryCredentialsProvider = registryCredentialsProvider;
-        _outputService = outputService;
+        _artifactService = artifactService;
     }
 
     public sealed override async Task ExecuteAsync()
@@ -130,7 +130,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
             eolAnnotations,
             Formatting.Indented,
             new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-        _outputService.WriteAllText(Options.EolDigestsListPath, annotationsJson);
+        _artifactService.WriteAllText(Options.EolDigestsListPath, annotationsJson);
     }
 
     private async Task<IEnumerable<EolDigestData>> GetDigestsWithoutExistingAnnotationAsync(

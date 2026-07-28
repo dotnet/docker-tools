@@ -62,7 +62,7 @@ public sealed class BuildPlan
             .Where(planned => planned.Action == BuildAction.Build)
             .SelectMany(planned => planned.Causes)
             .Where(cause =>
-                cause.DependencyPath.Count == 1 &&
+                cause.IsDirect() &&
                 reasonSet.Contains(cause.Reason))
             .Select(cause => cause.Origin)
             .Distinct();

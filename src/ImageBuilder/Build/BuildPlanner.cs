@@ -151,7 +151,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             ? "nothing about it changed"
             : string.Join(
                 ", ",
-                causes.Select(cause => cause.DependencyPath.Count > 1
+                causes.Select(cause => !cause.IsDirect()
                     ? $"{cause.Reason} via " + string.Join(
                         " -> ",
                         cause.DependencyPath.Select(platform => platform.DockerfilePathRelativeToManifest))

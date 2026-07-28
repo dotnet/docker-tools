@@ -1165,6 +1165,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private static MergeImageInfoCommand CreateCommand(string artifactStagingDirectory) =>
             new(
                 TestHelper.CreateManifestJsonService(),
-                TestHelper.CreateOutputService(artifactStagingDirectory));
+                TestHelper.CreateArtifactService(artifactStagingDirectory));
     }
 }

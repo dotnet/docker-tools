@@ -1154,7 +1154,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 acrContentClientFactory: registryContentClientFactory,
                 lifecycleMetadataService: lifecycleMetadataService,
                 registryCredentialsProvider: Mock.Of<IRegistryCredentialsProvider>(),
-                outputService: TestHelper.CreateOutputService(Path.GetDirectoryName(newEolDigestsListPath)));
+                artifactService: TestHelper.CreateArtifactService(Path.GetDirectoryName(newEolDigestsListPath)));
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
             command.Options.EolDigestsListPath = Path.GetFileName(newEolDigestsListPath);

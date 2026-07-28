@@ -10,8 +10,8 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.DotNet.ImageBuilder;
 
 /// <inheritdoc />
-public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfiguration> buildConfigOptions)
-    : IOutputService
+public sealed class ArtifactService(IFileSystem fileSystem, IOptions<BuildConfiguration> buildConfigOptions)
+    : IArtifactService
 {
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly BuildConfiguration _buildConfig = buildConfigOptions.Value;
@@ -19,18 +19,15 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
     /// <inheritdoc />
     public void WriteAllText(string artifactPath, string contents)
     {
-        string outputPath = ResolveArtifactPath(artifactPath);
+        string outputPath = ResolvePath(artifactPath);
         string outputDirectory = Path.GetDirectoryName(outputPath)
             ?? throw new InvalidOperationException($"Output path '{outputPath}' has no directory.");
         _fileSystem.CreateDirectory(outputDirectory);
         _fileSystem.WriteAllText(outputPath, contents);
     }
 
-    /// <summary>
-    /// Resolves an artifact-relative path beneath the configured staging directory.
-    /// Rooted paths are preserved for commands that have not migrated to relative outputs.
-    /// </summary>
-    private string ResolveArtifactPath(string artifactPath)
+    /// <inheritdoc />
+    public string ResolvePath(string artifactPath)
     {
         // Rooted paths are already fully resolved. Keep supporting them while callers migrate.
         if (Path.IsPathRooted(artifactPath))

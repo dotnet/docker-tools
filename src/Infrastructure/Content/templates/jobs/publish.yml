@@ -265,7 +265,7 @@ jobs:
   - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(Build.ArtifactStagingDirectory)
-      artifactName: publish-$(System.JobAttempt)
+      artifactName: publish-attempt-$(System.JobAttempt)
       displayName: Publish Stage Artifacts
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}

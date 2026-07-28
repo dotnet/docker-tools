@@ -16,7 +16,7 @@ image. Repositories can use the hook to stage files into Docker build contexts, 
 ## 2026-07-28: Publish stage artifacts consolidated
 
 The Publish stage now uploads `$(Build.ArtifactStagingDirectory)` once as
-`publish-$(System.JobAttempt)`. This replaces these separate artifacts:
+`publish-attempt-$(System.JobAttempt)`. This replaces these separate artifacts:
 
 - `image-info-final-$(System.JobAttempt)`
 - `eol-annotation-data-$(System.JobAttempt)`

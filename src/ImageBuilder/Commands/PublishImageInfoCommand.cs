@@ -15,13 +15,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitService _gitService;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly ILogger<PublishImageInfoCommand> _logger;
+        private readonly IArtifactService _artifactService;
         private const string CommitMessage = "Merging Docker image info updates from build";
 
-        public PublishImageInfoCommand(IManifestJsonService manifestJsonService, IGitService gitService, IOctokitClientFactory octokitClientFactory, ILogger<PublishImageInfoCommand> logger) : base(manifestJsonService)
+        public PublishImageInfoCommand(
+            IManifestJsonService manifestJsonService,
+            IGitService gitService,
+            IOctokitClientFactory octokitClientFactory,
+            ILogger<PublishImageInfoCommand> logger,
+            IArtifactService artifactService) : base(manifestJsonService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Publishes a build's merged image info.";
@@ -29,6 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("PUBLISHING IMAGE INFO");
+            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
             string repoPath = Path.Combine(Path.GetTempPath(), "imagebuilder-repos", Options.GitOptions.Repo);
             if (Directory.Exists(repoPath))

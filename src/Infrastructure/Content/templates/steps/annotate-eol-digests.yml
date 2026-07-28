@@ -38,4 +38,4 @@ steps:
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'), eq(variables['waitForIngestionEnabled'], 'true'))
       args: >-
         waitForMarAnnotationIngestion
-        $(artifactsPath)/annotation-digests/annotation-digests.txt
+        annotation-digests/annotation-digests.txt

@@ -32,6 +32,13 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
     /// </summary>
     private string ResolveArtifactPath(string artifactPath)
     {
+        // Rooted paths are already fully resolved. Keep supporting them while callers migrate.
+        if (Path.IsPathRooted(artifactPath))
+        {
+            return artifactPath;
+        }
+
+        // Relative paths require a configured root before they can be resolved.
         if (string.IsNullOrWhiteSpace(_buildConfig.ArtifactStagingDirectory))
         {
             throw new InvalidOperationException(
@@ -39,14 +46,12 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
                 + "Configure it in appsettings.json or via environment variables.");
         }
 
-        if (Path.IsPathRooted(artifactPath))
-        {
-            return artifactPath;
-        }
-
+        // Canonicalize both paths so traversal segments can be checked reliably.
         string outputRoot = Path.GetFullPath(_buildConfig.ArtifactStagingDirectory);
         string outputPath = Path.GetFullPath(artifactPath, outputRoot);
         string relativeOutputPath = Path.GetRelativePath(outputRoot, outputPath);
+
+        // Reject relative paths that escape the configured artifact staging directory.
         if (relativeOutputPath == ".."
             || relativeOutputPath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
         {

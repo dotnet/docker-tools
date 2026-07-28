@@ -22,6 +22,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
+            Options.SourceImageInfoFolderPath = artifactService.ResolvePath(Options.SourceImageInfoFolderPath);
+            if (Options.InitialImageInfoPath is not null)
+            {
+                Options.InitialImageInfoPath = artifactService.ResolvePath(Options.InitialImageInfoPath);
+            }
+
             IEnumerable<string> imageInfoFiles = Directory.EnumerateFiles(
                 Options.SourceImageInfoFolderPath,
                 "*.json",

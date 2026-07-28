@@ -6,8 +6,6 @@ parameters:
   type: string
 
 steps:
-  - script: mkdir -p $(Build.ArtifactStagingDirectory)/annotation-digests
-    displayName: Create Annotation Digests Directory
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Annotate EOL Images (${{ parameters.acr.server }})
@@ -18,7 +16,7 @@ steps:
         "${{ parameters.dataFile }}"
         "${{ parameters.acr.server }}"
         "${{ parameters.acr.repoPrefix }}"
-        $(artifactsPath)/annotation-digests/annotation-digests.txt
+        annotation-digests/annotation-digests.txt
         $(dryRunArg)
   - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:

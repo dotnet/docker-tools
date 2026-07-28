@@ -73,11 +73,10 @@ jobs:
         exit 0
       }
 
-      New-Item -ItemType Directory -Path $(imageInfosHostDir)$(imageInfosOutputSubDir) -Force
       $(runImageBuilderCmd) mergeImageInfo `
         --manifest $(manifest) `
         $(imageInfosContainerDir) `
-        $(imageInfosContainerDir)$(imageInfosOutputSubDir)/image-info.json `
+        image-infos/output/image-info.json `
         $(manifestVariables)
     name: MergeImageInfoFiles
     displayName: Merge Image Info Files

@@ -30,9 +30,9 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             PlatformDependencyGraph.Create(manifest, graphPlatforms);
 
         PlatformInfo[] evaluationOrder = [..graphPlatforms.Where(evaluatedPlatforms.Contains)];
-        Dictionary<PlatformInfo, PlatformData?> previousPlatforms = evaluationOrder.ToDictionary(
+        Dictionary<PlatformInfo, PlatformData?> publishedPlatforms = evaluationOrder.ToDictionary(
             platform => platform,
-            platform => GetPreviousPlatform(manifest, platform, imageArtifactDetails));
+            platform => GetPublishedPlatform(manifest, platform, imageArtifactDetails));
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform = [];
 
         IBuildPlanCheck[] contentChecks =
@@ -50,8 +50,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         foreach (IGrouping<string, PlatformInfo> group in platformGroups)
         {
             PlatformInfo[] groupPlatforms = [..group];
-            PlatformInfo representative = SelectContentRepresentative(groupPlatforms, previousPlatforms);
-            PlatformData? reusedPlatform = previousPlatforms[representative];
+            PlatformInfo representative = SelectContentRepresentative(groupPlatforms, publishedPlatforms);
+            PlatformData? reusedPlatform = publishedPlatforms[representative];
 
             LogSharedContentScope(logger, groupPlatforms, representative);
 
@@ -63,12 +63,12 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
             foreach (PlatformInfo platform in groupPlatforms)
             {
-                PlatformData? previousPlatform = previousPlatforms[platform];
+                PlatformData? publishedPlatform = publishedPlatforms[platform];
                 List<EvaluatedBuildPlanCheck> results = [..contentResults];
                 results.AddRange(
-                    await EvaluateChecksAsync(publishChecks, CreateContext(platform, previousPlatform)));
+                    await EvaluateChecksAsync(publishChecks, CreateContext(platform, publishedPlatform)));
 
-                if (!requiresBuild && HasEquivalentBuildChanged(previousPlatform, reusedPlatform))
+                if (!requiresBuild && HasEquivalentBuildChanged(publishedPlatform, reusedPlatform))
                 {
                     results.Add(new EvaluatedBuildPlanCheck(
                         BuildPlanReason.EquivalentBuildChanged,
@@ -95,8 +95,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         LogPlan(logger, plan);
         return plan;
 
-        BuildPlanCheckContext CreateContext(PlatformInfo platform, PlatformData? previousPlatform) =>
-            new(platform, previousPlatform, baseImageResolver, gitService, logger, sourceRepoUrl);
+        BuildPlanCheckContext CreateContext(PlatformInfo platform, PlatformData? publishedPlatform) =>
+            new(platform, publishedPlatform, baseImageResolver, gitService, logger, sourceRepoUrl);
     }
 
     /// <summary>
@@ -164,7 +164,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     private static string DescribeTag(PlatformInfo platform) =>
         platform.Tags.FirstOrDefault()?.FullyQualifiedName ?? "untagged";
 
-    private static PlatformData? GetPreviousPlatform(
+    private static PlatformData? GetPublishedPlatform(
         ManifestInfo manifest,
         PlatformInfo platform,
         ImageArtifactDetails? imageArtifactDetails)
@@ -186,9 +186,9 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// </summary>
     private static PlatformInfo SelectContentRepresentative(
         IEnumerable<PlatformInfo> group,
-        IReadOnlyDictionary<PlatformInfo, PlatformData?> previousPlatforms) =>
+        IReadOnlyDictionary<PlatformInfo, PlatformData?> publishedPlatforms) =>
         group
-            .OrderByDescending(platform => previousPlatforms[platform] is not null)
+            .OrderByDescending(platform => publishedPlatforms[platform] is not null)
             .ThenBy(platform => platform.DockerfilePathRelativeToManifest, StringComparer.Ordinal)
             .ThenBy(platform => platform.Tags.FirstOrDefault()?.Name, StringComparer.Ordinal)
             .First();
@@ -198,11 +198,11 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// being reused, which requires the platform's tags to be published against the reused image.
     /// </summary>
     private static bool HasEquivalentBuildChanged(
-        PlatformData? previousPlatform,
+        PlatformData? publishedPlatform,
         PlatformData? reusedPlatform) =>
-        previousPlatform is not null &&
+        publishedPlatform is not null &&
         reusedPlatform is not null &&
-        !DockerHelper.GetDigestSha(previousPlatform.Digest).Equals(
+        !DockerHelper.GetDigestSha(publishedPlatform.Digest).Equals(
             DockerHelper.GetDigestSha(reusedPlatform.Digest),
             StringComparison.OrdinalIgnoreCase);
 

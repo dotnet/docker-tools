@@ -34,7 +34,7 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
     public static BuildPlanCheck MissingImageInfo { get; } = new(
         BuildPlanReason.MissingImageInfo,
         BuildPlanCheckScope.ImageContent,
-        context => BuildResultWhen(context.PreviousPlatform is null));
+        context => BuildResultWhen(context.PublishedPlatform is null));
 
     public static BuildPlanCheck BaseImageChanged { get; } = new(
         BuildPlanReason.BaseImageChanged,
@@ -90,7 +90,7 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
 
     private static async Task<BuildPlanCheckDisposition?> EvaluateBaseImageAsync(BuildPlanCheckContext context)
     {
-        if (context.PreviousPlatform is null)
+        if (context.PublishedPlatform is null)
         {
             return null;
         }
@@ -104,7 +104,7 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
         }
 
         string? currentDigestSha = await context.BaseImageResolver.ResolveDigestShaAsync(context.Platform);
-        string? previousDigestSha = context.PreviousPlatform.BaseImageDigest is string previousDigest
+        string? previousDigestSha = context.PublishedPlatform.BaseImageDigest is string previousDigest
             ?  DockerHelper.GetDigestSha(previousDigest)
             : null;
 
@@ -135,13 +135,13 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
         // Comparing Dockerfile commits requires the Dockerfile to be present on disk and a source
         // repo URL to form the commit URL recorded in image info. Contexts that plan against a
         // remote manifest have neither, so this check has no opinion there.
-        if (context.PreviousPlatform is null || context.SourceRepoUrl is null)
+        if (context.PublishedPlatform is null || context.SourceRepoUrl is null)
         {
             return Task.FromResult<BuildPlanCheckDisposition?>(null);
         }
 
         string currentCommitUrl = context.GitService.GetDockerfileCommitUrl(context.Platform, context.SourceRepoUrl);
-        bool commitShaMatches = context.PreviousPlatform.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
+        bool commitShaMatches = context.PublishedPlatform.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
 
         if (commitShaMatches)
         {
@@ -155,7 +155,7 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
             context.Logger.LogInformation(
                 "Dockerfile '{DockerfilePath}' changed from commit {PreviousCommitUrl} to {CurrentCommitUrl}",
                 context.Platform.DockerfilePathRelativeToManifest,
-                context.PreviousPlatform.CommitUrl,
+                context.PublishedPlatform.CommitUrl,
                 currentCommitUrl);
         }
 
@@ -165,14 +165,14 @@ public sealed class BuildPlanCheck : IBuildPlanCheck
     private static Task<BuildPlanCheckDisposition?> EvaluateMissingTags(
         BuildPlanCheckContext context)
     {
-        if (context.PreviousPlatform is null)
+        if (context.PublishedPlatform is null)
         {
             return Task.FromResult<BuildPlanCheckDisposition?>(BuildPlanCheckDisposition.ReuseAndPublish);
         }
 
-        bool hasAllTags = (context.PreviousPlatform.PlatformInfo?.Tags ?? [])
+        bool hasAllTags = (context.PublishedPlatform.PlatformInfo?.Tags ?? [])
             .Select(tag => tag.Name)
-            .AreEquivalent(context.PreviousPlatform.SimpleTags);
+            .AreEquivalent(context.PublishedPlatform.SimpleTags);
 
         return Task.FromResult<BuildPlanCheckDisposition?>(hasAllTags ? null : BuildPlanCheckDisposition.ReuseAndPublish);
     }

@@ -116,14 +116,6 @@ jobs:
         $(imageBuilder.pathArgs)
         $(imageBuilder.commonCmdArgs)
 
-  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
-    parameters:
-      path: $(imageInfoHostDir)
-      artifactName: image-info-final-$(System.JobAttempt)
-      displayName: Publish Image Info File Artifact
-      internalProjectName: ${{ parameters.internalProjectName }}
-      publicProjectName: ${{ parameters.publicProjectName }}
-
   - template: /eng/docker-tools/templates/steps/wait-for-mcr-image-ingestion.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
@@ -198,19 +190,11 @@ jobs:
         $(generateEolAnnotationDataExtraOptions)
         $(dryRunArg)
 
-  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
-    parameters:
-      path: $(Build.ArtifactStagingDirectory)/eol-annotation-data
-      artifactName: eol-annotation-data-$(System.JobAttempt)
-      displayName: Publish EOL Annotation Data Artifact
-      internalProjectName: internal
-      publicProjectName: public
-      condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
-
   - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
     parameters:
       acr: ${{ parameters.publishConfig.PublishRegistry }}
       dataFile: eol-annotation-data/eol-annotation-data.json
+      publishArtifact: false
 
   - script: >
       $(runImageBuilderCmd) publishImageInfo
@@ -280,8 +264,8 @@ jobs:
 
   - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
-      path: $(sourceBuildIdOutputDir)
-      artifactName: source-build-id
-      displayName: Publish Source Build ID Artifact
+      path: $(Build.ArtifactStagingDirectory)
+      artifactName: publish-$(System.JobAttempt)
+      displayName: Publish Stage Artifacts
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}

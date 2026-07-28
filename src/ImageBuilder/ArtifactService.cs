@@ -44,19 +44,19 @@ public sealed class ArtifactService(IFileSystem fileSystem, IOptions<BuildConfig
         }
 
         // Canonicalize both paths so traversal segments can be checked reliably.
-        string outputRoot = Path.GetFullPath(_buildConfig.ArtifactStagingDirectory);
-        string outputPath = Path.GetFullPath(artifactPath, outputRoot);
-        string relativeOutputPath = Path.GetRelativePath(outputRoot, outputPath);
+        string artifactRoot = Path.GetFullPath(_buildConfig.ArtifactStagingDirectory);
+        string resolvedArtifactPath = Path.GetFullPath(artifactPath, artifactRoot);
+        string relativeArtifactPath = Path.GetRelativePath(artifactRoot, resolvedArtifactPath);
 
         // Reject relative paths that escape the configured artifact staging directory.
-        if (relativeOutputPath == ".."
-            || relativeOutputPath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+        if (relativeArtifactPath == ".."
+            || relativeArtifactPath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
         {
             throw new ArgumentException(
-                "Output artifact paths must remain within the artifact staging directory.",
+                "Artifact paths must remain within the artifact staging directory.",
                 nameof(artifactPath));
         }
 
-        return outputPath;
+        return resolvedArtifactPath;
     }
 }

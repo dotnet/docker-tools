@@ -318,7 +318,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             _buildPlan = await _buildPlanner.CreateBuildPlanAsync(
                 Manifest,
-                dependencyPlatforms: Manifest.GetFilteredPlatforms(),
+                allPlatforms: Manifest.GetFilteredPlatforms(),
                 selectedPlatforms: Manifest.GetFilteredPlatforms(),
                 srcImageArtifactDetails,
                 _baseImageResolver.Value,
@@ -329,7 +329,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<ImageInfo, ImageData> imageDataByImage = [];
 
             // The plan is ordered so that a platform is built after everything it depends on.
-            foreach (PlannedPlatform plannedPlatform in _buildPlan.Platforms)
+            foreach (PlannedPlatform plannedPlatform in _buildPlan.DecisionsInBuildOrder)
             {
                 PlatformInfo platform = plannedPlatform.Platform;
                 ImageInfo image = Manifest.GetImageByPlatform(platform);

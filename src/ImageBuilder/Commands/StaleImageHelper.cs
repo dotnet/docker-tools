@@ -43,7 +43,7 @@ public static class StaleImageHelper
             isDryRun);
         BuildPlan plan = await buildPlanner.CreateBuildPlanAsync(
             manifest,
-            dependencyPlatforms: manifest.GetAllPlatforms(),
+            allPlatforms: manifest.GetAllPlatforms(),
             selectedPlatforms: manifest.GetFilteredPlatformsWithExternalBaseImage(),
             imageArtifactDetails,
             baseImageResolver,

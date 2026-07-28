@@ -170,7 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public Task<BuildPlan> CreateBuildPlanAsync(
                 ManifestInfo manifest,
-                IEnumerable<PlatformInfo> dependencyPlatforms,
+                IEnumerable<PlatformInfo> allPlatforms,
                 IEnumerable<PlatformInfo> selectedPlatforms,
                 ImageArtifactDetails imageArtifactDetails,
                 BaseImageResolver baseImageResolver,
@@ -178,7 +178,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 bool useCache)
             {
                 HashSet<PlatformInfo> evaluatedPlatforms = selectedPlatforms.ToHashSet();
-                PlatformInfo[] graphPlatforms = dependencyPlatforms.ToArray();
+                PlatformInfo[] graphPlatforms = allPlatforms.ToArray();
                 PlannedPlatform[] plan = graphPlatforms
                     .Where(evaluatedPlatforms.Contains)
                     .Select(platform =>

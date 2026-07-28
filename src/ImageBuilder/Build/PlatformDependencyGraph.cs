@@ -10,14 +10,15 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
-/// The dependency edges between a set of planned platforms, materialized so that scheduling
-/// questions can be answered without consulting the manifest.
+/// The dependency edges between a set of manifest platforms, materialized so that scheduling questions can be
+/// answered without consulting the manifest.
 /// </summary>
 public sealed class PlatformDependencyGraph
 {
     private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _children;
     private readonly IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> _parents;
     private readonly IReadOnlyDictionary<PlatformInfo, int> _depths;
+    private readonly IReadOnlyCollection<PlatformInfo> _platforms;
 
     private PlatformDependencyGraph(
         IReadOnlyDictionary<PlatformInfo, PlatformInfo[]> children,
@@ -27,7 +28,11 @@ public sealed class PlatformDependencyGraph
         _children = children;
         _parents = parents;
         _depths = depths;
+        _platforms = parents.Keys.ToArray();
     }
+
+    /// <summary>Gets every platform in the graph.</summary>
+    public IReadOnlyCollection<PlatformInfo> Platforms => _platforms;
 
     /// <summary>
     /// Creates the graph for the given platforms, resolving each platform's parents once and
@@ -76,6 +81,9 @@ public sealed class PlatformDependencyGraph
 
     /// <summary>Gets the platforms that directly depend on the given platform.</summary>
     public IReadOnlyList<PlatformInfo> GetChildren(PlatformInfo platform) => _children[platform];
+
+    /// <summary>Gets the platforms that the given platform directly depends on.</summary>
+    public IReadOnlyList<PlatformInfo> GetParents(PlatformInfo platform) => _parents[platform];
 
     /// <summary>
     /// Gets the number of dependency edges between the platform and the furthest platform it

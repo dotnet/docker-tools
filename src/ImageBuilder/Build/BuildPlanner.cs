@@ -17,7 +17,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// <inheritdoc/>
     public async Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
-        IEnumerable<PlatformInfo> dependencyPlatforms,
+        IEnumerable<PlatformInfo> allPlatforms,
         IEnumerable<PlatformInfo> selectedPlatforms,
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
@@ -26,16 +26,16 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     {
         // Build effects may pass through unselected platforms, so preserve the full dependency graph.
         HashSet<PlatformInfo> selectedPlatformSet = selectedPlatforms.ToHashSet();
-        PlatformInfo[] graphPlatforms = [..dependencyPlatforms.Distinct()];
-        PlatformDependencyGraph dependencyGraph = PlatformDependencyGraph.Create(manifest, graphPlatforms);
-        PlatformInfo[] platformsToPlan = [..graphPlatforms.Where(selectedPlatformSet.Contains)];
+        PlatformInfo[] allUniquePlatforms = [..allPlatforms.Distinct()];
+        PlatformDependencyGraph dependencyGraph = PlatformDependencyGraph.Create(manifest, allUniquePlatforms);
+        PlatformInfo[] platformsToPlan = [..allUniquePlatforms.Where(selectedPlatformSet.Contains)];
 
         Dictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform =
             platformsToPlan.ToDictionary(
                 platform => platform,
                 platform => GetPublishedPlatformMetadata(manifest, platform, imageArtifactDetails));
 
-        Dictionary<PlatformInfo, PlannedPlatform> directPlan = [];
+        Dictionary<PlatformInfo, PlannedPlatform> initialDecisionsByPlatform = [];
 
         // Equivalent platforms produce one image. Plan parents first so their reusable digest is
         // available when evaluating children.
@@ -74,7 +74,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 }
 
                 PlannedPlatform platformPlan = CreatePlannedPlatform(platform, imageToReuse, buildImage, reasons);
-                directPlan[platform] = platformPlan;
+                initialDecisionsByPlatform[platform] = platformPlan;
 
                 if (platformPlan.ImageToReuse is not null)
                 {
@@ -84,8 +84,9 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         // A rebuilt image invalidates its descendants even if they were otherwise reusable.
-        PlannedPlatform[] directDecisions = [..platformsToPlan.Select(platform => directPlan[platform])];
-        BuildPlan plan = new(PropagateBuildCauses(directDecisions, dependencyGraph), dependencyGraph);
+        PlannedPlatform[] initialDecisions =
+            [..platformsToPlan.Select(platform => initialDecisionsByPlatform[platform])];
+        BuildPlan plan = new(PropagateBuildCauses(initialDecisions, dependencyGraph), dependencyGraph);
         LogPlan(logger, plan);
         return plan;
     }
@@ -118,11 +119,11 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         logger.LogInformation(
             "Build plan: {BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to reuse " +
             "and publish tags",
-            plan.Platforms.Count(planned => planned.Action == BuildAction.Build),
-            plan.Platforms.Count(planned => planned.Action == BuildAction.Reuse),
-            plan.Platforms.Count(planned => planned.Action == BuildAction.ReuseAndPublishTags));
+            plan.DecisionsInBuildOrder.Count(planned => planned.Action == BuildAction.Build),
+            plan.DecisionsInBuildOrder.Count(planned => planned.Action == BuildAction.Reuse),
+            plan.DecisionsInBuildOrder.Count(planned => planned.Action == BuildAction.ReuseAndPublishTags));
 
-        foreach (PlannedPlatform planned in plan.Platforms)
+        foreach (PlannedPlatform planned in plan.DecisionsInBuildOrder)
         {
             logger.LogInformation(
                 "Planned {Action} of '{DockerfilePath}' ({Tag}) because {Causes}",

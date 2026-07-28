@@ -15,32 +15,52 @@ namespace Microsoft.DotNet.ImageBuilder.Build;
 public sealed class BuildPlan
 {
     private readonly PlatformDependencyGraph _dependencyGraph;
+    private readonly IReadOnlyDictionary<PlatformInfo, PlannedPlatform> _decisionsByPlatform;
 
     /// <summary>
-    /// Creates a plan from decisions for unique manifest platforms and the dependency edges
-    /// between them.
+    /// Creates a plan from the decisions for selected platforms and the relationships between all platforms.
     /// </summary>
-    public BuildPlan(IEnumerable<PlannedPlatform> platforms, PlatformDependencyGraph dependencyGraph)
+    public BuildPlan(IEnumerable<PlannedPlatform> decisions, PlatformDependencyGraph dependencyGraph)
     {
-        ArgumentNullException.ThrowIfNull(platforms);
+        ArgumentNullException.ThrowIfNull(decisions);
         _dependencyGraph = dependencyGraph ?? throw new ArgumentNullException(nameof(dependencyGraph));
-        Platforms =
-            [..platforms.OrderBy(planned => dependencyGraph.GetDependencyDepth(planned.Platform))];
+        _decisionsByPlatform = decisions.ToDictionary(planned => planned.Platform);
+        DecisionsInBuildOrder =
+            [.._decisionsByPlatform.Values.OrderBy(planned => dependencyGraph.GetDependencyDepth(planned.Platform))];
     }
 
     /// <summary>
-    /// Gets the planned platforms in dependency order: every platform comes after the platforms it
-    /// depends on.
+    /// Gets every platform in the plan, including platforms that connect selected platforms but do not have a build
+    /// decision of their own.
     /// </summary>
-    public IReadOnlyList<PlannedPlatform> Platforms { get; }
+    public IReadOnlyCollection<PlatformInfo> Platforms => _dependencyGraph.Platforms;
+
+    /// <summary>
+    /// Gets the build decisions in execution order: every platform comes after the platforms it depends on.
+    /// </summary>
+    public IReadOnlyList<PlannedPlatform> DecisionsInBuildOrder { get; }
 
     /// <summary>Gets whether any platform will reuse previously published metadata.</summary>
     public bool HasReusablePlatforms =>
-        Platforms.Any(planned => planned.Action is
+        DecisionsInBuildOrder.Any(planned => planned.Action is
             BuildAction.Reuse or BuildAction.ReuseAndPublishTags);
 
     /// <summary>
-    /// Gets platforms that must be scheduled to execute planned builds, including their ancestors.
+    /// Gets the build decision for a platform, or null when that platform was not selected for planning.
+    /// </summary>
+    public PlannedPlatform? GetDecision(PlatformInfo platform) =>
+        _decisionsByPlatform.GetValueOrDefault(platform);
+
+    /// <summary>Gets the platforms that the given platform directly depends on.</summary>
+    public IReadOnlyList<PlatformInfo> GetDependencies(PlatformInfo platform) =>
+        _dependencyGraph.GetParents(platform);
+
+    /// <summary>Gets the platforms that directly depend on the given platform.</summary>
+    public IReadOnlyList<PlatformInfo> GetDependents(PlatformInfo platform) =>
+        _dependencyGraph.GetChildren(platform);
+
+    /// <summary>
+    /// Gets every platform connected to a planned build.
     /// </summary>
     public IReadOnlyCollection<PlatformInfo> GetPlatformsToSchedule() =>
         GetPlatformsToSchedule(Enum.GetValues<BuildPlanReason>());
@@ -58,7 +78,7 @@ public sealed class BuildPlan
         HashSet<BuildPlanReason> reasonSet = reasons.ToHashSet();
         HashSet<PlatformInfo> addedPlatforms = [];
         List<PlatformInfo> platforms = [];
-        IEnumerable<PlatformInfo> origins = Platforms
+        IEnumerable<PlatformInfo> origins = DecisionsInBuildOrder
             .Where(planned => planned.Action == BuildAction.Build)
             .SelectMany(planned => planned.Causes)
             .Where(cause =>

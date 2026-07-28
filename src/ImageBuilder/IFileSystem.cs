@@ -78,11 +78,6 @@ public interface IFileSystem
     DirectoryInfo CreateDirectory(string path);
 
     /// <summary>
-    /// Returns the directory information for the specified path.
-    /// </summary>
-    string GetDirectoryName(string path);
-
-    /// <summary>
     /// Gets the current working directory of the application.
     /// </summary>
     string GetCurrentDirectory();

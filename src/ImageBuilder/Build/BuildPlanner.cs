@@ -11,42 +11,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Build;
 
-/// <summary>
-/// Creates build plans for manifest platforms.
-/// </summary>
-public interface IBuildPlanner
-{
-    /// <summary>
-    /// Decides how each platform should be handled and explains why.
-    /// </summary>
-    /// <param name="manifest">Manifest that the platforms belong to.</param>
-    /// <param name="allPlatforms">
-    /// Every platform that forms the dependency graph. This is usually wider than
-    /// <paramref name="platformsToEvaluate"/> so that a build can be traced through platforms that
-    /// were not themselves evaluated, and it must contain all of them.
-    /// </param>
-    /// <param name="platformsToEvaluate">
-    /// The platforms to decide about. Platforms outside this set still take part in the dependency
-    /// graph, but no decision is made about them.
-    /// </param>
-    /// <param name="imageArtifactDetails">Previously published image metadata, when available.</param>
-    /// <param name="baseImageResolver">Resolver for current base-image digests.</param>
-    /// <param name="sourceRepoUrl">
-    /// Source repository URL used to compare Dockerfile commits. When null, the Dockerfile
-    /// comparison is not performed.
-    /// </param>
-    /// <param name="checks">Checks to evaluate for each platform.</param>
-    Task<BuildPlan> CreateBuildPlanAsync(
-        ManifestInfo manifest,
-        IEnumerable<PlatformInfo> allPlatforms,
-        IEnumerable<PlatformInfo> platformsToEvaluate,
-        ImageArtifactDetails? imageArtifactDetails,
-        BaseImageResolver baseImageResolver,
-        string? sourceRepoUrl,
-        IReadOnlyList<IBuildPlanCheck> checks);
-
-}
-
 /// <inheritdoc/>
 public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) : IBuildPlanner
 {
@@ -291,10 +255,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
         return results;
     }
-
-    private sealed record EvaluatedBuildPlanCheck(
-        BuildPlanReason Reason,
-        BuildPlanCheckDisposition Disposition);
 
     private static void RecordAvailableImage(
         ManifestInfo manifest,

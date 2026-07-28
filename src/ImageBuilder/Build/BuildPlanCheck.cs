@@ -6,74 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Build;
-
-/// <summary>
-/// A disposition that an individual build-plan check may require.
-/// </summary>
-public enum BuildPlanCheckDisposition
-{
-    Build,
-    ReuseAndPublish
-}
-
-/// <summary>
-/// What a check's answer depends on.
-/// </summary>
-public enum BuildPlanCheckScope
-{
-    /// <summary>
-    /// Depends only on the Dockerfile and its base image, so the answer is shared by every platform
-    /// built from the same Dockerfile and build args.
-    /// </summary>
-    ImageContent,
-
-    /// <summary>
-    /// Depends on an individual platform's published tags and recorded digest.
-    /// </summary>
-    PlatformPublication
-}
-
-/// <summary>
-/// Input available to one build-plan check.
-/// </summary>
-/// <param name="Platform">Platform being evaluated.</param>
-/// <param name="PreviousPlatform">Previously published platform metadata, when available.</param>
-/// <param name="BaseImageResolver">Resolver for the platform's current base-image identity.</param>
-/// <param name="GitService">Service for querying Dockerfile source state.</param>
-/// <param name="Logger">Logger for check diagnostics.</param>
-/// <param name="SourceRepoUrl">Source repository URL used to construct commit URLs.</param>
-public sealed record BuildPlanCheckContext(
-    PlatformInfo Platform,
-    PlatformData? PreviousPlatform,
-    BaseImageResolver BaseImageResolver,
-    IGitService GitService,
-    ILogger Logger,
-    string? SourceRepoUrl);
-
-/// <summary>
-/// Evaluates one independent condition that contributes to a build plan.
-/// </summary>
-/// <remarks>
-/// A check returns <see langword="null"/> when it has no opinion, either because the condition
-/// does not apply or because the inputs it needs are unavailable in the current context.
-/// </remarks>
-public interface IBuildPlanCheck
-{
-    /// <summary>Gets the reason produced when this check fails.</summary>
-    BuildPlanReason Reason { get; }
-
-    /// <summary>Gets what this check's answer depends on.</summary>
-    BuildPlanCheckScope Scope { get; }
-
-    /// <summary>
-    /// Evaluates the condition and returns its required disposition when it affects the plan.
-    /// </summary>
-    Task<BuildPlanCheckDisposition?> EvaluateAsync(BuildPlanCheckContext context);
-}
 
 /// <summary>
 /// An immutable build-plan check configured with a reason and evaluation function.

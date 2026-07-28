@@ -145,11 +145,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             AnnotateEolDigestsCommand command = new(
                 loggerServiceMock.Object,
                 lifecycleMetadataServiceMock.Object,
-                Mock.Of<IRegistryCredentialsProvider>());
+                Mock.Of<IRegistryCredentialsProvider>(),
+                TestHelper.CreateOutputService(tempFolderContext.Path));
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.AcrName = AcrName;
             command.Options.EolDigestsListPath = eolDigestsListPath;
-            command.Options.AnnotationDigestsOutputPath = Path.Combine(tempFolderContext.Path, AnnotationsOutputPath);
+            command.Options.AnnotationDigestsOutputPath = AnnotationsOutputPath;
             return command;
         }
 

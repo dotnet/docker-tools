@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<AnnotateEolDigestsCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly IOutputService _outputService;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _existingAnnotationImageDigests = [];
@@ -36,11 +37,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public AnnotateEolDigestsCommand(
             ILogger<AnnotateEolDigestsCommand> logger,
             ILifecycleMetadataService lifecycleMetadataService,
-            IRegistryCredentialsProvider registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IOutputService outputService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _outputService = outputService ?? throw new ArgumentNullException(nameof(outputService));
         }
 
         protected override string Description => "Annotates EOL digests in Docker Registry";
@@ -78,7 +81,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"Some digest annotations failed or were skipped due to existing non-matching EOL date annotations (failed: {_failedAnnotationImageDigests.Count}, skipped: {_existingAnnotationImageDigests.Count}).");
             }
 
-            File.WriteAllLines(Options.AnnotationDigestsOutputPath, _createdAnnotationDigests.Order());
+            string annotationDigests = string.Join(Environment.NewLine, _createdAnnotationDigests.Order());
+            if (annotationDigests.Length > 0)
+            {
+                annotationDigests += Environment.NewLine;
+            }
+
+            _outputService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
         }
 
         private void WriteNonEmptySummaryForAnnotationDigests(IEnumerable<string> annotationDigests, string message)

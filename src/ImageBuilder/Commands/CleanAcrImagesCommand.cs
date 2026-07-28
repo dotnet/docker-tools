@@ -271,25 +271,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task> tasks =
                 digests.Select(digest =>
-                    pipeline.ExecuteAsync(async cancellationToken =>
-                        await DeleteManifestAsync(
-                            acrContentClient,
-                            new ImageName(registry: null, repository.Name, tag: null, digest)))
+                    pipeline.ExecuteAsync(async _ =>
+                    {
+                        if (!Options.IsDryRun)
+                        {
+                            await acrContentClient.DeleteManifestAsync(digest);
+                        }
+
+                        string imageId = $"{repository.Name}@{digest}";
+                        _logger.LogInformation($"Deleted image '{imageId}'");
+                        _deletedImages.Add(imageId);
+                    })
                     .AsTask());
 
             await Task.WhenAll(tasks);
-        }
-
-        private async Task DeleteManifestAsync(IAcrContentClient acrContentClient, ImageName image)
-        {
-            if (!Options.IsDryRun)
-            {
-                await acrContentClient.DeleteManifestAsync(image.Digest);
-            }
-
-            _logger.LogInformation($"Deleted image '{image}'");
-
-            _deletedImages.Add(image);
         }
 
         private async Task DeleteRepositoryAsync(IAcrClient acrClient, ContainerRepository repository)

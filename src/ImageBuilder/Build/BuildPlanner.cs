@@ -31,10 +31,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             allUniquePlatforms.ToDictionary(
                 platform => platform,
                 platform => (IReadOnlyList<PlatformInfo>)manifest.GetParents(platform, allUniquePlatforms).ToArray());
-        BuildPlan buildPlan = new(
-            dependenciesByPlatform,
-            new Dictionary<PlatformInfo, PlannedPlatform>());
-        IReadOnlyDictionary<PlatformInfo, int> dependencyDepths = buildPlan.GetDependencyDepths();
+        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform =
+            GetDependentsByPlatform(allUniquePlatforms, dependenciesByPlatform);
+        IReadOnlyDictionary<PlatformInfo, int> dependencyDepths =
+            GetDependencyDepths(allUniquePlatforms, dependenciesByPlatform);
         PlatformInfo[] platformsToPlan = [..allUniquePlatforms.Where(selectedPlatformSet.Contains)];
 
         Dictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform =
@@ -93,11 +93,14 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         // A rebuilt image invalidates its descendants even if they were otherwise reusable.
         PlannedPlatform[] initialDecisions =
             [..platformsToPlan.Select(platform => initialDecisionsByPlatform[platform])];
-        buildPlan = buildPlan with
-        {
-            DecisionsByPlatform = PropagateBuildCauses(initialDecisions, buildPlan)
-                .ToDictionary(decision => decision.Platform)
-        };
+        IReadOnlyDictionary<PlatformInfo, PlannedPlatform> finalDecisionsByPlatform =
+            PropagateBuildCauses(initialDecisions, dependentsByPlatform)
+                .ToDictionary(decision => decision.Platform);
+        BuildPlan buildPlan = CreateBuildPlan(
+            allUniquePlatforms,
+            dependenciesByPlatform,
+            dependentsByPlatform,
+            finalDecisionsByPlatform);
         LogPlan(logger, buildPlan);
         return buildPlan;
     }
@@ -355,12 +358,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
     private static IReadOnlyList<PlannedPlatform> PropagateBuildCauses(
         IEnumerable<PlannedPlatform> plannedPlatforms,
-        BuildPlan buildPlan)
+        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform)
     {
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform =
             plannedPlatforms.ToDictionary(planned => planned.Platform);
-        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform =
-            buildPlan.GetDependentsByPlatform();
 
         PlannedPlatform[] directlyBuiltPlatforms = plannedByPlatform.Values
             .Where(planned => planned.Action == BuildAction.Build)
@@ -402,6 +403,81 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         return plannedPlatforms
             .Select(planned => plannedByPlatform[planned.Platform])
             .ToArray();
+    }
+
+    private static BuildPlan CreateBuildPlan(
+        IEnumerable<PlatformInfo> platforms,
+        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform,
+        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform,
+        IReadOnlyDictionary<PlatformInfo, PlannedPlatform> decisionsByPlatform)
+    {
+        Dictionary<PlatformInfo, BuildPlanNode> nodesByPlatform = [];
+
+        BuildPlanNode CreateNode(PlatformInfo platform)
+        {
+            if (!nodesByPlatform.TryGetValue(platform, out BuildPlanNode? node))
+            {
+                node = new BuildPlanNode(
+                    platform,
+                    decisionsByPlatform.GetValueOrDefault(platform),
+                    dependenciesByPlatform[platform].Select(CreateNode).ToArray());
+                nodesByPlatform.Add(platform, node);
+            }
+
+            return node;
+        }
+
+        BuildPlanNode[] roots = platforms
+            .Where(platform => dependentsByPlatform[platform].Count == 0)
+            .Select(CreateNode)
+            .ToArray();
+
+        return new BuildPlan(roots);
+    }
+
+    private static IReadOnlyDictionary<PlatformInfo, int> GetDependencyDepths(
+        IEnumerable<PlatformInfo> platforms,
+        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform)
+    {
+        Dictionary<PlatformInfo, int> dependencyDepths = [];
+        foreach (PlatformInfo platform in platforms)
+        {
+            GetDependencyDepth(platform);
+        }
+
+        return dependencyDepths;
+
+        int GetDependencyDepth(PlatformInfo platform)
+        {
+            if (!dependencyDepths.TryGetValue(platform, out int depth))
+            {
+                IReadOnlyList<PlatformInfo> dependencies = dependenciesByPlatform[platform];
+                depth = dependencies.Count == 0 ? 0 : dependencies.Max(GetDependencyDepth) + 1;
+                dependencyDepths[platform] = depth;
+            }
+
+            return depth;
+        }
+    }
+
+    private static IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> GetDependentsByPlatform(
+        IEnumerable<PlatformInfo> platforms,
+        IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform)
+    {
+        Dictionary<PlatformInfo, List<PlatformInfo>> dependentsByPlatform =
+            platforms.ToDictionary(platform => platform, _ => new List<PlatformInfo>());
+
+        foreach ((PlatformInfo platform, IReadOnlyList<PlatformInfo> dependencies) in dependenciesByPlatform)
+        {
+            foreach (PlatformInfo dependency in dependencies)
+            {
+                dependentsByPlatform[dependency].Add(platform);
+            }
+        }
+
+        return dependentsByPlatform.ToDictionary(
+            pair => pair.Key,
+            pair => (IReadOnlyList<PlatformInfo>)pair.Value.ToArray());
     }
 
     /// <summary>

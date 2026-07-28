@@ -192,14 +192,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     })
                     .ToArray();
 
-                IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform =
-                    graphPlatforms.ToDictionary(
-                        platform => platform,
-                        platform => (IReadOnlyList<PlatformInfo>)manifest.GetParents(platform, graphPlatforms).ToArray());
-                return Task.FromResult(
-                    new BuildPlan(
-                        dependenciesByPlatform,
-                        plan.ToDictionary(decision => decision.Platform)));
+                IReadOnlyDictionary<PlatformInfo, PlannedPlatform> decisionsByPlatform =
+                    plan.ToDictionary(decision => decision.Platform);
+                Dictionary<PlatformInfo, BuildPlanNode> nodesByPlatform = [];
+                BuildPlanNode CreateNode(PlatformInfo platform)
+                {
+                    if (!nodesByPlatform.TryGetValue(platform, out BuildPlanNode node))
+                    {
+                        node = new BuildPlanNode(
+                            platform,
+                            decisionsByPlatform.GetValueOrDefault(platform),
+                            manifest.GetParents(platform, graphPlatforms).Select(CreateNode).ToArray());
+                        nodesByPlatform.Add(platform, node);
+                    }
+
+                    return node;
+                }
+
+                HashSet<PlatformInfo> dependencies = graphPlatforms
+                    .SelectMany(platform => manifest.GetParents(platform, graphPlatforms))
+                    .ToHashSet();
+                return Task.FromResult(new BuildPlan(
+                    graphPlatforms.Where(platform => !dependencies.Contains(platform)).Select(CreateNode).ToArray()));
             }
 
         }

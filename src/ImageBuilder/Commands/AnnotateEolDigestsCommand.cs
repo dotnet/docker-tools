@@ -50,6 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
+            Options.EolDigestsListPath = _artifactService.ResolvePath(Options.EolDigestsListPath);
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
             DateOnly? globalEolDate = eolAnnotations.EolDate;
 

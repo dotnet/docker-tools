@@ -192,7 +192,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     })
                     .ToArray();
 
-                return Task.FromResult(new BuildPlan(manifest, graphPlatforms, plan));
+                IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform =
+                    graphPlatforms.ToDictionary(
+                        platform => platform,
+                        platform => (IReadOnlyList<PlatformInfo>)manifest.GetParents(platform, graphPlatforms).ToArray());
+                return Task.FromResult(
+                    new BuildPlan(
+                        dependenciesByPlatform,
+                        plan.ToDictionary(decision => decision.Platform)));
             }
 
         }

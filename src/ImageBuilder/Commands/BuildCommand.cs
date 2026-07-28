@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync);
             await BuildImagesAsync();
 
-            if (_processedTags.Count > 0 || _buildPlan?.HasReusablePlatforms == true)
+            if (_processedTags.Count > 0 || _buildPlan?.HasReusablePlatforms() == true)
             {
                 // Log in again to refresh token as it may have expired from a long build
                 await ExecuteWithDockerCredentialsAsync(async () =>
@@ -329,7 +329,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<ImageInfo, ImageData> imageDataByImage = [];
 
             // The plan is ordered so that a platform is built after everything it depends on.
-            foreach (PlannedPlatform plannedPlatform in _buildPlan.DecisionsInBuildOrder)
+            foreach (PlannedPlatform plannedPlatform in _buildPlan.GetDecisionsInBuildOrder())
             {
                 PlatformInfo platform = plannedPlatform.Platform;
                 ImageInfo image = Manifest.GetImageByPlatform(platform);

@@ -39,6 +39,9 @@ public class GenerateEolAnnotationDataForPublishCommand :
 
     protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {
+        Options.OldImageInfoPath = ArtifactService.ResolvePath(Options.OldImageInfoPath);
+        Options.NewImageInfoPath = ArtifactService.ResolvePath(Options.NewImageInfoPath);
+
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
             _logger.LogInformation("No digests to annotate because no image info files were provided.");

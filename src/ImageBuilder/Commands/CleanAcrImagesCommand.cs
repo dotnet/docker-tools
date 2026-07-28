@@ -99,7 +99,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             catch (OperationCanceledException) when (timeLimitCancellation.IsCancellationRequested)
             {
-                LogTimeLimitReached(Options.RegistryName, timeLimit.GetValueOrDefault());
+                _logger.LogInformation(
+                    "Cleanup time limit of {TimeLimit} reached; stopping cleanup for registry '{RegistryName}'",
+                    timeLimit.GetValueOrDefault(),
+                    Options.RegistryName);
             }
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
@@ -285,12 +288,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return digestsToDelete;
         }
-
-        private void LogTimeLimitReached(string target, TimeSpan timeLimit) =>
-            _logger.LogInformation(
-                "Cleanup time limit of {TimeLimitMinutes} minutes reached; stopping cleanup for '{Target}'",
-                timeLimit.TotalMinutes,
-                target);
 
         private bool IsExcludedManifest(ArtifactManifestProperties manifest) =>
             Options.ImagesToExclude

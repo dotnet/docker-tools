@@ -30,26 +30,27 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         PlatformDependencyGraph dependencyGraph = PlatformDependencyGraph.Create(manifest, graphPlatforms);
         PlatformInfo[] platformsToPlan = [..graphPlatforms.Where(selectedPlatformSet.Contains)];
 
-        Dictionary<PlatformInfo, PlatformData?> publishedByPlatform =
+        Dictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform =
             platformsToPlan.ToDictionary(
                 platform => platform,
-                platform => GetPublishedPlatform(manifest, platform, imageArtifactDetails));
+                platform => GetPublishedPlatformMetadata(manifest, platform, imageArtifactDetails));
 
         Dictionary<PlatformInfo, PlannedPlatform> directPlan = [];
 
         // Equivalent platforms produce one image. Plan parents first so their reusable digest is
         // available when evaluating children.
-        IEnumerable<PlatformInfo[]> equivalentBuilds = platformsToPlan
+        IEnumerable<PlatformInfo[]> platformGroupsSharingImageContent = platformsToPlan
             .GroupBy(GetBuildCacheKey)
             .OrderBy(build => build.Max(dependencyGraph.GetDependencyDepth))
             .Select(build => build.ToArray());
 
-        foreach (PlatformInfo[] equivalentPlatforms in equivalentBuilds)
+        foreach (PlatformInfo[] platformsSharingImageContent in platformGroupsSharingImageContent)
         {
-            PlatformInfo contentPlatform = SelectContentPlatform(equivalentPlatforms, publishedByPlatform);
-            PlatformData? imageToReuse = publishedByPlatform[contentPlatform];
+            PlatformInfo contentPlatform =
+                SelectContentPlatform(platformsSharingImageContent, publishedMetadataByPlatform);
+            PlatformData? imageToReuse = publishedMetadataByPlatform[contentPlatform];
 
-            LogSharedContentScope(logger, equivalentPlatforms, contentPlatform);
+            LogSharedContentScope(logger, platformsSharingImageContent, contentPlatform);
 
             IReadOnlyList<BuildPlanReason> imageBuildReasons = useCache ?
                 await GetContentBuildReasonsAsync(contentPlatform, imageToReuse, baseImageResolver, sourceRepoUrl) :
@@ -57,17 +58,17 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
             bool buildImage = imageBuildReasons.Count > 0;
 
-            foreach (PlatformInfo platform in equivalentPlatforms)
+            foreach (PlatformInfo platform in platformsSharingImageContent)
             {
-                PlatformData? publishedPlatform = publishedByPlatform[platform];
+                PlatformData? publishedMetadata = publishedMetadataByPlatform[platform];
                 List<BuildPlanReason> reasons = [..imageBuildReasons];
 
-                if (useCache && !HasAllTagsPublished(publishedPlatform))
+                if (useCache && !HasAllTagsPublished(publishedMetadata))
                 {
                     reasons.Add(BuildPlanReason.MissingTags);
                 }
 
-                if (!buildImage && HasEquivalentBuildChanged(publishedPlatform, imageToReuse))
+                if (!buildImage && HasEquivalentBuildChanged(publishedMetadata, imageToReuse))
                 {
                     reasons.Add(BuildPlanReason.EquivalentBuildChanged);
                 }
@@ -95,17 +96,17 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// </summary>
     private static void LogSharedContentScope(
         ILogger logger,
-        IReadOnlyCollection<PlatformInfo> equivalentPlatforms,
+        IReadOnlyCollection<PlatformInfo> platformsSharingImageContent,
         PlatformInfo contentPlatform)
     {
-        if (equivalentPlatforms.Count > 1)
+        if (platformsSharingImageContent.Count > 1)
         {
             logger.LogInformation(
                 "Dockerfile '{DockerfilePath}' is shared by {PlatformCount} platforms, which are planned " +
                 "together: {Tags}",
                 contentPlatform.DockerfilePathRelativeToManifest,
-                equivalentPlatforms.Count,
-                string.Join(", ", equivalentPlatforms.Select(DescribeTag)));
+                platformsSharingImageContent.Count,
+                string.Join(", ", platformsSharingImageContent.Select(DescribeTag)));
         }
     }
 
@@ -154,7 +155,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     private static string DescribeTag(PlatformInfo platform) =>
         platform.Tags.FirstOrDefault()?.FullyQualifiedName ?? "untagged";
 
-    private static PlatformData? GetPublishedPlatform(
+    private static PlatformData? GetPublishedPlatformMetadata(
         ManifestInfo manifest,
         PlatformInfo platform,
         ImageArtifactDetails? imageArtifactDetails)
@@ -173,33 +174,33 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// equivalent platforms. Published metadata is preferred so content freshness can be evaluated.
     /// </summary>
     private static PlatformInfo SelectContentPlatform(
-        IEnumerable<PlatformInfo> equivalentPlatforms,
-        IReadOnlyDictionary<PlatformInfo, PlatformData?> publishedByPlatform) =>
-        equivalentPlatforms
-            .OrderByDescending(platform => publishedByPlatform[platform] is not null)
+        IEnumerable<PlatformInfo> platformsSharingImageContent,
+        IReadOnlyDictionary<PlatformInfo, PlatformData?> publishedMetadataByPlatform) =>
+        platformsSharingImageContent
+            .OrderByDescending(platform => publishedMetadataByPlatform[platform] is not null)
             .ThenBy(platform => platform.DockerfilePathRelativeToManifest, StringComparer.Ordinal)
             .ThenBy(platform => platform.Tags.FirstOrDefault()?.Name, StringComparer.Ordinal)
             .First();
 
     private async Task<IReadOnlyList<BuildPlanReason>> GetContentBuildReasonsAsync(
         PlatformInfo platform,
-        PlatformData? publishedPlatform,
+        PlatformData? publishedMetadata,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl)
     {
-        if (publishedPlatform is null)
+        if (publishedMetadata is null)
         {
             return [BuildPlanReason.MissingImageInfo];
         }
 
         List<BuildPlanReason> reasons = [];
 
-        if (await HasBaseImageChangedAsync(platform, publishedPlatform, baseImageResolver))
+        if (await HasBaseImageChangedAsync(platform, publishedMetadata, baseImageResolver))
         {
             reasons.Add(BuildPlanReason.BaseImageChanged);
         }
 
-        if (HasDockerfileChanged(platform, publishedPlatform, sourceRepoUrl))
+        if (HasDockerfileChanged(platform, publishedMetadata, sourceRepoUrl))
         {
             reasons.Add(BuildPlanReason.DockerfileChanged);
         }
@@ -209,7 +210,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
     private async Task<bool> HasBaseImageChangedAsync(
         PlatformInfo platform,
-        PlatformData publishedPlatform,
+        PlatformData publishedMetadata,
         BaseImageResolver baseImageResolver)
     {
         if (platform.FinalStageFromImage is null)
@@ -222,7 +223,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         string? currentDigestSha = await baseImageResolver.ResolveDigestShaAsync(platform);
-        string? publishedDigestSha = publishedPlatform.BaseImageDigest is string publishedDigest
+        string? publishedDigestSha = publishedMetadata.BaseImageDigest is string publishedDigest
             ? DockerHelper.GetDigestSha(publishedDigest)
             : null;
 
@@ -246,7 +247,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         return true;
     }
 
-    private bool HasDockerfileChanged(PlatformInfo platform, PlatformData publishedPlatform, string? sourceRepoUrl)
+    private bool HasDockerfileChanged(PlatformInfo platform, PlatformData publishedMetadata, string? sourceRepoUrl)
     {
         // Comparing Dockerfile commits requires the Dockerfile to be present on disk and a source
         // repo URL to form the commit URL recorded in image info. Contexts that plan against a
@@ -259,7 +260,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         string currentCommitUrl = gitService.GetDockerfileCommitUrl(platform, sourceRepoUrl);
 
         bool commitShaMatches =
-            publishedPlatform.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
+            publishedMetadata.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
 
         if (commitShaMatches)
         {
@@ -273,28 +274,28 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             logger.LogInformation(
                 "Dockerfile '{DockerfilePath}' changed from commit {PreviousCommitUrl} to {CurrentCommitUrl}",
                 platform.DockerfilePathRelativeToManifest,
-                publishedPlatform.CommitUrl,
+                publishedMetadata.CommitUrl,
                 currentCommitUrl);
         }
 
         return !commitShaMatches;
     }
 
-    private static bool HasAllTagsPublished(PlatformData? publishedPlatform) =>
-        publishedPlatform is not null &&
-        (publishedPlatform.PlatformInfo?.Tags ?? [])
+    private static bool HasAllTagsPublished(PlatformData? publishedMetadata) =>
+        publishedMetadata is not null &&
+        (publishedMetadata.PlatformInfo?.Tags ?? [])
             .Select(tag => tag.Name)
-            .AreEquivalent(publishedPlatform.SimpleTags);
+            .AreEquivalent(publishedMetadata.SimpleTags);
 
     /// <summary>
     /// Indicates whether a platform's previously published image differs from the equivalent build
     /// being reused, which requires the platform's tags to be published against the reused image.
     /// </summary>
-    private static bool HasEquivalentBuildChanged(PlatformData? publishedPlatform, PlatformData? reuseSource) =>
-        publishedPlatform is not null
+    private static bool HasEquivalentBuildChanged(PlatformData? publishedMetadata, PlatformData? reuseSource) =>
+        publishedMetadata is not null
         && reuseSource is not null
         && !DockerHelper
-            .GetDigestSha(publishedPlatform.Digest)
+            .GetDigestSha(publishedMetadata.Digest)
             .Equals(DockerHelper.GetDigestSha(reuseSource.Digest), StringComparison.OrdinalIgnoreCase);
 
     private static PlannedPlatform CreatePlannedPlatform(

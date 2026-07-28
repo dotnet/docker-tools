@@ -159,6 +159,8 @@ internal sealed class InMemoryFileSystem : IFileSystem
         return new DirectoryInfo(path);
     }
 
+    public string? GetDirectoryName(string path) => Path.GetDirectoryName(path);
+
     public string GetCurrentDirectory() => CurrentDirectory;
 
     private static bool IsUnder(string directory, string candidate) =>

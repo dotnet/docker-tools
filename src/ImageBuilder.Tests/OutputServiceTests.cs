@@ -52,12 +52,15 @@ public class OutputServiceTests
     }
 
     [TestMethod]
-    public void WriteAllText_RootedPath_Throws()
+    public void WriteAllText_RootedPath_WritesToSpecifiedPath()
     {
-        var service = CreateService(new InMemoryFileSystem());
+        var fileSystem = new InMemoryFileSystem();
+        var service = CreateService(fileSystem);
+        string outputPath = Path.Combine(Path.GetTempPath(), "legacy", "output.json");
 
-        Should.Throw<ArgumentException>(
-            () => service.WriteAllText(Path.Combine(s_outputRoot, "output.json"), "contents"));
+        service.WriteAllText(outputPath, "contents");
+
+        fileSystem.GetFileText(outputPath).ShouldBe("contents");
     }
 
     private static OutputService CreateService(IFileSystem fileSystem) =>

@@ -9,5 +9,5 @@ namespace Microsoft.DotNet.ImageBuilder.Build;
 /// <summary>
 /// A graph of platforms and their build decisions.
 /// </summary>
-/// <param name="Roots">Platforms that nothing else in the plan depends on.</param>
+/// <param name="Roots">Platforms that do not depend on another platform in the plan.</param>
 public sealed record BuildPlan(IReadOnlyList<BuildPlanNode> Roots);

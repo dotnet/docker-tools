@@ -12,8 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Build;
 /// </summary>
 /// <param name="Platform">The platform represented by this node.</param>
 /// <param name="Decision">The build decision, or null when the platform was not selected for planning.</param>
-/// <param name="Dependencies">The platforms that must be built before this platform.</param>
+/// <param name="Dependents">The platforms that consume this platform's image.</param>
 public sealed record BuildPlanNode(
     PlatformInfo Platform,
-    PlannedPlatform? Decision,
-    IReadOnlyList<BuildPlanNode> Dependencies);
+    BuildDecision? Decision,
+    IReadOnlyList<BuildPlanNode> Dependents);

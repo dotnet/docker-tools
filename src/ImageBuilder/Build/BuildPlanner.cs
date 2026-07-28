@@ -46,7 +46,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 platform => platform,
                 platform => GetPublishedPlatformMetadata(manifest, platform, imageArtifactDetails));
 
-        Dictionary<PlatformInfo, PlannedPlatform> initialDecisionsByPlatform = [];
+        Dictionary<PlatformInfo, BuildDecision> initialDecisionsByPlatform = [];
 
         // Equivalent platforms produce one image. Plan parents first so their reusable digest is
         // available when evaluating children.
@@ -84,22 +84,19 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                     reasons.Add(BuildPlanReason.EquivalentBuildChanged);
                 }
 
-                PlannedPlatform platformPlan = CreatePlannedPlatform(platform, imageToReuse, buildImage, reasons);
-                initialDecisionsByPlatform[platform] = platformPlan;
+                BuildDecision decision = CreateBuildDecision(platform, imageToReuse, buildImage, reasons);
+                initialDecisionsByPlatform[platform] = decision;
 
-                if (platformPlan.ImageToReuse is not null)
+                if (decision.ImageToReuse is not null)
                 {
-                    RecordAvailableImage(manifest, platform, platformPlan.ImageToReuse, baseImageResolver);
+                    RecordAvailableImage(manifest, platform, decision.ImageToReuse, baseImageResolver);
                 }
             }
         }
 
         // A rebuilt image invalidates its descendants even if they were otherwise reusable.
-        PlannedPlatform[] initialDecisions =
-            [..platformsToPlan.Select(platform => initialDecisionsByPlatform[platform])];
-        IReadOnlyDictionary<PlatformInfo, PlannedPlatform> finalDecisionsByPlatform =
-            PropagateBuildCauses(initialDecisions, dependentsByPlatform)
-                .ToDictionary(decision => decision.Platform);
+        IReadOnlyDictionary<PlatformInfo, BuildDecision> finalDecisionsByPlatform =
+            PropagateBuildCauses(initialDecisionsByPlatform, dependentsByPlatform);
         BuildPlan buildPlan = CreateBuildPlan(
             allUniquePlatforms,
             dependenciesByPlatform,
@@ -134,22 +131,25 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// </summary>
     private static void LogPlan(ILogger logger, BuildPlan plan)
     {
-        IReadOnlyList<PlannedPlatform> decisionsInBuildOrder = plan.GetDecisionsInBuildOrder();
+        IReadOnlyList<BuildPlanNode> nodesWithDecisions = plan.GetNodesWithDecisionsInBuildOrder();
         logger.LogInformation(
             "Build plan: {BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to reuse " +
             "and publish tags",
-            decisionsInBuildOrder.Count(planned => planned.Action == BuildAction.Build),
-            decisionsInBuildOrder.Count(planned => planned.Action == BuildAction.Reuse),
-            decisionsInBuildOrder.Count(planned => planned.Action == BuildAction.ReuseAndPublishTags));
+            nodesWithDecisions.Count(node => node.Decision?.Action == BuildAction.Build),
+            nodesWithDecisions.Count(node => node.Decision?.Action == BuildAction.Reuse),
+            nodesWithDecisions.Count(node => node.Decision?.Action == BuildAction.ReuseAndPublishTags));
 
-        foreach (PlannedPlatform planned in decisionsInBuildOrder)
+        foreach (BuildPlanNode node in nodesWithDecisions)
         {
+            BuildDecision decision = node.Decision ??
+                throw new InvalidOperationException(
+                    $"Build plan did not provide a decision for '{node.Platform.DockerfilePathRelativeToManifest}'.");
             logger.LogInformation(
                 "Planned {Action} of '{DockerfilePath}' ({Tag}) because {Causes}",
-                planned.Action,
-                planned.Platform.DockerfilePathRelativeToManifest,
-                DescribeTag(planned.Platform),
-                DescribeCauses(planned.Causes));
+                decision.Action,
+                node.Platform.DockerfilePathRelativeToManifest,
+                DescribeTag(node.Platform),
+                DescribeCauses(decision.Causes));
         }
     }
 
@@ -318,7 +318,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             .GetDigestSha(publishedMetadata.Digest)
             .Equals(DockerHelper.GetDigestSha(reuseSource.Digest), StringComparison.OrdinalIgnoreCase);
 
-    private static PlannedPlatform CreatePlannedPlatform(
+    private static BuildDecision CreateBuildDecision(
         PlatformInfo platform,
         PlatformData? imageToReuse,
         bool requiresBuild,
@@ -337,8 +337,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 $"'{platform.DockerfilePathRelativeToManifest}' without cached image metadata.");
         }
 
-        return new PlannedPlatform(
-            Platform: platform,
+        return new BuildDecision(
             Action: action,
             ImageToReuse: action is BuildAction.Build ? null : imageToReuse,
             Causes: reasons.Select(reason => CreateDirectCause(platform, reason)).ToArray());
@@ -360,22 +359,22 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
     }
 
-    private static IReadOnlyList<PlannedPlatform> PropagateBuildCauses(
-        IEnumerable<PlannedPlatform> plannedPlatforms,
+    private static IReadOnlyDictionary<PlatformInfo, BuildDecision> PropagateBuildCauses(
+        IReadOnlyDictionary<PlatformInfo, BuildDecision> initialDecisionsByPlatform,
         IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform)
     {
-        Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform =
-            plannedPlatforms.ToDictionary(planned => planned.Platform);
+        Dictionary<PlatformInfo, BuildDecision> decisionsByPlatform =
+            initialDecisionsByPlatform.ToDictionary(pair => pair.Key, pair => pair.Value);
 
-        PlannedPlatform[] directlyBuiltPlatforms = plannedByPlatform.Values
-            .Where(planned => planned.Action == BuildAction.Build)
+        KeyValuePair<PlatformInfo, BuildDecision>[] directlyBuiltPlatforms = decisionsByPlatform
+            .Where(pair => pair.Value.Action == BuildAction.Build)
             .ToArray();
 
-        foreach (PlannedPlatform directlyBuilt in directlyBuiltPlatforms)
+        foreach ((PlatformInfo directlyBuiltPlatform, BuildDecision directlyBuiltDecision) in directlyBuiltPlatforms)
         {
             Queue<(PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path)> queue = new();
-            queue.Enqueue((directlyBuilt.Platform, [directlyBuilt.Platform]));
-            HashSet<PlatformInfo> visited = [directlyBuilt.Platform];
+            queue.Enqueue((directlyBuiltPlatform, [directlyBuiltPlatform]));
+            HashSet<PlatformInfo> visited = [directlyBuiltPlatform];
 
             while (queue.TryDequeue(out (PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path) current))
             {
@@ -385,17 +384,17 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
                     // A platform that wasn't evaluated has no decision to update, but the build
                     // still propagates through it to the platforms that depend on it.
-                    if (plannedByPlatform.TryGetValue(child, out PlannedPlatform? childPlanned))
+                    if (decisionsByPlatform.TryGetValue(child, out BuildDecision? childDecision))
                     {
-                        BuildCause[] propagatedCauses = directlyBuilt.Causes
+                        BuildCause[] propagatedCauses = directlyBuiltDecision.Causes
                             .Select(cause => cause with { DependencyPath = childPath })
                             .ToArray();
 
-                        plannedByPlatform[child] = childPlanned with
+                        decisionsByPlatform[child] = childDecision with
                         {
                             Action = BuildAction.Build,
                             ImageToReuse = null,
-                            Causes = childPlanned.Causes.Concat(propagatedCauses).Distinct().ToArray()
+                            Causes = childDecision.Causes.Concat(propagatedCauses).Distinct().ToArray()
                         };
                     }
 
@@ -404,16 +403,14 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             }
         }
 
-        return plannedPlatforms
-            .Select(planned => plannedByPlatform[planned.Platform])
-            .ToArray();
+        return decisionsByPlatform;
     }
 
     private static BuildPlan CreateBuildPlan(
         IEnumerable<PlatformInfo> platforms,
         IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform,
         IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependentsByPlatform,
-        IReadOnlyDictionary<PlatformInfo, PlannedPlatform> decisionsByPlatform)
+        IReadOnlyDictionary<PlatformInfo, BuildDecision> decisionsByPlatform)
     {
         Dictionary<PlatformInfo, BuildPlanNode> nodesByPlatform = [];
 
@@ -424,7 +421,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 node = new BuildPlanNode(
                     platform,
                     decisionsByPlatform.GetValueOrDefault(platform),
-                    dependenciesByPlatform[platform].Select(CreateNode).ToArray());
+                    dependentsByPlatform[platform].Select(CreateNode).ToArray());
                 nodesByPlatform.Add(platform, node);
             }
 
@@ -432,7 +429,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         BuildPlanNode[] roots = platforms
-            .Where(platform => dependentsByPlatform[platform].Count == 0)
+            .Where(platform => dependenciesByPlatform[platform].Count == 0)
             .Select(CreateNode)
             .ToArray();
 

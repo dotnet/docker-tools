@@ -29,13 +29,6 @@ public sealed class ArtifactService(IFileSystem fileSystem, IOptions<BuildConfig
     /// <inheritdoc />
     public string ResolvePath(string artifactPath)
     {
-        // Rooted paths are already fully resolved. Keep supporting them while callers migrate.
-        if (Path.IsPathRooted(artifactPath))
-        {
-            return artifactPath;
-        }
-
-        // Relative paths require a configured root before they can be resolved.
         if (string.IsNullOrWhiteSpace(_buildConfig.ArtifactStagingDirectory))
         {
             throw new InvalidOperationException(

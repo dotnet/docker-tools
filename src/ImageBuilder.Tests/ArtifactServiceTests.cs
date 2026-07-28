@@ -61,18 +61,6 @@ public class ArtifactServiceTests
             () => service.WriteAllText(Path.Combine("..", "output.json"), "contents"));
     }
 
-    [TestMethod]
-    public void WriteAllText_RootedPath_WritesToSpecifiedPath()
-    {
-        var fileSystem = new InMemoryFileSystem();
-        var service = CreateService(fileSystem);
-        string outputPath = Path.Combine(Path.GetTempPath(), "legacy", "output.json");
-
-        service.WriteAllText(outputPath, "contents");
-
-        fileSystem.GetFileText(outputPath).ShouldBe("contents");
-    }
-
     private static ArtifactService CreateService(IFileSystem fileSystem) =>
         new(
             fileSystem,

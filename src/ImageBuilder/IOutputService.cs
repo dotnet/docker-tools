@@ -4,7 +4,13 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
+/// <summary>
+/// Writes files beneath the configured artifact staging directory.
+/// </summary>
 public interface IOutputService
 {
+    /// <summary>
+    /// Writes <paramref name="contents"/> to an artifact-relative path, creating its directory.
+    /// </summary>
     void WriteAllText(string artifactPath, string contents);
 }

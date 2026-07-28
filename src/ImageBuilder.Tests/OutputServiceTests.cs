@@ -51,6 +51,15 @@ public class OutputServiceTests
             () => service.WriteAllText(Path.Combine("..", "output.json"), "contents"));
     }
 
+    [TestMethod]
+    public void WriteAllText_RootedPath_Throws()
+    {
+        var service = CreateService(new InMemoryFileSystem());
+
+        Should.Throw<ArgumentException>(
+            () => service.WriteAllText(Path.Combine(s_outputRoot, "output.json"), "contents"));
+    }
+
     private static OutputService CreateService(IFileSystem fileSystem) =>
         new(
             fileSystem,

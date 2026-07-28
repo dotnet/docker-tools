@@ -9,12 +9,14 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
+/// <inheritdoc />
 public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfiguration> buildConfigOptions)
     : IOutputService
 {
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly BuildConfiguration _buildConfig = buildConfigOptions.Value;
 
+    /// <inheritdoc />
     public void WriteAllText(string artifactPath, string contents)
     {
         string outputPath = GetOutputPath(artifactPath);

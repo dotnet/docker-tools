@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -159,10 +158,6 @@ internal sealed class InMemoryFileSystem : IFileSystem
         DirectoriesCreated.Add(path);
         return new DirectoryInfo(path);
     }
-
-    public string GetDirectoryName(string path) =>
-        Path.GetDirectoryName(path)
-        ?? throw new ArgumentException($"Path '{path}' does not contain a directory.", nameof(path));
 
     public string GetCurrentDirectory() => CurrentDirectory;
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,11 +64,6 @@ public sealed class FileSystem : IFileSystem
     /// <inheritdoc/>
     public DirectoryInfo CreateDirectory(string path) =>
         Directory.CreateDirectory(path);
-
-    /// <inheritdoc/>
-    public string GetDirectoryName(string path) =>
-        Path.GetDirectoryName(path)
-        ?? throw new ArgumentException($"Path '{path}' does not contain a directory.", nameof(path));
 
     /// <inheritdoc/>
     public string GetCurrentDirectory() =>

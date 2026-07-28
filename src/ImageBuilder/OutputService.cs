@@ -20,7 +20,9 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
     public void WriteAllText(string artifactPath, string contents)
     {
         string outputPath = ResolveArtifactPath(artifactPath);
-        _fileSystem.CreateDirectory(_fileSystem.GetDirectoryName(outputPath));
+        string outputDirectory = Path.GetDirectoryName(outputPath)
+            ?? throw new InvalidOperationException($"Output path '{outputPath}' has no directory.");
+        _fileSystem.CreateDirectory(outputDirectory);
         _fileSystem.WriteAllText(outputPath, contents);
     }
 

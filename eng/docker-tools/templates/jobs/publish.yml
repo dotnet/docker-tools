@@ -139,9 +139,6 @@ jobs:
       dryRunArg: $(dryRunArg)
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
 
-  - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
-    displayName: Create EOL Annotation Data Directory
-
   - script: |-
       cd $(versionsRepoRoot)
       git pull origin $(gitHubVersionsRepoInfo.branch)
@@ -197,7 +194,7 @@ jobs:
         generateEolAnnotationDataForPublish
         '${{ parameters.publishConfig.PublishRegistry.server }}'
         '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
-        '$(artifactsPath)/eol-annotation-data/eol-annotation-data.json'
+        'eol-annotation-data/eol-annotation-data.json'
         '$(imageInfoContainerDir)/full-image-info-orig.json'
         '$(imageInfoContainerDir)/full-image-info-new.json'
         $(generateEolAnnotationDataExtraOptions)

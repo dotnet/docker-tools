@@ -133,8 +133,11 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
             eolAnnotations,
             Formatting.Indented,
             new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-        File.WriteAllText(Options.EolDigestsListPath, annotationsJson);
+        WriteOutput(Options.EolDigestsListPath, annotationsJson);
     }
+
+    protected virtual void WriteOutput(string outputPath, string contents) =>
+        File.WriteAllText(outputPath, contents);
 
     private async Task<IEnumerable<EolDigestData>> GetDigestsWithoutExistingAnnotationAsync(
         IEnumerable<EolDigestData> unsupportedDigests,

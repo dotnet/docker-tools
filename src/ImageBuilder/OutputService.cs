@@ -19,12 +19,15 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
     /// <inheritdoc />
     public void WriteAllText(string artifactPath, string contents)
     {
-        string outputPath = GetOutputPath(artifactPath);
+        string outputPath = ResolveArtifactPath(artifactPath);
         _fileSystem.CreateDirectory(_fileSystem.GetDirectoryName(outputPath)!);
         _fileSystem.WriteAllText(outputPath, contents);
     }
 
-    private string GetOutputPath(string artifactPath)
+    /// <summary>
+    /// Resolves an artifact-relative path beneath the configured staging directory.
+    /// </summary>
+    private string ResolveArtifactPath(string artifactPath)
     {
         if (string.IsNullOrWhiteSpace(_buildConfig.ArtifactStagingDirectory))
         {

@@ -7,7 +7,7 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 ## 2026-07-28: Publish stage artifacts consolidated
 
 The Publish stage now uploads `$(Build.ArtifactStagingDirectory)` once as
-`publish-$(System.JobAttempt)`. This replaces these separate artifacts:
+`publish-attempt-$(System.JobAttempt)`. This replaces these separate artifacts:
 
 - `image-info-final-$(System.JobAttempt)`
 - `eol-annotation-data-$(System.JobAttempt)`

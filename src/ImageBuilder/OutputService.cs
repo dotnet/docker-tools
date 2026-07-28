@@ -20,12 +20,7 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
     public void WriteAllText(string artifactPath, string contents)
     {
         string outputPath = GetOutputPath(artifactPath);
-        string? outputDirectory = Path.GetDirectoryName(outputPath);
-        if (outputDirectory is not null)
-        {
-            _fileSystem.CreateDirectory(outputDirectory);
-        }
-
+        _fileSystem.CreateDirectory(Path.GetDirectoryName(outputPath)!);
         _fileSystem.WriteAllText(outputPath, contents);
     }
 

@@ -16,7 +16,6 @@ public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions>
 {
     private readonly ILogger _logger;
-    private readonly IOutputService _outputService;
 
     public GenerateEolAnnotationDataForPublishCommand(
         ILogger<GenerateEolAnnotationDataForPublishCommand> logger,
@@ -30,16 +29,13 @@ public class GenerateEolAnnotationDataForPublishCommand :
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,
-            registryCredentialsProvider)
+            registryCredentialsProvider,
+            outputService)
     {
         _logger = logger;
-        _outputService = outputService;
     }
 
     protected override string Description => "Generate EOL annotation data for all images not described in the new image info file";
-
-    protected override void WriteOutput(string outputPath, string contents) =>
-        _outputService.WriteAllText(outputPath, contents);
 
     protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {

@@ -28,6 +28,7 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
 
     /// <summary>
     /// Resolves an artifact-relative path beneath the configured staging directory.
+    /// Rooted paths are preserved for commands that have not migrated to relative outputs.
     /// </summary>
     private string ResolveArtifactPath(string artifactPath)
     {
@@ -40,7 +41,7 @@ public sealed class OutputService(IFileSystem fileSystem, IOptions<BuildConfigur
 
         if (Path.IsPathRooted(artifactPath))
         {
-            throw new ArgumentException("Output artifact paths must be relative.", nameof(artifactPath));
+            return artifactPath;
         }
 
         string outputRoot = Path.GetFullPath(_buildConfig.ArtifactStagingDirectory);

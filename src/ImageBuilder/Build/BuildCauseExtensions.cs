@@ -4,7 +4,7 @@
 
 namespace Microsoft.DotNet.ImageBuilder.Build;
 
-public static class BuildCauseExtensions
+internal static class BuildCauseExtensions
 {
     public static bool IsDirect(this BuildCause cause) =>
         cause.DependencyPath.Count == 1;

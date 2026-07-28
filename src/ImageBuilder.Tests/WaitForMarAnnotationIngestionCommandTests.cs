@@ -33,7 +33,8 @@ public class WaitForMarAnnotationIngestionCommandTests
         Mock<IMarImageIngestionReporter> ingestionReporter = new();
         WaitForMarAnnotationIngestionCommand cmd = new(
             Mock.Of<ILogger<WaitForMarAnnotationIngestionCommand>>(),
-            ingestionReporter.Object);
+            ingestionReporter.Object,
+            TestHelper.CreateArtifactService(tempFolderContext.Path));
         cmd.Options.AnnotationDigestsPath = annotationsDigestsPath;
 
         await cmd.ExecuteAsync(TestContext?.CancellationToken ?? default);

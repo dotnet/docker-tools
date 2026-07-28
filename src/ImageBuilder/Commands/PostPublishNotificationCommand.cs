@@ -24,22 +24,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly INotificationService _notificationService;
         private readonly IOctokitClientFactory _octokitClientFactory;
+        private readonly IArtifactService _artifactService;
 
         public PostPublishNotificationCommand(
             IManifestJsonService manifestJsonService,
             IVssConnectionFactory connectionFactory,
             INotificationService notificationService,
-            IOctokitClientFactory octokitClientFactory) : base(manifestJsonService)
+            IOctokitClientFactory octokitClientFactory,
+            IArtifactService artifactService) : base(manifestJsonService)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
             _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Posts a notification about a publishing event";
 
         public override async Task ExecuteAsync()
         {
+            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
             StringBuilder notificationMarkdown = new();
             string buildUrl = string.Empty;
             Dictionary<string, TaskResult?> taskResults = Options.TaskNames

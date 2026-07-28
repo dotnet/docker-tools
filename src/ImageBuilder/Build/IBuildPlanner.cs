@@ -17,13 +17,19 @@ public interface IBuildPlanner
     /// <summary>
     /// Decides how each platform should be handled and explains why.
     /// </summary>
+    /// <remarks>
+    /// Planning separates shared image content from platform publication. Platforms with the same
+    /// Dockerfile and build arguments share one content decision, but each receives its own tag
+    /// publication decision. Shared builds are planned parent-first, then rebuilds propagate to
+    /// dependent platforms.
+    /// </remarks>
     /// <param name="manifest">Manifest that the platforms belong to.</param>
-    /// <param name="allPlatforms">
+    /// <param name="dependencyPlatforms">
     /// Every platform that forms the dependency graph. This is usually wider than
-    /// <paramref name="platformsToEvaluate"/> so that a build can be traced through platforms that
-    /// were not themselves evaluated, and it must contain all of them.
+    /// <paramref name="platformsToPlan"/> so that a build can be traced through platforms that
+    /// do not themselves receive decisions, and it must contain all of them.
     /// </param>
-    /// <param name="platformsToEvaluate">
+    /// <param name="platformsToPlan">
     /// The platforms to decide about. Platforms outside this set still take part in the dependency
     /// graph, but no decision is made about them.
     /// </param>
@@ -36,8 +42,8 @@ public interface IBuildPlanner
     /// <param name="useCache">Whether previously published images may be reused.</param>
     Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
-        IEnumerable<PlatformInfo> allPlatforms,
-        IEnumerable<PlatformInfo> platformsToEvaluate,
+        IEnumerable<PlatformInfo> dependencyPlatforms,
+        IEnumerable<PlatformInfo> platformsToPlan,
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,

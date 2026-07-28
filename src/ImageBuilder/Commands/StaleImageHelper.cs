@@ -43,8 +43,8 @@ public static class StaleImageHelper
             isDryRun);
         BuildPlan plan = await buildPlanner.CreateBuildPlanAsync(
             manifest,
-            dependencyPlatforms: manifest.GetAllPlatforms(),
-            platformsToPlan: manifest.GetFilteredPlatformsWithExternalBaseImage(),
+            allPlatforms: manifest.GetAllPlatforms(),
+            platformsToEvaluate: manifest.GetFilteredPlatformsWithExternalBaseImage(),
             imageArtifactDetails,
             baseImageResolver,
             // The manifest belongs to another repository, so its Dockerfiles are not on disk and

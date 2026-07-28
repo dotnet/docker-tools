@@ -17,123 +17,75 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// <inheritdoc/>
     public async Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
-        IEnumerable<PlatformInfo> dependencyPlatforms,
-        IEnumerable<PlatformInfo> platformsToPlan,
+        IEnumerable<PlatformInfo> allPlatforms,
+        IEnumerable<PlatformInfo> platformsToEvaluate,
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,
         bool useCache)
     {
-        // The graph includes platforms that do not receive decisions because build effects must be
-        // able to travel through them to planned descendants.
-        HashSet<PlatformInfo> platformsToPlanSet = platformsToPlan.ToHashSet();
-        PlatformInfo[] dependencyGraphPlatforms = [..dependencyPlatforms.Distinct()];
-        PlatformDependencyGraph dependencyGraph =
-            PlatformDependencyGraph.Create(manifest, dependencyGraphPlatforms);
-        PlatformInfo[] platformsToPlanInGraphOrder =
-            [..dependencyGraphPlatforms.Where(platformsToPlanSet.Contains)];
+        HashSet<PlatformInfo> evaluatedPlatforms = platformsToEvaluate.ToHashSet();
+        PlatformInfo[] graphPlatforms = [..allPlatforms.Distinct()];
+        PlatformDependencyGraph dependencyGraph = PlatformDependencyGraph.Create(manifest, graphPlatforms);
+        PlatformInfo[] evaluationOrder = [..graphPlatforms.Where(evaluatedPlatforms.Contains)];
 
-        // Published metadata is indexed once because both shared-content and per-platform
-        // publication decisions consult it.
-        Dictionary<PlatformInfo, PlatformData?> publishedPlatformByPlatform =
-            platformsToPlanInGraphOrder.ToDictionary(
+        Dictionary<PlatformInfo, PlatformData?> publishedPlatforms =
+            evaluationOrder.ToDictionary(
                 platform => platform,
                 platform => GetPublishedPlatform(manifest, platform, imageArtifactDetails));
 
-        // Equivalent platforms produce the same image content. Plan each equivalent build once,
-        // parent-first, then make the publication decision for each platform that shares it.
-        Dictionary<PlatformInfo, PlannedPlatform> directPlanByPlatform = [];
-        foreach (PlatformInfo[] equivalentBuildPlatforms in
-            GetEquivalentBuildsInDependencyOrder(platformsToPlanInGraphOrder, dependencyGraph))
+        Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform = [];
+
+        // Platforms that share a Dockerfile and build args produce the same image content, so the
+        // content is evaluated once per group. Groups are evaluated in dependency order so
+        // that a parent's reuse decision is recorded before its children resolve their base image.
+        IEnumerable<IGrouping<string, PlatformInfo>> platformGroups = evaluationOrder
+            .GroupBy(GetBuildCacheKey)
+            .OrderBy(group => group.Max(dependencyGraph.GetDependencyDepth));
+
+        foreach (IGrouping<string, PlatformInfo> group in platformGroups)
         {
-            foreach (PlannedPlatform plannedPlatform in await PlanEquivalentBuildAsync(
-                manifest,
-                equivalentBuildPlatforms,
-                publishedPlatformByPlatform,
-                baseImageResolver,
-                sourceRepoUrl,
-                useCache))
+            PlatformInfo[] groupPlatforms = [..group];
+            PlatformInfo representative = SelectContentRepresentative(groupPlatforms, publishedPlatforms);
+            PlatformData? reuseSource = publishedPlatforms[representative];
+
+            LogSharedContentScope(logger, groupPlatforms, representative);
+
+            IReadOnlyList<BuildPlanReason> contentReasons = useCache
+                ? await GetContentBuildReasonsAsync(representative, reuseSource, baseImageResolver, sourceRepoUrl)
+                : [BuildPlanReason.CacheDisabled];
+
+            bool requiresBuild = contentReasons.Count > 0;
+
+            foreach (PlatformInfo platform in groupPlatforms)
             {
-                directPlanByPlatform.Add(plannedPlatform.Platform, plannedPlatform);
+                PlatformData? publishedPlatform = publishedPlatforms[platform];
+                List<BuildPlanReason> reasons = [..contentReasons];
+
+                if (useCache && !HasAllTagsPublished(publishedPlatform))
+                {
+                    reasons.Add(BuildPlanReason.MissingTags);
+                }
+
+                if (!requiresBuild && HasEquivalentBuildChanged(publishedPlatform, reuseSource))
+                {
+                    reasons.Add(BuildPlanReason.EquivalentBuildChanged);
+                }
+
+                PlannedPlatform planned = CreatePlannedPlatform(platform, reuseSource, requiresBuild, reasons);
+                plannedByPlatform[platform] = planned;
+
+                if (planned.ImageToReuse is not null)
+                {
+                    RecordAvailableImage(manifest, platform, planned.ImageToReuse, baseImageResolver);
+                }
             }
         }
 
-        // Direct decisions describe each platform in isolation. The final pass turns descendants
-        // of rebuilt images into builds and records the dependency path that caused each change.
-        PlannedPlatform[] directPlan =
-            [..platformsToPlanInGraphOrder.Select(platform => directPlanByPlatform[platform])];
-        IReadOnlyList<PlannedPlatform> propagatedPlan =
-            PropagateBuildCauses(directPlan, dependencyGraph);
-        BuildPlan plan = new(propagatedPlan, dependencyGraph);
+        PlannedPlatform[] plannedResults = [..evaluationOrder.Select(platform => plannedByPlatform[platform])];
+        BuildPlan plan = new(PropagateBuildCauses(plannedResults, dependencyGraph), dependencyGraph);
         LogPlan(logger, plan);
         return plan;
-    }
-
-    /// <summary>
-    /// Plans one image build and the individual publication state of every platform that shares its
-    /// Dockerfile and build arguments.
-    /// </summary>
-    private async Task<IReadOnlyList<PlannedPlatform>> PlanEquivalentBuildAsync(
-        ManifestInfo manifest,
-        IReadOnlyCollection<PlatformInfo> equivalentBuildPlatforms,
-        IReadOnlyDictionary<PlatformInfo, PlatformData?> publishedPlatformByPlatform,
-        BaseImageResolver baseImageResolver,
-        string? sourceRepoUrl,
-        bool useCache)
-    {
-        PlatformInfo contentEvaluationPlatform = SelectContentEvaluationPlatform(
-            equivalentBuildPlatforms,
-            publishedPlatformByPlatform);
-        PlatformData? reuseSource = publishedPlatformByPlatform[contentEvaluationPlatform];
-
-        LogSharedContentScope(logger, equivalentBuildPlatforms, contentEvaluationPlatform);
-
-        IReadOnlyList<BuildPlanReason> sharedContentBuildReasons = useCache
-            ? await GetContentBuildReasonsAsync(
-                contentEvaluationPlatform,
-                reuseSource,
-                baseImageResolver,
-                sourceRepoUrl)
-            : [BuildPlanReason.CacheDisabled];
-
-        bool sharedContentMustBeBuilt = sharedContentBuildReasons.Count > 0;
-        List<PlannedPlatform> plannedPlatforms = [];
-
-        foreach (PlatformInfo platform in equivalentBuildPlatforms)
-        {
-            PlatformData? publishedPlatform = publishedPlatformByPlatform[platform];
-            List<BuildPlanReason> actionReasons = [..sharedContentBuildReasons];
-
-            if (useCache && !HasAllTagsPublished(publishedPlatform))
-            {
-                actionReasons.Add(BuildPlanReason.MissingTags);
-            }
-
-            if (!sharedContentMustBeBuilt &&
-                HasEquivalentBuildChanged(publishedPlatform, reuseSource))
-            {
-                actionReasons.Add(BuildPlanReason.EquivalentBuildChanged);
-            }
-
-            PlannedPlatform plannedPlatform = CreatePlannedPlatform(
-                platform,
-                reuseSource,
-                sharedContentMustBeBuilt,
-                actionReasons);
-            plannedPlatforms.Add(plannedPlatform);
-
-            // A reused image becomes an available base image for groups planned later.
-            if (plannedPlatform.ImageToReuse is not null)
-            {
-                RecordAvailableImage(
-                    manifest,
-                    platform,
-                    plannedPlatform.ImageToReuse,
-                    baseImageResolver);
-            }
-        }
-
-        return plannedPlatforms;
     }
 
     /// <summary>
@@ -142,16 +94,16 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// </summary>
     private static void LogSharedContentScope(
         ILogger logger,
-        IReadOnlyCollection<PlatformInfo> equivalentBuildPlatforms,
-        PlatformInfo contentEvaluationPlatform)
+        IReadOnlyCollection<PlatformInfo> group,
+        PlatformInfo representative)
     {
-        if (equivalentBuildPlatforms.Count > 1)
+        if (group.Count > 1)
         {
             logger.LogInformation(
                 "Dockerfile '{DockerfilePath}' is shared by {PlatformCount} platforms, which are planned together: {Tags}",
-                contentEvaluationPlatform.DockerfilePathRelativeToManifest,
-                equivalentBuildPlatforms.Count,
-                string.Join(", ", equivalentBuildPlatforms.Select(DescribeTag)));
+                representative.DockerfilePathRelativeToManifest,
+                group.Count,
+                string.Join(", ", group.Select(DescribeTag)));
         }
     }
 
@@ -215,26 +167,17 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
     /// <summary>
     /// Selects the platform whose previously published metadata represents the content shared by
-    /// an equivalent build. Platforms with previously published metadata are preferred so that
-    /// content freshness can be evaluated.
+    /// the group. Platforms with previously published metadata are preferred so that content
+    /// freshness can be evaluated.
     /// </summary>
-    private static PlatformInfo SelectContentEvaluationPlatform(
-        IEnumerable<PlatformInfo> equivalentBuildPlatforms,
-        IReadOnlyDictionary<PlatformInfo, PlatformData?> publishedPlatformByPlatform) =>
-        equivalentBuildPlatforms
-            .OrderByDescending(platform => publishedPlatformByPlatform[platform] is not null)
+    private static PlatformInfo SelectContentRepresentative(
+        IEnumerable<PlatformInfo> group,
+        IReadOnlyDictionary<PlatformInfo, PlatformData?> publishedPlatforms) =>
+        group
+            .OrderByDescending(platform => publishedPlatforms[platform] is not null)
             .ThenBy(platform => platform.DockerfilePathRelativeToManifest, StringComparer.Ordinal)
             .ThenBy(platform => platform.Tags.FirstOrDefault()?.Name, StringComparer.Ordinal)
             .First();
-
-    private static IEnumerable<PlatformInfo[]> GetEquivalentBuildsInDependencyOrder(
-        IEnumerable<PlatformInfo> platforms,
-        PlatformDependencyGraph dependencyGraph) =>
-        platforms
-            .GroupBy(GetBuildCacheKey)
-            .OrderBy(equivalentBuild =>
-                equivalentBuild.Max(dependencyGraph.GetDependencyDepth))
-            .Select(equivalentBuild => equivalentBuild.ToArray());
 
     private async Task<IReadOnlyList<BuildPlanReason>> GetContentBuildReasonsAsync(
         PlatformInfo platform,
@@ -398,17 +341,18 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         IEnumerable<PlannedPlatform> plannedPlatforms,
         PlatformDependencyGraph dependencyGraph)
     {
-        Dictionary<PlatformInfo, PlannedPlatform> propagatedPlanByPlatform =
+        Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform =
             plannedPlatforms.ToDictionary(planned => planned.Platform);
-        PlannedPlatform[] buildOrigins = propagatedPlanByPlatform.Values
+
+        PlannedPlatform[] directlyBuiltPlatforms = plannedByPlatform.Values
             .Where(planned => planned.Action == BuildAction.Build)
             .ToArray();
 
-        foreach (PlannedPlatform buildOrigin in buildOrigins)
+        foreach (PlannedPlatform directlyBuilt in directlyBuiltPlatforms)
         {
             Queue<(PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path)> queue = new();
-            queue.Enqueue((buildOrigin.Platform, [buildOrigin.Platform]));
-            HashSet<PlatformInfo> visited = [buildOrigin.Platform];
+            queue.Enqueue((directlyBuilt.Platform, [directlyBuilt.Platform]));
+            HashSet<PlatformInfo> visited = [directlyBuilt.Platform];
 
             while (queue.TryDequeue(out (PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path) current))
             {
@@ -416,24 +360,19 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 {
                     PlatformInfo[] childPath = [..current.Path, child];
 
-                    // A platform without a direct decision still carries the build effect to its
-                    // descendants.
-                    if (propagatedPlanByPlatform.TryGetValue(
-                        child,
-                        out PlannedPlatform? descendantPlan))
+                    // A platform that wasn't evaluated has no decision to update, but the build
+                    // still propagates through it to the platforms that depend on it.
+                    if (plannedByPlatform.TryGetValue(child, out PlannedPlatform? childPlanned))
                     {
-                        BuildCause[] propagatedCauses = buildOrigin.Causes
+                        BuildCause[] propagatedCauses = directlyBuilt.Causes
                             .Select(cause => cause with { DependencyPath = childPath })
                             .ToArray();
 
-                        propagatedPlanByPlatform[child] = descendantPlan with
+                        plannedByPlatform[child] = childPlanned with
                         {
                             Action = BuildAction.Build,
                             ImageToReuse = null,
-                            Causes = descendantPlan.Causes
-                                .Concat(propagatedCauses)
-                                .Distinct()
-                                .ToArray()
+                            Causes = childPlanned.Causes.Concat(propagatedCauses).Distinct().ToArray()
                         };
                     }
 
@@ -443,7 +382,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         return plannedPlatforms
-            .Select(planned => propagatedPlanByPlatform[planned.Platform])
+            .Select(planned => plannedByPlatform[planned.Platform])
             .ToArray();
     }
 

@@ -452,8 +452,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             BuildPlan plan = await _buildPlanner.CreateBuildPlanAsync(
                 Manifest,
-                dependencyPlatforms: plannedPlatforms,
-                platformsToPlan: plannedPlatforms,
+                allPlatforms: plannedPlatforms,
+                platformsToEvaluate: plannedPlatforms,
                 _imageArtifactDetails.Value,
                 _baseImageResolver.Value,
                 Options.SourceRepoUrl,

@@ -177,59 +177,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string sourceRepoUrl,
                 bool useCache)
             {
-                HashSet<PlatformInfo> evaluatedPlatforms = selectedPlatforms.ToHashSet();
-                PlatformInfo[] graphPlatforms = allPlatforms.ToArray();
-                IReadOnlyDictionary<PlatformInfo, BuildDecision> decisionsByPlatform = graphPlatforms
-                    .Where(evaluatedPlatforms.Contains)
-                    .ToDictionary(
-                        platform => platform,
-                        platform =>
+                HashSet<PlatformInfo> selectedPlatformSet = selectedPlatforms.ToHashSet();
+                PlatformInfo[] allUniquePlatforms = allPlatforms.Distinct().ToArray();
+                PlatformDependencyGraph dependencyGraph =
+                    PlatformDependencyGraph.Create(manifest, allUniquePlatforms);
+                PlannedPlatform[] plannedPlatforms = dependencyGraph.PlatformsInDependencyOrder
+                    .Where(selectedPlatformSet.Contains)
+                    .Select(platform =>
                     {
                         BuildAction action = _actions.GetValueOrDefault(platform.Model.Dockerfile, BuildAction.Build);
                         IReadOnlyList<BuildCause> causes = action == BuildAction.Build ?
                             [new BuildCause(BuildPlanReason.MissingImageInfo, platform, [platform])] :
                             [];
 
-                        return new BuildDecision(action, null, causes);
-                    });
+                        return new PlannedPlatform(platform, action, null, causes, []);
+                    })
+                    .ToArray();
 
-                IReadOnlyDictionary<PlatformInfo, IReadOnlyList<PlatformInfo>> dependenciesByPlatform =
-                    graphPlatforms.ToDictionary(
-                        platform => platform,
-                        platform => (IReadOnlyList<PlatformInfo>)manifest.GetParents(platform, graphPlatforms).ToArray());
-
-                Dictionary<PlatformInfo, List<PlatformInfo>> dependentsByPlatform =
-                    graphPlatforms.ToDictionary(platform => platform, _ => new List<PlatformInfo>());
-
-                foreach ((PlatformInfo platform, IReadOnlyList<PlatformInfo> dependencies) in dependenciesByPlatform)
-                {
-                    foreach (PlatformInfo dependency in dependencies)
-                    {
-                        dependentsByPlatform[dependency].Add(platform);
-                    }
-                }
-
-                Dictionary<PlatformInfo, BuildPlanNode> nodesByPlatform = [];
-
-                BuildPlanNode CreateNode(PlatformInfo platform)
-                {
-                    if (!nodesByPlatform.TryGetValue(platform, out BuildPlanNode node))
-                    {
-                        node = new BuildPlanNode(
-                            platform,
-                            decisionsByPlatform.GetValueOrDefault(platform),
-                            dependentsByPlatform[platform].Select(CreateNode).ToArray());
-                        nodesByPlatform.Add(platform, node);
-                    }
-
-                    return node;
-                }
-
-                return Task.FromResult(new BuildPlan(
-                    graphPlatforms
-                        .Where(platform => dependenciesByPlatform[platform].Count == 0)
-                        .Select(CreateNode)
-                        .ToArray()));
+                return Task.FromResult(dependencyGraph.CreateBuildPlan(plannedPlatforms));
             }
 
         }

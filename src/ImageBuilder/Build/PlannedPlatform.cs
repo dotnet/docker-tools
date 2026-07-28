@@ -4,16 +4,21 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
-/// The planned build action and supporting data for a platform.
+/// A platform in the build plan.
 /// </summary>
-/// <param name="Action">How the platform should be handled.</param>
+/// <param name="Platform">The platform represented by this node.</param>
+/// <param name="Action">How the platform should be handled, or null when it was not selected for planning.</param>
 /// <param name="ImageToReuse">Previously published metadata to reuse, when available.</param>
 /// <param name="Causes">Conditions that produced the action.</param>
-public sealed record BuildDecision(
-    BuildAction Action,
+/// <param name="Dependents">Platforms that consume this platform's image.</param>
+public sealed record PlannedPlatform(
+    PlatformInfo Platform,
+    BuildAction? Action,
     PlatformData? ImageToReuse,
-    IReadOnlyList<BuildCause> Causes);
+    IReadOnlyList<BuildCause> Causes,
+    IReadOnlyList<PlannedPlatform> Dependents);

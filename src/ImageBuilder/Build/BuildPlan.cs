@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.DotNet.ImageBuilder.Build;
 
 /// <summary>
-/// A graph of platforms and their build decisions.
+/// The graph of platforms and their build decisions.
 /// </summary>
-/// <param name="Roots">Platforms that do not depend on another platform in the plan.</param>
-public sealed record BuildPlan(IReadOnlyList<BuildPlanNode> Roots);
+/// <param name="Roots">Platforms that do not depend on another platform in the manifest topology.</param>
+public sealed record BuildPlan(IReadOnlyList<PlannedPlatform> Roots);

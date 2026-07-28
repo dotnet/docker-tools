@@ -329,12 +329,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<ImageInfo, ImageData> imageDataByImage = [];
 
             // The plan is ordered so that a platform is built after everything it depends on.
-            foreach (BuildPlanNode node in _buildPlan.GetNodesWithDecisionsInBuildOrder())
+            foreach (PlannedPlatform plannedPlatform in _buildPlan.GetPlatformsWithDecisionsInBuildOrder())
             {
-                PlatformInfo platform = node.Platform;
-                BuildDecision decision = node.Decision ??
-                    throw new InvalidOperationException(
-                        $"Build plan did not provide a decision for '{platform.DockerfilePath}'.");
+                PlatformInfo platform = plannedPlatform.Platform;
                 ImageInfo image = Manifest.GetImageByPlatform(platform);
                 RepoInfo repoInfo = Manifest.GetRepoByImage(image);
 
@@ -360,17 +357,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 imageData.Platforms.Add(platformData);
 
                 bool isCachedImage =
-                    decision.Action is
+                    plannedPlatform.Action is
                         BuildAction.Reuse or
                         BuildAction.ReuseAndPublishTags;
                 if (isCachedImage)
                 {
-                    PlatformData cachedPlatform = decision.ImageToReuse ??
+                    PlatformData cachedPlatform = plannedPlatform.ImageToReuse ??
                         throw new InvalidOperationException(
                             $"Build plan did not provide cached metadata for '{platform.DockerfilePath}'.");
                     CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
                     platformData.IsUnchanged =
-                        decision.Action == BuildAction.Reuse;
+                        plannedPlatform.Action == BuildAction.Reuse;
 
                     bool pullImage =
                         !_sourceDigestCopyLocationMapping.ContainsKey(cachedPlatform.Digest);

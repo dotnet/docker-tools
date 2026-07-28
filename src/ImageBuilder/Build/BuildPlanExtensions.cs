@@ -12,27 +12,25 @@ namespace Microsoft.DotNet.ImageBuilder.Build;
 /// <summary>Provides queries over a build plan.</summary>
 public static class BuildPlanExtensions
 {
-    /// <summary>
-    /// Gets the nodes with build decisions in execution order.
-    /// </summary>
-    public static IReadOnlyList<BuildPlanNode> GetNodesWithDecisionsInBuildOrder(this BuildPlan plan)
+    /// <summary>Gets platforms with build decisions in dependency order.</summary>
+    public static IReadOnlyList<PlannedPlatform> GetPlatformsWithDecisionsInBuildOrder(this BuildPlan plan)
     {
-        IReadOnlyList<BuildPlanNode> nodes = GetNodes(plan);
-        IReadOnlyDictionary<BuildPlanNode, IReadOnlyList<BuildPlanNode>> dependenciesByNode =
-            GetDependenciesByNode(nodes);
-        Dictionary<BuildPlanNode, int> depthByNode = new(ReferenceEqualityComparer.Instance);
+        IReadOnlyList<PlannedPlatform> allPlatforms = GetAllPlatforms(plan);
+        IReadOnlyDictionary<PlannedPlatform, List<PlannedPlatform>> dependenciesByPlatform =
+            GetDependenciesByPlatform(allPlatforms);
+        Dictionary<PlannedPlatform, int> depthByPlatform = new(ReferenceEqualityComparer.Instance);
 
-        return [..nodes
-            .Where(node => node.Decision is not null)
+        return [..allPlatforms
+            .Where(platform => platform.Action is not null)
             .OrderBy(GetDependencyDepth)];
 
-        int GetDependencyDepth(BuildPlanNode node)
+        int GetDependencyDepth(PlannedPlatform platform)
         {
-            if (!depthByNode.TryGetValue(node, out int depth))
+            if (!depthByPlatform.TryGetValue(platform, out int depth))
             {
-                IReadOnlyList<BuildPlanNode> dependencies = dependenciesByNode[node];
+                IReadOnlyList<PlannedPlatform> dependencies = dependenciesByPlatform[platform];
                 depth = dependencies.Count == 0 ? 0 : dependencies.Max(GetDependencyDepth) + 1;
-                depthByNode.Add(node, depth);
+                depthByPlatform.Add(platform, depth);
             }
 
             return depth;
@@ -41,7 +39,7 @@ public static class BuildPlanExtensions
 
     /// <summary>Gets whether any platform will reuse previously published metadata.</summary>
     public static bool HasReusablePlatforms(this BuildPlan plan) =>
-        plan.GetNodesWithDecisionsInBuildOrder().Any(node => node.Decision?.Action is
+        plan.GetPlatformsWithDecisionsInBuildOrder().Any(planned => planned.Action is
             BuildAction.Reuse or BuildAction.ReuseAndPublishTags);
 
     /// <summary>Gets every platform connected to a planned build.</summary>
@@ -61,110 +59,88 @@ public static class BuildPlanExtensions
         IEnumerable<BuildPlanReason> reasons)
     {
         HashSet<BuildPlanReason> reasonSet = reasons.ToHashSet();
-        IReadOnlyList<BuildPlanNode> nodes = GetNodes(plan);
-        IReadOnlyDictionary<BuildPlanNode, IReadOnlyList<BuildPlanNode>> dependenciesByNode =
-            GetDependenciesByNode(nodes);
-        IReadOnlyDictionary<PlatformInfo, BuildPlanNode> nodeByPlatform =
-            nodes.ToDictionary(node => node.Platform);
+        IReadOnlyList<PlannedPlatform> allPlatforms = GetAllPlatforms(plan);
+        IReadOnlyDictionary<PlannedPlatform, List<PlannedPlatform>> dependenciesByPlatform =
+            GetDependenciesByPlatform(allPlatforms);
+
+        IReadOnlyDictionary<PlatformInfo, PlannedPlatform> plannedByPlatform =
+            allPlatforms.ToDictionary(platform => platform.Platform);
         HashSet<PlatformInfo> addedPlatforms = [];
         List<PlatformInfo> platforms = [];
-        IEnumerable<PlatformInfo> origins = plan
-            .GetNodesWithDecisionsInBuildOrder()
-            .Select(node => node.Decision)
-            .OfType<BuildDecision>()
-            .Where(decision => decision.Action == BuildAction.Build)
-            .SelectMany(decision => decision.Causes)
+        IEnumerable<PlatformInfo> buildOrigins = allPlatforms
+            .Where(planned => planned.Action == BuildAction.Build)
+            .SelectMany(planned => planned.Causes)
             .Where(cause => cause.IsDirect() && reasonSet.Contains(cause.Reason))
             .Select(cause => cause.Origin)
             .Distinct();
 
-        foreach (PlatformInfo origin in origins)
+        foreach (PlatformInfo buildOrigin in buildOrigins)
         {
-            platforms.AddRange(
-                GetConnectedNodes(nodeByPlatform[origin], dependenciesByNode)
-                    .Select(node => node.Platform)
-                    .Where(addedPlatforms.Add));
+            VisitConnected(plannedByPlatform[buildOrigin]);
         }
 
         return platforms;
+
+        void VisitConnected(PlannedPlatform platform)
+        {
+            if (!addedPlatforms.Add(platform.Platform))
+            {
+                return;
+            }
+
+            platforms.Add(platform.Platform);
+            foreach (PlannedPlatform related in dependenciesByPlatform[platform].Concat(platform.Dependents))
+            {
+                VisitConnected(related);
+            }
+        }
     }
 
-    private static IReadOnlyList<BuildPlanNode> GetNodes(BuildPlan plan)
+    private static IReadOnlyDictionary<PlannedPlatform, List<PlannedPlatform>> GetDependenciesByPlatform(
+        IReadOnlyList<PlannedPlatform> platforms)
     {
-        HashSet<BuildPlanNode> visited = new(ReferenceEqualityComparer.Instance);
-        List<BuildPlanNode> nodes = [];
-        foreach (BuildPlanNode root in plan.Roots)
+        Dictionary<PlannedPlatform, List<PlannedPlatform>> dependenciesByPlatform =
+            new(ReferenceEqualityComparer.Instance);
+
+        foreach (PlannedPlatform platform in platforms)
+        {
+            dependenciesByPlatform.Add(platform, []);
+        }
+
+        foreach (PlannedPlatform platform in platforms)
+        {
+            foreach (PlannedPlatform dependent in platform.Dependents)
+            {
+                dependenciesByPlatform[dependent].Add(platform);
+            }
+        }
+
+        return dependenciesByPlatform;
+    }
+
+    private static IReadOnlyList<PlannedPlatform> GetAllPlatforms(BuildPlan plan)
+    {
+        HashSet<PlannedPlatform> visited = new(ReferenceEqualityComparer.Instance);
+        List<PlannedPlatform> platforms = [];
+
+        foreach (PlannedPlatform root in plan.Roots)
         {
             Visit(root);
         }
 
-        return nodes;
+        return platforms;
 
-        void Visit(BuildPlanNode node)
+        void Visit(PlannedPlatform platform)
         {
-            if (!visited.Add(node))
+            if (!visited.Add(platform))
             {
                 return;
             }
 
-            nodes.Add(node);
-            foreach (BuildPlanNode dependent in node.Dependents)
+            platforms.Add(platform);
+            foreach (PlannedPlatform dependent in platform.Dependents)
             {
                 Visit(dependent);
-            }
-        }
-    }
-
-    private static IReadOnlyDictionary<BuildPlanNode, IReadOnlyList<BuildPlanNode>> GetDependenciesByNode(
-        IReadOnlyList<BuildPlanNode> nodes)
-    {
-        Dictionary<BuildPlanNode, List<BuildPlanNode>> dependenciesByNode =
-            new(ReferenceEqualityComparer.Instance);
-
-        foreach (BuildPlanNode node in nodes)
-        {
-            dependenciesByNode.Add(node, []);
-        }
-
-        foreach (BuildPlanNode node in nodes)
-        {
-            foreach (BuildPlanNode dependent in node.Dependents)
-            {
-                dependenciesByNode[dependent].Add(node);
-            }
-        }
-
-        Dictionary<BuildPlanNode, IReadOnlyList<BuildPlanNode>> result =
-            new(ReferenceEqualityComparer.Instance);
-
-        foreach ((BuildPlanNode node, List<BuildPlanNode> dependencies) in dependenciesByNode)
-        {
-            result.Add(node, dependencies);
-        }
-
-        return result;
-    }
-
-    private static IReadOnlyList<BuildPlanNode> GetConnectedNodes(
-        BuildPlanNode node,
-        IReadOnlyDictionary<BuildPlanNode, IReadOnlyList<BuildPlanNode>> dependenciesByNode)
-    {
-        HashSet<BuildPlanNode> visited = new(ReferenceEqualityComparer.Instance);
-        List<BuildPlanNode> connected = [];
-        Visit(node);
-        return connected;
-
-        void Visit(BuildPlanNode current)
-        {
-            if (!visited.Add(current))
-            {
-                return;
-            }
-
-            connected.Add(current);
-            foreach (BuildPlanNode related in dependenciesByNode[current].Concat(current.Dependents))
-            {
-                Visit(related);
             }
         }
     }

@@ -37,8 +37,6 @@ jobs:
       value: $[ replace(variables['System.PullRequest.SourceBranch'], 'refs/heads/', '') ]
   - name: imageInfoHostDir
     value: $(Build.ArtifactStagingDirectory)/imageInfo
-  - name: imageInfoContainerDir
-    value: $(artifactsPath)/imageInfo
   - name: sourceBuildIdOutputDir
     value: $(Build.ArtifactStagingDirectory)/sourceBuildId
   - name: commitOverrideArg
@@ -99,7 +97,7 @@ jobs:
 
   - script: >
       $(runImageBuilderCmd) trimUnchangedPlatforms
-      '$(imageInfoContainerDir)/image-info.json'
+      'imageInfo/image-info.json'
     displayName: Trim Unchanged Images
 
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
@@ -113,7 +111,7 @@ jobs:
         --os-type '*'
         --architecture '*'
         --repo-prefix '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
-        --image-info '$(imageInfoContainerDir)/image-info.json'
+        --image-info 'imageInfo/image-info.json'
         $(dryRunArg)
         $(imageBuilder.pathArgs)
         $(imageBuilder.commonCmdArgs)
@@ -129,7 +127,7 @@ jobs:
   - template: /eng/docker-tools/templates/steps/wait-for-mcr-image-ingestion.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
-      imageInfoPath: '$(imageinfoContainerDir)/image-info.json'
+      imageInfoPath: 'imageInfo/image-info.json'
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)
       condition: succeeded()
@@ -152,13 +150,13 @@ jobs:
 
   - script: >
       $(runImageBuilderCmd) mergeImageInfo
-      $(imageInfoContainerDir)
+      imageInfo
       imageInfo/full-image-info-new.json
       $(manifestVariables)
       $(dryRunArg)
       --manifest $(manifest)
       --publish
-      --initial-image-info-path $(imageInfoContainerDir)/full-image-info-orig.json
+      --initial-image-info-path imageInfo/full-image-info-orig.json
       $(commitOverrideArg)
     condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
     displayName: Merge Image Info
@@ -175,7 +173,7 @@ jobs:
       condition: and(succeeded(), eq(variables['ingestKustoImageInfo'], 'true'))
       args: >-
         ingestKustoImageInfo
-        '$(imageInfoContainerDir)/image-info.json'
+        'imageInfo/image-info.json'
         '$(kusto.cluster)'
         '$(kusto.database)'
         '$(kusto.imageTable)'
@@ -195,8 +193,8 @@ jobs:
         '${{ parameters.publishConfig.PublishRegistry.server }}'
         '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
         'eol-annotation-data/eol-annotation-data.json'
-        '$(imageInfoContainerDir)/full-image-info-orig.json'
-        '$(imageInfoContainerDir)/full-image-info-new.json'
+        'imageInfo/full-image-info-orig.json'
+        'imageInfo/full-image-info-new.json'
         $(generateEolAnnotationDataExtraOptions)
         $(dryRunArg)
 
@@ -212,11 +210,11 @@ jobs:
   - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
     parameters:
       acr: ${{ parameters.publishConfig.PublishRegistry }}
-      dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data.json
+      dataFile: eol-annotation-data/eol-annotation-data.json
 
   - script: >
       $(runImageBuilderCmd) publishImageInfo
-      '$(imageInfoContainerDir)/full-image-info-new.json'
+      'imageInfo/full-image-info-new.json'
       '$(gitHubVersionsRepoInfo.userName)'
       '$(gitHubVersionsRepoInfo.email)'
       $(gitHubVersionsRepoInfo.authArgs)
@@ -245,7 +243,7 @@ jobs:
       $(runImageBuilderCmd) postPublishNotification
       '$(publishNotificationRepoName)'
       '$(branchName)'
-      '$(imageInfoContainerDir)/image-info.json'
+      'imageInfo/image-info.json'
       $(Build.BuildId)
       '$(System.AccessToken)'
       '$(azdoOrgName)'

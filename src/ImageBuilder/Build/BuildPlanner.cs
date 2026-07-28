@@ -26,13 +26,14 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     {
         HashSet<PlatformInfo> evaluatedPlatforms = platformsToEvaluate.ToHashSet();
         PlatformInfo[] graphPlatforms = [..allPlatforms.Distinct()];
-        PlatformDependencyGraph dependencyGraph =
-            PlatformDependencyGraph.Create(manifest, graphPlatforms);
-
+        PlatformDependencyGraph dependencyGraph = PlatformDependencyGraph.Create(manifest, graphPlatforms);
         PlatformInfo[] evaluationOrder = [..graphPlatforms.Where(evaluatedPlatforms.Contains)];
-        Dictionary<PlatformInfo, PlatformData?> publishedPlatforms = evaluationOrder.ToDictionary(
-            platform => platform,
-            platform => GetPublishedPlatform(manifest, platform, imageArtifactDetails));
+
+        Dictionary<PlatformInfo, PlatformData?> publishedPlatforms =
+            evaluationOrder.ToDictionary(
+                platform => platform,
+                platform => GetPublishedPlatform(manifest, platform, imageArtifactDetails));
+
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform = [];
 
         // Platforms that share a Dockerfile and build args produce the same image content, so the
@@ -51,18 +52,16 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             LogSharedContentScope(logger, groupPlatforms, representative);
 
             IReadOnlyList<BuildPlanReason> contentReasons = useCache
-                ? await GetContentBuildReasonsAsync(
-                    representative,
-                    reuseSource,
-                    baseImageResolver,
-                    sourceRepoUrl)
+                ? await GetContentBuildReasonsAsync(representative, reuseSource, baseImageResolver, sourceRepoUrl)
                 : [BuildPlanReason.CacheDisabled];
+
             bool requiresBuild = contentReasons.Count > 0;
 
             foreach (PlatformInfo platform in groupPlatforms)
             {
                 PlatformData? publishedPlatform = publishedPlatforms[platform];
                 List<BuildPlanReason> reasons = [..contentReasons];
+
                 if (useCache && !HasAllTagsPublished(publishedPlatform))
                 {
                     reasons.Add(BuildPlanReason.MissingTags);
@@ -73,26 +72,17 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                     reasons.Add(BuildPlanReason.EquivalentBuildChanged);
                 }
 
-                PlannedPlatform planned = CreatePlannedPlatform(
-                    platform,
-                    reuseSource,
-                    requiresBuild,
-                    reasons);
+                PlannedPlatform planned = CreatePlannedPlatform(platform, reuseSource, requiresBuild, reasons);
                 plannedByPlatform[platform] = planned;
 
                 if (planned.ImageToReuse is not null)
                 {
-                    RecordAvailableImage(
-                        manifest,
-                        platform,
-                        planned.ImageToReuse,
-                        baseImageResolver);
+                    RecordAvailableImage(manifest, platform, planned.ImageToReuse, baseImageResolver);
                 }
             }
         }
 
-        PlannedPlatform[] plannedResults =
-            [..evaluationOrder.Select(platform => plannedByPlatform[platform])];
+        PlannedPlatform[] plannedResults = [..evaluationOrder.Select(platform => plannedByPlatform[platform])];
         BuildPlan plan = new(PropagateBuildCauses(plannedResults, dependencyGraph), dependencyGraph);
         LogPlan(logger, plan);
         return plan;
@@ -110,8 +100,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         if (group.Count > 1)
         {
             logger.LogInformation(
-                "Dockerfile '{DockerfilePath}' is shared by {PlatformCount} platforms, which are planned "
-                    + "together: {Tags}",
+                "Dockerfile '{DockerfilePath}' is shared by {PlatformCount} platforms, which are planned together: {Tags}",
                 representative.DockerfilePathRelativeToManifest,
                 group.Count,
                 string.Join(", ", group.Select(DescribeTag)));
@@ -124,8 +113,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     private static void LogPlan(ILogger logger, BuildPlan plan)
     {
         logger.LogInformation(
-            "Build plan: {BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to "
-                + "reuse and publish tags",
+            "Build plan: {BuildCount} to build, {ReuseCount} to reuse, {ReuseAndPublishTagsCount} to reuse and publish tags",
             plan.Platforms.Count(planned => planned.Action == BuildAction.Build),
             plan.Platforms.Count(planned => planned.Action == BuildAction.Reuse),
             plan.Platforms.Count(planned => planned.Action == BuildAction.ReuseAndPublishTags));
@@ -174,8 +162,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         RepoInfo repo = manifest.GetRepoByImage(manifest.GetImageByPlatform(platform));
-        return ImageInfoHelper
-            .GetMatchingPlatformData(platform, repo, imageArtifactDetails)?.Platform;
+        return ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails)?.Platform;
     }
 
     /// <summary>
@@ -204,6 +191,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         List<BuildPlanReason> reasons = [];
+
         if (await HasBaseImageChangedAsync(platform, publishedPlatform, baseImageResolver))
         {
             reasons.Add(BuildPlanReason.BaseImageChanged);
@@ -227,6 +215,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             logger.LogInformation(
                 "Dockerfile '{DockerfilePath}' has no base image, so it is considered up-to-date",
                 platform.DockerfilePathRelativeToManifest);
+
             return false;
         }
 
@@ -241,6 +230,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 "Base image of '{DockerfilePath}' is unchanged at digest {BaseImageDigestSha}",
                 platform.DockerfilePathRelativeToManifest,
                 currentDigestSha);
+
             return false;
         }
 
@@ -254,10 +244,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         return true;
     }
 
-    private bool HasDockerfileChanged(
-        PlatformInfo platform,
-        PlatformData publishedPlatform,
-        string? sourceRepoUrl)
+    private bool HasDockerfileChanged(PlatformInfo platform, PlatformData publishedPlatform, string? sourceRepoUrl)
     {
         // Comparing Dockerfile commits requires the Dockerfile to be present on disk and a source
         // repo URL to form the commit URL recorded in image info. Contexts that plan against a
@@ -268,9 +255,9 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         string currentCommitUrl = gitService.GetDockerfileCommitUrl(platform, sourceRepoUrl);
-        bool commitShaMatches = publishedPlatform.CommitUrl?.Equals(
-            currentCommitUrl,
-            StringComparison.OrdinalIgnoreCase) == true;
+
+        bool commitShaMatches =
+            publishedPlatform.CommitUrl?.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase) == true;
 
         if (commitShaMatches)
         {
@@ -301,14 +288,12 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// Indicates whether a platform's previously published image differs from the equivalent build
     /// being reused, which requires the platform's tags to be published against the reused image.
     /// </summary>
-    private static bool HasEquivalentBuildChanged(
-        PlatformData? publishedPlatform,
-        PlatformData? reuseSource) =>
-        publishedPlatform is not null &&
-        reuseSource is not null &&
-        !DockerHelper.GetDigestSha(publishedPlatform.Digest).Equals(
-            DockerHelper.GetDigestSha(reuseSource.Digest),
-            StringComparison.OrdinalIgnoreCase);
+    private static bool HasEquivalentBuildChanged(PlatformData? publishedPlatform, PlatformData? reuseSource) =>
+        publishedPlatform is not null
+        && reuseSource is not null
+        && !DockerHelper
+            .GetDigestSha(publishedPlatform.Digest)
+            .Equals(DockerHelper.GetDigestSha(reuseSource.Digest), StringComparison.OrdinalIgnoreCase);
 
     private static PlannedPlatform CreatePlannedPlatform(
         PlatformInfo platform,
@@ -322,8 +307,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 BuildAction.ReuseAndPublishTags :
                 BuildAction.Reuse;
 
-        if (action is BuildAction.Reuse or BuildAction.ReuseAndPublishTags &&
-            imageToReuse is null)
+        if (action is BuildAction.Reuse or BuildAction.ReuseAndPublishTags && imageToReuse is null)
         {
             throw new InvalidOperationException(
                 $"Build planning produced '{action}' for " +
@@ -331,12 +315,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         }
 
         return new PlannedPlatform(
-            platform,
-            action,
-            action is BuildAction.Build ? null : imageToReuse,
-            reasons
-                .Select(reason => CreateDirectCause(platform, reason))
-                .ToArray());
+            Platform: platform,
+            Action: action,
+            ImageToReuse: action is BuildAction.Build ? null : imageToReuse,
+            Causes: reasons.Select(reason => CreateDirectCause(platform, reason)).ToArray());
     }
 
     private static BuildCause CreateDirectCause(PlatformInfo platform, BuildPlanReason reason) =>
@@ -361,6 +343,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     {
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform =
             plannedPlatforms.ToDictionary(planned => planned.Platform);
+
         PlannedPlatform[] directlyBuiltPlatforms = plannedByPlatform.Values
             .Where(planned => planned.Action == BuildAction.Build)
             .ToArray();
@@ -373,8 +356,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
             while (queue.TryDequeue(out (PlatformInfo Platform, IReadOnlyList<PlatformInfo> Path) current))
             {
-                foreach (PlatformInfo child in
-                    dependencyGraph.GetChildren(current.Platform).Where(visited.Add))
+                foreach (PlatformInfo child in dependencyGraph.GetChildren(current.Platform).Where(visited.Add))
                 {
                     PlatformInfo[] childPath = [..current.Path, child];
 
@@ -413,5 +395,4 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         string.Join('-', platform.BuildArgs
             .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
             .Select(kvp => $"{kvp.Key}={kvp.Value}"));
-
 }

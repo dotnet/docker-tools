@@ -33,16 +33,12 @@ public sealed class PlatformDependencyGraph
     /// Creates the graph for the given platforms, resolving each platform's parents once and
     /// inverting them to get its children.
     /// </summary>
-    public static PlatformDependencyGraph Create(
-        ManifestInfo manifest,
-        IReadOnlyCollection<PlatformInfo> platforms)
+    public static PlatformDependencyGraph Create(ManifestInfo manifest, IReadOnlyCollection<PlatformInfo> platforms)
     {
-        ArgumentNullException.ThrowIfNull(manifest);
-        ArgumentNullException.ThrowIfNull(platforms);
-
         Dictionary<PlatformInfo, PlatformInfo[]> parents = platforms.ToDictionary(
             platform => platform,
             platform => manifest.GetParents(platform, platforms).ToArray());
+
         Dictionary<PlatformInfo, List<PlatformInfo>> children =
             platforms.ToDictionary(platform => platform, _ => new List<PlatformInfo>());
 
@@ -55,6 +51,7 @@ public sealed class PlatformDependencyGraph
         }
 
         Dictionary<PlatformInfo, int> depths = [];
+
         foreach (PlatformInfo platform in platforms)
         {
             GetDepth(platform);

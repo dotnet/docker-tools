@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly PublishConfiguration _publishConfig;
         private readonly List<string> _deletedRepos = [];
-        private readonly List<string> _deletedImages = [];
+        private readonly ConcurrentBag<string> _deletedImages = [];
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
         private const int ManifestBatchSize = 250;
@@ -171,7 +171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation("SUMMARY");
 
             _logger.LogInformation("Deleted repositories:");
-            foreach (string deletedRepo in _deletedRepos)
+            foreach (string deletedRepo in _deletedRepos.Order())
             {
                 _logger.LogInformation($"\t{deletedRepo}");
             }
@@ -179,7 +179,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation(string.Empty);
 
             _logger.LogInformation("Deleted images:");
-            foreach (string deletedImage in _deletedImages)
+            foreach (string deletedImage in _deletedImages.Order())
             {
                 _logger.LogInformation($"\t{deletedImage}");
             }
@@ -272,30 +272,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<Task> tasks =
                 digests.Select(digest =>
                     pipeline.ExecuteAsync(async cancellationToken =>
-                        await DeleteManifestAsync(acrContentClient, repository, digest))
+                        await DeleteManifestAsync(
+                            acrContentClient,
+                            new ImageName(registry: null, repository.Name, tag: null, digest)))
                     .AsTask());
 
             await Task.WhenAll(tasks);
         }
 
-        private async Task DeleteManifestAsync(
-            IAcrContentClient acrContentClient,
-            ContainerRepository repository,
-            string digest)
+        private async Task DeleteManifestAsync(IAcrContentClient acrContentClient, ImageName image)
         {
             if (!Options.IsDryRun)
             {
-                await acrContentClient.DeleteManifestAsync(digest);
+                await acrContentClient.DeleteManifestAsync(image.Digest);
             }
 
-            string imageId = $"{repository.Name}@{digest}";
+            _logger.LogInformation($"Deleted image '{image}'");
 
-            _logger.LogInformation($"Deleted image '{imageId}'");
-
-            lock (_deletedImages)
-            {
-                _deletedImages.Add(imageId);
-            }
+            _deletedImages.Add(image);
         }
 
         private async Task DeleteRepositoryAsync(IAcrClient acrClient, ContainerRepository repository)
@@ -340,10 +334,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             _logger.LogInformation(messageBuilder.ToString());
 
-            lock (_deletedRepos)
-            {
-                _deletedRepos.Add(repository.Name);
-            }
+            _deletedRepos.Add(repository.Name);
         }
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;

@@ -156,7 +156,7 @@ jobs:
   - script: >
       $(runImageBuilderCmd) mergeImageInfo
       $(imageInfoContainerDir)
-      $(imageInfoContainerDir)/full-image-info-new.json
+      imageInfo/full-image-info-new.json
       $(manifestVariables)
       $(dryRunArg)
       --manifest $(manifest)

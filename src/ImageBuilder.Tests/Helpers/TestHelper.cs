@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
@@ -19,6 +21,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             new ManifestJsonService(
                 fileSystem: new FileSystem(),
                 logger: new LoggerFactory().CreateLogger<ManifestJsonService>());
+
+        public static IOutputService CreateOutputService(string artifactStagingDirectory) =>
+            new OutputService(
+                new FileSystem(),
+                Options.Create(
+                    new BuildConfiguration
+                    {
+                        ArtifactStagingDirectory = artifactStagingDirectory
+                    }));
 
         public static TempFolderContext UseTempFolder()
         {

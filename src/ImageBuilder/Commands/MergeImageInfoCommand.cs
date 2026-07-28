@@ -15,7 +15,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
     {
-        public MergeImageInfoCommand(IManifestJsonService manifestJsonService) : base(manifestJsonService) { }
+        private readonly IOutputService _outputService;
+
+        public MergeImageInfoCommand(
+            IManifestJsonService manifestJsonService,
+            IOutputService outputService)
+            : base(manifestJsonService)
+        {
+            _outputService = outputService;
+        }
 
         protected override string Description => "Merges the content of multiple image info files into one file";
 
@@ -89,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string destinationContents = JsonHelper.SerializeObject(targetImageArtifactDetails) + Environment.NewLine;
-            File.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
+            _outputService.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
 
             return Task.CompletedTask;
         }

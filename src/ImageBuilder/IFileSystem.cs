@@ -80,7 +80,7 @@ public interface IFileSystem
     /// <summary>
     /// Returns the directory information for the specified path.
     /// </summary>
-    string? GetDirectoryName(string path);
+    string GetDirectoryName(string path);
 
     /// <summary>
     /// Gets the current working directory of the application.

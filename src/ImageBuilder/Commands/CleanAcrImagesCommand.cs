@@ -108,24 +108,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }
 
-        private static CancellationTokenSource CreateTimeLimitCancellation(TimeSpan? timeLimit)
-        {
-            CancellationTokenSource cancellation = new();
-            if (timeLimit is TimeSpan limit)
-            {
-                if (limit <= TimeSpan.Zero)
-                {
-                    cancellation.Cancel();
-                }
-                else
-                {
-                    cancellation.CancelAfter(limit);
-                }
-            }
-
-            return cancellation;
-        }
-
         private async Task ProcessRepoAsync(
             IAcrClient acrClient,
             IAcrContentClient acrContentClient,
@@ -436,5 +418,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _publishConfig.CleanServiceConnection is { } svc
                 ? _acrContentClientFactory.Create(acr, repositoryName, svc)
                 : _acrContentClientFactory.Create(acr, repositoryName);
+
+        private static CancellationTokenSource CreateTimeLimitCancellation(TimeSpan? timeLimit)
+        {
+            CancellationTokenSource cancellation = new();
+            if (timeLimit is TimeSpan limit)
+            {
+                if (limit <= TimeSpan.Zero)
+                {
+                    cancellation.Cancel();
+                }
+                else
+                {
+                    cancellation.CancelAfter(limit);
+                }
+            }
+
+            return cancellation;
+        }
     }
 }

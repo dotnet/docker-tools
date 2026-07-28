@@ -175,7 +175,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ImageArtifactDetails imageArtifactDetails,
                 BaseImageResolver baseImageResolver,
                 string sourceRepoUrl,
-                IReadOnlyList<IBuildPlanCheck> checks)
+                bool useCache)
             {
                 HashSet<PlatformInfo> evaluatedPlatforms = platformsToEvaluate.ToHashSet();
                 PlatformInfo[] graphPlatforms = allPlatforms.ToArray();

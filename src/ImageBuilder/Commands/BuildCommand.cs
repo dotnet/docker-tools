@@ -323,7 +323,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 srcImageArtifactDetails,
                 _baseImageResolver.Value,
                 Options.SourceRepoUrl,
-                Options.NoCache ? BuildPlanCheck.NoCache : BuildPlanCheck.Default);
+                useCache: !Options.NoCache);
 
             Dictionary<RepoInfo, RepoData> repoDataByRepo = [];
             Dictionary<ImageInfo, ImageData> imageDataByImage = [];

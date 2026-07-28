@@ -457,7 +457,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails.Value,
                 _baseImageResolver.Value,
                 Options.SourceRepoUrl,
-                BuildPlanCheck.Default);
+                useCache: true);
 
             IReadOnlyCollection<PlatformInfo> scheduledPlatforms = plan.GetPlatformsToSchedule();
 

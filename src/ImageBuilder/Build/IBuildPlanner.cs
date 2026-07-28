@@ -33,7 +33,7 @@ public interface IBuildPlanner
     /// Source repository URL used to compare Dockerfile commits. When null, the Dockerfile
     /// comparison is not performed.
     /// </param>
-    /// <param name="checks">Checks to evaluate for each platform.</param>
+    /// <param name="useCache">Whether previously published images may be reused.</param>
     Task<BuildPlan> CreateBuildPlanAsync(
         ManifestInfo manifest,
         IEnumerable<PlatformInfo> allPlatforms,
@@ -41,5 +41,5 @@ public interface IBuildPlanner
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,
-        IReadOnlyList<IBuildPlanCheck> checks);
+        bool useCache);
 }

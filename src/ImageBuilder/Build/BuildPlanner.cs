@@ -22,7 +22,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         ImageArtifactDetails? imageArtifactDetails,
         BaseImageResolver baseImageResolver,
         string? sourceRepoUrl,
-        IReadOnlyList<IBuildPlanCheck> checks)
+        bool useCache)
     {
         HashSet<PlatformInfo> evaluatedPlatforms = platformsToEvaluate.ToHashSet();
         PlatformInfo[] graphPlatforms = [..allPlatforms.Distinct()];
@@ -35,13 +35,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             platform => GetPublishedPlatform(manifest, platform, imageArtifactDetails));
         Dictionary<PlatformInfo, PlannedPlatform> plannedByPlatform = [];
 
-        IBuildPlanCheck[] contentChecks =
-            [..checks.Where(check => check.Scope is BuildPlanCheckScope.ImageContent)];
-        IBuildPlanCheck[] publishChecks =
-            [..checks.Where(check => check.Scope is BuildPlanCheckScope.PlatformPublication)];
-
         // Platforms that share a Dockerfile and build args produce the same image content, so the
-        // content checks are evaluated once per group. Groups are evaluated in dependency order so
+        // content is evaluated once per group. Groups are evaluated in dependency order so
         // that a parent's reuse decision is recorded before its children resolve their base image.
         IEnumerable<IGrouping<string, PlatformInfo>> platformGroups = evaluationOrder
             .GroupBy(GetBuildCacheKey)
@@ -55,27 +50,34 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
             LogSharedContentScope(logger, groupPlatforms, representative);
 
-            IReadOnlyList<EvaluatedBuildPlanCheck> contentResults = await EvaluateChecksAsync(
-                contentChecks,
-                CreateContext(representative, reuseSource));
-            bool requiresBuild = contentResults.Any(result =>
-                result.Disposition == BuildPlanCheckDisposition.Build);
+            IReadOnlyList<BuildPlanReason> contentReasons = useCache
+                ? await GetContentBuildReasonsAsync(
+                    representative,
+                    reuseSource,
+                    baseImageResolver,
+                    sourceRepoUrl)
+                : [BuildPlanReason.CacheDisabled];
+            bool requiresBuild = contentReasons.Count > 0;
 
             foreach (PlatformInfo platform in groupPlatforms)
             {
                 PlatformData? publishedPlatform = publishedPlatforms[platform];
-                List<EvaluatedBuildPlanCheck> results = [..contentResults];
-                results.AddRange(
-                    await EvaluateChecksAsync(publishChecks, CreateContext(platform, publishedPlatform)));
+                List<BuildPlanReason> reasons = [..contentReasons];
+                if (useCache && !HasAllTagsPublished(publishedPlatform))
+                {
+                    reasons.Add(BuildPlanReason.MissingTags);
+                }
 
                 if (!requiresBuild && HasEquivalentBuildChanged(publishedPlatform, reuseSource))
                 {
-                    results.Add(new EvaluatedBuildPlanCheck(
-                        BuildPlanReason.EquivalentBuildChanged,
-                        BuildPlanCheckDisposition.ReuseAndPublish));
+                    reasons.Add(BuildPlanReason.EquivalentBuildChanged);
                 }
 
-                PlannedPlatform planned = CreatePlannedPlatform(platform, reuseSource, results);
+                PlannedPlatform planned = CreatePlannedPlatform(
+                    platform,
+                    reuseSource,
+                    requiresBuild,
+                    reasons);
                 plannedByPlatform[platform] = planned;
 
                 if (planned.ImageToReuse is not null)
@@ -94,9 +96,6 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         BuildPlan plan = new(PropagateBuildCauses(plannedResults, dependencyGraph), dependencyGraph);
         LogPlan(logger, plan);
         return plan;
-
-        BuildPlanCheckContext CreateContext(PlatformInfo platform, PlatformData? publishedPlatform) =>
-            new(platform, publishedPlatform, baseImageResolver, gitService, logger, sourceRepoUrl);
     }
 
     /// <summary>
@@ -181,8 +180,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
 
     /// <summary>
     /// Selects the platform whose previously published metadata represents the content shared by
-    /// the group. Platforms with previously published metadata are preferred because the content
-    /// checks need it to have an opinion.
+    /// the group. Platforms with previously published metadata are preferred so that content
+    /// freshness can be evaluated.
     /// </summary>
     private static PlatformInfo SelectContentRepresentative(
         IEnumerable<PlatformInfo> group,
@@ -192,6 +191,111 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             .ThenBy(platform => platform.DockerfilePathRelativeToManifest, StringComparer.Ordinal)
             .ThenBy(platform => platform.Tags.FirstOrDefault()?.Name, StringComparer.Ordinal)
             .First();
+
+    private async Task<IReadOnlyList<BuildPlanReason>> GetContentBuildReasonsAsync(
+        PlatformInfo platform,
+        PlatformData? publishedPlatform,
+        BaseImageResolver baseImageResolver,
+        string? sourceRepoUrl)
+    {
+        if (publishedPlatform is null)
+        {
+            return [BuildPlanReason.MissingImageInfo];
+        }
+
+        List<BuildPlanReason> reasons = [];
+        if (await HasBaseImageChangedAsync(platform, publishedPlatform, baseImageResolver))
+        {
+            reasons.Add(BuildPlanReason.BaseImageChanged);
+        }
+
+        if (HasDockerfileChanged(platform, publishedPlatform, sourceRepoUrl))
+        {
+            reasons.Add(BuildPlanReason.DockerfileChanged);
+        }
+
+        return reasons;
+    }
+
+    private async Task<bool> HasBaseImageChangedAsync(
+        PlatformInfo platform,
+        PlatformData publishedPlatform,
+        BaseImageResolver baseImageResolver)
+    {
+        if (platform.FinalStageFromImage is null)
+        {
+            logger.LogInformation(
+                "Dockerfile '{DockerfilePath}' has no base image, so it is considered up-to-date",
+                platform.DockerfilePathRelativeToManifest);
+            return false;
+        }
+
+        string? currentDigestSha = await baseImageResolver.ResolveDigestShaAsync(platform);
+        string? publishedDigestSha = publishedPlatform.BaseImageDigest is string publishedDigest
+            ? DockerHelper.GetDigestSha(publishedDigest)
+            : null;
+
+        if (publishedDigestSha?.Equals(currentDigestSha, StringComparison.OrdinalIgnoreCase) == true)
+        {
+            logger.LogInformation(
+                "Base image of '{DockerfilePath}' is unchanged at digest {BaseImageDigestSha}",
+                platform.DockerfilePathRelativeToManifest,
+                currentDigestSha);
+            return false;
+        }
+
+        logger.LogInformation(
+            "Base image of '{DockerfilePath}' changed from digest {PreviousBaseImageDigestSha} to " +
+            "{CurrentBaseImageDigestSha}",
+            platform.DockerfilePathRelativeToManifest,
+            publishedDigestSha,
+            currentDigestSha);
+
+        return true;
+    }
+
+    private bool HasDockerfileChanged(
+        PlatformInfo platform,
+        PlatformData publishedPlatform,
+        string? sourceRepoUrl)
+    {
+        // Comparing Dockerfile commits requires the Dockerfile to be present on disk and a source
+        // repo URL to form the commit URL recorded in image info. Contexts that plan against a
+        // remote manifest have neither, so the Dockerfile is considered unchanged.
+        if (sourceRepoUrl is null)
+        {
+            return false;
+        }
+
+        string currentCommitUrl = gitService.GetDockerfileCommitUrl(platform, sourceRepoUrl);
+        bool commitShaMatches = publishedPlatform.CommitUrl?.Equals(
+            currentCommitUrl,
+            StringComparison.OrdinalIgnoreCase) == true;
+
+        if (commitShaMatches)
+        {
+            logger.LogInformation(
+                "Dockerfile '{DockerfilePath}' is unchanged since commit {CommitUrl}",
+                platform.DockerfilePathRelativeToManifest,
+                currentCommitUrl);
+        }
+        else
+        {
+            logger.LogInformation(
+                "Dockerfile '{DockerfilePath}' changed from commit {PreviousCommitUrl} to {CurrentCommitUrl}",
+                platform.DockerfilePathRelativeToManifest,
+                publishedPlatform.CommitUrl,
+                currentCommitUrl);
+        }
+
+        return !commitShaMatches;
+    }
+
+    private static bool HasAllTagsPublished(PlatformData? publishedPlatform) =>
+        publishedPlatform is not null &&
+        (publishedPlatform.PlatformInfo?.Tags ?? [])
+            .Select(tag => tag.Name)
+            .AreEquivalent(publishedPlatform.SimpleTags);
 
     /// <summary>
     /// Indicates whether a platform's previously published image differs from the equivalent build
@@ -209,13 +313,12 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     private static PlannedPlatform CreatePlannedPlatform(
         PlatformInfo platform,
         PlatformData? imageToReuse,
-        IReadOnlyCollection<EvaluatedBuildPlanCheck> results)
+        bool requiresBuild,
+        IReadOnlyCollection<BuildPlanReason> reasons)
     {
-        BuildAction action = results.Any(result =>
-            result.Disposition == BuildPlanCheckDisposition.Build) ?
+        BuildAction action = requiresBuild ?
             BuildAction.Build :
-            results.Any(result =>
-                result.Disposition == BuildPlanCheckDisposition.ReuseAndPublish) ?
+            reasons.Count > 0 ?
                 BuildAction.ReuseAndPublishTags :
                 BuildAction.Reuse;
 
@@ -223,7 +326,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             imageToReuse is null)
         {
             throw new InvalidOperationException(
-                $"Planning checks produced '{action}' for " +
+                $"Build planning produced '{action}' for " +
                 $"'{platform.DockerfilePathRelativeToManifest}' without cached image metadata.");
         }
 
@@ -231,30 +334,13 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
             platform,
             action,
             action is BuildAction.Build ? null : imageToReuse,
-            results
-                .Select(result => CreateDirectCause(platform, result.Reason))
+            reasons
+                .Select(reason => CreateDirectCause(platform, reason))
                 .ToArray());
     }
 
     private static BuildCause CreateDirectCause(PlatformInfo platform, BuildPlanReason reason) =>
         new(reason, platform, [platform]);
-
-    private static async Task<IReadOnlyList<EvaluatedBuildPlanCheck>> EvaluateChecksAsync(
-        IEnumerable<IBuildPlanCheck> checks,
-        BuildPlanCheckContext context)
-    {
-        List<EvaluatedBuildPlanCheck> results = [];
-        foreach (IBuildPlanCheck check in checks)
-        {
-            BuildPlanCheckDisposition? disposition = await check.EvaluateAsync(context);
-            if (disposition is not null)
-            {
-                results.Add(new EvaluatedBuildPlanCheck(check.Reason, disposition.Value));
-            }
-        }
-
-        return results;
-    }
 
     private static void RecordAvailableImage(
         ManifestInfo manifest,

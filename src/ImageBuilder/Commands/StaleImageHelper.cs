@@ -52,10 +52,7 @@ public static class StaleImageHelper
             // what we want: a Dockerfile change is caught by that repository's own CI when the
             // change is made, and is not something this caller should trigger a build for.
             sourceRepoUrl: null,
-            // The full set of checks is used rather than a trimmed one. A check that cannot apply
-            // here already has no effect, so listing a subset would only create a second place to
-            // keep in sync as checks change.
-            BuildPlanCheck.Default);
+            useCache: true);
 
         // Only a base image that moved, or an image that has never been published, is a reason for
         // this caller to ask for a build. Missing tags are deliberately not: the published image is

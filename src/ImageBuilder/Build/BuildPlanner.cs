@@ -51,13 +51,13 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
         {
             PlatformInfo[] groupPlatforms = [..group];
             PlatformInfo representative = SelectContentRepresentative(groupPlatforms, publishedPlatforms);
-            PlatformData? reusedPlatform = publishedPlatforms[representative];
+            PlatformData? reuseSource = publishedPlatforms[representative];
 
             LogSharedContentScope(logger, groupPlatforms, representative);
 
             IReadOnlyList<EvaluatedBuildPlanCheck> contentResults = await EvaluateChecksAsync(
                 contentChecks,
-                CreateContext(representative, reusedPlatform));
+                CreateContext(representative, reuseSource));
             bool requiresBuild = contentResults.Any(result =>
                 result.Disposition == BuildPlanCheckDisposition.Build);
 
@@ -68,14 +68,14 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
                 results.AddRange(
                     await EvaluateChecksAsync(publishChecks, CreateContext(platform, publishedPlatform)));
 
-                if (!requiresBuild && HasEquivalentBuildChanged(publishedPlatform, reusedPlatform))
+                if (!requiresBuild && HasEquivalentBuildChanged(publishedPlatform, reuseSource))
                 {
                     results.Add(new EvaluatedBuildPlanCheck(
                         BuildPlanReason.EquivalentBuildChanged,
                         BuildPlanCheckDisposition.ReuseAndPublish));
                 }
 
-                PlannedPlatform planned = CreatePlannedPlatform(platform, reusedPlatform, results);
+                PlannedPlatform planned = CreatePlannedPlatform(platform, reuseSource, results);
                 plannedByPlatform[platform] = planned;
 
                 if (planned.ImageToReuse is not null)
@@ -199,11 +199,11 @@ public class BuildPlanner(ILogger<BuildPlanner> logger, IGitService gitService) 
     /// </summary>
     private static bool HasEquivalentBuildChanged(
         PlatformData? publishedPlatform,
-        PlatformData? reusedPlatform) =>
+        PlatformData? reuseSource) =>
         publishedPlatform is not null &&
-        reusedPlatform is not null &&
+        reuseSource is not null &&
         !DockerHelper.GetDigestSha(publishedPlatform.Digest).Equals(
-            DockerHelper.GetDigestSha(reusedPlatform.Digest),
+            DockerHelper.GetDigestSha(reuseSource.Digest),
             StringComparison.OrdinalIgnoreCase);
 
     private static PlannedPlatform CreatePlannedPlatform(

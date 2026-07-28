@@ -266,6 +266,6 @@ jobs:
     parameters:
       path: $(Build.ArtifactStagingDirectory)
       artifactName: publish-attempt-$(System.JobAttempt)
-      displayName: Publish Stage Artifacts
+      displayName: Publish Artifacts
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}

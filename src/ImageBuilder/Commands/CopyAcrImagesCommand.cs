@@ -16,15 +16,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions>
     {
         private readonly ILogger _logger;
+        private readonly IArtifactService _artifactService;
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
             IManifestJsonService manifestJsonService,
             ICopyImageService copyImageService,
-            ILogger<CopyAcrImagesCommand> logger)
+            ILogger<CopyAcrImagesCommand> logger,
+            IArtifactService artifactService)
             : base(manifestJsonService, copyImageService, logger)
         {
             _logger = logger;
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!string.IsNullOrEmpty(Options.ImageInfoPath))
@@ -42,7 +45,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger.LogInformation("COPYING IMAGES");
 
-            if (string.IsNullOrEmpty(Options.ImageInfoPath) || !File.Exists(Options.ImageInfoPath))
+            if (string.IsNullOrEmpty(Options.ImageInfoPath))
+            {
+                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping image copy."));
+                return;
+            }
+
+            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            if (!File.Exists(Options.ImageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image copy."));

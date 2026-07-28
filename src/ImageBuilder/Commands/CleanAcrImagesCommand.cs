@@ -73,18 +73,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
-            using CancellationTokenSource timeLimitCancellation = new();
-            if (Options.TimeLimitMinutes is ushort timeLimitMinutes)
-            {
-                if (timeLimitMinutes == 0)
-                {
-                    timeLimitCancellation.Cancel();
-                }
-                else
-                {
-                    timeLimitCancellation.CancelAfter(TimeSpan.FromMinutes(timeLimitMinutes));
-                }
-            }
+            using CancellationTokenSource timeLimitCancellation =
+                CreateTimeLimitCancellation(Options.TimeLimitMinutes);
 
             try
             {
@@ -111,6 +101,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
+        }
+
+        private static CancellationTokenSource CreateTimeLimitCancellation(ushort? timeLimitMinutes)
+        {
+            CancellationTokenSource cancellation = new();
+            if (timeLimitMinutes is ushort minutes)
+            {
+                if (minutes == 0)
+                {
+                    cancellation.Cancel();
+                }
+                else
+                {
+                    cancellation.CancelAfter(TimeSpan.FromMinutes(minutes));
+                }
+            }
+
+            return cancellation;
         }
 
         private async Task ProcessRepoAsync(

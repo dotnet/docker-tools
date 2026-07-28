@@ -382,7 +382,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<bool> HasExpiredEolAsync(
             ArtifactManifestProperties manifest,
-            int expirationDays,
+            int eolGracePeriodDays,
             CancellationToken cancellationToken)
         {
             Manifest? lifecycleArtifactManifest = await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(
@@ -395,7 +395,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     out string? endOfLifeValue)
                 && DateTimeOffset.TryParse(endOfLifeValue, out DateTimeOffset endOfLifeDateTime))
             {
-                return IsExpired(endOfLifeDateTime, expirationDays);
+                return IsExpired(endOfLifeDateTime, eolGracePeriodDays);
             }
 
             return false;

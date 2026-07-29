@@ -19,7 +19,7 @@ variables:
   value: ./src/run-tests.ps1
 
 # Builds from feature/<name> branches publish under a <name> tag prefix so they
-# don't collide with the tags built from main. See src/README.md.
+# don't collide with the tags built from main. See README.md.
 - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/feature/') }}:
   # The branch name after "feature/" becomes the tag prefix. Any remaining
   # slashes are flattened so the result is a valid Docker tag.

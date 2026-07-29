@@ -44,7 +44,12 @@ function Get-FeatureBranchMap([string] $Remote) {
     $branches = @{}
     foreach ($ref in git ls-remote --heads $Remote 'refs/heads/feature/*') {
         $branch = ($ref -split "`t")[1] -replace '^refs/heads/', ''
-        $branches[(ConvertTo-FeatureName $branch)] = $branch
+        $feature = ConvertTo-FeatureName $branch
+        if ($branches.ContainsKey($feature)) {
+            Write-Warning "Feature name '$feature' is produced by multiple branches ('$($branches[$feature])', '$branch'); keeping the first."
+            continue
+        }
+        $branches[$feature] = $branch
     }
     $branches
 }

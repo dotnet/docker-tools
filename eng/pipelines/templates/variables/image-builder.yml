@@ -18,6 +18,12 @@ variables:
 - name: preBuildTestScriptPath
   value: ./src/run-tests.ps1
 
+# The only non-official branches allowed to publish to an official repo prefix.
+# Must always be set: validate-branch.yml treats an undefined value as an empty
+# prefix, which every branch name starts with.
+- name: officialBranchPrefixes
+  value: feature/
+
 # Builds from feature/<name> branches publish under a <name> tag prefix so they
 # don't collide with the tags built from main. See README.md.
 - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/feature/') }}:
@@ -28,9 +34,6 @@ variables:
       --var UniqueId=${{ parameters.sourceBuildPipelineRunId }}
       --var TagPrefix=${{ replace(replace(variables['Build.SourceBranch'], 'refs/heads/feature/', ''), '/', '-') }}-
       --var LatestTag=${{ replace(replace(variables['Build.SourceBranch'], 'refs/heads/feature/', ''), '/', '-') }}
-  # Allow publishing to an official repo prefix from feature branches.
-  - name: officialBranchPrefixes
-    value: feature/
   # Feature branch images aren't part of the official record.
   - name: publishImageInfo
     value: false

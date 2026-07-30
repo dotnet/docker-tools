@@ -6,7 +6,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.Extensions.Options;
 using Polly;
 
-
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
@@ -27,8 +25,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<CleanAcrImagesCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly PublishConfiguration _publishConfig;
-        private readonly List<string> _deletedRepos = [];
         private readonly ConcurrentBag<string> _deletedImages = [];
+        private int _repositoriesSelectedForDeletion;
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
         private const int ManifestBatchSize = 250;
@@ -63,20 +61,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
-            _logger.LogInformation("FINDING IMAGES TO CLEAN");
-
-            _logger.LogInformation($"Connecting to ACR '{Options.RegistryName}'");
+            _logger.LogInformation(
+                "Cleaning registry {RegistryName} using action {Action} with an age threshold of {AgeInDays} days. DryRun={DryRun}",
+                Options.RegistryName,
+                Options.Action,
+                Options.Age,
+                Options.IsDryRun);
             IAcrClient acrClient = CreateAcrClient(Options.RegistryName);
-
-            _logger.LogInformation($"Querying catalog of ACR '{Options.RegistryName}'");
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
-
-            _logger.LogInformation("DELETING IMAGES");
 
             TimeSpan? timeLimit = Options.TimeLimitMinutes is ushort timeLimitMinutes
                 ? TimeSpan.FromMinutes(timeLimitMinutes)
                 : null;
             using CancellationTokenSource timeLimitCancellation = CreateTimeLimitCancellation(timeLimit);
+            TimeSpan? reachedTimeLimit = null;
 
             try
             {
@@ -93,13 +91,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             catch (OperationCanceledException) when (timeLimitCancellation.IsCancellationRequested)
             {
-                _logger.LogInformation(
-                    "Cleanup time limit of {TimeLimit} reached; stopping cleanup for registry '{RegistryName}'",
-                    timeLimit.GetValueOrDefault(),
-                    Options.RegistryName);
+                reachedTimeLimit = timeLimit;
             }
 
-            await LogSummaryAsync(acrClient);
+            await LogSummaryAsync(acrClient, reachedTimeLimit);
         }
 
         private async Task ProcessRepoAsync(
@@ -166,39 +161,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task LogSummaryAsync(IAcrClient acrClient)
+        private async Task LogSummaryAsync(IAcrClient acrClient, TimeSpan? reachedTimeLimit)
         {
-            _logger.LogInformation("SUMMARY");
+            int remainingRepositoryCount = await acrClient.GetRepositoryNamesAsync().CountAsync();
 
-            _logger.LogInformation("Deleted repositories:");
-            foreach (string deletedRepo in _deletedRepos.Order())
-            {
-                _logger.LogInformation($"\t{deletedRepo}");
-            }
-
-            _logger.LogInformation(string.Empty);
-
-            _logger.LogInformation("Deleted images:");
-            foreach (string deletedImage in _deletedImages.Order())
-            {
-                _logger.LogInformation($"\t{deletedImage}");
-            }
-
-            _logger.LogInformation(string.Empty);
-
-            _logger.LogInformation("DELETED DATA");
-            _logger.LogInformation($"Total images deleted: {_deletedImages.Count}");
-            _logger.LogInformation($"Total repos deleted: {_deletedRepos.Count}");
-            _logger.LogInformation(string.Empty);
-
-            if (Options.TimeLimitMinutes is null)
-            {
-                _logger.LogInformation("<Querying remaining data...>");
-
-                // Requery the catalog to get the latest info after things have been deleted
-                int repositoryCount = await acrClient.GetRepositoryNamesAsync().CountAsync();
-                _logger.LogInformation($"Total repos remaining: {repositoryCount}");
-            }
+            _logger.LogInformation(
+                "Registry cleanup ended for {RegistryName}: deleted {ImageCount} images and "
+                    + "{RepositoryCount} repositories ({RemainingRepositoryCount} remaining). "
+                    + "TimeLimitReached={TimeLimitReached}, TimeLimit={TimeLimit}, DryRun={DryRun}",
+                Options.RegistryName,
+                _deletedImages.Count,
+                _repositoriesSelectedForDeletion,
+                remainingRepositoryCount,
+                reachedTimeLimit is not null,
+                reachedTimeLimit,
+                Options.IsDryRun);
         }
 
         private async Task ProcessManifestsAsync(
@@ -208,21 +185,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Func<ArtifactManifestProperties, CancellationToken, Task<bool>> canDeleteManifest,
             CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"Querying manifests for repo '{repository.Name}'");
-
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repository.GetAllManifestPropertiesAsync();
             int manifestCount = 0;
+            int batchNumber = 0;
 
             await foreach (IList<ArtifactManifestProperties> batch in
                 manifests.Buffer(ManifestBatchSize).WithCancellation(cancellationToken))
             {
+                batchNumber++;
                 manifestCount += batch.Count;
                 ConcurrentBag<string> digestsToDelete =
                     await FindManifestsToDeleteAsync(batch, canDeleteManifest, cancellationToken);
                 await DeleteManifestsAsync(acrContentClient, repository, digestsToDelete);
+                _logger.LogInformation(
+                    "Processed manifest batch {BatchNumber} for repository {RepositoryName}: {ManifestCount} manifests, {DeletionCount} deleted. DryRun={DryRun}",
+                    batchNumber,
+                    repository.Name,
+                    batch.Count,
+                    digestsToDelete.Count,
+                    Options.IsDryRun);
             }
 
-            _logger.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
+            _logger.LogDebug(
+                "Processed {ManifestCount} manifests in repository {RepositoryName}",
+                manifestCount,
+                repository.Name);
 
             if (manifestCount == 0)
             {
@@ -279,7 +266,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
 
                         string imageId = $"{repository.Name}@{digest}";
-                        _logger.LogInformation($"Deleted image '{imageId}'");
+                        _logger.LogInformation(
+                            "Deleted image {ImageId}. DryRun={DryRun}",
+                            imageId,
+                            Options.IsDryRun);
                         _deletedImages.Add(imageId);
                     })
                     .AsTask());
@@ -301,10 +291,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string[] manifestsDeleted = allManifests
                 .Select(manifest => manifest.Digest)
+                .Order()
                 .ToArray();
-
             string[] tagsDeleted = allManifests
                 .SelectMany(manifest => manifest.Tags)
+                .Order()
                 .ToArray();
 
             if (!Options.IsDryRun)
@@ -312,24 +303,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 await acrClient.DeleteRepositoryAsync(repository.Name);
             }
 
-            StringBuilder messageBuilder = new StringBuilder();
-            messageBuilder.AppendLine($"Deleted repository '{repository.Name}'");
-            messageBuilder.AppendLine($"\tIncluded manifests:");
-            foreach (string manifest in manifestsDeleted.OrderBy(manifest => manifest))
+            _logger.LogInformation(
+                "Deleted repository {RepositoryName} containing {ManifestCount} manifests and {TagCount} tags. DryRun={DryRun}",
+                repository.Name,
+                manifestsDeleted.Length,
+                tagsDeleted.Length,
+                Options.IsDryRun);
+
+            foreach (string manifestDigest in manifestsDeleted)
             {
-                messageBuilder.AppendLine($"\t{manifest}");
+                _logger.LogInformation(
+                    "Repository {RepositoryName} included manifest {ManifestDigest}",
+                    repository.Name,
+                    manifestDigest);
             }
 
-            messageBuilder.AppendLine();
-            messageBuilder.AppendLine($"\tIncluded tags:");
-            foreach (string tag in tagsDeleted.OrderBy(tag => tag))
+            foreach (string tag in tagsDeleted)
             {
-                messageBuilder.AppendLine($"\t{tag}");
+                _logger.LogInformation(
+                    "Repository {RepositoryName} included tag {Tag}",
+                    repository.Name,
+                    tag);
             }
 
-            _logger.LogInformation(messageBuilder.ToString());
-
-            _deletedRepos.Add(repository.Name);
+            _repositoriesSelectedForDeletion++;
         }
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;

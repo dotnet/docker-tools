@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -67,12 +68,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.Action,
                 Options.Age,
                 Options.IsDryRun);
+
             IAcrClient acrClient = CreateAcrClient(Options.RegistryName);
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
             TimeSpan? timeLimit = Options.TimeLimitMinutes is ushort timeLimitMinutes
                 ? TimeSpan.FromMinutes(timeLimitMinutes)
                 : null;
+
             using CancellationTokenSource timeLimitCancellation = CreateTimeLimitCancellation(timeLimit);
             TimeSpan? reachedTimeLimit = null;
 
@@ -86,6 +89,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     ContainerRepository repo = acrClient.GetRepository(repoName);
                     Acr acr = Acr.Parse(Options.RegistryName);
                     IAcrContentClient acrContentClient = CreateAcrContentClient(acr, repo.Name);
+
                     await ProcessRepoAsync(acrClient, acrContentClient, repo, timeLimitCancellation.Token);
                 }
             }
@@ -189,27 +193,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             int manifestCount = 0;
             int batchNumber = 0;
 
-            await foreach (IList<ArtifactManifestProperties> batch in
-                manifests.Buffer(ManifestBatchSize).WithCancellation(cancellationToken))
+            var batches = manifests.Buffer(ManifestBatchSize).WithCancellation(cancellationToken);
+            await foreach (var batch in batches)
             {
+                long batchStartTimestamp = Stopwatch.GetTimestamp();
                 batchNumber++;
                 manifestCount += batch.Count;
-                ConcurrentBag<string> digestsToDelete =
-                    await FindManifestsToDeleteAsync(batch, canDeleteManifest, cancellationToken);
+
+                ConcurrentBag<string> digestsToDelete = await FindManifestsToDeleteAsync(batch, canDeleteManifest, cancellationToken);
                 await DeleteManifestsAsync(acrContentClient, repository, digestsToDelete);
+
                 _logger.LogInformation(
-                    "Processed manifest batch {BatchNumber} for repository {RepositoryName}: {ManifestCount} manifests, {DeletionCount} deleted. DryRun={DryRun}",
+                    "Processed manifest batch {BatchNumber} for repository {RepositoryName}:"
+                        + " {ManifestCount} manifests, {DeletionCount} deleted, Duration={Duration}. DryRun={DryRun}",
                     batchNumber,
                     repository.Name,
                     batch.Count,
                     digestsToDelete.Count,
+                    Stopwatch.GetElapsedTime(batchStartTimestamp),
                     Options.IsDryRun);
             }
 
             _logger.LogDebug(
-                "Processed {ManifestCount} manifests in repository {RepositoryName}",
+                "Processed {ManifestCount} manifests in repository {RepositoryName} in {BatchNumber} batches",
                 manifestCount,
-                repository.Name);
+                repository.Name,
+                batchNumber);
 
             if (manifestCount == 0)
             {
@@ -266,10 +275,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
 
                         string imageId = $"{repository.Name}@{digest}";
-                        _logger.LogInformation(
-                            "Deleted image {ImageId}. DryRun={DryRun}",
-                            imageId,
-                            Options.IsDryRun);
+                        _logger.LogInformation("Deleted image {ImageId} (DryRun={DryRun})", imageId, Options.IsDryRun);
                         _deletedImages.Add(imageId);
                     })
                     .AsTask());
@@ -293,6 +299,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(manifest => manifest.Digest)
                 .Order()
                 .ToArray();
+
             string[] tagsDeleted = allManifests
                 .SelectMany(manifest => manifest.Tags)
                 .Order()
@@ -320,10 +327,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (string tag in tagsDeleted)
             {
-                _logger.LogInformation(
-                    "Repository {RepositoryName} included tag {Tag}",
-                    repository.Name,
-                    tag);
+                _logger.LogInformation("Repository {RepositoryName} included tag {Tag}", repository.Name, tag);
             }
 
             _repositoriesSelectedForDeletion++;

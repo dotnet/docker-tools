@@ -53,7 +53,7 @@ public class CleanAcrImagesOptions : Options
 
     private static readonly Option<ushort?> TimeLimitMinutesOption = new("--time-limit-minutes")
     {
-        Description = "Maximum cleanup duration before stopping after the current manifest batch (default: unlimited)"
+        Description = "Maximum cleanup duration before cancellation (default: unlimited)"
     };
 
     public override IEnumerable<Argument> GetCliArguments() =>

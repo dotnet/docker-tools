@@ -203,7 +203,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 builder.AppendLine();
                 builder.AppendLine(
-                    $"Please investigate the cause of the failures, resolve the issue, and manually queue a build for the Dockerfile paths listed above. You must manually tag the build with a tag named '{AzdoTags.AutoBuilder}' in order for AutoBuilder to recognize that a successful build has occurred.");
+                    "Please investigate the cause of the failures, resolve the issue, and manually queue a build for the Dockerfile paths listed above. A successful build will allow AutoBuilder to resume queueing builds.");
 
                 string message = builder.ToString();
 
@@ -285,19 +285,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return builds.Select(build => build.GetWebLink());
         }
 
-		private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
+        private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
             IBuildHttpClient client, int pipelineId, Guid projectId)
         {
-            List<WebApi.Build> autoBuilderBuilds = (await client.GetBuildsAsync(projectId, definitions: new int[] { pipelineId }))
-                .Where(build => build.Tags.Contains(AzdoTags.AutoBuilder))
+            List<WebApi.Build> recentBuilds = (await client.GetBuildsAsync(projectId, definitions: new int[] { pipelineId }))
                 .OrderByDescending(build => build.QueueTime)
                 .Take(BuildFailureLimit)
                 .ToList();
 
-            if (autoBuilderBuilds.Count == BuildFailureLimit &&
-                autoBuilderBuilds.All(build => build.Status == WebApi.BuildStatus.Completed && build.Result == WebApi.BuildResult.Failed))
+            if (recentBuilds.Count == BuildFailureLimit &&
+                recentBuilds.All(build => build.Status == WebApi.BuildStatus.Completed && build.Result == WebApi.BuildResult.Failed))
             {
-                return (true, autoBuilderBuilds.Select(build => build.GetWebLink()));
+                return (true, recentBuilds.Select(build => build.GetWebLink()));
             }
 
             return (false, Enumerable.Empty<string>());

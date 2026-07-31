@@ -361,27 +361,49 @@ The `autobuilder` label is how the infrastructure tracks that the failure cycle 
 
 ---
 
-### Image Caching
+### Build Planning and Image Caching
 
-The infrastructure includes caching to avoid rebuilding images that haven't changed. Caching operates at two levels:
+ImageBuilder calculates a build plan before deciding what work to run. Each platform receives one action:
 
-**1. Matrix Trimming (job-level caching)**
+- **BuildImage**: run the Docker build.
+- **PublishExistingImage**: use the valid published image and continue it through downstream processing because tags or other published metadata changed.
+- **UsePublishedImage**: the published image is valid, but this invocation must pull, import, or retag it.
+- **NoAction**: the published image is valid and this invocation does not need it locally.
 
-When `trimCachedImagesForMatrix` is enabled, the `generateBuildMatrix` command excludes platforms from the build matrix if they would result in cache hits. This means no build job is even created for those platforms—they're completely skipped.
+Each action includes readable reasons. When an image is rebuilt because a dependency changed, the reason links to that dependency's reason. This preserves the complete explanation from a dependent image back to the original cache invalidation.
 
-**2. Build-time Caching**
+The same planner is used by:
 
-Even if a platform isn't trimmed from the matrix, the `build` command checks each image against the cache before building. If the image is cached, it outputs `CACHE HIT`, pulls the previously-built image from the registry, and skips the actual Docker build.
+1. **Matrix trimming**: `generateBuildMatrix` omits `NoAction` platforms when `trimCachedImagesForMatrix` is enabled.
+2. **Build execution**: `build` executes `BuildImage` actions and materializes `PublishExistingImage` and `UsePublishedImage` actions.
+3. **Stale-image detection**: `getStaleImages` uses the same checks to identify actionable paths before queueing a build.
 
-#### Cache Conditions
+Commands select the manifest-filtered graph. Every target in that graph is evaluated with the same cache rules; the planner owns the build decision and dependency propagation.
 
-An image is considered cached when **both** of the following conditions are true:
+Planning code lives in `Microsoft.DotNet.ImageBuilder.Build`:
 
-1. **Base image digest is unchanged** — The digest of the base image (FROM image) matches the digest recorded in the image info file from the last successful publish. If the upstream base image has been updated, this condition fails and the image will be rebuilt.
+- `BuildGraph` is the only graph abstraction. Its public dictionaries contain parent, child, and shared-build relationships for each target. Parent edges include platform tags and image-level shared tags. Targets share a build when they have the same Dockerfile, target platform, build arguments, and effective FROM overrides.
+- `BuildTarget` represents the current desired definition and retains its `PlatformInfo`, image, and repo context for execution.
+- `PlatformData` remains the mutable image-info and published-image model. `BuildPlanner` joins it to graph targets only while creating a plan and records the source target when equivalent targets reuse the same published image.
+- `IBuildPolicy` is the only check/policy contract. Each check is a small policy class. `CompositeBuildPolicy` applies every child policy and combines their results, with `BuildImage` taking precedence over `PublishExistingImage`, then `UsePublishedImage`, then `NoAction`.
+- The ordered `BuildPlanItem` sequence is the execution input. The build command groups those items by repo and image instead of traversing the manifest again to rediscover work.
 
-2. **Dockerfile commit is unchanged** — The git commit URL for the Dockerfile matches the commit URL recorded in the image info file. If you've modified the Dockerfile, this condition fails and the image will be rebuilt.
+Adding an invalidation source, such as package-version metadata or intermediate image dependencies, requires one `IBuildPolicy` implementation and adding it to the composite. Dependency and shared-build propagation remain inside `BuildPlanner`; there is no separate resolver.
 
-Caching compares against the published image info stored in the [versions repo](https://github.com/dotnet/versions). This means caching compares against what's been officially published, not what's in your current branch.
+#### Planning Rules
+
+A previously published image is valid when its final-stage base image digest and Dockerfile commit still match the current values. Missing image metadata, a changed base image, or a changed Dockerfile produces a `BuildImage` action. Any platform or image-level shared tag-set change produces a `PublishExistingImage` action so additions, removals, and moves can be published without rebuilding the image. Matrix generation, build execution, and stale-image detection all use this rule sequence.
+
+When a platform must be built, all descendants in the caller-selected graph are also built. Other parents needed by those descendants are included as `BuildImage` or `UsePublishedImage` actions. Platforms in the same shared-build group can share published image metadata; if one evaluated target in that group is invalidated, every evaluated target in the group is built.
+
+The planner traverses shared-build groups from graph roots to leaves. It evaluates targets
+sequentially within each group, propagates parent `BuildImage` actions to the group, and then
+unifies the group's actions. After all build decisions are final, unchanged direct parents
+required by built images are changed from `NoAction` to `UsePublishedImage`.
+
+`getStaleImages`, matrix generation, and build execution evaluate the same cache checks.
+
+Planning compares against the published image info stored in the [versions repo](https://github.com/dotnet/versions). This means planning compares against what has been officially published, not only what is in the current branch.
 
 #### Disabling Caching
 
@@ -492,16 +514,14 @@ If your Dockerfile path doesn't appear in any of the matrix legs, it was trimmed
 
 **How to fix:** Set the `noCache` parameter to `true` when queuing the build.
 
-#### Symptom 3: The build output shows `CACHE HIT`
+#### Symptom 3: The build output shows `USING PUBLISHED IMAGE`
 
-If your build job runs but you see `CACHE HIT` in the output of the `Build Images` step and the Dockerfile isn't actually built, the [build-time caching](#image-caching) determined that the image doesn't need to be rebuilt. This is an example of what the output in that step looks like:
+If your build job runs but you see `USING PUBLISHED IMAGE` in the output of the `Build Images` step and the Dockerfile isn't actually built, build planning determined that the existing published image is valid but needed by this invocation. This is an example of what the output in that step looks like:
 
 ```
-Image info's Dockerfile commit: https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/aa85f0dcc3b3d6757c80dc8c2a6f38c290b372cc/src/windowsservercore/ltsc2025/helix/amd64/Dockerfile
-Latest Dockerfile commit: https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/aa85f0dcc3b3d6757c80dc8c2a6f38c290b372cc/src/windowsservercore/ltsc2025/helix/amd64/Dockerfile
-Dockerfile commits match: True
+Build plan for src/windowsservercore/ltsc2025/helix/amd64/Dockerfile: UsePublishedImage. Base image 'mcr.microsoft.com/windows/servercore:ltsc2025' is unchanged at 'sha256:...'. Dockerfile is unchanged at 'https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/.../Dockerfile'.
 
-CACHE HIT
+USING PUBLISHED IMAGE
 
 -- EXECUTING: docker pull mcr.microsoft.com/dotnet-buildtools/prereqs@sha256:40d36a0aab610f4d513ed7c7300a5d962968a547ffe8a859a0e599691b74b77f
 ```

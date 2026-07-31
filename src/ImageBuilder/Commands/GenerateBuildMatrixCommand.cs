@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Build;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -21,14 +21,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
-        private readonly IImageCacheService _imageCacheService;
+        private readonly BuildPlanner _buildPlanner;
+        private readonly IGitService _gitService;
         private readonly ILogger<GenerateBuildMatrixCommand> _logger;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
+        private BuildGraph? _dependencyGraph;
 
-        public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
+        public GenerateBuildMatrixCommand(
+            IManifestJsonService manifestJsonService,
+            BuildPlanner buildPlanner,
+            IGitService gitService,
+            IManifestServiceFactory manifestServiceFactory,
+            ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
         {
-            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _buildPlanner = buildPlanner ?? throw new ArgumentNullException(nameof(buildPlanner));
+            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
@@ -104,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // Pass 1: Find direct dependencies from the Dockerfile's FROM statement
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
-                platform => Manifest.GetParents(platform, platformGrouping));
+                platform => GetParents(platform, platformGrouping));
 
             // Pass 2: Combine subgraphs that have a common Dockerfile path for the root image
             subgraphs = ConsolidateSubgraphs(subgraphs, platform => platform.DockerfilePath);
@@ -200,7 +208,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(dependency => Manifest.GetPlatformByTag(dependency));
                     return dependencyPlatforms
                         .Concat(dependencyPlatforms
-                            .SelectMany(dependencyPlatform => Manifest.GetAncestors(dependencyPlatform, Manifest.GetFilteredPlatforms())));
+                            .SelectMany(dependencyPlatform => GetAncestors(
+                                dependencyPlatform,
+                                Manifest.GetFilteredPlatforms())));
                 })
                 .Distinct();
         }
@@ -279,7 +289,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // of platforms in Pass 2 to only test what was already built.
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping
                 .GetCompleteSubgraphs(platform =>
-                    Manifest.GetParents(platform, allPlatforms)
+                    GetParents(platform, allPlatforms)
                         .Union(GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Integral)));
 
             // Pass 2: Filter subgraphs to only images that are in the current platform group
@@ -297,7 +307,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // Pass 5: Append the parent graph of each platform to each respective subgraph
             subgraphs = subgraphs.GetCompleteSubgraphs(
-                subgraph => subgraph.Select(platform => Manifest.GetAncestors(platform, platformGrouping)))
+                subgraph => subgraph.Select(platform => GetAncestors(platform, platformGrouping)))
                 .Select(set => set
                     .SelectMany(subgraph => subgraph)
                     .Distinct())
@@ -409,95 +419,82 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
         {
-            IEnumerable<RepoInfo> filteredRepos = Manifest.FilteredRepos.ToList();
-
-            if (_imageArtifactDetails.Value is null)
-            {
-                return filteredRepos.SelectMany(repo => repo.FilteredImages).SelectMany(image => image.FilteredPlatforms);
-            }
-
-            IEnumerable<(PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData)> platformMappings =
-                filteredRepos.SelectMany(repo =>
-                    repo.FilteredImages
-                        .SelectMany(image => image.FilteredPlatforms)
-                        .Select(platform =>
-                        {
-                            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, _imageArtifactDetails.Value);
-                            return (platform, matchingPlatform?.Image, matchingPlatform?.Platform);
-                        })
-                        .Where(platformMapping => platformMapping.Platform is null || !platformMapping.Platform.IsUnchanged));
-
-            if (!Options.TrimCachedImages)
-            {
-                return platformMappings.Select(platformMapping => platformMapping.PlatformInfo);
-            }
-
-            _logger.LogInformation("Trimming platforms based on image cache state...");
-
-            // Here we will trim the platforms based on their image cache state. This reduces the amount of jobs that need to
-            // be run. Otherwise, you may spin up a bunch of jobs that end up processing a bunch of cached images and
-            // essentially becomes a no-op.
-
-            // We need to group the platforms according to their parent dependency hierarchy. This is important because we must
-            // treat the hierarchy as a unit. For example, if runtime-deps is cached but runtime (which is a descendant of
-            // runtime-deps) is not, then we need to ensure that both runtime-deps and runtime is included. We do not want to
-            // trim just the runtime-deps platform in that case.
-            IEnumerable<IEnumerable<(PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData)>> subgraphs =
-                platformMappings.GetCompleteSubgraphs(
-                    platformGrouping =>
-                        Manifest.GetParents(
-                            platformGrouping.PlatformInfo,
-                            platformMappings.Select(m => m.PlatformInfo)
-                        ).Select(platformInfo => platformMappings.First(mapping => mapping.PlatformInfo == platformInfo)));
-
-            ConcurrentBag<PlatformInfo> nonCachedPlatforms = [];
-            await Parallel.ForEachAsync(subgraphs, async (subgraph, _) =>
-            {
-                ConcurrentBag<PlatformInfo> subgraphNonCachedPlatforms = [];
-                await Parallel.ForEachAsync(subgraph, async (platformMapping, _) =>
-                {
-                    if (platformMapping.PlatformData is null)
-                    {
-                        _logger.LogInformation($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
-                        subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
-                        return;
-                    }
-
-                    ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
-                        platformMapping.ImageData,
-                        platformMapping.PlatformData,
+            _dependencyGraph = BuildGraph.Create(Manifest);
+            ImageArtifactDetails? imageInfo = _imageArtifactDetails.Value;
+            HashSet<PlatformInfo> completedPlatforms = imageInfo?.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(image => image.Platforms)
+                .Where(platform => platform.IsUnchanged && platform.PlatformInfo is not null)
+                .Select(platform => platform.PlatformInfo!)
+                .ToHashSet()
+                ?? [];
+            BuildGraph graph = BuildGraph.CreateFiltered(
+                Manifest,
+                platform => !completedPlatforms.Contains(platform));
+            IBuildPolicy policy = Options.TrimCachedImages
+                ? CompositeBuildPolicy.ImageCache(
+                    BuildAction.NoAction,
+                    BaseImageChangedPolicy.FromRegistry(
                         _imageDigestCache,
                         _imageNameResolver.Value,
-                        Options.SourceRepoUrl,
-                        isLocalBaseImageExpected: false,
-                        Options.IsDryRun);
+                        Options.IsDryRun),
+                    new DockerfileChangedPolicy(
+                        _gitService,
+                        Options.SourceRepoUrl ?? string.Empty))
+                : new AlwaysBuildPolicy("The image was selected for a build.");
+            IReadOnlyList<BuildPlanItem> plan = await _buildPlanner.CreatePlanAsync(
+                graph,
+                imageInfo,
+                policy);
 
-                    bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
+            IEnumerable<PlatformInfo> plannedPlatforms = plan
+                .Where(item => item.Action != BuildAction.NoAction)
+                .Select(item => item.Target.Platform);
+            return Options.TrimCachedImages
+                ? plannedPlatforms.OrderBy(platform => platform.DockerfilePath)
+                : plannedPlatforms;
+        }
 
-                    _logger.LogInformation(
-                        $"Image '{platformMapping.PlatformInfo.DockerfilePath}' cache state is {cacheResult.State}. Included in matrix: {includePlatformInMatrix}");
+        private IEnumerable<PlatformInfo> GetParents(
+            PlatformInfo platform,
+            IEnumerable<PlatformInfo> availablePlatforms)
+        {
+            if (_dependencyGraph is null)
+            {
+                throw new InvalidOperationException(
+                    "The dependency graph must be created before generating matrix legs.");
+            }
 
-                    if (includePlatformInMatrix)
-                    {
-                        subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
-                    }
-                });
+            HashSet<PlatformInfo> available = availablePlatforms.ToHashSet();
+            BuildTarget target = _dependencyGraph.Targets.First(
+                target => target.Platform == platform);
+            return _dependencyGraph.Parents[target]
+                .Select(parent => parent.Platform)
+                .Where(available.Contains);
+        }
 
-                // As mentioned above, we need to treat the hierarchy as a unit so even though a subset of the platforms
-                // in the hierarchy may be cached, they all need to be included. Only in the case where they're all
-                // cached, should they be excluded. To determine what needs to be included, it can be simplified to just
-                // check whether there are any platforms identified within the hierarchy as not being cached. If so, then
-                // include the whole hierarchy as non-cached platforms.
-                if (!subgraphNonCachedPlatforms.IsEmpty)
+        private IEnumerable<PlatformInfo> GetAncestors(
+            PlatformInfo platform,
+            IEnumerable<PlatformInfo> availablePlatforms)
+        {
+            HashSet<PlatformInfo> available = availablePlatforms.ToHashSet();
+            HashSet<PlatformInfo> ancestors = [];
+            Queue<PlatformInfo> remaining = new(GetParents(platform, available));
+
+            while (remaining.TryDequeue(out PlatformInfo? ancestor))
+            {
+                if (!ancestors.Add(ancestor))
                 {
-                    foreach ((PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData) platformMapping in subgraph)
-                    {
-                        nonCachedPlatforms.Add(platformMapping.PlatformInfo);
-                    }
+                    continue;
                 }
-            });
 
-            return nonCachedPlatforms.OrderBy(platform => platform.DockerfilePath);
+                foreach (PlatformInfo parent in GetParents(ancestor, available))
+                {
+                    remaining.Enqueue(parent);
+                }
+            }
+
+            return ancestors;
         }
 
         public async Task<IEnumerable<BuildMatrixInfo>> GenerateMatrixInfoAsync()

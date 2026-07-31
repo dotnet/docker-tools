@@ -8,7 +8,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Build;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -159,56 +161,82 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        private static void SetCacheResult(Mock<IImageCacheService> imageCacheServiceMock, string dockerfilePath, ImageCacheState cacheState)
+        [TestMethod]
+        public async Task PlatformDependencyGraph_SharedTagDependency()
         {
-            imageCacheServiceMock
-                .Setup(o => o.CheckForCachedImageAsync(
-                    It.IsAny<ImageData>(),
-                    It.Is<PlatformData>(platform => platform.Dockerfile == dockerfilePath),
-                    It.IsAny<ImageDigestCache>(),
-                    It.IsAny<ImageNameResolver>(),
-                    It.IsAny<string>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<bool>()))
-                .ReturnsAsync(new ImageCacheResult(cacheState, false, null));
+            using TempFolderContext tempFolder = TestHelper.UseTempFolder();
+            string parentDockerfile = CreateDockerfile(
+                "parent",
+                tempFolder,
+                "base:tag");
+            string childDockerfile = CreateDockerfile(
+                "child",
+                tempFolder,
+                "parent:shared");
+            Manifest manifest = CreateManifest(
+                CreateRepo(
+                    "parent",
+                    CreateImage(
+                        ["shared"],
+                        CreatePlatform(parentDockerfile, ["specific"]))),
+                CreateRepo(
+                    "child",
+                    CreateImage(CreatePlatform(childDockerfile, ["tag"]))));
+            GenerateBuildMatrixCommand command = CreateCommand();
+            command.Options.Manifest = Path.Combine(tempFolder.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            File.WriteAllText(
+                command.Options.Manifest,
+                JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            BuildMatrixInfo matrix = (await command.GenerateMatrixInfoAsync())
+                .ShouldHaveSingleItem();
+            BuildLegInfo leg = matrix.Legs.ShouldHaveSingleItem();
+
+            leg.Variables
+                .Single(variable => variable.Name == "imageBuilderPaths")
+                .Value
+                .ShouldBe("--path parent/Dockerfile --path child/Dockerfile");
         }
 
         [TestMethod]
         [DataRow(
-            ImageCacheState.NotCached,
-            ImageCacheState.NotCached,
+            BuildAction.BuildImage,
+            BuildAction.BuildImage,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            ImageCacheState.Cached,
-            ImageCacheState.Cached,
+            BuildAction.NoAction,
+            BuildAction.NoAction,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            ImageCacheState.Cached,
-            ImageCacheState.Cached,
+            BuildAction.NoAction,
+            BuildAction.NoAction,
             "--path 1.0/standalone/os/amd64/Dockerfile",
             "--path 2.0/standalone/os/amd64/Dockerfile",
             null,
             "*standalone*")]
         [DataRow(
-            ImageCacheState.CachedWithMissingTags,
-            ImageCacheState.Cached,
+            BuildAction.UsePublishedImage,
+            BuildAction.NoAction,
+            "--path 1.0/runtime/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            ImageCacheState.Cached,
-            ImageCacheState.NotCached,
+            BuildAction.UsePublishedImage,
+            BuildAction.BuildImage,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [DataRow(
-            ImageCacheState.NotCached,
-            ImageCacheState.NotCached,
+            BuildAction.BuildImage,
+            BuildAction.BuildImage,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 1.0/standalone/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
             "")] // Clear out the path filters to ensure all images are included
         public async Task FilterOutCachedImages(
-            ImageCacheState runtime1CacheState,
-            ImageCacheState sdk1CacheState,
+            BuildAction runtime1Action,
+            BuildAction sdk1Action,
             string leg1ExpectedPaths,
             string leg2ExpectedPaths = null,
             string leg3ExpectedPaths = null,
@@ -251,14 +279,43 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreatePlatform(dockerfileSdk2Path = CreateDockerfile(Sdk2RelativeDir, tempFolderContext, "runtime:2.0"), ["2.0"])))
             );
 
-            Mock<IImageCacheService> imageCacheServiceMock = new();
-            SetCacheResult(imageCacheServiceMock, dockerfileStandalone1Path, ImageCacheState.NotCached);
-            SetCacheResult(imageCacheServiceMock, dockerfileRuntime1Path, runtime1CacheState);
-            SetCacheResult(imageCacheServiceMock, dockerfileSdk1Path, sdk1CacheState);
-            SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
-            SetCacheResult(imageCacheServiceMock, dockerfileSdk2Path, ImageCacheState.NotCached);
+            Dictionary<string, BuildAction> actions = new()
+            {
+                [dockerfileRuntime1Path] = runtime1Action,
+                [dockerfileSdk1Path] = sdk1Action,
+            };
+            Mock<BuildPlanner> buildPlannerMock = new(
+                Mock.Of<ILogger<BuildPlanner>>());
+            buildPlannerMock
+                .Setup(planner => planner.CreatePlanAsync(
+                    It.IsAny<BuildGraph>(),
+                    It.IsAny<ImageArtifactDetails>(),
+                    It.IsAny<IBuildPolicy>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((
+                    BuildGraph graph,
+                    ImageArtifactDetails imageInfo,
+                    IBuildPolicy policy,
+                    CancellationToken _) => Task.FromResult(
+                    (IReadOnlyList<BuildPlanItem>)graph.Targets.Select(target =>
+                            new BuildPlanItem(
+                                target,
+                                actions.GetValueOrDefault(
+                                    target.Platform.DockerfilePathRelativeToManifest,
+                                    BuildAction.BuildImage),
+                                Reasons:
+                                [
+                                    new("Test-selected action.")
+                                ],
+                                PublishedImage: null))
+                            .ToArray()));
 
-            GenerateBuildMatrixCommand command = new(TestHelper.CreateManifestJsonService(), imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+            GenerateBuildMatrixCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                buildPlannerMock.Object,
+                Mock.Of<IGitService>(),
+                Mock.Of<IManifestServiceFactory>(),
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -1707,13 +1764,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     externalImageDigestResults: externalImageDigestResults ?? []);
             }
 
-            ImageCacheService imageCacheService = new(
-                Mock.Of<ILogger<ImageCacheService>>(),
-                gitServiceMock.Object);
+            BuildPlanner buildPlanner = new(Mock.Of<ILogger<BuildPlanner>>());
 
             GenerateBuildMatrixCommand command = new(
                 TestHelper.CreateManifestJsonService(),
-                imageCacheService,
+                buildPlanner,
+                gitServiceMock.Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
 
@@ -1758,6 +1814,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         private static GenerateBuildMatrixCommand CreateCommand() =>
-            new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+            new(
+                TestHelper.CreateManifestJsonService(),
+                new BuildPlanner(Mock.Of<ILogger<BuildPlanner>>()),
+                Mock.Of<IGitService>(),
+                Mock.Of<IManifestServiceFactory>(),
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
     }
 }

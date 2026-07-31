@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using System.Text;
 using System.Threading.Tasks;
 using LibGit2Sharp;
+using Microsoft.DotNet.ImageBuilder.Build;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -1373,6 +1374,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string dockerfile2Path = "dockerfile2/Dockerfile";
+            string parentDigest = $"sha256:{new string('0', 64)}";
 
             SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
@@ -1398,11 +1400,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Platforms =
                                         {
-                                            CreatePlatform(dockerfile1Path),
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: $"{repo1}@{parentDigest}",
+                                                simpleTags: new List<string> { "tag1" }),
                                             CreatePlatform(
                                                 dockerfile2Path,
+                                                digest: parentDigest,
                                                 baseImageDigest: "base1@base1digest",
-                                                simpleTags: new List<string> { "tag1" })
+                                                simpleTags: new List<string> { "tag2" })
                                         }
                                     }
                                 }
@@ -1662,6 +1668,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// </summary>
         private class TestFixture : IDisposable
         {
+            private const string DockerfileCommitSha = "current-commit";
             private readonly List<string> filesToCleanup = new List<string>();
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
@@ -1694,6 +1701,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string osType = "*")
             {
                 this.osType = osType;
+                foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
+                {
+                    string sourceRepoUrl =
+                        $"https://github.com/{subscriptionInfo.Subscription.Manifest.Owner}/" +
+                        subscriptionInfo.Subscription.Manifest.Repo;
+                    foreach (PlatformData platform in subscriptionInfo.ImageInfo.Repos
+                        .SelectMany(repo => repo.Images)
+                        .SelectMany(image => image.Platforms))
+                    {
+                        platform.CommitUrl =
+                            $"{sourceRepoUrl}/blob/{DockerfileCommitSha}/" +
+                            PathHelper.NormalizePath(platform.Dockerfile);
+                    }
+                }
+
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(
                     subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
@@ -1754,7 +1776,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     string[] actualPaths = pathsBySubscription
                         .First(imagePaths => imagePaths.SubscriptionId == kvp.Key.Id).ImagePaths;
 
-                    actualPaths.ShouldBe(kvp.Value);
+                    actualPaths.ShouldBe(kvp.Value, ignoreOrder: true);
                 }
             }
 
@@ -1769,7 +1791,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
+                    this.ManifestServiceFactoryMock.Object,
+                    TestHelper.CreateManifestJsonService(),
+                    this.loggerServiceMock.Object,
+                    this.octokitClientFactory,
+                    this.gitService,
+                    new BuildPlanner(Mock.Of<ILogger<BuildPlanner>>()));
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;
@@ -1854,6 +1881,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos)
             {
                 Mock<IGitService> gitServiceMock = new();
+                gitServiceMock
+                    .Setup(service => service.GetCommitSha(
+                        It.IsAny<string>(),
+                        useFullHash: true))
+                    .Returns(DockerfileCommitSha);
 
                 foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
                 {

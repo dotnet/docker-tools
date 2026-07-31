@@ -4,6 +4,27 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
+## 2026-07-31: Centralized ImageBuilder build planning
+
+ImageBuilder now calculates one explainable build plan for matrix trimming, build execution, and
+stale-image detection. Rebuilds propagate through internal image dependencies, and each planned
+action records a readable causal chain back to the original cache invalidation. Cache checks
+implement one `IBuildPolicy` contract and are composed through `CompositeBuildPolicy`, so new
+invalidation sources can be added without changing the planner algorithm.
+
+Matrix generation, build execution, and stale-image detection now use the same cache rules for
+missing image-info, base-image changes, Dockerfile commits, and tag-set changes.
+
+Cached images with changed platform or shared tags are now retained in the build matrix as
+`PublishExistingImage` actions so tag additions, removals, and moves can be published without
+rebuilding the image. Normal build configuration does not need to change, but these cases can
+produce a build job where they were previously trimmed.
+
+Code that embeds ImageBuilder must replace `IImageCacheService` with `BuildPlanner`. CLI
+arguments and pipeline parameters are unchanged.
+
+---
+
 ## 2026-06-11: Configurable per-registry referrer-lookup rate limit
 
 - Issue: [#2141](https://github.com/dotnet/docker-tools/issues/2141)

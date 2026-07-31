@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsCheck" Version="4.6.0" />
+    <PackageReference Include="CsCheck" Version="4.7.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.18" />
   </ItemGroup>
 

@@ -27,7 +27,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         _logger = logger;
     }
 
-    public async Task<Manifest?> IsDigestAnnotatedForEolAsync(string digest, CancellationToken cancellationToken = default)
+    public async Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(digest);
 

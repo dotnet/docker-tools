@@ -28,7 +28,7 @@ public class LifecycleMetadataServiceTests
     /// digests be re-annotated with a conflicting EOL date.
     /// </summary>
     [TestMethod]
-    public async Task IsDigestAnnotatedForEolAsync_DoesNotSwallowRegistryErrors()
+    public async Task GetLifecycleArtifactAsync_DoesNotSwallowRegistryErrors()
     {
         ResponseException rateLimitException = CreateRateLimitException();
 
@@ -40,12 +40,12 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         ResponseException thrown = await Should.ThrowAsync<ResponseException>(
-            () => service.IsDigestAnnotatedForEolAsync(Digest));
+            () => service.GetLifecycleArtifactAsync(Digest));
         thrown.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
     }
 
     [TestMethod]
-    public async Task IsDigestAnnotatedForEolAsync_NoReferrers_ReturnsNull()
+    public async Task GetLifecycleArtifactAsync_NoReferrers_ReturnsNull()
     {
         Mock<IOrasService> orasServiceMock = new();
         orasServiceMock
@@ -54,13 +54,13 @@ public class LifecycleMetadataServiceTests
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.IsDigestAnnotatedForEolAsync(Digest);
+        Manifest? result = await service.GetLifecycleArtifactAsync(Digest);
 
         result.ShouldBeNull();
     }
 
     [TestMethod]
-    public async Task IsDigestAnnotatedForEolAsync_ExistingLifecycleReferrer_ReturnsManifest()
+    public async Task GetLifecycleArtifactAsync_ExistingLifecycleReferrer_ReturnsManifest()
     {
         ReferrerInfo lifecycleReferrer = new(
             Digest: "myregistry.azurecr.io/public/dotnet/runtime@sha256:annotationdigest",
@@ -79,7 +79,7 @@ public class LifecycleMetadataServiceTests
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.IsDigestAnnotatedForEolAsync(Digest);
+        Manifest? result = await service.GetLifecycleArtifactAsync(Digest);
 
         result.ShouldNotBeNull();
         result.Annotations[LifecycleMetadataService.EndOfLifeAnnotation].ShouldBe("2026-05-22");

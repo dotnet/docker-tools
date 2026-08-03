@@ -436,7 +436,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Manifest lifecycleArtifactManifest = new();
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEolAsync(armDigest, It.IsAny<CancellationToken>()))
+                .Setup(o => o.GetLifecycleArtifactAsync(armDigest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(lifecycleArtifactManifest);
 
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
@@ -1160,7 +1160,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEolAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(o => o.GetLifecycleArtifactAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Manifest)null);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
@@ -1168,7 +1168,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 if (digestAnnotated.Value)
                 {
                     lifecycleMetadataServiceMock
-                        .Setup(o => o.IsDigestAnnotatedForEolAsync(digestAnnotated.Key, It.IsAny<CancellationToken>()))
+                        .Setup(o => o.GetLifecycleArtifactAsync(digestAnnotated.Key, It.IsAny<CancellationToken>()))
                         .ReturnsAsync(new Manifest());
                 }
             }

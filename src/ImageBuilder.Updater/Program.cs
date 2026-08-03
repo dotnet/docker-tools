@@ -42,9 +42,9 @@ await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", 
     (new("dotnet", "dotnet-docker"), "main"),
     (new("dotnet", "dotnet-buildtools-prereqs-docker"), "main"),
 
-    // Disable microsoft org repos until GitHub App migration is complete
+    // Disable remaining microsoft org repos until GitHub App migration is complete
     // Tracked by https://github.com/dotnet/dotnet-docker-internal/issues/7468
-    // (new("microsoft", "dotnet-framework-docker"), "main"),
+    (new("microsoft", "dotnet-framework-docker"), "main"),
     // (new("microsoft", "go-images"), "microsoft/main"),
     // (new("microsoft", "go-infra-images"), "main"),
 ];

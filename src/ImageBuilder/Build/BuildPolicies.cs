@@ -50,11 +50,11 @@ public interface IBuildPolicy
 public sealed class CompositeBuildPolicy(
     BuildAction defaultAction,
     BuildReason defaultReason,
-    params IReadOnlyList<IBuildPolicy> policies) : IBuildPolicy
+    params IEnumerable<IBuildPolicy> policies) : IBuildPolicy
 {
     public static CompositeBuildPolicy ImageCache(
         BuildAction validImageAction,
-        params IReadOnlyList<IBuildPolicy> checks) =>
+        params IEnumerable<IBuildPolicy> checks) =>
         new(
             validImageAction,
             new(
@@ -78,7 +78,7 @@ public sealed class CompositeBuildPolicy(
             .DefaultIfEmpty(BuildAction.NoAction)
             .Max();
         BuildAction action = (BuildAction)Math.Max((int)childAction, (int)defaultAction);
-        IReadOnlyList<BuildReason> reasons = results
+        BuildReason[] reasons = results
             .SelectMany(result => result.Reasons)
             .ToArray();
 
@@ -136,11 +136,11 @@ public sealed class TagSetChangedPolicy : IBuildPolicy
         string[] expectedSharedTags = context.Target.Image.SharedTags
             .Select(tag => tag.Name)
             .ToArray();
-        IReadOnlyList<string> publishedPlatformTags =
+        IEnumerable<string> publishedPlatformTags =
             publishedImage.Source == context.Target
                 ? publishedImage.Image.SimpleTags
                 : [];
-        IReadOnlyList<string> publishedSharedTags =
+        IEnumerable<string> publishedSharedTags =
             publishedImage.Source == context.Target
                 ? publishedImage.SharedTags
                 : [];

@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     skipManifestValidation: true);
             _buildGraph = BuildGraph.CreateFiltered(Manifest);
             await ExecuteWithDockerCredentialsAsync(() => PullBaseImagesAsync(_buildGraph));
-            IReadOnlyList<BuildPlanItem> plan = await CreateBuildPlanAsync(
+            BuildPlanItem[] plan = await CreateBuildPlanAsync(
                 _buildGraph,
                 publishedImages);
             await BuildImagesAsync(plan);
@@ -318,7 +318,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Digest = digest;
         }
 
-        private Task<IReadOnlyList<BuildPlanItem>> CreateBuildPlanAsync(
+        private Task<BuildPlanItem[]> CreateBuildPlanAsync(
             BuildGraph graph,
             ImageArtifactDetails? publishedImages)
         {
@@ -340,7 +340,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 policy);
         }
 
-        private async Task BuildImagesAsync(IReadOnlyList<BuildPlanItem> plan)
+        private async Task BuildImagesAsync(IEnumerable<BuildPlanItem> plan)
         {
             _logger.LogInformation("BUILDING IMAGES");
 

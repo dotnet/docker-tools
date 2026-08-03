@@ -20,7 +20,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     private readonly ILogger<BuildPlanner> _logger =
         logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public virtual async Task<IReadOnlyList<BuildPlanItem>> CreatePlanAsync(
+    public virtual async Task<BuildPlanItem[]> CreatePlanAsync(
         BuildGraph graph,
         ImageArtifactDetails? imageInfo,
         IBuildPolicy policy,
@@ -77,8 +77,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
                 .SelectMany(image => image.Platforms.Select(platform =>
                     (
                         Platform: platform,
-                        SharedTags: (IReadOnlyList<string>)
-                            (image.Manifest?.SharedTags?.ToArray() ?? []))))
+                        SharedTags: image.Manifest?.SharedTags?.ToArray() ?? [])))
                 .Where(item =>
                     item.Platform.PlatformInfo is not null &&
                     targetsByPlatform.ContainsKey(item.Platform.PlatformInfo))
@@ -149,10 +148,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
             hasPublishedImage ? publishedImage : null);
     }
 
-    private static IReadOnlyList<IReadOnlyList<BuildTarget>>
+    private static List<IReadOnlyList<BuildTarget>>
         GetSharedBuildsInDependencyOrder(BuildGraph graph)
     {
-        IReadOnlyList<IReadOnlyList<BuildTarget>> sharedBuilds = graph.SharedBuildTargets
+        IReadOnlyList<BuildTarget>[] sharedBuilds = graph.SharedBuildTargets
             .Values
             .DistinctBy(targets => targets[0])
             .ToArray();
@@ -205,7 +204,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
 
     private static void PropagateBuildsFromParents(
         BuildGraph graph,
-        IReadOnlyList<BuildTarget> sharedBuild,
+        IEnumerable<BuildTarget> sharedBuild,
         IDictionary<BuildTarget, BuildPlanItem> items)
     {
         foreach (BuildTarget target in sharedBuild)
@@ -229,7 +228,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     }
 
     private static void UnifySharedBuildActions(
-        IReadOnlyList<BuildTarget> sharedBuild,
+        IEnumerable<BuildTarget> sharedBuild,
         IDictionary<BuildTarget, BuildPlanItem> items)
     {
         BuildPlanItem? invalidatedItem = sharedBuild
@@ -306,7 +305,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     private static BuildPlanItem CreateItem(
         BuildTarget target,
         BuildAction action,
-        IReadOnlyList<BuildReason> reasons,
+        IEnumerable<BuildReason> reasons,
         PublishedImage? publishedImage)
     {
         if ((action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage) &&
@@ -317,10 +316,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
                 "without a published image.");
         }
 
-        return new(target, action, reasons, publishedImage);
+        return new(target, action, reasons.ToArray(), publishedImage);
     }
 
-    private void LogPlan(IReadOnlyList<BuildPlanItem> plan)
+    private void LogPlan(IEnumerable<BuildPlanItem> plan)
     {
         foreach (BuildPlanItem item in plan)
         {

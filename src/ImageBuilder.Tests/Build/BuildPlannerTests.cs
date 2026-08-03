@@ -62,7 +62,7 @@ public class BuildPlannerTests
                 false))
             .ReturnsAsync("sha256:new");
 
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
             CompositeBuildPolicy.ImageCache(
@@ -113,7 +113,7 @@ public class BuildPlannerTests
         BuildGraph graph = BuildGraph.Create(manifest);
         Mock<IManifestService> manifestService = CreateDigestService("sha256:base");
 
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
             CompositeBuildPolicy.ImageCache(
@@ -150,7 +150,7 @@ public class BuildPlannerTests
         BuildGraph graph = BuildGraph.Create(manifest);
         Mock<IManifestService> manifestService = CreateDigestService("sha256:new");
 
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
             CompositeBuildPolicy.ImageCache(
@@ -190,7 +190,7 @@ public class BuildPlannerTests
         BuildGraph graph = BuildGraph.Create(manifest);
         Mock<IManifestService> manifestService = CreateDigestService("sha256:new");
 
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
             CompositeBuildPolicy.ImageCache(
@@ -267,7 +267,7 @@ public class BuildPlannerTests
         BuildGraph graph = BuildGraph.Create(manifest);
         Mock<IManifestService> manifestService = CreateDigestService("sha256:base");
 
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
             CompositeBuildPolicy.ImageCache(
@@ -289,7 +289,7 @@ public class BuildPlannerTests
                 CreateRepo("runtime", CreateImage(CreatePlatform(
                     CreateDockerfile("runtime", tempFolder, "base:tag"), ["tag"])))));
         BuildGraph graph = BuildGraph.Create(manifest);
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo: null,
             new CompositeBuildPolicy(
@@ -329,7 +329,7 @@ public class BuildPlannerTests
                     BuildAction.BuildImage,
                     new BuildReason("Build the image."))));
 
-        IReadOnlyList<BuildPlanItem> plan = await CreatePlanner().CreatePlanAsync(
+        BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             CreatePublishedImages(
                 manifest,
@@ -389,7 +389,7 @@ public class BuildPlannerTests
     }
 
     private static BuildPlanItem GetItem(
-        IReadOnlyList<BuildPlanItem> plan,
+        IEnumerable<BuildPlanItem> plan,
         string repoName) =>
         plan.Single(item => item.Target.Repo.Name == repoName);
 

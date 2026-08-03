@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             BuildGraph graph = BuildGraph.CreateFiltered(manifest);
             string sourceRepoUrl =
                 $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}";
-            IReadOnlyList<BuildPlanItem> plan = await _buildPlanner.CreatePlanAsync(
+            BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(
                 graph,
                 imageArtifactDetails,
                 CompositeBuildPolicy.ImageCache(
@@ -117,8 +117,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return plan
                 .Where(item => item.Action != BuildAction.NoAction)
                 .Select(item => item.Target.Platform.Model.Dockerfile)
-                .Distinct()
-                .ToArray();
+                .Distinct();
         }
 
         private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)

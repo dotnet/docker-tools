@@ -297,7 +297,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     ImageArtifactDetails imageInfo,
                     IBuildPolicy policy,
                     CancellationToken _) => Task.FromResult(
-                    (IReadOnlyList<BuildPlanItem>)graph.Targets.Select(target =>
+                    graph.Targets.Select(target =>
                             new BuildPlanItem(
                                 target,
                                 actions.GetValueOrDefault(

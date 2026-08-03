@@ -442,7 +442,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         _gitService,
                         Options.SourceRepoUrl ?? string.Empty))
                 : new AlwaysBuildPolicy("The image was selected for a build.");
-            IReadOnlyList<BuildPlanItem> plan = await _buildPlanner.CreatePlanAsync(
+            BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(
                 graph,
                 imageInfo,
                 policy);

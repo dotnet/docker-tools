@@ -193,12 +193,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             int manifestCount = 0;
             int batchNumber = 0;
 
-            var batches = manifests.Buffer(ManifestBatchSize).WithCancellation(cancellationToken);
+            var batches = manifests.Chunk(ManifestBatchSize).WithCancellation(cancellationToken);
             await foreach (var batch in batches)
             {
                 long batchStartTimestamp = Stopwatch.GetTimestamp();
                 batchNumber++;
-                manifestCount += batch.Count;
+                manifestCount += batch.Length;
 
                 ConcurrentBag<string> digestsToDelete = await FindManifestsToDeleteAsync(batch, canDeleteManifest, cancellationToken);
                 await DeleteManifestsAsync(acrContentClient, repository, digestsToDelete);
@@ -208,7 +208,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         + " {ManifestCount} manifests, {DeletionCount} deleted, Duration={Duration}. DryRun={DryRun}",
                     batchNumber,
                     repository.Name,
-                    batch.Count,
+                    batch.Length,
                     digestsToDelete.Count,
                     Stopwatch.GetElapsedTime(batchStartTimestamp),
                     Options.IsDryRun);

@@ -38,8 +38,9 @@
             {
               "buildArgs": {
                 "WINDOWS_BASE": "servercore:ltsc2016-amd64",
-                "WINDOWS_SDK": "nanoserver-1809"
+                "WINDOWS_SDK": "nanoserver-ltsc2025"
               },
+              "buildOsVersion": "windowsservercore-ltsc2025",
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
               "osVersion": "windowsservercore-ltsc2019",
@@ -51,8 +52,9 @@
             {
               "buildArgs": {
                 "WINDOWS_BASE": "nanoserver:1809-amd64",
-                "WINDOWS_SDK": "nanoserver-1809"
+                "WINDOWS_SDK": "nanoserver-ltsc2025"
               },
+              "buildOsVersion": "windowsservercore-ltsc2025",
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
               "osVersion": "nanoserver-1809",
@@ -64,8 +66,9 @@
             {
               "buildArgs": {
                 "WINDOWS_BASE": "nanoserver:ltsc2022-amd64",
-                "WINDOWS_SDK": "nanoserver-ltsc2022"
+                "WINDOWS_SDK": "nanoserver-ltsc2025"
               },
+              "buildOsVersion": "windowsservercore-ltsc2025",
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
               "osVersion": "nanoserver-ltsc2022",

@@ -4,7 +4,7 @@ ARG WINDOWS_BASE
 ARG WINDOWS_SDK
 
 # build Microsoft.DotNet.ImageBuilder
-FROM mcr.microsoft.com/dotnet/sdk:9.0-$WINDOWS_SDK AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0-$WINDOWS_SDK AS build-env
 WORKDIR /image-builder
 
 # Work around Windows path length limitations by moving NuGet package cache to

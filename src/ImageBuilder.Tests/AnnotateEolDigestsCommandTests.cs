@@ -201,7 +201,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEolAsync(digest, It.IsAny<CancellationToken>()))
+                .Setup(o => o.GetLifecycleArtifactAsync(digest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(manifest);
         }
     }

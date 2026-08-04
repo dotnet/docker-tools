@@ -26,3 +26,9 @@ public class ManifestQueryResult
         Manifest = manifest;
     }
 }
+
+internal static class ManifestQueryResultExtensions
+{
+    public static bool IsReferrer(this ManifestQueryResult manifestResult) =>
+        manifestResult.Manifest["subject"] is not null;
+}

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Threading;
+using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -278,7 +279,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1Digest1 = "sha256:digest1";
             const string repo1Digest2 = "sha256:digest2";
             const string repo1Digest3 = "sha256:digest3";
-            const string annotationdigest = "annotationdigest";
+            const string missingDigest = "sha256:missing";
+            const string referrerDigest = "sha256:referrer";
 
             const int age = 30;
 
@@ -289,7 +291,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8)), tags: ["latest"], registryLoginServer: AcrName),
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)), tags: ["latest"], registryLoginServer: AcrName),
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: annotationdigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: missingDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName),
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: referrerDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
                 ]);
 
             Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
@@ -302,8 +305,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
                             { repo1Digest2, new ManifestQueryResult(string.Empty, []) },
                             { repo1Digest3, new ManifestQueryResult(string.Empty, []) },
-                            { annotationdigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
+                            { referrerDigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
                         });
+            repo1ContentClientMock
+                .Setup(o => o.GetManifestAsync(missingDigest))
+                .ThrowsAsync(new RequestFailedException(404, "Manifest not found"));
 
             IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock]);
 
@@ -322,7 +328,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(missingDigest), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(referrerDigest), Times.Never);
+            lifecycleMetadataServiceMock.Verify(
+                o => o.GetLifecycleArtifactAsync(
+                    $"{AcrName}/{repo1Name}@{missingDigest}",
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [TestMethod]
@@ -414,7 +426,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEolAsync(reference, It.IsAny<CancellationToken>()))
+                .Setup(o => o.GetLifecycleArtifactAsync(reference, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(manifest);
         }
     }

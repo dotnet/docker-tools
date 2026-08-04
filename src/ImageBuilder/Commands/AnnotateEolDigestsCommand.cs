@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            Manifest? existingAnnotationManifest = await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(digestData.Digest, cancellationToken);
+            Manifest? existingAnnotationManifest = await _lifecycleMetadataService.GetLifecycleArtifactAsync(digestData.Digest, cancellationToken);
             if (existingAnnotationManifest is null)
             {
                 _logger.LogInformation($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");

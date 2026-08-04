@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
@@ -124,9 +125,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         acrClient,
                         acrContentClient,
                         repository,
-                        async (manifest, ct) =>
-                            !await IsAnnotationManifestAsync(manifest, acrContentClient)
-                            && await HasExpiredEolAsync(manifest, Options.Age, ct),
+                        canDeleteManifest: async (manifest, ct) =>
+                        {
+                            ManifestQueryResult? manifestResult =
+                                await TryGetManifestAsync(manifest, acrContentClient);
+
+                            return manifestResult is not null
+                                && !manifestResult.IsReferrer()
+                                && await HasExpiredEndOfLifeAnnotationAsync(manifest, Options.Age, ct);
+                        },
                         cancellationToken);
                     break;
 
@@ -335,27 +342,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
 
-        private async Task<bool> IsAnnotationManifestAsync(
+        private async Task<ManifestQueryResult?> TryGetManifestAsync(
             ArtifactManifestProperties manifest,
             IAcrContentClient acrContentClient)
         {
-            ManifestQueryResult manifestResult = await acrContentClient.GetManifestAsync(manifest.Digest);
+            ManifestQueryResult manifestResult;
+            try
+            {
+                manifestResult = await acrContentClient.GetManifestAsync(manifest.Digest);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                _logger.LogWarning(
+                    "GET manifest {Digest} in repository {Repository} returned 404. Skipping.",
+                    manifest.Digest,
+                    manifest.RepositoryName);
+                return null;
+            }
 
-            // An annotation is just a referrer and referrers are indicated by the presence of a subject field.
-            return manifestResult.Manifest["subject"] is not null;
+            return manifestResult;
         }
 
-        private async Task<bool> HasExpiredEolAsync(
+        private async Task<bool> HasExpiredEndOfLifeAnnotationAsync(
             ArtifactManifestProperties manifest,
             int eolGracePeriodDays,
             CancellationToken cancellationToken)
         {
-            Manifest? lifecycleArtifactManifest = await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(
+            Manifest? lifecycleArtifact = await _lifecycleMetadataService.GetLifecycleArtifactAsync(
                 $"{manifest.RegistryLoginServer}/{manifest.RepositoryName}@{manifest.Digest}",
                 cancellationToken);
 
-            if (lifecycleArtifactManifest?.Annotations is not null
-                && lifecycleArtifactManifest.Annotations.TryGetValue(
+            if (lifecycleArtifact?.Annotations is not null
+                && lifecycleArtifact.Annotations.TryGetValue(
                     LifecycleMetadataService.EndOfLifeAnnotation,
                     out string? endOfLifeValue)
                 && DateTimeOffset.TryParse(endOfLifeValue, out DateTimeOffset endOfLifeDateTime))

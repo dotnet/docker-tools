@@ -142,7 +142,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         await Parallel.ForEachAsync(unsupportedDigests, CancellationToken.None, async (digest, ct) =>
         {
             _logger.LogInformation($"Checking digest for existing annotation: {digest.Digest}");
-            if (await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(digest.Digest, ct) is null)
+            if (await _lifecycleMetadataService.GetLifecycleArtifactAsync(digest.Digest, ct) is null)
             {
                 digestsToAnnotate.Add(digest);
             }

@@ -5,7 +5,8 @@
 namespace Microsoft.DotNet.ImageBuilder;
 
 /// <summary>
-/// Resolves artifact-relative paths and writes artifact files beneath the configured staging directory.
+/// Maps input and output artifact paths to the configured staging directory.
+/// Use when accepting files as input or writing files as output.
 /// </summary>
 public interface IArtifactService
 {

@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Cottle;
 using Cottle.Exceptions;
+using Microsoft.DotNet.ImageBuilder.Templating;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -20,14 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public abstract class GenerateArtifactsCommand<TOptions> : ManifestCommand<TOptions>
         where TOptions : GenerateArtifactsOptions, new()
     {
-        private readonly DocumentConfiguration _config = new DocumentConfiguration
-        {
-            BlockBegin = "{{",
-            BlockContinue = "^",
-            BlockEnd = "}}",
-            Escape = '@',
-            Trimmer = DocumentConfiguration.TrimNothing
-        };
+        private readonly DocumentConfiguration _config = CottleDocumentConfiguration.Create();
 
         private readonly IEnvironmentService _environmentService;
         private readonly List<string> _invalidTemplates = new List<string>();

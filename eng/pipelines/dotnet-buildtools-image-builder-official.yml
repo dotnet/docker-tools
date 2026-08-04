@@ -3,6 +3,9 @@ trigger:
   branches:
     include:
     - main
+    # Feature branches publish images under a tag prefix derived from the
+    # branch name. See README.md.
+    - feature/*
   paths:
     include:
     - src/*

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <PublishTrimmed>False</PublishTrimmed>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -30,38 +30,37 @@
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Azure.ResourceManager.ContainerRegistry" Version="1.4.0" />
     <PackageReference Include="Cottle" Version="2.1.0" />
-    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.16" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.16" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.16" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.16" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageReference Include="Octokit" Version="14.0.0" />
     <PackageReference Include="OrasProject.Oras" Version="0.5.0" />
-    <PackageReference Include="Polly" Version="8.6.6" />
+    <PackageReference Include="Polly" Version="8.7.0" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-    <PackageReference Include="Polly.RateLimiting" Version="8.6.6" />
-    <PackageReference Include="System.CommandLine" Version="2.0.7" />
-    <PackageReference Include="System.Formats.Cbor" Version="9.0.16" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="9.0.16" />
-    <PackageReference Include="System.Linq.Async" Version="7.0.1" />
+    <PackageReference Include="Polly.RateLimiting" Version="8.7.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.10" />
+    <PackageReference Include="System.Formats.Cbor" Version="10.0.10" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.10" />
     <PackageReference Include="YamlDotNet" Version="18.0.0" />
 
     <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.10" />
 
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
-    <PackageReference Include="System.Drawing.Common" Version="5.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.10" />
 
-    <!-- CVE-2024-38095: Upgrade version of System.Formats.Asn1 implicitly referenced by Microsoft.DotNet.VersionTools -->
-    <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ImageBuilder.Models\Microsoft.DotNet.ImageBuilder.Models.csproj" />
+    <ProjectReference Include="..\Infrastructure\Microsoft.DotNet.DockerTools.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

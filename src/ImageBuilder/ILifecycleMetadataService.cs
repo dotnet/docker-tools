@@ -12,12 +12,12 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ILifecycleMetadataService
 {
     /// <summary>
-    /// Checks whether the given digest has an existing lifecycle (EOL) annotation.
+    /// Gets the lifecycle artifact that refers to the given digest.
     /// </summary>
     /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The lifecycle artifact manifest if annotated, or null if not.</returns>
-    Task<Manifest?> IsDigestAnnotatedForEolAsync(string digest, CancellationToken cancellationToken = default);
+    /// <returns>The lifecycle artifact manifest, or null if none exists.</returns>
+    Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Annotates the given digest with an end-of-life date.

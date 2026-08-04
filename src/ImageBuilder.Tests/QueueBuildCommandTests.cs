@@ -104,7 +104,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
             {
                 WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
-                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
                 failedBuild.Status = WebApi.BuildStatus.Completed;
                 failedBuild.Result = WebApi.BuildResult.Failed;
                 allBuilds.Add(failedBuild);
@@ -149,7 +148,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             for (int i = 0; i < QueueBuildCommand.BuildFailureLimit - 1; i++)
             {
                 WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
-                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
                 failedBuild.Status = WebApi.BuildStatus.Completed;
                 failedBuild.Result = WebApi.BuildResult.Failed;
                 allBuilds.Add(failedBuild);
@@ -203,8 +201,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             PagedList<WebApi.Build> allBuilds = new();
 
-            WebApi.Build succeeded = CreateBuild($"https://succeededbuild");
-            succeeded.Tags.Add(AzdoTags.AutoBuilder);
+            DateTime queueTime = DateTime.UtcNow;
+            WebApi.Build succeeded = CreateBuild("https://succeededbuild");
+            succeeded.QueueTime = queueTime;
             succeeded.Status = WebApi.BuildStatus.Completed;
             succeeded.Result = WebApi.BuildResult.Succeeded;
             allBuilds.Add(succeeded);
@@ -212,7 +211,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
             {
                 WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
-                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
+                failedBuild.QueueTime = queueTime.AddMinutes(-(i + 1));
                 failedBuild.Status = WebApi.BuildStatus.Completed;
                 failedBuild.Result = WebApi.BuildResult.Failed;
                 allBuilds.Add(failedBuild);

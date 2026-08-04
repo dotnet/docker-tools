@@ -1,0 +1,6 @@
+variables:
+  engDockerToolsRelativePath: eng/docker-tools
+  engDockerToolsPath: $(Build.Repository.LocalPath)/$(engDockerToolsRelativePath)
+  engPath: $(Build.Repository.LocalPath)/eng
+  testScriptPath: ""
+  preBuildTestScriptPath: $(testScriptPath)

@@ -1,5 +1,9 @@
 {
   "registry": "mcr.microsoft.com",
+  "variables": {
+    "TagPrefix": "",
+    "LatestTag": "latest"
+  },
   "repos": [
     {
       "id": "image-builder",
@@ -7,8 +11,8 @@
       "images": [
         {
           "sharedTags": {
-            "latest": {},
-            "$(UniqueId)": {}
+            "$(LatestTag)": {},
+            "$(TagPrefix)$(UniqueId)": {}
           },
           "platforms": [
             {
@@ -16,8 +20,8 @@
               "os": "linux",
               "osVersion": "azurelinux",
               "tags": {
-                "linux-amd64": {},
-                "linux-amd64-$(UniqueId)": {}
+                "$(TagPrefix)linux-amd64": {},
+                "$(TagPrefix)linux-amd64-$(UniqueId)": {}
               }
             },
             {
@@ -26,48 +30,51 @@
               "os": "linux",
               "osVersion": "azurelinux",
               "tags": {
-                "linux-arm64": {},
-                "linux-arm64-$(UniqueId)": {}
+                "$(TagPrefix)linux-arm64": {},
+                "$(TagPrefix)linux-arm64-$(UniqueId)": {}
               },
               "variant": "v8"
             },
             {
               "buildArgs": {
                 "WINDOWS_BASE": "servercore:ltsc2016-amd64",
-                "WINDOWS_SDK": "nanoserver-1809"
+                "WINDOWS_SDK": "nanoserver-ltsc2025"
               },
+              "buildOsVersion": "windowsservercore-ltsc2025",
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
               "osVersion": "windowsservercore-ltsc2019",
               "tags": {
-                "windowsservercore-ltsc2016-amd64": {},
-                "windowsservercore-ltsc2016-amd64-$(UniqueId)": {}
+                "$(TagPrefix)windowsservercore-ltsc2016-amd64": {},
+                "$(TagPrefix)windowsservercore-ltsc2016-amd64-$(UniqueId)": {}
               }
             },
             {
               "buildArgs": {
                 "WINDOWS_BASE": "nanoserver:1809-amd64",
-                "WINDOWS_SDK": "nanoserver-1809"
+                "WINDOWS_SDK": "nanoserver-ltsc2025"
               },
+              "buildOsVersion": "windowsservercore-ltsc2025",
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
               "osVersion": "nanoserver-1809",
               "tags": {
-                "nanoserver-1809-amd64": {},
-                "nanoserver-1809-amd64-$(UniqueId)": {}
+                "$(TagPrefix)nanoserver-1809-amd64": {},
+                "$(TagPrefix)nanoserver-1809-amd64-$(UniqueId)": {}
               }
             },
             {
               "buildArgs": {
                 "WINDOWS_BASE": "nanoserver:ltsc2022-amd64",
-                "WINDOWS_SDK": "nanoserver-ltsc2022"
+                "WINDOWS_SDK": "nanoserver-ltsc2025"
               },
+              "buildOsVersion": "windowsservercore-ltsc2025",
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
               "osVersion": "nanoserver-ltsc2022",
               "tags": {
-                "nanoserver-ltsc2022-amd64": {},
-                "nanoserver-ltsc2022-amd64-$(UniqueId)": {}
+                "$(TagPrefix)nanoserver-ltsc2022-amd64": {},
+                "$(TagPrefix)nanoserver-ltsc2022-amd64-$(UniqueId)": {}
               }
             }
           ]

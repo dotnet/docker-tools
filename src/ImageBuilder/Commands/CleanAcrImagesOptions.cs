@@ -12,13 +12,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class CleanAcrImagesOptions : Options
 {
-    public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-
     public string RepoName { get; set; }
     public CleanAcrImagesAction Action { get; set; }
     public int Age { get; set; }
     public string RegistryName { get; set; }
     public string[] ImagesToExclude { get; set; } = [];
+    public ushort? TimeLimitMinutes { get; set; }
 
     private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
     private const int DefaultAge = 30;
@@ -52,10 +51,14 @@ public class CleanAcrImagesOptions : Options
         AllowMultipleArgumentsPerToken = false
     };
 
+    private static readonly Option<ushort?> TimeLimitMinutesOption = new("--time-limit-minutes")
+    {
+        Description = "Maximum cleanup duration before cancellation (default: unlimited)"
+    };
+
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
-            ..CredentialsOptions.GetCliArguments(),
             RepoNameArgument,
             RegistryNameArgument,
         ];
@@ -63,21 +66,21 @@ public class CleanAcrImagesOptions : Options
     public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
-            ..CredentialsOptions.GetCliOptions(),
             ActionOption,
             AgeOption,
             ImagesToExcludeOption,
+            TimeLimitMinutesOption,
         ];
 
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        CredentialsOptions.Bind(result);
         RepoName = result.GetValue(RepoNameArgument);
         RegistryName = result.GetValue(RegistryNameArgument);
         Action = result.GetValue(ActionOption);
         Age = result.GetValue(AgeOption);
         ImagesToExclude = result.GetValue(ImagesToExcludeOption) ?? [];
+        TimeLimitMinutes = result.GetValue(TimeLimitMinutesOption);
     }
 }
 

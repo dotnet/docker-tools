@@ -90,6 +90,9 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                     AddPlatformToImageInfo(platformToImport);
                 }
 
+                ManifestListHelper.ValidateManifestListPlatforms(
+                    Manifest, imageArtifactDetails, Options.RepoPrefix);
+
                 // Build the manifest-list definitions from the now-complete image-info.
                 IReadOnlyList<ManifestListInfo> manifestLists =
                     ManifestListHelper.GetManifestListsForImages(Manifest, imageArtifactDetails, Options.RepoPrefix);

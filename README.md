@@ -12,3 +12,8 @@ To build, test, and pack all projects in the repo, run one of the following scri
 
 - **Windows**: `build.cmd`
 - **Linux/Mac**: `./build.sh`
+
+## Feature branches
+
+ImageBuilder images are published from the `main` branch as well as `feature/*` branches.
+Run [`pwsh eng/Get-FeatureBranches.ps1`](./eng/Get-FeatureBranches.ps1) to see all available feature branches

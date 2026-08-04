@@ -24,6 +24,12 @@ public interface IFileSystem
     Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Creates or overwrites a file in the specified path and returns a writable stream
+    /// (mirrors <see cref="File.Create(string)"/>).
+    /// </summary>
+    Stream CreateFile(string path);
+
+    /// <summary>
     /// Opens a binary file, reads the contents into a byte array, and then closes the file.
     /// </summary>
     byte[] ReadAllBytes(string path);
@@ -49,12 +55,30 @@ public interface IFileSystem
     bool FileExists(string path);
 
     /// <summary>
+    /// Determines whether the specified directory exists.
+    /// </summary>
+    bool DirectoryExists(string path);
+
+    /// <summary>
     /// Deletes the specified file.
     /// </summary>
     void DeleteFile(string path);
 
     /// <summary>
+    /// Deletes the specified directory, throwing if it does not exist (mirrors <see cref="Directory.Delete(string, bool)"/>).
+    /// </summary>
+    /// <param name="recursive">
+    /// <c>true</c> to delete the directory, its subdirectories, and all files; otherwise <c>false</c>.
+    /// </param>
+    void DeleteDirectory(string path, bool recursive);
+
+    /// <summary>
     /// Creates all directories and subdirectories in the specified path unless they already exist.
     /// </summary>
     DirectoryInfo CreateDirectory(string path);
+
+    /// <summary>
+    /// Gets the current working directory of the application.
+    /// </summary>
+    string GetCurrentDirectory();
 }

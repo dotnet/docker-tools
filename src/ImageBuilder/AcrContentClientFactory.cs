@@ -4,9 +4,7 @@
 
 using System;
 using Azure.Containers.ContainerRegistry;
-using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Configuration;
-using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -14,13 +12,11 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal class AcrContentClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,
-    IOptions<PublishConfiguration> publishConfigOptions,
-    AcrRateLimiter rateLimiter)
+    IOptions<PublishConfiguration> publishConfigOptions)
     : IAcrContentClientFactory
 {
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
-    private readonly AcrRateLimiter _rateLimiter = rateLimiter;
 
     public IAcrContentClient Create(Acr acr, string repositoryName)
     {
@@ -39,10 +35,7 @@ internal class AcrContentClientFactory(
     {
         var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
 
-        ContainerRegistryClientOptions options = new();
-        options.AddPolicy(new AcrRateLimitingPolicy(_rateLimiter), HttpPipelinePosition.PerRetry);
-
-        var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential, options);
+        var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
         return new AcrContentClientWrapper(client);
     }
 }

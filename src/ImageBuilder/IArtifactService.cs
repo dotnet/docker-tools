@@ -11,7 +11,8 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface IArtifactService
 {
     /// <summary>
-    /// Resolves <paramref name="artifactPath"/> beneath the configured artifact staging directory.
+    /// Gets the full path to the specified artifact.
+    /// Does not create the artifact or guarantee its presence.
     /// </summary>
     string ResolvePath(string artifactPath);
 

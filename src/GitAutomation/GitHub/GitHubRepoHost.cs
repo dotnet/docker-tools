@@ -112,12 +112,22 @@ internal sealed class GitHubRepoHost(
     private async Task<CommitsPushed> PushAsync(PushCommitsOperation operation, CancellationToken cancellationToken)
     {
         string token = await GetTokenAsync();
-        string authUrl = sourceRepo.GetAuthenticatedCloneUrl(token).AbsoluteUri;
+        string authorization =
+            GitHttpAuthentication.CreateBasicAuthorization("x-access-token", token);
+        string[] authenticationArguments = GitHttpAuthentication.GetArguments();
+        IReadOnlyDictionary<string, string> authenticationEnvironmentVariables =
+            GitHttpAuthentication.GetEnvironmentVariables(authorization);
+        string sourceUrl = sourceRepo.GetCloneUrl().AbsoluteUri;
         string branch = operation.SourceBranch;
         string dir = operation.WorkspaceDirectory;
         string remoteRef = $"refs/heads/{branch}";
 
-        string lsRemote = await git.RunAsync(token, dir, cancellationToken, ["ls-remote", "--heads", authUrl, remoteRef]);
+        string lsRemote = await git.RunAsync(
+            authorization,
+            authenticationEnvironmentVariables,
+            dir,
+            cancellationToken,
+            [.. authenticationArguments, "ls-remote", "--heads", sourceUrl, remoteRef]);
         string? existingLine = lsRemote
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
             .FirstOrDefault(line => line.EndsWith($"\t{remoteRef}", StringComparison.Ordinal));
@@ -127,14 +137,19 @@ internal sealed class GitHubRepoHost(
 
         bool forcePush = operation.ForcePush;
         string[] pushArgs = forcePush
-            ? ["push", "--force", authUrl, $"HEAD:{remoteRef}"]
-            : ["push", authUrl, $"HEAD:{remoteRef}"];
+            ? [.. authenticationArguments, "push", "--force", sourceUrl, $"HEAD:{remoteRef}"]
+            : [.. authenticationArguments, "push", sourceUrl, $"HEAD:{remoteRef}"];
 
         _logger.LogInformation(
             "Pushing commit {ToSha} to branch '{Branch}' in {Owner}/{Name}{Force}.",
             toSha, branch, sourceRepo.Owner, sourceRepo.Name, forcePush ? " (force)" : string.Empty);
 
-        await git.RunAsync(token, dir, cancellationToken, pushArgs);
+        await git.RunAsync(
+            authorization,
+            authenticationEnvironmentVariables,
+            dir,
+            cancellationToken,
+            pushArgs);
 
         Uri commitUrl = sourceRepo.GetCommitUrl(toSha);
         _logger.LogInformation(

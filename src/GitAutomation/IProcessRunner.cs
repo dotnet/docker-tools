@@ -24,6 +24,34 @@ public interface IProcessRunner
         string fileName,
         IEnumerable<string> arguments,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Runs an external process with additional environment variables.
+    /// </summary>
+    /// <param name="workingDirectory">
+    /// The process working directory, or <see langword="null"/> to use the current directory.
+    /// </param>
+    /// <param name="fileName">The executable to run.</param>
+    /// <param name="arguments">The arguments passed to the executable.</param>
+    /// <param name="environmentVariables">Environment variables added to the child process.</param>
+    /// <param name="cancellationToken">A token that cancels the process.</param>
+    /// <returns>The process exit code and captured output.</returns>
+    Task<ProcessResult> RunAsync(
+        string? workingDirectory,
+        string fileName,
+        IEnumerable<string> arguments,
+        IReadOnlyDictionary<string, string> environmentVariables,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(environmentVariables);
+        if (environmentVariables.Count > 0)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support process environment variables.");
+        }
+
+        return RunAsync(workingDirectory, fileName, arguments, cancellationToken);
+    }
 }
 
 /// <summary>

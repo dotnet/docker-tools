@@ -16,9 +16,6 @@ internal static class GitHubRepoExtensions
     public static Uri GetCloneUrl(this GitHubRepo repo) =>
         new($"https://github.com/{repo.Owner}/{repo.Name}");
 
-    public static Uri GetAuthenticatedCloneUrl(this GitHubRepo repo, string token) =>
-        new($"https://x-access-token:{token}@github.com/{repo.Owner}/{repo.Name}");
-
     public static Uri GetCommitUrl(this GitHubRepo repo, string sha) =>
         new($"https://github.com/{repo.Owner}/{repo.Name}/commit/{sha}");
 

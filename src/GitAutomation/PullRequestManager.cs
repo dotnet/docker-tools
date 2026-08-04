@@ -138,13 +138,19 @@ public sealed class PullRequestManager
         GitHubRepo cloneRepo = appendToExistingPullRequest ? pullRequestSourceRepo : upstream;
         string cloneBranch = appendToExistingPullRequest ? definition.Key : definition.TargetBranch;
         string token = await host.GetTokenAsync();
+        string authorization =
+            GitHttpAuthentication.CreateBasicAuthorization("x-access-token", token);
 
         _logger.LogInformation("Cloning {Url} branch '{Branch}'.", cloneRepo.GetCloneUrl(), cloneBranch);
 
         using GitWorkspace workspace = await GitWorkspace.CloneAsync(
             _git,
             _gitLogger,
-            cloneRepo.GetAuthenticatedCloneUrl(token),
+            cloneRepo.GetCloneUrl(),
+            secret: authorization,
+            authenticationArguments: GitHttpAuthentication.GetArguments(),
+            authenticationEnvironmentVariables:
+                GitHttpAuthentication.GetEnvironmentVariables(authorization),
             cloneBranch,
             identity.AuthorName,
             identity.AuthorEmail,

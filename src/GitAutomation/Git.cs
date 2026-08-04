@@ -8,18 +8,33 @@ namespace Microsoft.DotNet.GitAutomation;
 
 internal sealed class Git(IProcessRunner processRunner, ILogger logger)
 {
+    public Task<string> RunAsync(
+        string? secret,
+        string? workingDirectory,
+        CancellationToken cancellationToken,
+        params string[] args) =>
+        RunAsync(
+            secret,
+            environmentVariables: new Dictionary<string, string>(),
+            workingDirectory,
+            cancellationToken,
+            args);
+
     public async Task<string> RunAsync(
         string? secret,
+        IReadOnlyDictionary<string, string> environmentVariables,
         string? workingDirectory,
         CancellationToken cancellationToken,
         params string[] args)
     {
+        ArgumentNullException.ThrowIfNull(environmentVariables);
         logger.LogDebug("Running: git {Args}", Redact(string.Join(' ', args), secret));
 
         ProcessResult result = await processRunner.RunAsync(
             workingDirectory,
             fileName: "git",
             args,
+            environmentVariables,
             cancellationToken);
         string output = result.StandardOutput;
         string error = result.StandardError;

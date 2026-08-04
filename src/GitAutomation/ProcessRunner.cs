@@ -14,14 +14,29 @@ namespace Microsoft.DotNet.GitAutomation;
 public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunner
 {
     /// <inheritdoc/>
+    public Task<ProcessResult> RunAsync(
+        string? workingDirectory,
+        string fileName,
+        IEnumerable<string> arguments,
+        CancellationToken cancellationToken) =>
+        RunAsync(
+            workingDirectory,
+            fileName,
+            arguments,
+            environmentVariables: new Dictionary<string, string>(),
+            cancellationToken);
+
+    /// <inheritdoc/>
     public async Task<ProcessResult> RunAsync(
         string? workingDirectory,
         string fileName,
         IEnumerable<string> arguments,
+        IReadOnlyDictionary<string, string> environmentVariables,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentNullException.ThrowIfNull(arguments);
+        ArgumentNullException.ThrowIfNull(environmentVariables);
 
         ProcessStartInfo startInfo = new(fileName)
         {
@@ -38,6 +53,11 @@ public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunne
         foreach (string argument in arguments)
         {
             startInfo.ArgumentList.Add(argument);
+        }
+
+        foreach ((string name, string value) in environmentVariables)
+        {
+            startInfo.Environment[name] = value;
         }
 
         using Process process = Process.Start(startInfo)

@@ -14,6 +14,9 @@ internal sealed class GitWorkspace(string directory, ILogger logger) : IDisposab
         Git git,
         ILogger logger,
         Uri cloneUrl,
+        string? secret,
+        IReadOnlyList<string> authenticationArguments,
+        IReadOnlyDictionary<string, string> authenticationEnvironmentVariables,
         string branch,
         string authorName,
         string authorEmail,
@@ -21,15 +24,18 @@ internal sealed class GitWorkspace(string directory, ILogger logger) : IDisposab
     {
         string directory = Path.Combine(Path.GetTempPath(), $"git-workspace-{Path.GetRandomFileName()}");
 
-        // The clone URL embeds the access token as "x-access-token:TOKEN"; scrub that from logs.
-        string secret = cloneUrl.UserInfo;
-
         var runGit = async (string[] args, string? directory = null) =>
-            await git.RunAsync(secret, directory, ct, args);
+            await git.RunAsync(
+                secret,
+                authenticationEnvironmentVariables,
+                directory,
+                ct,
+                args);
 
         try
         {
             await runGit([
+                .. authenticationArguments,
                 "clone",
                 "--filter=blob:none",
                 "--single-branch",

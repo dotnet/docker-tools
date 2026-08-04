@@ -108,6 +108,8 @@ services.AddSingleton<PullRequestManager>();
 
 `IGitHubAccessProvider` is queried before each operation, so implementations
 can refresh credentials and resolve the identity represented by them.
+Git credentials are passed to child `git` processes through an authorization
+header without embedding tokens in repository URLs or command-line arguments.
 
 ### GitHub App authentication
 

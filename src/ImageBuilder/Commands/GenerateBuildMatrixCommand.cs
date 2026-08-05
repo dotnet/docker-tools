@@ -206,11 +206,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     IEnumerable<PlatformInfo> dependencyPlatforms = group.Dependencies
                         .Select(dependency => Manifest.GetPlatformByTag(dependency));
-                    return dependencyPlatforms
-                        .Concat(dependencyPlatforms
-                            .SelectMany(dependencyPlatform => GetAncestors(
-                                dependencyPlatform,
-                                Manifest.GetFilteredPlatforms())));
+
+                    return dependencyPlatforms.Concat(
+                        dependencyPlatforms.SelectMany(
+                            dependencyPlatform => GetAncestors(dependencyPlatform, Manifest.GetFilteredPlatforms())
+                        )
+                    );
                 })
                 .Distinct();
         }
@@ -417,10 +418,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
-        private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
+        /// <summary>
+        /// Selects the manifest platforms that require build matrix legs.
+        /// </summary>
+        private async Task<IEnumerable<PlatformInfo>> GetPlatformsToBuildAsync()
         {
+            // Matrix grouping still needs dependency relationships from the complete manifest.
             _dependencyGraph = BuildGraph.Create(Manifest);
             ImageArtifactDetails? imageInfo = _imageArtifactDetails.Value;
+
+            // Do not schedule platforms that an earlier build already completed unchanged.
             HashSet<PlatformInfo> completedPlatforms = imageInfo?.Repos
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
@@ -428,28 +435,42 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(platform => platform.PlatformInfo!)
                 .ToHashSet()
                 ?? [];
-            BuildGraph graph = BuildGraph.CreateFiltered(
-                Manifest,
-                platform => !completedPlatforms.Contains(platform));
+
+            // Build a second, filtered dependency graph...
+            BuildGraph graph = BuildGraph.CreateFiltered(Manifest, platform => !completedPlatforms.Contains(platform));
+
+            // ...and then check which images actually need to be built.
             IBuildPolicy policy = Options.TrimCachedImages
-                ? CompositeBuildPolicy.ImageCache(
-                    BuildAction.NoAction,
-                    BaseImageChangedPolicy.FromRegistry(
-                        _imageDigestCache,
-                        _imageNameResolver.Value,
-                        Options.IsDryRun),
-                    new DockerfileChangedPolicy(
-                        _gitService,
-                        Options.SourceRepoUrl ?? string.Empty))
+                ? new CompositeBuildPolicy(
+                    defaultAction: BuildAction.NoAction,
+                    defaultReason: new BuildReason("All checks passed, so no work is required."),
+                    policies:
+                    [
+                        // Rebuild when no published image metadata exists.
+                        new MissingPublishedImagePolicy(),
+
+                        // Rebuild when the registry digest for the base image has changed.
+                        BaseImageChangedPolicy.FromRegistry(
+                            _imageDigestCache,
+                            _imageNameResolver.Value,
+                            Options.IsDryRun),
+
+                        // Rebuild when the Dockerfile has changed.
+                        new DockerfileChangedPolicy(
+                            _gitService,
+                            sourceRepoUrl: Options.SourceRepoUrl ?? string.Empty),
+
+                        // Republish the existing image when its configured tags have changed.
+                        new TagSetChangedPolicy()
+                    ])
                 : new AlwaysBuildPolicy("The image was selected for a build.");
-            BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(
-                graph,
-                imageInfo,
-                policy);
+
+            BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(graph, imageInfo, policy);
 
             IEnumerable<PlatformInfo> plannedPlatforms = plan
                 .Where(item => item.Action != BuildAction.NoAction)
                 .Select(item => item.Target.Platform);
+
             return Options.TrimCachedImages
                 ? plannedPlatforms.OrderBy(platform => platform.DockerfilePath)
                 : plannedPlatforms;
@@ -502,7 +523,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<BuildMatrixInfo> matrices = [];
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
-            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = (await GetPlatformsAsync())
+            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups =
+                (await GetPlatformsToBuildAsync())
                 .GroupBy(platform => CreatePlatformId(platform))
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)

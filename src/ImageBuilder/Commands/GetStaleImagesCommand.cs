@@ -101,18 +101,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 sourceRepoPrefix: Options.SourceRepoPrefix);
 
             BuildGraph graph = BuildGraph.CreateFiltered(manifest);
-            string sourceRepoUrl =
-                $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}";
-            BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(
-                graph,
-                imageArtifactDetails,
-                CompositeBuildPolicy.ImageCache(
-                    BuildAction.NoAction,
+
+            IBuildPolicy policy = new CompositeBuildPolicy(
+                defaultAction: BuildAction.NoAction,
+                defaultReason: new BuildReason("All checks passed, so no work is required."),
+                policies:
+                [
+                    // Rebuild when no published image metadata exists.
+                    new MissingPublishedImagePolicy(),
+
+                    // Rebuild when the registry digest for the base image has changed.
                     BaseImageChangedPolicy.FromRegistry(
                         _imageDigestCache,
                         imageNameResolver,
                         Options.IsDryRun),
-                    new DockerfileChangedPolicy(_gitService, sourceRepoUrl)));
+
+                    // Rebuild when the Dockerfile has changed.
+                    new DockerfileChangedPolicy(
+                        _gitService,
+                        sourceRepoUrl:
+                            $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}"),
+
+                    // Republish the existing image when its configured tags have changed.
+                    new TagSetChangedPolicy()
+                ]);
+
+            BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(graph, imageArtifactDetails, policy);
 
             return plan
                 .Where(item => item.Action != BuildAction.NoAction)

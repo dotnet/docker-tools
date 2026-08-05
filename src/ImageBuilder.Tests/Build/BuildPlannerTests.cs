@@ -65,9 +65,12 @@ public class BuildPlannerTests
         BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
-            CompositeBuildPolicy.ImageCache(
+            new CompositeBuildPolicy(
                 BuildAction.NoAction,
-                CreateBaseImageRule(manifest, manifestService.Object)));
+                new("All checks passed, so no work is required."),
+                new MissingPublishedImagePolicy(),
+                CreateBaseImageRule(manifest, manifestService.Object),
+                new TagSetChangedPolicy()));
 
         BuildPlanItem root = GetItem(plan, "root");
         BuildPlanItem middle = GetItem(plan, "middle");
@@ -116,9 +119,12 @@ public class BuildPlannerTests
         BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
-            CompositeBuildPolicy.ImageCache(
+            new CompositeBuildPolicy(
                 BuildAction.NoAction,
-                CreateBaseImageRule(manifest, manifestService.Object)));
+                new("All checks passed, so no work is required."),
+                new MissingPublishedImagePolicy(),
+                CreateBaseImageRule(manifest, manifestService.Object),
+                new TagSetChangedPolicy()));
 
         BuildPlanItem item = plan.ShouldHaveSingleItem();
         item.Action.ShouldBe(BuildAction.PublishExistingImage);
@@ -153,9 +159,12 @@ public class BuildPlannerTests
         BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
-            CompositeBuildPolicy.ImageCache(
+            new CompositeBuildPolicy(
                 BuildAction.NoAction,
-                CreateBaseImageRule(manifest, manifestService.Object)));
+                new("All checks passed, so no work is required."),
+                new MissingPublishedImagePolicy(),
+                CreateBaseImageRule(manifest, manifestService.Object),
+                new TagSetChangedPolicy()));
 
         BuildPlanItem first = GetItem(plan, "first");
         BuildPlanItem second = GetItem(plan, "second");
@@ -193,9 +202,12 @@ public class BuildPlannerTests
         BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
-            CompositeBuildPolicy.ImageCache(
+            new CompositeBuildPolicy(
                 BuildAction.NoAction,
-                CreateBaseImageRule(manifest, manifestService.Object)));
+                new("All checks passed, so no work is required."),
+                new MissingPublishedImagePolicy(),
+                CreateBaseImageRule(manifest, manifestService.Object),
+                new TagSetChangedPolicy()));
 
         BuildPlanItem child = GetItem(plan, "child");
         child.Action.ShouldBe(BuildAction.BuildImage);
@@ -270,9 +282,12 @@ public class BuildPlannerTests
         BuildPlanItem[] plan = await CreatePlanner().CreatePlanAsync(
             graph,
             imageInfo,
-            CompositeBuildPolicy.ImageCache(
+            new CompositeBuildPolicy(
                 BuildAction.NoAction,
-                CreateBaseImageRule(manifest, manifestService.Object)));
+                new("All checks passed, so no work is required."),
+                new MissingPublishedImagePolicy(),
+                CreateBaseImageRule(manifest, manifestService.Object),
+                new TagSetChangedPolicy()));
 
         GetItem(plan, "parent").Action.ShouldBe(BuildAction.UsePublishedImage);
         GetItem(plan, "first").Action.ShouldBe(BuildAction.BuildImage);

@@ -109,11 +109,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.ImageInfoSourcePath,
                     Manifest,
                     skipManifestValidation: true);
+
             _buildGraph = BuildGraph.CreateFiltered(Manifest);
+
             await ExecuteWithDockerCredentialsAsync(() => PullBaseImagesAsync(_buildGraph));
-            BuildPlanItem[] plan = await CreateBuildPlanAsync(
-                _buildGraph,
-                publishedImages);
+
+            BuildPlanItem[] plan = await CreateBuildPlanAsync(_buildGraph, publishedImages);
+
             await BuildImagesAsync(plan);
 
             if (_processedTags.Count > 0 || _hasPublishedImagesToUse)
@@ -178,6 +180,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<PlatformInfo, PlatformData> platformDataByPlatform = processedPlatforms
                 .Where(platform => platform.PlatformInfo is not null)
                 .ToDictionary(platform => platform.PlatformInfo!);
+
             List<PlatformData> platformsWithNoPushTags = new List<PlatformData>();
 
             foreach (PlatformData platform in processedPlatforms)
@@ -246,19 +249,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string? baseImageDigest = platform.BaseImageDigest;
             if (platform.BaseImageDigest is null && platform.PlatformInfo?.FinalStageFromImage is not null)
             {
-                BuildGraph graph = _buildGraph ??
-                    throw new InvalidOperationException("Build graph has not been created.");
-                BuildTarget target = graph.Targets.First(
-                    target => target.Platform == platform.PlatformInfo);
-                BuildTarget? parent = graph.Parents[target].SingleOrDefault(parent =>
-                    parent.Platform.Tags
+                BuildGraph graph = _buildGraph ?? throw new InvalidOperationException("Build graph has not been created.");
+                BuildTarget target = graph.Targets.First(target => target.Platform == platform.PlatformInfo);
+
+                BuildTarget? parent = graph.Parents[target].SingleOrDefault(
+                    parent => parent.Platform.Tags
                         .Concat(parent.Image.SharedTags)
-                        .Any(tag =>
-                            tag.FullyQualifiedName == platform.PlatformInfo.FinalStageFromImage));
-                if (parent is null ||
-                    !platformDataByPlatform.TryGetValue(
-                        parent.Platform,
-                        out PlatformData? basePlatformData))
+                        .Any(tag => tag.FullyQualifiedName == platform.PlatformInfo.FinalStageFromImage));
+
+                if (parent is null || !platformDataByPlatform.TryGetValue(parent.Platform, out PlatformData? basePlatformData))
                 {
                     throw new InvalidOperationException(
                         $"Unable to find platform data for tag '{platform.PlatformInfo.FinalStageFromImage}'. " +
@@ -318,48 +317,55 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Digest = digest;
         }
 
-        private Task<BuildPlanItem[]> CreateBuildPlanAsync(
-            BuildGraph graph,
-            ImageArtifactDetails? publishedImages)
+        private Task<BuildPlanItem[]> CreateBuildPlanAsync(BuildGraph graph, ImageArtifactDetails? publishedImages)
         {
             IBuildPolicy policy = Options.NoCache
                 ? new AlwaysBuildPolicy()
-                : CompositeBuildPolicy.ImageCache(
-                    BuildAction.UsePublishedImage,
-                    BaseImageChangedPolicy.FromLocalImages(
-                        _imageDigestCache,
-                        _imageNameResolver.Value,
-                        Options.IsDryRun),
-                    new DockerfileChangedPolicy(
-                        _gitService,
-                        Options.SourceRepoUrl ?? string.Empty));
+                : new CompositeBuildPolicy(
+                    defaultAction: BuildAction.UsePublishedImage,
+                    defaultReason: new BuildReason("All checks passed, so this invocation will use the published image."),
+                    policies:
+                    [
+                        // Rebuild when no published image metadata exists.
+                        new MissingPublishedImagePolicy(),
 
-            return _buildPlanner.CreatePlanAsync(
-                graph,
-                publishedImages,
-                policy);
+                        // Rebuild when the locally available base image digest has changed.
+                        BaseImageChangedPolicy.FromLocalImages(
+                            _imageDigestCache,
+                            _imageNameResolver.Value,
+                            Options.IsDryRun),
+
+                        // Rebuild when the Dockerfile has changed.
+                        new DockerfileChangedPolicy(
+                            _gitService,
+                            sourceRepoUrl: Options.SourceRepoUrl ?? string.Empty),
+
+                        // Republish the existing image when its configured tags have changed.
+                        new TagSetChangedPolicy()
+                    ]);
+
+            return _buildPlanner.CreatePlanAsync(graph, publishedImages, policy);
         }
 
         private async Task BuildImagesAsync(IEnumerable<BuildPlanItem> plan)
         {
             _logger.LogInformation("BUILDING IMAGES");
 
-            BuildPlanItem[] executableItems = plan
-                .Where(item => item.Action != BuildAction.NoAction)
-                .ToArray();
-            _hasPublishedImagesToUse = executableItems.Any(
-                item => item.Action is
-                    BuildAction.UsePublishedImage or
-                    BuildAction.PublishExistingImage);
+            BuildPlanItem[] executableItems = plan.Where(item => item.Action != BuildAction.NoAction) .ToArray();
 
-            foreach (IGrouping<RepoInfo, BuildPlanItem> repoPlan in executableItems
-                .GroupBy(item => item.Target.Repo))
+            _hasPublishedImagesToUse = executableItems.Any(
+                item => item.Action
+                    is BuildAction.UsePublishedImage
+                    or BuildAction.PublishExistingImage);
+
+            var repoPlans = executableItems.GroupBy(item => item.Target.Repo);
+            foreach (IGrouping<RepoInfo, BuildPlanItem> repoPlan in repoPlans)
             {
                 RepoInfo repoInfo = repoPlan.Key;
                 RepoData repoData = CreateRepoData(repoInfo);
 
-                foreach (IGrouping<ImageInfo, BuildPlanItem> imagePlan in repoPlan
-                    .GroupBy(item => item.Target.Image))
+                var imagePlans = repoPlan.GroupBy(item => item.Target.Image);
+                foreach (IGrouping<ImageInfo, BuildPlanItem> imagePlan in imagePlans)
                 {
                     ImageInfo image = imagePlan.Key;
                     ImageData imageData = CreateImageData(image);
@@ -383,21 +389,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData platformData = CreatePlatformData(image, platform);
                         imageData.Platforms.Add(platformData);
 
-                        if (plannedImage.Action is
-                            BuildAction.UsePublishedImage or
-                            BuildAction.PublishExistingImage)
+                        if (plannedImage.Action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage)
                         {
                             PublishedImage publishedImage = plannedImage.PublishedImage ??
                                 throw new InvalidOperationException(
                                     $"Build plan did not provide reusable metadata for '{platform.DockerfilePath}'.");
 
                             CopyPlatformDataFromCachedPlatform(platformData, publishedImage.Image);
-                            platformData.IsUnchanged =
-                                plannedImage.Action == BuildAction.UsePublishedImage;
-                            await UsePublishedImageAsync(
-                                repoInfo,
-                                allTagInfos,
-                                publishedImage.Image.Digest);
+                            platformData.IsUnchanged = plannedImage.Action == BuildAction.UsePublishedImage;
+
+                            await UsePublishedImageAsync(repoInfo, allTagInfos, publishedImage.Image.Digest);
                         }
                         else if (plannedImage.Action == BuildAction.BuildImage)
                         {
@@ -409,8 +410,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             if (Options.IsPushEnabled && platform.FinalStageFromImage is not null)
                             {
                                 platformData.BaseImageDigest =
-                                   await _imageDigestCache.GetLocalImageDigestAsync(
-                                       _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+                                    await _imageDigestCache.GetLocalImageDigestAsync(
+                                       _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage),
+                                       Options.IsDryRun);
                             }
                         }
                     }
@@ -423,25 +425,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void CopyPlatformDataFromCachedPlatform(
-            PlatformData destination,
-            PlatformData source)
+        private void CopyPlatformDataFromCachedPlatform(PlatformData destination, PlatformData source)
         {
             // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
             // published image so we don't need to recalculate it again.
             destination.BaseImageDigest = source.BaseImageDigest;
-            destination.Layers = new List<Layer>(source.Layers);
+            destination.Layers = [.. source.Layers];
         }
 
-        private RepoData CreateRepoData(RepoInfo repoInfo) =>
-            new RepoData
-            {
-                Repo = repoInfo.Name
-            };
+        private RepoData CreateRepoData(RepoInfo repoInfo) => new RepoData
+        {
+            Repo = repoInfo.Name
+        };
 
         private PlatformData CreatePlatformData(ImageInfo image, PlatformInfo platform)
         {
             PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
+
             platformData.SimpleTags = platform.Tags
                 .Select(tag => tag.Name)
                 .OrderBy(name => name)
@@ -452,11 +452,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private ImageData CreateImageData(ImageInfo image)
         {
-            ImageData imageData =
-                new ImageData
-                {
-                    ProductVersion = image.ProductVersion
-                };
+            var imageData = new ImageData
+            {
+                ProductVersion = image.ProductVersion
+            };
 
             if (image.SharedTags.Any())
             {
@@ -695,9 +694,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             HashSet<string> pulledTags = [];
             HashSet<string> externalFromImages = [];
-            PlatformInfo[] platforms = graph.Targets
-                .Select(target => target.Platform)
-                .ToArray();
+            PlatformInfo[] platforms = graph.Targets.Select(target => target.Platform) .ToArray();
+
             foreach (PlatformInfo platform in platforms)
             {
                 IEnumerable<string> platformExternalFromImages = platform.ExternalFromImages.Distinct();

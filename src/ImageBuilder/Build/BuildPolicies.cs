@@ -52,39 +52,26 @@ public sealed class CompositeBuildPolicy(
     BuildReason defaultReason,
     params IEnumerable<IBuildPolicy> policies) : IBuildPolicy
 {
-    public static CompositeBuildPolicy ImageCache(
-        BuildAction validImageAction,
-        params IEnumerable<IBuildPolicy> checks) =>
-        new(
-            validImageAction,
-            new(
-                validImageAction == BuildAction.UsePublishedImage
-                    ? "All checks passed, so this invocation will use the published image."
-                    : "All checks passed, so no work is required."),
-            [
-                new MissingPublishedImagePolicy(),
-                ..checks,
-                new TagSetChangedPolicy()
-            ]);
-
     public async Task<BuildPolicyResult> EvaluateAsync(
         BuildPolicyContext context,
         CancellationToken cancellationToken = default)
     {
+
         BuildPolicyResult[] results = await Task.WhenAll(
             policies.Select(policy => policy.EvaluateAsync(context, cancellationToken)));
+
         BuildAction childAction = results
             .Select(result => result.Action)
             .DefaultIfEmpty(BuildAction.NoAction)
             .Max();
+
         BuildAction action = (BuildAction)Math.Max((int)childAction, (int)defaultAction);
+
         BuildReason[] reasons = results
             .SelectMany(result => result.Reasons)
             .ToArray();
 
-        return new(
-            action,
-            childAction == BuildAction.NoAction ? [..reasons, defaultReason] : reasons);
+        return new BuildPolicyResult(action, childAction == BuildAction.NoAction ? [..reasons, defaultReason] : reasons);
     }
 }
 

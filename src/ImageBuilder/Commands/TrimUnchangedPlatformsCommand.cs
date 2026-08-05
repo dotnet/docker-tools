@@ -30,23 +30,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
-            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-            if (!File.Exists(Options.ImageInfoPath))
+            if (!File.Exists(imageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping trimming unchanged platforms."));
                 return;
             }
 
-            string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath, cancellationToken);
+            string imageInfoContents = await File.ReadAllTextAsync(imageInfoPath, cancellationToken);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
             RemoveUnchangedPlatforms(imageArtifactDetails);
             imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
 
             if (!Options.IsDryRun)
             {
-                await File.WriteAllTextAsync(Options.ImageInfoPath, imageInfoContents, cancellationToken);
+                await File.WriteAllTextAsync(imageInfoPath, imageInfoContents, cancellationToken);
             }
         }
 

@@ -31,9 +31,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("WAITING FOR ANNOTATION INGESTION");
-            Options.AnnotationDigestsPath = _artifactService.ResolvePath(Options.AnnotationDigestsPath);
+            string annotationDigestsPath = _artifactService.ResolvePath(Options.AnnotationDigestsPath);
 
-            string[] annotationDigests = File.ReadAllLines(Options.AnnotationDigestsPath);
+            string[] annotationDigests = File.ReadAllLines(annotationDigestsPath);
             IEnumerable<DigestInfo> digests = annotationDigests
                 .Select(digest =>
                 {

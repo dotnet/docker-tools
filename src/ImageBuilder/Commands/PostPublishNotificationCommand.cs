@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
             StringBuilder notificationMarkdown = new();
             string buildUrl = string.Empty;
             Dictionary<string, TaskResult?> taskResults = Options.TaskNames
@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             notificationMarkdown.AppendLine("Published images are listed in comments below.");
             notificationMarkdown.AppendLine();
 
-            IEnumerable<string> imagesMarkdown = GetImagesMarkdown();
+            IEnumerable<string> imagesMarkdown = GetImagesMarkdown(imageInfoPath);
 
             await _notificationService.PostAsync(
                 $"Publish Result - {Options.SourceRepo}/{Options.SourceBranch}",
@@ -231,14 +231,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<string> GetImagesMarkdown()
+        private IEnumerable<string> GetImagesMarkdown(string imageInfoPath)
         {
-            if (!File.Exists(Options.ImageInfoPath))
+            if (!File.Exists(imageInfoPath))
             {
                 return Enumerable.Empty<string>();
             }
 
-            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
 
             List<(string digestSha, string repo, IEnumerable<string> tags)> imageInfos = new();
             foreach (RepoData repoData in imageArtifactDetails.Repos)

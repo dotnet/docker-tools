@@ -34,9 +34,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("WAITING FOR IMAGE INGESTION");
-            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-            if (!File.Exists(Options.ImageInfoPath))
+            if (!File.Exists(imageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image ingestion wait."));
@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+                ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
                 IEnumerable<DigestInfo> imageInfos = GetImageDigestInfos(imageArtifactDetails);
                 await _imageIngestionReporter.ReportImageStatusesAsync(
                     Options.MarServiceConnection,

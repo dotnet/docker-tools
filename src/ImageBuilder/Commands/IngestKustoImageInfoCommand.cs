@@ -36,9 +36,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("INGESTING IMAGE INFO DATA INTO KUSTO");
-            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-            (string imageInfo, string layerInfo) = GetImageInfoCsv();
+            (string imageInfo, string layerInfo) = GetImageInfoCsv(imageInfoPath);
             _logger.LogInformation($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
             _logger.LogInformation($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
 
@@ -57,12 +57,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await IngestInfoAsync(layerInfo, Options.LayerTable);
         }
 
-        private (string imageInfo, string layerInfo) GetImageInfoCsv()
+        private (string imageInfo, string layerInfo) GetImageInfoCsv(string imageInfoPath)
         {
             StringBuilder imageInfo = new();
             StringBuilder layerInfo = new();
 
-            foreach (RepoData repo in ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest).Repos)
+            foreach (RepoData repo in ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest).Repos)
             {
                 foreach (ImageData image in repo.Images)
                 {

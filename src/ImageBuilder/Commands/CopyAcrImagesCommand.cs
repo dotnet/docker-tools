@@ -17,7 +17,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger _logger;
         private readonly IArtifactService _artifactService;
-        private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
             IManifestJsonService manifestJsonService,
@@ -28,15 +27,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger = logger;
             _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-            _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
-            {
-                if (!string.IsNullOrEmpty(Options.ImageInfoPath))
-                {
-                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
-                }
-
-                return null;
-            });
         }
 
         protected override string Description => "Copies the platform images and manifest lists as specified in the manifest between repositories of an ACR";
@@ -52,19 +42,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
-            if (!File.Exists(Options.ImageInfoPath))
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            if (!File.Exists(imageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image copy."));
                 return;
             }
 
+            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
             IEnumerable<Task> platformImportTasks = Manifest.FilteredRepos
                 .Select(repo =>
                     repo.FilteredImages
                         .SelectMany(image => image.FilteredPlatforms)
-                        .SelectMany(platform => GetPlatformTagInfos(repo, platform))
+                        .SelectMany(platform => GetPlatformTagInfos(repo, platform, imageArtifactDetails))
                         .Select(tagInfo =>
                             ImportImageAsync(
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
@@ -74,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
-            IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos()
+            IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos(imageArtifactDetails)
                 .Select(tagInfo =>
                     ImportImageAsync(
                         DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
@@ -86,7 +77,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
         }
 
-        private IEnumerable<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(RepoInfo repo, PlatformInfo platform)
+        private IEnumerable<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(
+            RepoInfo repo,
+            PlatformInfo platform,
+            ImageArtifactDetails imageArtifactDetails)
         {
             var tags = new List<(string SourceTag, string DestinationTag)>();
 
@@ -94,67 +88,55 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
             // of the tag for the image that was actually built rather than just generating new tag values when parsing
             // the manifest.
-            if (_imageArtifactDetails.Value != null)
+            RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
+            if (repoData != null)
             {
-                RepoData repoData = _imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
-                if (repoData != null)
+                PlatformData platformData = repoData.Images
+                    .SelectMany(image => image.Platforms)
+                    .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
+                if (platformData != null)
                 {
-                    PlatformData platformData = repoData.Images
-                        .SelectMany(image => image.Platforms)
-                        .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
-                    if (platformData != null)
+                    foreach (string tag in platformData.SimpleTags)
                     {
-                        foreach (string tag in platformData.SimpleTags)
-                        {
-                            string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag);
-                            string sourceTag = GetSourceTag(destinationTag);
-                            tags.Add((sourceTag, destinationTag));
+                        string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag);
+                        string sourceTag = GetSourceTag(destinationTag);
+                        tags.Add((sourceTag, destinationTag));
 
-                            TagInfo tagInfo = platformData.PlatformInfo.Tags.FirstOrDefault(tagInfo => tagInfo.Name == tag);
-                            // There may not be a matching tag due to dynamic tag names. For now, we'll say that
-                            // syndication is not supported for dynamically named tags.
-                            // See https://github.com/dotnet/docker-tools/issues/686
-                            if (tagInfo?.SyndicatedRepo != null)
+                        TagInfo tagInfo = platformData.PlatformInfo.Tags.FirstOrDefault(tagInfo => tagInfo.Name == tag);
+                        // There may not be a matching tag due to dynamic tag names. For now, we'll say that
+                        // syndication is not supported for dynamically named tags.
+                        // See https://github.com/dotnet/docker-tools/issues/686
+                        if (tagInfo?.SyndicatedRepo != null)
+                        {
+                            foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
                             {
-                                foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
-                                {
-                                    destinationTag = TagInfo.GetFullyQualifiedName(
-                                        $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
-                                        syndicatedDestinationTagName);
-                                    tags.Add((sourceTag, destinationTag));
-                                }
+                                destinationTag = TagInfo.GetFullyQualifiedName(
+                                    $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
+                                    syndicatedDestinationTagName);
+                                tags.Add((sourceTag, destinationTag));
                             }
                         }
-                    }
-                    else
-                    {
-                        _logger.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                     }
                 }
                 else
                 {
-                    _logger.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
+                    _logger.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                 }
             }
             else
             {
-                tags.AddRange(platform.Tags
-                    .Select(tag => (GetSourceTag(tag.FullyQualifiedName), tag.FullyQualifiedName)));
+                _logger.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
             }
 
             return tags;
         }
 
-        private IEnumerable<(string SourceTag, string DestinationTag)> GetManifestListTagInfos()
+        private IEnumerable<(string SourceTag, string DestinationTag)> GetManifestListTagInfos(
+            ImageArtifactDetails imageArtifactDetails)
         {
-            if (_imageArtifactDetails.Value is null)
-            {
-                yield break;
-            }
-
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                RepoData repoData = _imageArtifactDetails.Value.Repos
+                RepoData repoData = imageArtifactDetails.Repos
                     .FirstOrDefault(repoData => repoData.Repo == repo.Name);
 
                 if (repoData is null)

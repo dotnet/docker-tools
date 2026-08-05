@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("PUBLISHING IMAGE INFO");
-            Options.ImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            string sourceImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
             string repoPath = Path.Combine(Path.GetTempPath(), "imagebuilder-repos", Options.GitOptions.Repo);
             if (Directory.Exists(repoPath))
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
 
-                UpdateGitRepos(repoPath, repo, credentials);
+                UpdateGitRepos(repoPath, repo, credentials, sourceImageInfoPath);
             }
             finally
             {
@@ -70,7 +70,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void UpdateGitRepos(string repoPath, IRepository repo, CredentialsHandler credentials)
+        private void UpdateGitRepos(
+            string repoPath,
+            IRepository repo,
+            CredentialsHandler credentials,
+            string sourceImageInfoPath)
         {
             string imageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
 
@@ -81,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Directory.CreateDirectory(imageInfoDir);
             }
 
-            File.Copy(Options.ImageInfoPath, imageInfoPath, overwrite: true);
+            File.Copy(sourceImageInfoPath, imageInfoPath, overwrite: true);
 
             if (Options.IsDryRun)
             {

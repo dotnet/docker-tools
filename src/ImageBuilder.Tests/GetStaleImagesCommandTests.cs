@@ -1668,7 +1668,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// </summary>
         private class TestFixture : IDisposable
         {
-            private const string DockerfileCommitSha = "current-commit";
             private readonly List<string> filesToCleanup = new List<string>();
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
@@ -1701,21 +1700,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string osType = "*")
             {
                 this.osType = osType;
-                foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
-                {
-                    string sourceRepoUrl =
-                        $"https://github.com/{subscriptionInfo.Subscription.Manifest.Owner}/" +
-                        subscriptionInfo.Subscription.Manifest.Repo;
-                    foreach (PlatformData platform in subscriptionInfo.ImageInfo.Repos
-                        .SelectMany(repo => repo.Images)
-                        .SelectMany(image => image.Platforms))
-                    {
-                        platform.CommitUrl =
-                            $"{sourceRepoUrl}/blob/{DockerfileCommitSha}/" +
-                            PathHelper.NormalizePath(platform.Dockerfile);
-                    }
-                }
-
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(
                     subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
@@ -1881,11 +1865,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos)
             {
                 Mock<IGitService> gitServiceMock = new();
-                gitServiceMock
-                    .Setup(service => service.GetCommitSha(
-                        It.IsAny<string>(),
-                        useFullHash: true))
-                    .Returns(DockerfileCommitSha);
 
                 foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
                 {

@@ -114,16 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     BaseImageChangedPolicy.FromRegistry(
                         _imageDigestCache,
                         imageNameResolver,
-                        Options.IsDryRun),
-
-                    // Rebuild when the Dockerfile has changed.
-                    new DockerfileChangedPolicy(
-                        _gitService,
-                        sourceRepoUrl:
-                            $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}"),
-
-                    // Republish the existing image when its configured tags have changed.
-                    new TagSetChangedPolicy()
+                        Options.IsDryRun)
                 ]);
 
             BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(graph, imageArtifactDetails, policy);

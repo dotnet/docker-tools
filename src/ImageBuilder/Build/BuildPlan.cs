@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 
@@ -15,24 +16,37 @@ public enum BuildAction
     /// <summary>
     /// The published image is valid and this invocation does not need it locally.
     /// </summary>
-    NoAction = 0,
+    NoAction,
 
     /// <summary>
     /// Use the valid published image without running a Docker build. The image may need to be
     /// pulled, imported, or retagged for this invocation.
     /// </summary>
-    UsePublishedImage = 1,
+    UsePublishedImage,
 
     /// <summary>
     /// Use the valid published image and continue it through downstream processing because its
     /// published metadata, such as tags, must be updated.
     /// </summary>
-    PublishExistingImage = 2,
+    PublishExistingImage,
 
     /// <summary>
     /// Run a Docker build for the target.
     /// </summary>
-    BuildImage = 3
+    BuildImage
+}
+
+public static class BuildActionExtensions
+{
+    public static int GetPriority(this BuildAction action) =>
+        action switch
+        {
+            BuildAction.NoAction => 0,
+            BuildAction.UsePublishedImage => 1,
+            BuildAction.PublishExistingImage => 2,
+            BuildAction.BuildImage => 3,
+            _ => throw new ArgumentOutOfRangeException(nameof(action))
+        };
 }
 
 /// <summary>

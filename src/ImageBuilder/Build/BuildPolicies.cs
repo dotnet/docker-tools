@@ -45,7 +45,7 @@ public interface IBuildPolicy
 
 /// <summary>
 /// Applies every child policy and combines their results into one decision. The action with the
-/// highest <see cref="BuildAction"/> value wins.
+/// highest priority wins.
 /// </summary>
 public sealed class CompositeBuildPolicy(
     BuildAction defaultAction,
@@ -63,9 +63,11 @@ public sealed class CompositeBuildPolicy(
         BuildAction childAction = results
             .Select(result => result.Action)
             .DefaultIfEmpty(BuildAction.NoAction)
-            .Max();
+            .MaxBy(action => action.GetPriority());
 
-        BuildAction action = (BuildAction)Math.Max((int)childAction, (int)defaultAction);
+        BuildAction action = childAction.GetPriority() >= defaultAction.GetPriority()
+            ? childAction
+            : defaultAction;
 
         BuildReason[] reasons = results
             .SelectMany(result => result.Reasons)

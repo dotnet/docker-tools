@@ -269,3 +269,5 @@ jobs:
       displayName: Publish Artifacts
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
+      # Always upload, even if the pipeline fails or is canceled.
+      condition: always()

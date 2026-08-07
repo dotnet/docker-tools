@@ -168,8 +168,6 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string TrimRegistry(string tag, string? registry) => tag.TrimStartString($"{registry}/");
 
-        public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
-
         public static string? GetRegistry(string imageName)
         {
             int separatorIndex = imageName.IndexOf("/");

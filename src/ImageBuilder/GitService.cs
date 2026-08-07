@@ -16,6 +16,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return GitHelper.GetCommitSha(filePath, useFullHash);
         }
 
+        /// <inheritdoc/>
+        public string GetRepoRoot(string path) => GitHelper.GetRepoRoot(path);
+
         public IRepository CloneRepository(string sourceUrl, string workdirPath, CloneOptions options)
         {
             _logger.LogInformation($"Cloning repository {sourceUrl} to {workdirPath}");

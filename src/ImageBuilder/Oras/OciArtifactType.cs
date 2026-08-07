@@ -10,6 +10,11 @@ namespace Microsoft.DotNet.ImageBuilder.Oras;
 public static class OciArtifactType
 {
     /// <summary>
+    /// ImageBuilder metadata referrer for image build information stored in manifest annotations.
+    /// </summary>
+    public const string ImageInfo = "application/vnd.microsoft.imagebuilder.image-info.v1";
+
+    /// <summary>
     /// Notary v2 signature envelope.
     /// </summary>
     public const string NotarySignatureV2 = "application/vnd.cncf.notary.signature";

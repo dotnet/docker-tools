@@ -22,14 +22,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 fileSystem: new FileSystem(),
                 logger: new LoggerFactory().CreateLogger<ManifestJsonService>());
 
-        public static IArtifactService CreateArtifactService(string artifactStagingDirectory) =>
-            new ArtifactService(
-                new FileSystem(),
-                Options.Create(
-                    new BuildConfiguration
-                    {
-                        ArtifactStagingDirectory = artifactStagingDirectory
-                    }));
+        public static IArtifactService CreateArtifactService(string artifactStagingDirectory)
+        {
+            BuildConfiguration buildConfiguration = new()
+            {
+                ArtifactStagingDirectory = artifactStagingDirectory
+            };
+
+            return new ArtifactService(new FileSystem(), Options.Create(buildConfiguration));
+        }
 
         public static TempFolderContext UseTempFolder()
         {

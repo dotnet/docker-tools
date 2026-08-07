@@ -34,7 +34,7 @@ public class AnnotateEolDigestsOptions : Options
 
     private static readonly Argument<string> AnnotationDigestsOutputPathArgument = new(nameof(AnnotationDigestsOutputPath))
     {
-        Description = "Output path of file containing the list of annotation digests that were created"
+        Description = "Artifact-relative output path for the list of annotation digests that were created"
     };
 
     public override IEnumerable<Option> GetCliOptions() =>

@@ -37,11 +37,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CopyAcrImagesCommand command = new(
                     TestHelper.CreateManifestJsonService(),
                     copyImageServiceMock.Object,
-                    Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                    Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                    TestHelper.CreateArtifactService(tempFolderContext.Path));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
                 command.Options.SourceRegistry = SourceRegistry;
-                command.Options.ImageInfoPath = "image-info.json";
+                command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
                 Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -127,11 +128,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 var command = new CopyAcrImagesCommand(
                     TestHelper.CreateManifestJsonService(),
                     copyImageServiceMock.Object,
-                    Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                    Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                    TestHelper.CreateArtifactService(tempFolderContext.Path));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
                 command.Options.SourceRegistry = SourceRegistry;
-                command.Options.ImageInfoPath = "image-info.json";
+                command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
                 Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -229,11 +231,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var command = new CopyAcrImagesCommand(
                 TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = "image-info.json";
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext);
 
@@ -342,11 +345,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var command = new CopyAcrImagesCommand(
                 TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = "image-info.json";
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
             const string runtimeRelativeDir = "1.0/runtime/os";
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -456,11 +460,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CopyAcrImagesCommand command = new(
                 TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = "image-info.json";
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
@@ -562,11 +567,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CopyAcrImagesCommand command = new(
                 TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = "image-info.json";
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
@@ -678,11 +684,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CopyAcrImagesCommand command = new(
                 TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = "image-info.json";
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 

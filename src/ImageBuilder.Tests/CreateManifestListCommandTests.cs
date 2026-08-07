@@ -705,7 +705,8 @@ public class CreateManifestListCommandTests
             copyImageServiceMock.Object,
             Mock.Of<ILogger<CreateManifestListCommand>>(),
             dateTimeService,
-            Mock.Of<IRegistryCredentialsProvider>());
+            Mock.Of<IRegistryCredentialsProvider>(),
+            TestHelper.CreateArtifactService(Path.GetTempPath()));
 
     private static void SetupCommand(
         CreateManifestListCommand command,

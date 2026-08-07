@@ -15,10 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
     {
         private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
+        private readonly IArtifactService _artifactService;
 
-        public TrimUnchangedPlatformsCommand(ILogger<TrimUnchangedPlatformsCommand> logger)
+        public TrimUnchangedPlatformsCommand(
+            ILogger<TrimUnchangedPlatformsCommand> logger,
+            IArtifactService artifactService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Trims platforms marked as unchanged from the image info file";
@@ -26,22 +30,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-            if (!File.Exists(Options.ImageInfoPath))
+            if (!File.Exists(imageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping trimming unchanged platforms."));
                 return;
             }
 
-            string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
+            string imageInfoContents = await File.ReadAllTextAsync(imageInfoPath);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
             RemoveUnchangedPlatforms(imageArtifactDetails);
             imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
 
             if (!Options.IsDryRun)
             {
-                await File.WriteAllTextAsync(Options.ImageInfoPath, imageInfoContents);
+                await File.WriteAllTextAsync(imageInfoPath, imageInfoContents);
             }
         }
 

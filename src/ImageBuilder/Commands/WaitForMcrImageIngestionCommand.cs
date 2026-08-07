@@ -16,13 +16,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger<WaitForMcrImageIngestionCommand> _logger;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
+        private readonly IArtifactService _artifactService;
 
         public WaitForMcrImageIngestionCommand(
             IManifestJsonService manifestJsonService,
-            ILogger<WaitForMcrImageIngestionCommand> logger, IMarImageIngestionReporter imageIngestionReporter) : base(manifestJsonService)
+            ILogger<WaitForMcrImageIngestionCommand> logger,
+            IMarImageIngestionReporter imageIngestionReporter,
+            IArtifactService artifactService) : base(manifestJsonService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Waits for images to complete ingestion into MCR";
@@ -30,8 +34,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("WAITING FOR IMAGE INGESTION");
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-            if (!File.Exists(Options.ImageInfoPath))
+            if (!File.Exists(imageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image ingestion wait."));
@@ -40,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+                ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
                 IEnumerable<DigestInfo> imageInfos = GetImageDigestInfos(imageArtifactDetails);
                 await _imageIngestionReporter.ReportImageStatusesAsync(
                     Options.MarServiceConnection,

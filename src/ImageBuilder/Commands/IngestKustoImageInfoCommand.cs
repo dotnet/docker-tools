@@ -18,11 +18,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IKustoClient _kustoClient;
         private readonly ILogger<IngestKustoImageInfoCommand> _logger;
+        private readonly IArtifactService _artifactService;
 
-        public IngestKustoImageInfoCommand(IManifestJsonService manifestJsonService, ILogger<IngestKustoImageInfoCommand> logger, IKustoClient kustoClient) : base(manifestJsonService)
+        public IngestKustoImageInfoCommand(
+            IManifestJsonService manifestJsonService,
+            ILogger<IngestKustoImageInfoCommand> logger,
+            IKustoClient kustoClient,
+            IArtifactService artifactService) : base(manifestJsonService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Ingests image info data into Kusto";
@@ -30,8 +36,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("INGESTING IMAGE INFO DATA INTO KUSTO");
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-            (string imageInfo, string layerInfo) = GetImageInfoCsv();
+            (string imageInfo, string layerInfo) = GetImageInfoCsv(imageInfoPath);
             _logger.LogInformation($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
             _logger.LogInformation($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
 
@@ -50,12 +57,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await IngestInfoAsync(layerInfo, Options.LayerTable);
         }
 
-        private (string imageInfo, string layerInfo) GetImageInfoCsv()
+        private (string imageInfo, string layerInfo) GetImageInfoCsv(string imageInfoPath)
         {
             StringBuilder imageInfo = new();
             StringBuilder layerInfo = new();
 
-            foreach (RepoData repo in ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest).Repos)
+            foreach (RepoData repo in ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest).Repos)
             {
                 foreach (ImageData image in repo.Images)
                 {

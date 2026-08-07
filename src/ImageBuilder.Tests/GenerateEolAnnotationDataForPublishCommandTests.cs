@@ -1148,10 +1148,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 acrClientFactory: registryClientFactory,
                 acrContentClientFactory: registryContentClientFactory,
                 lifecycleMetadataService: lifecycleMetadataService,
-                registryCredentialsProvider: Mock.Of<IRegistryCredentialsProvider>());
+                registryCredentialsProvider: Mock.Of<IRegistryCredentialsProvider>(),
+                artifactService: TestHelper.CreateArtifactService(Path.GetDirectoryName(newEolDigestsListPath)));
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
-            command.Options.EolDigestsListPath = newEolDigestsListPath;
+            command.Options.EolDigestsListPath = Path.GetFileName(newEolDigestsListPath);
             command.Options.RegistryOptions = new() { RepoPrefix = repoPrefix, Registry = AcrName };
             return command;
         }

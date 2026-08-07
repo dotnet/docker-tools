@@ -24,6 +24,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     private readonly ILogger<CreateManifestListCommand> _logger;
     private readonly IDateTimeService _dateTimeService;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+    private readonly IArtifactService _artifactService;
 
     public CreateManifestListCommand(
         IManifestJsonService manifestJsonService,
@@ -32,13 +33,15 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
         ICopyImageService copyImageService,
         ILogger<CreateManifestListCommand> logger,
         IDateTimeService dateTimeService,
-        IRegistryCredentialsProvider registryCredentialsProvider) : base(manifestJsonService)
+        IRegistryCredentialsProvider registryCredentialsProvider,
+        IArtifactService artifactService) : base(manifestJsonService)
     {
         _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
         _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
 
         ArgumentNullException.ThrowIfNull(manifestServiceFactory);
         _manifestService = new Lazy<IManifestService>(() =>
@@ -50,8 +53,9 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     public override async Task ExecuteAsync()
     {
         _logger.LogInformation("CREATING MANIFEST LISTS");
+        string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-        if (!File.Exists(Options.ImageInfoPath))
+        if (!File.Exists(imageInfoPath))
         {
             _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                 "Image info file not found. Skipping manifest list creation."));
@@ -60,7 +64,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         // The merged image-info file is the source of truth for which images were
         // built in this run and therefore which shared-tag manifest lists need updates.
-        ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+        ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
 
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,
@@ -117,7 +121,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
                 WriteManifestSummary(manifestLists);
 
-                await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
+                await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails, imageInfoPath);
             },
             Options.CredentialsOptions,
             registryName: Manifest.Registry);
@@ -270,7 +274,10 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
         importedPlatform.SiblingPlatforms.Add(platformData);
     }
 
-    private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
+    private async Task SaveTagInfoToImageInfoFileAsync(
+        DateTime createdDate,
+        ImageArtifactDetails imageArtifactDetails,
+        string imageInfoPath)
     {
         _logger.LogInformation("SETTING TAG INFO");
 
@@ -313,7 +320,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
         }
 
         string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
-        File.WriteAllText(Options.ImageInfoPath, imageInfoString);
+        File.WriteAllText(imageInfoPath, imageInfoString);
     }
 
     private void WriteManifestSummary(IReadOnlyList<ManifestListInfo> manifestLists)

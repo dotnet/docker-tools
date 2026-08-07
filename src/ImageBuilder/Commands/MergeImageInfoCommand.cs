@@ -13,16 +13,22 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
+    public partial class MergeImageInfoCommand(
+        IManifestJsonService manifestJsonService,
+        IArtifactService artifactService
+    ) : ManifestCommand<MergeImageInfoOptions>(manifestJsonService)
     {
-        public MergeImageInfoCommand(IManifestJsonService manifestJsonService) : base(manifestJsonService) { }
-
         protected override string Description => "Merges the content of multiple image info files into one file";
 
         public override Task ExecuteAsync()
         {
+            string sourceImageInfoFolderPath = artifactService.ResolvePath(Options.SourceImageInfoFolderPath);
+            string? initialImageInfoPath = Options.InitialImageInfoPath is not null
+                ? artifactService.ResolvePath(Options.InitialImageInfoPath)
+                : null;
+
             IEnumerable<string> imageInfoFiles = Directory.EnumerateFiles(
-                Options.SourceImageInfoFolderPath,
+                sourceImageInfoFolderPath,
                 "*.json",
                 SearchOption.AllDirectories);
 
@@ -38,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (!srcImageArtifactDetailsList.Any())
             {
                 throw new InvalidOperationException(
-                    $"No JSON files found in source folder '{Options.SourceImageInfoFolderPath}'");
+                    $"No JSON files found in source folder '{sourceImageInfoFolderPath}'");
             }
 
             ImageInfoMergeOptions options = new()
@@ -50,9 +56,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageArtifactDetails? initialImageArtifactDetails = null;
 
             ImageArtifactDetails targetImageArtifactDetails;
-            if (Options.InitialImageInfoPath != null)
+            if (initialImageInfoPath != null)
             {
-                targetImageArtifactDetails = srcImageArtifactDetailsList.First(item => item.Path == Options.InitialImageInfoPath).ImageArtifactDetails;
+                targetImageArtifactDetails = srcImageArtifactDetailsList.First(item => item.Path == initialImageInfoPath).ImageArtifactDetails;
 
                 // Store a deep copy of the initial state for comparison if CommitUrlOverride is specified
                 if (!string.IsNullOrEmpty(Options.CommitOverride))
@@ -89,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string destinationContents = JsonHelper.SerializeObject(targetImageArtifactDetails) + Environment.NewLine;
-            File.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
+            artifactService.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
 
             return Task.CompletedTask;
         }

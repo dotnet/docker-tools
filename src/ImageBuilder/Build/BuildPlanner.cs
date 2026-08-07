@@ -62,6 +62,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         BuildPlanItem[] plan = graph.Targets
             .Select(target => items[target])
             .ToArray();
+
         LogPlan(plan);
         return plan;
     }
@@ -130,21 +131,14 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         bool hasPublishedImage = publishedImages.TryGetValue(
             target,
             out PublishedImage? publishedImage);
-        List<BuildReason> reasons = [];
-        if (publishedImage is not null && publishedImage.Source != target)
-        {
-            reasons.Add(new(
-                $"Published image metadata is shared with '{GetName(publishedImage.Source)}'."));
-        }
 
-        BuildPolicyResult result = await policy.EvaluateAsync(
-            new(graph, target, publishedImages),
+        BuildPolicyResult decision = await policy.EvaluateAsync(
+            new BuildPolicyContext(graph, target, publishedImages),
             cancellationToken);
-        reasons.AddRange(result.Reasons);
+
         return CreateItem(
             target,
-            result.Action,
-            reasons,
+            decision,
             hasPublishedImage ? publishedImage : null);
     }
 
@@ -175,7 +169,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
             if (!visiting.Add(key))
             {
                 throw new InvalidOperationException(
-                    $"Build dependency cycle detected at '{GetName(key)}'.");
+                    $"Build dependency cycle detected at '{key.DisplayName}'.");
             }
 
             foreach (BuildTarget parent in sharedBuild
@@ -209,21 +203,27 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     {
         foreach (BuildTarget target in sharedBuild)
         {
-            foreach (BuildTarget parent in graph.Parents[target]
-                .Where(parent => items[parent].Action == BuildAction.BuildImage))
+            BuildPlanItem item = items[target];
+            if (item.Decision.Action == BuildAction.BuildImage)
             {
-                BuildPlanItem item = items[target];
-                BuildReason reason = new(
-                    $"Dependency '{GetName(parent)}' must build.",
-                    GetCause(items[parent]));
-                items[target] = item with
-                {
-                    Action = BuildAction.BuildImage,
-                    Reasons = item.Reasons.Contains(reason)
-                        ? item.Reasons
-                        : [..item.Reasons, reason]
-                };
+                continue;
             }
+
+            BuildTarget? parent = graph.Parents[target]
+                .FirstOrDefault(parent => items[parent].Decision.Action == BuildAction.BuildImage);
+            if (parent is null)
+            {
+                continue;
+            }
+
+            items[target] = item with
+            {
+                Decision = new BuildPolicyResult(
+                    BuildAction.BuildImage,
+                    new BuildReason(
+                        $"Dependency '{parent.DisplayName}' must build.",
+                        items[parent].Decision.Reason))
+            };
         }
     }
 
@@ -233,7 +233,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     {
         BuildPlanItem? invalidatedItem = sharedBuild
             .Select(target => items[target])
-            .FirstOrDefault(item => item.Action == BuildAction.BuildImage);
+            .FirstOrDefault(item => item.Decision.Action == BuildAction.BuildImage);
         if (invalidatedItem is null)
         {
             return;
@@ -242,21 +242,18 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         foreach (BuildTarget target in sharedBuild)
         {
             BuildPlanItem item = items[target];
-            if (item.Action == BuildAction.BuildImage)
+            if (item.Decision.Action == BuildAction.BuildImage)
             {
                 continue;
             }
 
             items[target] = item with
             {
-                Action = BuildAction.BuildImage,
-                Reasons =
-                [
-                    ..item.Reasons,
-                    new(
-                        $"Equivalent target '{GetName(invalidatedItem.Target)}' must build.",
-                        GetCause(invalidatedItem))
-                ]
+                Decision = new BuildPolicyResult(
+                    BuildAction.BuildImage,
+                    new BuildReason(
+                        $"Equivalent target '{invalidatedItem.Target.DisplayName}' must build.",
+                        invalidatedItem.Decision.Reason))
             };
         }
     }
@@ -267,36 +264,27 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         IReadOnlyDictionary<BuildTarget, PublishedImage> publishedImages)
     {
         foreach (BuildPlanItem childItem in items.Values
-            .Where(item => item.Action == BuildAction.BuildImage)
+            .Where(item => item.Decision.Action == BuildAction.BuildImage)
             .ToArray())
         {
             foreach (BuildTarget parent in graph.Parents[childItem.Target])
             {
                 BuildPlanItem parentItem = items[parent];
-                BuildReason reason = new(
-                    $"The image is required by '{GetName(childItem.Target)}'.",
-                    GetCause(childItem));
+                BuildPolicyResult decision = new BuildPolicyResult(
+                    BuildAction.UsePublishedImage,
+                    new BuildReason(
+                        $"The image is required by '{childItem.Target.DisplayName}'.",
+                        childItem.Decision.Reason));
 
-                if (parentItem.Action == BuildAction.NoAction)
+                if (parentItem.Decision.Action == BuildAction.NoAction)
                 {
                     if (!publishedImages.ContainsKey(parent))
                     {
                         throw new InvalidOperationException(
-                            $"Required dependency '{GetName(parent)}' has no published image.");
+                            $"Required dependency '{parent.DisplayName}' has no published image.");
                     }
 
-                    items[parent] = parentItem with
-                    {
-                        Action = BuildAction.UsePublishedImage,
-                        Reasons = [reason, ..parentItem.Reasons]
-                    };
-                }
-                else if (!parentItem.Reasons.Contains(reason))
-                {
-                    items[parent] = parentItem with
-                    {
-                        Reasons = [reason, ..parentItem.Reasons]
-                    };
+                    items[parent] = parentItem with { Decision = decision };
                 }
             }
         }
@@ -304,19 +292,18 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
 
     private static BuildPlanItem CreateItem(
         BuildTarget target,
-        BuildAction action,
-        IEnumerable<BuildReason> reasons,
+        BuildPolicyResult decision,
         PublishedImage? publishedImage)
     {
-        if ((action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage) &&
+        if ((decision.Action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage) &&
             publishedImage is null)
         {
             throw new InvalidOperationException(
-                $"Planning selected '{action}' for '{GetName(target)}' " +
+                $"Planning selected '{decision.Action}' for '{target.DisplayName}' " +
                 "without a published image.");
         }
 
-        return new(target, action, reasons.ToArray(), publishedImage);
+        return new BuildPlanItem(target, decision, publishedImage);
     }
 
     private void LogPlan(IEnumerable<BuildPlanItem> plan)
@@ -324,20 +311,10 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         foreach (BuildPlanItem item in plan)
         {
             _logger.LogInformation(
-                "Build plan for {DockerfilePath}: {Action}. {Reasons}",
-                GetName(item.Target),
-                item.Action,
-                string.Join(" ", item.Reasons.Select(FormatReason)));
+                "Build plan for {BuildTarget}: {Action}. {Reason}",
+                item.Target.DisplayName,
+                item.Decision.Action,
+                item.Decision.Reason);
         }
     }
-
-    private static BuildReason GetCause(BuildPlanItem item) => item.Reasons.Last();
-
-    private static string FormatReason(BuildReason reason) =>
-        reason.Cause is null
-            ? reason.Message
-            : $"{reason.Message} {FormatReason(reason.Cause)}";
-
-    private static string GetName(BuildTarget target) =>
-        $"{target.Repo.Name} ({target.Platform.DockerfilePathRelativeToManifest})";
 }

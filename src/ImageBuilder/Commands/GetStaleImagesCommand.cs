@@ -103,8 +103,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             BuildGraph graph = BuildGraph.CreateFiltered(manifest);
 
             IBuildPolicy policy = new CompositeBuildPolicy(
-                defaultAction: BuildAction.NoAction,
-                defaultReason: new BuildReason("All checks passed, so no work is required."),
+                defaultResult: new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("All checks passed, so no work is required.")),
+                logger: _logger,
                 policies:
                 [
                     // Rebuild when no published image metadata exists.
@@ -120,7 +122,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(graph, imageArtifactDetails, policy);
 
             return plan
-                .Where(item => item.Action != BuildAction.NoAction)
+                .Where(item => item.Decision.Action != BuildAction.NoAction)
                 .Select(item => item.Target.Platform.Model.Dockerfile)
                 .Distinct();
         }

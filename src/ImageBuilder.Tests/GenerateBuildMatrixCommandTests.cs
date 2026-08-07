@@ -300,13 +300,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     graph.Targets.Select(target =>
                             new BuildPlanItem(
                                 target,
-                                actions.GetValueOrDefault(
-                                    target.Platform.DockerfilePathRelativeToManifest,
-                                    BuildAction.BuildImage),
-                                Reasons:
-                                [
-                                    new("Test-selected action.")
-                                ],
+                                new BuildPolicyResult(
+                                    actions.GetValueOrDefault(
+                                        target.Platform.DockerfilePathRelativeToManifest,
+                                        BuildAction.BuildImage),
+                                    new BuildReason("Test-selected action.")),
                                 PublishedImage: null))
                             .ToArray()));
 

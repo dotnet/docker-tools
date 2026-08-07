@@ -54,7 +54,7 @@ public static class BuildActionExtensions
 /// </summary>
 public sealed record BuildReason(
     string Message,
-    BuildReason? Cause = null);
+    BuildReason? CausedBy = null);
 
 /// <summary>
 /// Published image-info associated with a build target.
@@ -69,6 +69,5 @@ public sealed record PublishedImage(
 
 public sealed record BuildPlanItem(
     BuildTarget Target,
-    BuildAction Action,
-    IReadOnlyList<BuildReason> Reasons,
+    BuildPolicyResult Decision,
     PublishedImage? PublishedImage);

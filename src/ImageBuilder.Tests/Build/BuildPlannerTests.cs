@@ -66,8 +66,10 @@ public class BuildPlannerTests
             graph,
             imageInfo,
             new CompositeBuildPolicy(
-                BuildAction.NoAction,
-                new("All checks passed, so no work is required."),
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("All checks passed, so no work is required.")),
+                Mock.Of<ILogger<CompositeBuildPolicy>>(),
                 new MissingPublishedImagePolicy(),
                 CreateBaseImageRule(manifest, manifestService.Object),
                 new TagSetChangedPolicy()));
@@ -77,22 +79,21 @@ public class BuildPlannerTests
         BuildPlanItem support = GetItem(plan, "support");
         BuildPlanItem leaf = GetItem(plan, "leaf");
 
-        root.Action.ShouldBe(BuildAction.BuildImage);
-        middle.Action.ShouldBe(BuildAction.BuildImage);
-        leaf.Action.ShouldBe(BuildAction.BuildImage);
-        support.Action.ShouldBe(BuildAction.UsePublishedImage);
+        root.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        middle.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        leaf.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        support.Decision.Action.ShouldBe(BuildAction.UsePublishedImage);
 
-        BuildReason leafReason = leaf.Reasons.Last(reason =>
-            reason.Message.StartsWith("Dependency", StringComparison.Ordinal));
-        BuildReason middleReason = leafReason.Cause.ShouldNotBeNull();
+        BuildReason leafReason = leaf.Decision.Reason;
+        leafReason.Message.ShouldStartWith("Dependency");
+        BuildReason middleReason = leafReason.CausedBy.ShouldNotBeNull();
         middleReason.Message.ShouldStartWith("Dependency");
-        BuildReason rootReason = middleReason.Cause.ShouldNotBeNull();
+        BuildReason rootReason = middleReason.CausedBy.ShouldNotBeNull();
         rootReason.Message.ShouldContain("changed from 'sha256:old' to 'sha256:new'");
 
-        BuildReason supportReason = support.Reasons.Single(
-            reason => reason.Message.StartsWith("The image is required", StringComparison.Ordinal));
+        BuildReason supportReason = support.Decision.Reason;
         supportReason.Message.ShouldContain("leaf/Dockerfile");
-        supportReason.Cause.ShouldBe(leafReason);
+        supportReason.CausedBy.ShouldBe(leafReason);
     }
 
     [TestMethod]
@@ -120,15 +121,17 @@ public class BuildPlannerTests
             graph,
             imageInfo,
             new CompositeBuildPolicy(
-                BuildAction.NoAction,
-                new("All checks passed, so no work is required."),
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("All checks passed, so no work is required.")),
+                Mock.Of<ILogger<CompositeBuildPolicy>>(),
                 new MissingPublishedImagePolicy(),
                 CreateBaseImageRule(manifest, manifestService.Object),
                 new TagSetChangedPolicy()));
 
         BuildPlanItem item = plan.ShouldHaveSingleItem();
-        item.Action.ShouldBe(BuildAction.PublishExistingImage);
-        BuildReason reason = item.Reasons.Last();
+        item.Decision.Action.ShouldBe(BuildAction.PublishExistingImage);
+        BuildReason reason = item.Decision.Reason;
         reason.Message.ShouldContain("[old, removed]");
         reason.Message.ShouldContain("[old, new]");
         reason.Message.ShouldContain("[old-shared, new-shared]");
@@ -160,19 +163,21 @@ public class BuildPlannerTests
             graph,
             imageInfo,
             new CompositeBuildPolicy(
-                BuildAction.NoAction,
-                new("All checks passed, so no work is required."),
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("All checks passed, so no work is required.")),
+                Mock.Of<ILogger<CompositeBuildPolicy>>(),
                 new MissingPublishedImagePolicy(),
                 CreateBaseImageRule(manifest, manifestService.Object),
                 new TagSetChangedPolicy()));
 
         BuildPlanItem first = GetItem(plan, "first");
         BuildPlanItem second = GetItem(plan, "second");
-        first.Action.ShouldBe(BuildAction.BuildImage);
-        second.Action.ShouldBe(BuildAction.BuildImage);
-        BuildReason reason = second.Reasons.Last();
+        first.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        second.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        BuildReason reason = second.Decision.Reason;
         reason.Message.ShouldContain("first");
-        reason.Cause.ShouldNotBeNull().Message.ShouldContain("changed from");
+        reason.CausedBy.ShouldNotBeNull().Message.ShouldContain("changed from");
     }
 
     [TestMethod]
@@ -203,15 +208,17 @@ public class BuildPlannerTests
             graph,
             imageInfo,
             new CompositeBuildPolicy(
-                BuildAction.NoAction,
-                new("All checks passed, so no work is required."),
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("All checks passed, so no work is required.")),
+                Mock.Of<ILogger<CompositeBuildPolicy>>(),
                 new MissingPublishedImagePolicy(),
                 CreateBaseImageRule(manifest, manifestService.Object),
                 new TagSetChangedPolicy()));
 
         BuildPlanItem child = GetItem(plan, "child");
-        child.Action.ShouldBe(BuildAction.BuildImage);
-        child.Reasons.Last().Message.ShouldStartWith("Dependency");
+        child.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        child.Decision.Reason.Message.ShouldStartWith("Dependency");
     }
 
     [TestMethod]
@@ -283,15 +290,17 @@ public class BuildPlannerTests
             graph,
             imageInfo,
             new CompositeBuildPolicy(
-                BuildAction.NoAction,
-                new("All checks passed, so no work is required."),
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("All checks passed, so no work is required.")),
+                Mock.Of<ILogger<CompositeBuildPolicy>>(),
                 new MissingPublishedImagePolicy(),
                 CreateBaseImageRule(manifest, manifestService.Object),
                 new TagSetChangedPolicy()));
 
-        GetItem(plan, "parent").Action.ShouldBe(BuildAction.UsePublishedImage);
-        GetItem(plan, "first").Action.ShouldBe(BuildAction.BuildImage);
-        GetItem(plan, "second").Action.ShouldBe(BuildAction.NoAction);
+        GetItem(plan, "parent").Decision.Action.ShouldBe(BuildAction.UsePublishedImage);
+        GetItem(plan, "first").Decision.Action.ShouldBe(BuildAction.BuildImage);
+        GetItem(plan, "second").Decision.Action.ShouldBe(BuildAction.NoAction);
     }
 
     [TestMethod]
@@ -308,13 +317,15 @@ public class BuildPlannerTests
             graph,
             imageInfo: null,
             new CompositeBuildPolicy(
-                BuildAction.NoAction,
-                new("No package changed."),
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason("No package changed.")),
+                Mock.Of<ILogger<CompositeBuildPolicy>>(),
                 new PackageVersionChangedPolicy()));
 
         BuildPlanItem item = plan.ShouldHaveSingleItem();
-        item.Action.ShouldBe(BuildAction.BuildImage);
-        item.Reasons.ShouldHaveSingleItem().Message.ShouldContain("openssl");
+        item.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        item.Decision.Reason.Message.ShouldContain("openssl");
     }
 
     [TestMethod]
@@ -329,18 +340,20 @@ public class BuildPlannerTests
         BuildGraph graph = BuildGraph.Create(manifest);
         List<string> appliedPolicies = [];
         IBuildPolicy policy = new CompositeBuildPolicy(
-            BuildAction.NoAction,
-            new("No checks selected work."),
+            new BuildPolicyResult(
+                BuildAction.NoAction,
+                new BuildReason("No checks selected work.")),
+            Mock.Of<ILogger<CompositeBuildPolicy>>(),
             new TestPolicy(
                 appliedPolicies,
                 "use",
-                new(
+                new BuildPolicyResult(
                     BuildAction.UsePublishedImage,
                     new BuildReason("Use the published image."))),
             new TestPolicy(
                 appliedPolicies,
                 "build",
-                new(
+                new BuildPolicyResult(
                     BuildAction.BuildImage,
                     new BuildReason("Build the image."))));
 
@@ -353,9 +366,8 @@ public class BuildPlannerTests
 
         appliedPolicies.ShouldBe(["use", "build"]);
         BuildPlanItem item = plan.ShouldHaveSingleItem();
-        item.Action.ShouldBe(BuildAction.BuildImage);
-        item.Reasons.Select(reason => reason.Message).ShouldBe(
-            ["Use the published image.", "Build the image."]);
+        item.Decision.Action.ShouldBe(BuildAction.BuildImage);
+        item.Decision.Reason.Message.ShouldBe("Build the image.");
     }
 
     private static BuildPlanner CreatePlanner() =>

@@ -19,19 +19,12 @@ public sealed record BuildPolicyContext(
     BuildTarget Target,
     IReadOnlyDictionary<BuildTarget, PublishedImage> PublishedImages);
 
+/// <summary>
+/// Work selected by a build policy and the reason it was selected.
+/// </summary>
 public sealed record BuildPolicyResult(
     BuildAction Action,
-    IReadOnlyList<BuildReason> Reasons)
-{
-    public BuildPolicyResult(
-        BuildAction action,
-        BuildReason reason)
-        : this(action, [reason])
-    {
-    }
-
-    public static BuildPolicyResult None { get; } = new(BuildAction.NoAction, []);
-}
+    BuildReason Reason);
 
 /// <summary>
 /// Evaluates one aspect of the work required for a build target.
@@ -48,32 +41,34 @@ public interface IBuildPolicy
 /// highest priority wins.
 /// </summary>
 public sealed class CompositeBuildPolicy(
-    BuildAction defaultAction,
-    BuildReason defaultReason,
-    params IEnumerable<IBuildPolicy> policies) : IBuildPolicy
+    BuildPolicyResult defaultResult,
+    ILogger logger,
+    params IBuildPolicy[] policies) : IBuildPolicy
 {
     public async Task<BuildPolicyResult> EvaluateAsync(
         BuildPolicyContext context,
         CancellationToken cancellationToken = default)
     {
+        BuildPolicyResult result = defaultResult;
+        foreach (IBuildPolicy policy in policies)
+        {
+            BuildPolicyResult policyResult =
+                await policy.EvaluateAsync(context, cancellationToken);
 
-        BuildPolicyResult[] results = await Task.WhenAll(
-            policies.Select(policy => policy.EvaluateAsync(context, cancellationToken)));
+            logger.LogDebug(
+                "Build policy {BuildPolicy} for {BuildTarget} returned {Action}. {Reason}",
+                policy.GetType().Name,
+                context.Target.DisplayName,
+                policyResult.Action,
+                policyResult.Reason);
 
-        BuildAction childAction = results
-            .Select(result => result.Action)
-            .DefaultIfEmpty(BuildAction.NoAction)
-            .MaxBy(action => action.GetPriority());
+            if (policyResult.Action.GetPriority() > result.Action.GetPriority())
+            {
+                result = policyResult;
+            }
+        }
 
-        BuildAction action = childAction.GetPriority() >= defaultAction.GetPriority()
-            ? childAction
-            : defaultAction;
-
-        BuildReason[] reasons = results
-            .SelectMany(result => result.Reasons)
-            .ToArray();
-
-        return new BuildPolicyResult(action, childAction == BuildAction.NoAction ? [..reasons, defaultReason] : reasons);
+        return result;
     }
 }
 
@@ -99,10 +94,12 @@ public sealed class MissingPublishedImagePolicy : IBuildPolicy
     {
         cancellationToken.ThrowIfCancellationRequested();
         BuildPolicyResult result = !context.PublishedImages.ContainsKey(context.Target)
-            ? new(
+            ? new BuildPolicyResult(
                 BuildAction.BuildImage,
                 new BuildReason("No published image metadata exists."))
-            : BuildPolicyResult.None;
+            : new BuildPolicyResult(
+                BuildAction.NoAction,
+                new BuildReason("Published image metadata exists."));
         return Task.FromResult(result);
     }
 }
@@ -116,7 +113,11 @@ public sealed class TagSetChangedPolicy : IBuildPolicy
         cancellationToken.ThrowIfCancellationRequested();
         if (!context.PublishedImages.TryGetValue(context.Target, out var publishedImage))
         {
-            return Task.FromResult(BuildPolicyResult.None);
+            return Task.FromResult(
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason(
+                        "Published image metadata is unavailable, so tags cannot be compared.")));
         }
 
         string[] expectedPlatformTags = context.Target.Platform.Tags
@@ -138,14 +139,16 @@ public sealed class TagSetChangedPolicy : IBuildPolicy
             !expectedSharedTags.AreEquivalent(publishedSharedTags);
 
         BuildPolicyResult result = tagsChanged
-            ? new(
+            ? new BuildPolicyResult(
                 BuildAction.PublishExistingImage,
                 new BuildReason(
                     $"Platform tags changed from [{string.Join(", ", publishedPlatformTags)}] " +
                     $"to [{string.Join(", ", expectedPlatformTags)}]; shared tags changed from " +
                     $"[{string.Join(", ", publishedSharedTags)}] to " +
                     $"[{string.Join(", ", expectedSharedTags)}]."))
-            : BuildPolicyResult.None;
+            : new BuildPolicyResult(
+                BuildAction.NoAction,
+                new BuildReason("Configured tags are unchanged."));
         return Task.FromResult(result);
     }
 }
@@ -164,7 +167,11 @@ public sealed class DockerfileChangedPolicy(
         cancellationToken.ThrowIfCancellationRequested();
         if (!context.PublishedImages.TryGetValue(context.Target, out var publishedImage))
         {
-            return Task.FromResult(BuildPolicyResult.None);
+            return Task.FromResult(
+                new BuildPolicyResult(
+                    BuildAction.NoAction,
+                    new BuildReason(
+                        "Published image metadata is unavailable, so the Dockerfile cannot be compared.")));
         }
 
         string currentCommitUrl = _gitService.GetDockerfileCommitUrl(
@@ -174,10 +181,10 @@ public sealed class DockerfileChangedPolicy(
             currentCommitUrl,
             StringComparison.OrdinalIgnoreCase);
         BuildPolicyResult result = matches
-            ? new(
+            ? new BuildPolicyResult(
                 BuildAction.NoAction,
                 new BuildReason($"Dockerfile is unchanged at '{currentCommitUrl}'."))
-            : new(
+            : new BuildPolicyResult(
                 BuildAction.BuildImage,
                 new BuildReason(
                     $"Dockerfile changed from '{publishedImage.Image.CommitUrl}' " +
@@ -224,13 +231,16 @@ public sealed class BaseImageChangedPolicy : IBuildPolicy
         cancellationToken.ThrowIfCancellationRequested();
         if (!context.PublishedImages.TryGetValue(context.Target, out var publishedImage))
         {
-            return BuildPolicyResult.None;
+            return new BuildPolicyResult(
+                BuildAction.NoAction,
+                new BuildReason(
+                    "Published image metadata is unavailable, so the base image cannot be compared."));
         }
 
         string? fromImage = context.Target.Platform.FinalStageFromImage;
         if (fromImage is null)
         {
-            return new(
+            return new BuildPolicyResult(
                 BuildAction.NoAction,
                 new BuildReason("The final stage has no base image."));
         }
@@ -245,16 +255,17 @@ public sealed class BaseImageChangedPolicy : IBuildPolicy
             currentValue,
             StringComparison.OrdinalIgnoreCase) == true;
 
-        return matches
-            ? new(
+        BuildPolicyResult result = matches
+            ? new BuildPolicyResult(
                 BuildAction.NoAction,
                 new BuildReason(
                     $"Base image '{publicImage}' is unchanged at '{currentValue}'."))
-            : new(
+            : new BuildPolicyResult(
                 BuildAction.BuildImage,
                 new BuildReason(
                     $"Base image '{publicImage}' changed from " +
                     $"'{Display(previousValue)}' to '{Display(currentValue)}'."));
+        return result;
     }
 
     private static string? GetInternalBaseImageDigest(

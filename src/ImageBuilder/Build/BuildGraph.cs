@@ -18,7 +18,11 @@ public sealed record BuildTarget(
     RepoInfo Repo,
     ImageInfo Image,
     PlatformInfo Platform,
-    IReadOnlyDictionary<string, string> FromImageOverrides);
+    IReadOnlyDictionary<string, string> FromImageOverrides)
+{
+    public string DisplayName =>
+        $"{Repo.Name} ({Platform.DockerfilePathRelativeToManifest})";
+}
 
 /// <summary>
 /// Dependency, shared-build, and published-image data for build targets.

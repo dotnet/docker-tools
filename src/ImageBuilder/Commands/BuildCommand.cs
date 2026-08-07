@@ -322,8 +322,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IBuildPolicy policy = Options.NoCache
                 ? new AlwaysBuildPolicy()
                 : new CompositeBuildPolicy(
-                    defaultAction: BuildAction.UsePublishedImage,
-                    defaultReason: new BuildReason("All checks passed, so this invocation will use the published image."),
+                    defaultResult: new BuildPolicyResult(
+                        BuildAction.UsePublishedImage,
+                        new BuildReason(
+                            "All checks passed, so this invocation will use the published image.")),
+                    logger: _logger,
                     policies:
                     [
                         // Rebuild when no published image metadata exists.
@@ -351,10 +354,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger.LogInformation("BUILDING IMAGES");
 
-            BuildPlanItem[] executableItems = plan.Where(item => item.Action != BuildAction.NoAction) .ToArray();
+            BuildPlanItem[] executableItems = plan
+                .Where(item => item.Decision.Action != BuildAction.NoAction)
+                .ToArray();
 
             _hasPublishedImagesToUse = executableItems.Any(
-                item => item.Action
+                item => item.Decision.Action
                     is BuildAction.UsePublishedImage
                     or BuildAction.PublishExistingImage);
 
@@ -389,18 +394,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData platformData = CreatePlatformData(image, platform);
                         imageData.Platforms.Add(platformData);
 
-                        if (plannedImage.Action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage)
+                        if (plannedImage.Decision.Action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage)
                         {
                             PublishedImage publishedImage = plannedImage.PublishedImage ??
                                 throw new InvalidOperationException(
                                     $"Build plan did not provide reusable metadata for '{platform.DockerfilePath}'.");
 
                             CopyPlatformDataFromCachedPlatform(platformData, publishedImage.Image);
-                            platformData.IsUnchanged = plannedImage.Action == BuildAction.UsePublishedImage;
+                            platformData.IsUnchanged = plannedImage.Decision.Action == BuildAction.UsePublishedImage;
 
                             await UsePublishedImageAsync(repoInfo, allTagInfos, publishedImage.Image.Digest);
                         }
-                        else if (plannedImage.Action == BuildAction.BuildImage)
+                        else if (plannedImage.Decision.Action == BuildAction.BuildImage)
                         {
                             _processedTags.AddRange(allTagInfos);
 

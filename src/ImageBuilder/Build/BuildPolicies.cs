@@ -36,6 +36,32 @@ public interface IBuildPolicy
         CancellationToken cancellationToken = default);
 }
 
+public static class CommonBuildPolicies
+{
+    public static CompositeBuildPolicy CreateForCachedImages(
+        BuildPolicyResult defaultResult,
+        ILogger logger,
+        BaseImageChangedPolicy baseImagePolicy,
+        IGitService gitService,
+        string sourceRepoUrl)
+    {
+        return new CompositeBuildPolicy(
+            defaultResult,
+            logger,
+            // Rebuild when no published image metadata exists.
+            new MissingPublishedImagePolicy(),
+
+            // Rebuild when the base image digest has changed.
+            baseImagePolicy,
+
+            // Rebuild when the Dockerfile has changed.
+            new DockerfileChangedPolicy(gitService, sourceRepoUrl),
+
+            // Republish the existing image when its configured tags have changed.
+            new TagSetChangedPolicy());
+    }
+}
+
 /// <summary>
 /// Applies every child policy and combines their results into one decision. The action with the
 /// highest priority wins.

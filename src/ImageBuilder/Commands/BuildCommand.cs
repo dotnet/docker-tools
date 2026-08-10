@@ -321,31 +321,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             IBuildPolicy policy = Options.NoCache
                 ? new AlwaysBuildPolicy()
-                : new CompositeBuildPolicy(
+                : CommonBuildPolicies.CreateForCachedImages(
                     defaultResult: new BuildPolicyResult(
                         BuildAction.UsePublishedImage,
                         new BuildReason(
                             "All checks passed, so this invocation will use the published image.")),
                     logger: _logger,
-                    policies:
-                    [
-                        // Rebuild when no published image metadata exists.
-                        new MissingPublishedImagePolicy(),
-
-                        // Rebuild when the locally available base image digest has changed.
-                        BaseImageChangedPolicy.FromLocalImages(
-                            _imageDigestCache,
-                            _imageNameResolver.Value,
-                            Options.IsDryRun),
-
-                        // Rebuild when the Dockerfile has changed.
-                        new DockerfileChangedPolicy(
-                            _gitService,
-                            sourceRepoUrl: Options.SourceRepoUrl ?? string.Empty),
-
-                        // Republish the existing image when its configured tags have changed.
-                        new TagSetChangedPolicy()
-                    ]);
+                    baseImagePolicy: BaseImageChangedPolicy.FromLocalImages(
+                        _imageDigestCache,
+                        _imageNameResolver.Value,
+                        Options.IsDryRun),
+                    gitService: _gitService,
+                    sourceRepoUrl: Options.SourceRepoUrl ?? string.Empty);
 
             return _buildPlanner.CreatePlanAsync(graph, publishedImages, policy);
         }

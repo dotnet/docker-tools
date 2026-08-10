@@ -102,6 +102,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             BuildGraph graph = BuildGraph.CreateFiltered(manifest);
 
+            // This command only reports images made stale by missing metadata or base image updates.
+            // Dockerfile and tag changes are handled by normal build planning.
             IBuildPolicy policy = new CompositeBuildPolicy(
                 defaultResult: new BuildPolicyResult(
                     BuildAction.NoAction,

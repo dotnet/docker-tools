@@ -441,31 +441,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // ...and then check which images actually need to be built.
             IBuildPolicy policy = Options.TrimCachedImages
-                ? new CompositeBuildPolicy(
+                ? CommonBuildPolicies.CreateForCachedImages(
                     defaultResult: new BuildPolicyResult(
                         BuildAction.NoAction,
                         new BuildReason("All checks passed, so no work is required.")),
                     logger: _logger,
-                    policies:
-                    [
-                        // Rebuild when no published image metadata exists.
-                        new MissingPublishedImagePolicy(),
-
-                        // Rebuild when the registry digest for the base image has changed.
-                        BaseImageChangedPolicy.FromRegistry(
-                            _imageDigestCache,
-                            _imageNameResolver.Value,
-                            Options.IsDryRun),
-
-                        // Rebuild when the Dockerfile has changed.
-                        new DockerfileChangedPolicy(
-                            _gitService,
-                            sourceRepoUrl: Options.SourceRepoUrl ?? string.Empty),
-
-                        // Republish the existing image when its configured tags have changed.
-                        new TagSetChangedPolicy()
-                    ])
-                : new AlwaysBuildPolicy("The image was selected for a build.");
+                    baseImagePolicy: BaseImageChangedPolicy.FromRegistry(
+                        _imageDigestCache,
+                        _imageNameResolver.Value,
+                        Options.IsDryRun),
+                    gitService: _gitService,
+                    sourceRepoUrl: Options.SourceRepoUrl ?? string.Empty)
+                : new AlwaysBuildPolicy();
 
             BuildPlanItem[] plan = await _buildPlanner.CreatePlanAsync(graph, imageInfo, policy);
 

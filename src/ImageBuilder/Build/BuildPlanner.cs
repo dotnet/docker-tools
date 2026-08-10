@@ -17,101 +17,90 @@ namespace Microsoft.DotNet.ImageBuilder.Build;
 /// </summary>
 public class BuildPlanner(ILogger<BuildPlanner> logger)
 {
-    private readonly ILogger<BuildPlanner> _logger =
-        logger ?? throw new ArgumentNullException(nameof(logger));
-
     public virtual async Task<BuildPlanItem[]> CreatePlanAsync(
         BuildGraph graph,
         ImageArtifactDetails? imageInfo,
         IBuildPolicy policy,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(graph);
-        ArgumentNullException.ThrowIfNull(policy);
-
-        Dictionary<BuildTarget, PublishedImage> publishedImages =
-            CreatePublishedImageIndex(graph, imageInfo);
-
-        Dictionary<BuildTarget, BuildPlanItem> items = [];
+        Dictionary<BuildTarget, PublishedImage> publishedImages = CreatePublishedImageIndex(graph, imageInfo);
+        Dictionary<BuildTarget, BuildPlanItem> planItems = [];
 
         // Shared builds act as one node. Evaluate and apply each node from roots to leaves so
         // every parent decision is final before its children are considered.
-        foreach (IReadOnlyList<BuildTarget> sharedBuild in
-            GetSharedBuildsInDependencyOrder(graph))
+        foreach (var sharedBuildTargets in GetSharedBuildsInDependencyOrder(graph))
         {
-            foreach (BuildTarget target in sharedBuild)
+            foreach (BuildTarget target in sharedBuildTargets)
             {
-                items.Add(
-                    target,
-                    await EvaluateAsync(
-                        graph,
-                        target,
-                        publishedImages,
-                        policy,
-                        cancellationToken));
+                var context = new BuildPolicyContext(graph, target, publishedImages);
+                BuildPolicyResult decision = await policy.EvaluateAsync(context, cancellationToken);
+
+                publishedImages.TryGetValue(target, out PublishedImage? publishedImage);
+                planItems.Add(target, CreateItem(target, decision, publishedImage));
             }
 
-            PropagateBuildsFromParents(graph, sharedBuild, items);
-            UnifySharedBuildActions(sharedBuild, items);
+            PropagateBuildsFromParents(graph, sharedBuildTargets, planItems);
+            UnifySharedBuildActions(sharedBuildTargets, planItems);
         }
 
         // Built images need their direct internal parents available locally. An unchanged parent
         // can use its published image; it does not need its own parents because it is not rebuilt.
-        UsePublishedParentsForBuilds(graph, items, publishedImages);
+        UsePublishedParentsForBuilds(graph, planItems, publishedImages);
 
-        BuildPlanItem[] plan = graph.Targets
-            .Select(target => items[target])
-            .ToArray();
-
+        BuildPlanItem[] plan = graph.Targets.Select(target => planItems[target]).ToArray();
         LogPlan(plan);
         return plan;
     }
 
+    /// <summary>
+    /// Finds previously published image data for each build target.
+    /// </summary>
     private static Dictionary<BuildTarget, PublishedImage> CreatePublishedImageIndex(
         BuildGraph graph,
         ImageArtifactDetails? imageInfo)
     {
-        Dictionary<PlatformInfo, BuildTarget> targetsByPlatform = graph.Targets.ToDictionary(
-            target => target.Platform);
-        Dictionary<BuildTarget, PublishedImage> publishedImages = imageInfo?.Repos
+        Dictionary<PlatformInfo, BuildTarget> targetsByPlatform =
+            graph.Targets.ToDictionary(target => target.Platform);
+
+        Dictionary<BuildTarget, PublishedImage> publishedImages =
+            imageInfo?.Repos
+                // Collect (image, platform) pairs for each platform
                 .SelectMany(repo => repo.Images)
-                .SelectMany(image => image.Platforms.Select(platform =>
-                    (
-                        Platform: platform,
-                        SharedTags: image.Manifest?.SharedTags?.ToArray() ?? [])))
+                .SelectMany(
+                    image => image.Platforms.Select(
+                        platform => (Platform: platform, SharedTags: image.Manifest?.SharedTags?.ToArray() ?? [])
+                    )
+                )
                 .Where(item =>
-                    item.Platform.PlatformInfo is not null &&
-                    targetsByPlatform.ContainsKey(item.Platform.PlatformInfo))
-                .GroupBy(item => item.Platform.PlatformInfo!)
+                    // PlatformInfo is only set when a published platform matches one in the current manifest.
+                    item.Platform.PlatformInfo is not null
+                    // Only select platforms that are part of the current build graph.
+                    && targetsByPlatform.ContainsKey(item.Platform.PlatformInfo)
+                )
                 .ToDictionary(
-                    group => targetsByPlatform[group.Key],
-                    group =>
-                    {
-                        var item = group.First();
-                        BuildTarget target = targetsByPlatform[group.Key];
-                        return new PublishedImage(
-                            target,
-                            item.Platform,
-                            item.SharedTags);
-                    })
+                    // SAFETY: PlatformInfo is checked in the Where clause above.
+                    item => targetsByPlatform[item.Platform.PlatformInfo!],
+                    item => new PublishedImage(
+                        targetsByPlatform[item.Platform.PlatformInfo!],
+                        item.Platform,
+                        item.SharedTags)
+                )
             ?? [];
 
         // Equivalent targets can reuse one another's published image when only one target has
         // a direct image-info entry.
-        foreach (IReadOnlyList<BuildTarget> sharedBuild in
-            graph.SharedBuildTargets.Values.Distinct())
+        foreach (IReadOnlyList<BuildTarget> sharedBuild in graph.SharedBuildTargets.Values.Distinct())
         {
             BuildTarget? source = sharedBuild.FirstOrDefault(publishedImages.ContainsKey);
+
             if (source is null)
-            {
                 continue;
-            }
 
             foreach (BuildTarget target in sharedBuild)
             {
                 publishedImages.TryAdd(
-                    target,
-                    new PublishedImage(
+                    key: target,
+                    value: new PublishedImage(
                         source,
                         publishedImages[source].Image,
                         publishedImages[source].SharedTags));
@@ -121,39 +110,17 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         return publishedImages;
     }
 
-    private static async Task<BuildPlanItem> EvaluateAsync(
-        BuildGraph graph,
-        BuildTarget target,
-        IReadOnlyDictionary<BuildTarget, PublishedImage> publishedImages,
-        IBuildPolicy policy,
-        CancellationToken cancellationToken)
+    private static List<IReadOnlyList<BuildTarget>> GetSharedBuildsInDependencyOrder(BuildGraph graph)
     {
-        bool hasPublishedImage = publishedImages.TryGetValue(
-            target,
-            out PublishedImage? publishedImage);
-
-        BuildPolicyResult decision = await policy.EvaluateAsync(
-            new BuildPolicyContext(graph, target, publishedImages),
-            cancellationToken);
-
-        return CreateItem(
-            target,
-            decision,
-            hasPublishedImage ? publishedImage : null);
-    }
-
-    private static List<IReadOnlyList<BuildTarget>>
-        GetSharedBuildsInDependencyOrder(BuildGraph graph)
-    {
-        IReadOnlyList<BuildTarget>[] sharedBuilds = graph.SharedBuildTargets
-            .Values
+        IReadOnlyList<BuildTarget>[] sharedBuilds = graph.SharedBuildTargets.Values
             .DistinctBy(targets => targets[0])
             .ToArray();
-        Dictionary<BuildTarget, IReadOnlyList<BuildTarget>> sharedBuildByTarget =
+
+        Dictionary<BuildTarget, IReadOnlyList<BuildTarget>> sharedBuildsByTarget =
             sharedBuilds
-                .SelectMany(sharedBuild => sharedBuild.Select(
-                    target => (Target: target, SharedBuild: sharedBuild)))
+                .SelectMany(sharedBuild => sharedBuild.Select(target => (Target: target, SharedBuild: sharedBuild)))
                 .ToDictionary(item => item.Target, item => item.SharedBuild);
+
         List<IReadOnlyList<BuildTarget>> ordered = [];
         HashSet<BuildTarget> visiting = [];
         HashSet<BuildTarget> visited = [];
@@ -161,26 +128,20 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         void Visit(IReadOnlyList<BuildTarget> sharedBuild)
         {
             BuildTarget key = sharedBuild[0];
+
             if (visited.Contains(key))
-            {
                 return;
-            }
 
             if (!visiting.Add(key))
-            {
-                throw new InvalidOperationException(
-                    $"Build dependency cycle detected at '{key.DisplayName}'.");
-            }
+                throw new InvalidOperationException($"Build dependency cycle detected at '{key.DisplayName}'.");
 
-            foreach (BuildTarget parent in sharedBuild
-                .SelectMany(target => graph.Parents[target])
-                .Distinct())
+            var parents = sharedBuild.SelectMany(target => graph.Parents[target]).Distinct();
+
+            foreach (BuildTarget parent in parents)
             {
-                IReadOnlyList<BuildTarget> parentBuild = sharedBuildByTarget[parent];
+                IReadOnlyList<BuildTarget> parentBuild = sharedBuildsByTarget[parent];
                 if (parentBuild[0] != key)
-                {
                     Visit(parentBuild);
-                }
             }
 
             visiting.Remove(key);
@@ -199,22 +160,20 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     private static void PropagateBuildsFromParents(
         BuildGraph graph,
         IEnumerable<BuildTarget> sharedBuild,
-        IDictionary<BuildTarget, BuildPlanItem> items)
+        Dictionary<BuildTarget, BuildPlanItem> items)
     {
         foreach (BuildTarget target in sharedBuild)
         {
             BuildPlanItem item = items[target];
+
             if (item.Decision.Action == BuildAction.BuildImage)
-            {
                 continue;
-            }
 
             BuildTarget? parent = graph.Parents[target]
                 .FirstOrDefault(parent => items[parent].Decision.Action == BuildAction.BuildImage);
+
             if (parent is null)
-            {
                 continue;
-            }
 
             items[target] = item with
             {
@@ -229,23 +188,21 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
 
     private static void UnifySharedBuildActions(
         IEnumerable<BuildTarget> sharedBuild,
-        IDictionary<BuildTarget, BuildPlanItem> items)
+        Dictionary<BuildTarget, BuildPlanItem> items)
     {
         BuildPlanItem? invalidatedItem = sharedBuild
             .Select(target => items[target])
             .FirstOrDefault(item => item.Decision.Action == BuildAction.BuildImage);
+
         if (invalidatedItem is null)
-        {
             return;
-        }
 
         foreach (BuildTarget target in sharedBuild)
         {
             BuildPlanItem item = items[target];
+
             if (item.Decision.Action == BuildAction.BuildImage)
-            {
                 continue;
-            }
 
             items[target] = item with
             {
@@ -260,31 +217,33 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
 
     private static void UsePublishedParentsForBuilds(
         BuildGraph graph,
-        IDictionary<BuildTarget, BuildPlanItem> items,
-        IReadOnlyDictionary<BuildTarget, PublishedImage> publishedImages)
+        Dictionary<BuildTarget, BuildPlanItem> items,
+        Dictionary<BuildTarget, PublishedImage> publishedImages)
     {
-        foreach (BuildPlanItem childItem in items.Values
+        var childrenToBuild = items.Values
             .Where(item => item.Decision.Action == BuildAction.BuildImage)
-            .ToArray())
+            .ToArray();
+
+        foreach (BuildPlanItem childItem in childrenToBuild)
         {
             foreach (BuildTarget parent in graph.Parents[childItem.Target])
             {
                 BuildPlanItem parentItem = items[parent];
-                BuildPolicyResult decision = new BuildPolicyResult(
-                    BuildAction.UsePublishedImage,
-                    new BuildReason(
-                        $"The image is required by '{childItem.Target.DisplayName}'.",
-                        childItem.Decision.Reason));
 
                 if (parentItem.Decision.Action == BuildAction.NoAction)
                 {
                     if (!publishedImages.ContainsKey(parent))
-                    {
                         throw new InvalidOperationException(
                             $"Required dependency '{parent.DisplayName}' has no published image.");
-                    }
 
-                    items[parent] = parentItem with { Decision = decision };
+                    items[parent] = parentItem with
+                    {
+                        Decision = new BuildPolicyResult(
+                            Action: BuildAction.UsePublishedImage,
+                            Reason: new BuildReason(
+                                $"The image is required by '{childItem.Target.DisplayName}'.",
+                                childItem.Decision.Reason))
+                    };
                 }
             }
         }
@@ -295,8 +254,8 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
         BuildPolicyResult decision,
         PublishedImage? publishedImage)
     {
-        if ((decision.Action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage) &&
-            publishedImage is null)
+        if ((decision.Action is BuildAction.UsePublishedImage or BuildAction.PublishExistingImage)
+            && publishedImage is null)
         {
             throw new InvalidOperationException(
                 $"Planning selected '{decision.Action}' for '{target.DisplayName}' " +
@@ -310,7 +269,7 @@ public class BuildPlanner(ILogger<BuildPlanner> logger)
     {
         foreach (BuildPlanItem item in plan)
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Build plan for {BuildTarget}: {Action}. {Reason}",
                 item.Target.DisplayName,
                 item.Decision.Action,

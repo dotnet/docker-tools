@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Select(item => item.ImageArtifactDetails)
                     .Where(details => details != targetImageArtifactDetails))
             {
-                ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);
+                srcImageArtifactDetails.MergeInto(targetImageArtifactDetails, options);
             }
 
             // Apply CommitUrl override to updated images

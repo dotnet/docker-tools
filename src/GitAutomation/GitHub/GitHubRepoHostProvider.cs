@@ -9,8 +9,7 @@ namespace Microsoft.DotNet.GitAutomation.GitHub;
 internal sealed class GitHubRepoHostProvider(
     IGitHubAccessProvider accessProvider,
     ILoggerFactory loggerFactory,
-    Git git)
-        : IRepoHostProvider
+    Git git) : IRepoHostProvider<GitHubRepo>
 {
     public async ValueTask<IRepoHost> OpenAsync(
         GitHubRepo targetRepo,

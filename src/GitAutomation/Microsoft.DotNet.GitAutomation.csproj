@@ -18,7 +18,7 @@
   <PropertyGroup Label="Packaging Settings">
     <IsPackable>true</IsPackable>
     <MajorVersion>0</MajorVersion>
-    <MinorVersion>2</MinorVersion>
+    <MinorVersion>3</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <Description>Declarative git automation library.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>

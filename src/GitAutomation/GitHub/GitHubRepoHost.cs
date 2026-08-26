@@ -12,27 +12,47 @@ internal sealed class GitHubRepoHost(
     GitHubRepo sourceRepo,
     GitHubAccess access,
     ILoggerFactory loggerFactory,
-    Git git
-) : IRepoHost
+    Git git) : IRepoHost
 {
     private readonly ILogger<GitHubRepoHost> _logger = loggerFactory.CreateLogger<GitHubRepoHost>();
 
     public AutomationIdentity Identity => access.Identity;
 
-    public async Task<string> GetTokenAsync() => (await access.Credentials.GetCredentials()).Password;
+    public async Task<GitWorkspace> CloneAsync(
+        RepositoryRole repository,
+        string branch,
+        CancellationToken cancellationToken)
+    {
+        GitHubRepo repo = GetRepository(repository);
+        Uri cloneUrl = repo.GetCloneUrl();
+        string token = (await access.Credentials.GetCredentials()).Password;
+        string authorization = GitHttpAuthentication.CreateBasicAuthorization("x-access-token", token);
+
+        _logger.LogInformation("Cloning {Url} branch '{Branch}'.", cloneUrl, branch);
+
+        return await GitWorkspace.CloneAsync(
+            git,
+            _logger,
+            cloneUrl,
+            secret: authorization,
+            authenticationArguments: GitHttpAuthentication.GetArguments(cloneUrl),
+            authenticationEnvironmentVariables: GitHttpAuthentication.GetEnvironmentVariables(authorization),
+            branch,
+            Identity.AuthorName,
+            Identity.AuthorEmail,
+            cancellationToken);
+    }
 
     public async Task<ExistingPullRequest?> GetPullRequest(string key, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var query = new PullRequestRequest
-        {
-            Head = sourceRepo.GetHeadRef(key),
-            State = ItemStateFilter.Open,
-        };
+        var query = new PullRequestRequest { Head = sourceRepo.GetHeadRef(key), State = ItemStateFilter.Open };
 
-        IReadOnlyList<PullRequest> pullRequests =
-            await access.Client.PullRequest.GetAllForRepository(targetRepo.Owner, targetRepo.Name, query);
+        IReadOnlyList<PullRequest> pullRequests = await access.Client.PullRequest.GetAllForRepository(
+            targetRepo.Owner,
+            targetRepo.Name,
+            query);
 
         if (pullRequests.Count == 0)
         {
@@ -48,8 +68,8 @@ internal sealed class GitHubRepoHost(
         if (pullRequests.Count > 1)
         {
             throw new InvalidOperationException(
-                $"Expected at most one open pull request with head '{sourceRepo.GetHeadRef(key)}' " +
-                $"in {targetRepo.Owner}/{targetRepo.Name}, but found {pullRequests.Count}.");
+                $"Expected at most one open pull request with head '{sourceRepo.GetHeadRef(key)}' "
+                    + $"in {targetRepo.Owner}/{targetRepo.Name}, but found {pullRequests.Count}.");
         }
 
         PullRequest pullRequest = pullRequests[0];
@@ -57,8 +77,10 @@ internal sealed class GitHubRepoHost(
         Commit headCommit = await access.Client.Git.Commit.Get(sourceRepo.Owner, sourceRepo.Name, pullRequest.Head.Sha);
 
         cancellationToken.ThrowIfCancellationRequested();
-        IReadOnlyList<PullRequestCommit> pullRequestCommits =
-            await access.Client.PullRequest.Commits(targetRepo.Owner, targetRepo.Name, pullRequest.Number);
+        IReadOnlyList<PullRequestCommit> pullRequestCommits = await access.Client.PullRequest.Commits(
+            targetRepo.Owner,
+            targetRepo.Name,
+            pullRequest.Number);
 
         IReadOnlyList<CommitInfo> commits = pullRequestCommits
             .Select(commit => new CommitInfo(commit.Sha, commit.Commit.Author.Name, commit.Commit.Author.Email))
@@ -77,15 +99,12 @@ internal sealed class GitHubRepoHost(
             pullRequest.Base.Ref,
             headCommit.Tree.Sha);
 
-        return new ExistingPullRequest(
-            pullRequestState,
-            pullRequest.Number,
-            new Uri(pullRequest.HtmlUrl),
-            commits
-        );
+        return new ExistingPullRequest(pullRequestState, pullRequest.Number, new Uri(pullRequest.HtmlUrl), commits);
     }
 
-    public async Task<IReadOnlyList<IOperationResult>> ExecuteAsync(IEnumerable<IOperation> operations, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<IOperationResult>> ExecuteAsync(
+        IEnumerable<IOperation> operations,
+        CancellationToken cancellationToken)
     {
         List<IOperationResult> results = [];
 
@@ -111,13 +130,12 @@ internal sealed class GitHubRepoHost(
 
     private async Task<CommitsPushed> PushAsync(PushCommitsOperation operation, CancellationToken cancellationToken)
     {
-        string token = await GetTokenAsync();
-        string authorization =
-            GitHttpAuthentication.CreateBasicAuthorization("x-access-token", token);
-        string[] authenticationArguments = GitHttpAuthentication.GetArguments();
+        string token = (await access.Credentials.GetCredentials()).Password;
+        string authorization = GitHttpAuthentication.CreateBasicAuthorization("x-access-token", token);
         IReadOnlyDictionary<string, string> authenticationEnvironmentVariables =
             GitHttpAuthentication.GetEnvironmentVariables(authorization);
-        string sourceUrl = sourceRepo.GetCloneUrl().AbsoluteUri;
+        Uri sourceUrl = sourceRepo.GetCloneUrl();
+        string[] authenticationArguments = GitHttpAuthentication.GetArguments(sourceUrl);
         string branch = operation.SourceBranch;
         string dir = operation.WorkspaceDirectory;
         string remoteRef = $"refs/heads/{branch}";
@@ -127,7 +145,7 @@ internal sealed class GitHubRepoHost(
             authenticationEnvironmentVariables,
             dir,
             cancellationToken,
-            [.. authenticationArguments, "ls-remote", "--heads", sourceUrl, remoteRef]);
+            [.. authenticationArguments, "ls-remote", "--heads", sourceUrl.AbsoluteUri, remoteRef]);
         string? existingLine = lsRemote
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
             .FirstOrDefault(line => line.EndsWith($"\t{remoteRef}", StringComparison.Ordinal));
@@ -137,29 +155,33 @@ internal sealed class GitHubRepoHost(
 
         bool forcePush = operation.ForcePush;
         string[] pushArgs = forcePush
-            ? [.. authenticationArguments, "push", "--force", sourceUrl, $"HEAD:{remoteRef}"]
-            : [.. authenticationArguments, "push", sourceUrl, $"HEAD:{remoteRef}"];
+            ? [.. authenticationArguments, "push", "--force", sourceUrl.AbsoluteUri, $"HEAD:{remoteRef}"]
+            : [.. authenticationArguments, "push", sourceUrl.AbsoluteUri, $"HEAD:{remoteRef}"];
 
         _logger.LogInformation(
             "Pushing commit {ToSha} to branch '{Branch}' in {Owner}/{Name}{Force}.",
-            toSha, branch, sourceRepo.Owner, sourceRepo.Name, forcePush ? " (force)" : string.Empty);
+            toSha,
+            branch,
+            sourceRepo.Owner,
+            sourceRepo.Name,
+            forcePush ? " (force)" : string.Empty);
 
-        await git.RunAsync(
-            authorization,
-            authenticationEnvironmentVariables,
-            dir,
-            cancellationToken,
-            pushArgs);
+        await git.RunAsync(authorization, authenticationEnvironmentVariables, dir, cancellationToken, pushArgs);
 
         Uri commitUrl = sourceRepo.GetCommitUrl(toSha);
         _logger.LogInformation(
             "Pushed branch '{Branch}' from {FromSha} to {ToSha}: {Url}",
-            branch, fromSha.Length == 0 ? "(new branch)" : fromSha, toSha, commitUrl);
+            branch,
+            fromSha.Length == 0 ? "(new branch)" : fromSha,
+            toSha,
+            commitUrl);
 
         return new CommitsPushed(branch, fromSha, toSha, commitUrl);
     }
 
-    private async Task<PullRequestCreated> CreatePullRequestAsync(CreatePullRequestOperation operation, CancellationToken cancellationToken)
+    private async Task<PullRequestCreated> CreatePullRequestAsync(
+        CreatePullRequestOperation operation,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var head = sourceRepo.GetHeadRef(operation.SourceBranch);
@@ -182,7 +204,9 @@ internal sealed class GitHubRepoHost(
         return new PullRequestCreated(created.Number, new Uri(created.HtmlUrl));
     }
 
-    private async Task<TitleUpdated> UpdateTitleAsync(UpdateTitleOperation operation, CancellationToken cancellationToken)
+    private async Task<TitleUpdated> UpdateTitleAsync(
+        UpdateTitleOperation operation,
+        CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Updating title of pull request #{Number} to '{Title}'.",
@@ -203,7 +227,9 @@ internal sealed class GitHubRepoHost(
         return new BodyUpdated(operation.Number, operation.Body);
     }
 
-    private async Task<BaseBranchUpdated> UpdateBaseBranchAsync(UpdateBaseBranchOperation operation, CancellationToken cancellationToken)
+    private async Task<BaseBranchUpdated> UpdateBaseBranchAsync(
+        UpdateBaseBranchOperation operation,
+        CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Updating base branch of pull request #{Number} to '{TargetBranch}'.",
@@ -216,10 +242,28 @@ internal sealed class GitHubRepoHost(
         return new BaseBranchUpdated(operation.Number, operation.TargetBranch);
     }
 
-    private async Task UpdatePullRequestAsync(int number, CancellationToken cancellationToken, string? title = null, string? body = null, string? baseBranch = null)
+    private async Task UpdatePullRequestAsync(
+        int number,
+        CancellationToken cancellationToken,
+        string? title = null,
+        string? body = null,
+        string? baseBranch = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var update = new PullRequestUpdate { Title = title, Body = body, Base = baseBranch };
+        var update = new PullRequestUpdate
+        {
+            Title = title,
+            Body = body,
+            Base = baseBranch,
+        };
         await access.Client.PullRequest.Update(targetRepo.Owner, targetRepo.Name, number, update);
     }
+
+    private GitHubRepo GetRepository(RepositoryRole repository) =>
+        repository switch
+        {
+            RepositoryRole.Target => targetRepo,
+            RepositoryRole.Source => sourceRepo,
+            _ => throw new ArgumentOutOfRangeException(nameof(repository)),
+        };
 }

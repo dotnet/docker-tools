@@ -30,7 +30,8 @@ ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Updater");
 CancellationToken cancellationToken = GetCancellationToken();
 
 IGitHubAccessProvider accessProvider = await GetAccessProviderAsync(processRunner, logger, cancellationToken);
-PullRequestManager pullRequestManager = new(accessProvider, loggerFactory);
+PullRequestManager<GitHubRepo> pullRequestManager =
+    PullRequestAutomation.ForGitHub(accessProvider, loggerFactory);
 
 // Pull image builder reference
 await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", imageBuilderRef], cancellationToken);

@@ -10,15 +10,16 @@ internal static class GitHttpAuthentication
 {
     public const string EnvironmentVariable = "GIT_AUTOMATION_AUTHORIZATION";
 
-    public static string[] GetArguments() =>
-        [$"--config-env=http.extraHeader={EnvironmentVariable}"];
+    public static string[] GetArguments(Uri repositoryUrl)
+    {
+        ArgumentNullException.ThrowIfNull(repositoryUrl);
 
-    public static IReadOnlyDictionary<string, string> GetEnvironmentVariables(
-        string authorization) =>
-        new Dictionary<string, string>
-        {
-            [EnvironmentVariable] = $"AUTHORIZATION: {authorization}",
-        };
+        string authority = repositoryUrl.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+        return [$"--config-env=http.{authority}/.extraHeader={EnvironmentVariable}"];
+    }
+
+    public static IReadOnlyDictionary<string, string> GetEnvironmentVariables(string authorization) =>
+        new Dictionary<string, string> { [EnvironmentVariable] = $"AUTHORIZATION: {authorization}" };
 
     public static string CreateBasicAuthorization(string username, string password) =>
         $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"))}";

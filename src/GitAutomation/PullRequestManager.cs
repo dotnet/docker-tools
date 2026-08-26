@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.DotNet.GitAutomation;
 
@@ -13,70 +11,25 @@ namespace Microsoft.DotNet.GitAutomation;
 /// pull request is built from, apply the caller's changes, commit, then plan and
 /// execute the operations needed to reconcile the pull request.
 /// </summary>
-public sealed class PullRequestManager
+/// <typeparam name="TRepository">The repository identifier used by the configured host.</typeparam>
+public sealed class PullRequestManager<TRepository>
+    where TRepository : class
 {
-    private readonly IRepoHostProvider _repoHostProvider;
+    private readonly IRepoHostProvider<TRepository> _repoHostProvider;
     private readonly Git _git;
     private readonly ILogger _gitLogger;
-    private readonly ILogger<PullRequestManager> _logger;
+    private readonly ILogger<PullRequestManager<TRepository>> _logger;
 
-    /// <summary>
-    /// Creates a manager with caller-provided services.
-    /// </summary>
-    /// <param name="accessProvider">Provides credentials and identity for GitHub operations.</param>
-    /// <param name="processRunner">Runs the git processes used during reconciliation.</param>
-    /// <param name="loggerFactory">Creates the loggers used to trace the reconciliation.</param>
-    public PullRequestManager(
-        IGitHubAccessProvider accessProvider,
-        IProcessRunner processRunner,
-        ILoggerFactory loggerFactory)
+    internal PullRequestManager(IRepoHostProvider<TRepository> repoHostProvider, Git git, ILoggerFactory loggerFactory)
     {
-        ArgumentNullException.ThrowIfNull(accessProvider);
-        ArgumentNullException.ThrowIfNull(processRunner);
+        ArgumentNullException.ThrowIfNull(repoHostProvider);
+        ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(loggerFactory);
 
-        _logger = loggerFactory.CreateLogger<PullRequestManager>();
+        _logger = loggerFactory.CreateLogger<PullRequestManager<TRepository>>();
         _gitLogger = loggerFactory.CreateLogger(nameof(Git));
-        _git = new Git(processRunner, _gitLogger);
-        _repoHostProvider = new GitHubRepoHostProvider(accessProvider, loggerFactory, _git);
-    }
-
-    /// <summary>
-    /// Creates a manager with a caller-provided repository access provider and the default
-    /// <see cref="ProcessRunner"/>.
-    /// </summary>
-    /// <param name="accessProvider">Provides credentials and identity for GitHub operations.</param>
-    /// <param name="loggerFactory">
-    /// Creates the loggers used to trace the reconciliation. Omit (or pass
-    /// <see langword="null"/>) to disable logging.
-    /// </param>
-    public PullRequestManager(
-        IGitHubAccessProvider accessProvider,
-        ILoggerFactory? loggerFactory = null)
-        : this(
-            accessProvider,
-            CreateDefaultProcessRunner(loggerFactory),
-            loggerFactory ?? NullLoggerFactory.Instance)
-    {
-    }
-
-    /// <summary>
-    /// Creates a manager with a fixed token and the default <see cref="ProcessRunner"/>.
-    /// </summary>
-    /// <param name="token">An access token with permission to push and open pull requests.</param>
-    /// <param name="identity">The git identity used for the automation's commits.</param>
-    /// <param name="loggerFactory">
-    /// Creates the loggers used to trace the reconciliation. Omit (or pass
-    /// <see langword="null"/>) to disable logging.
-    /// </param>
-    public PullRequestManager(
-        string token,
-        AutomationIdentity identity,
-        ILoggerFactory? loggerFactory = null)
-        : this(
-            new StaticGitHubAccessProvider(token, identity),
-            loggerFactory)
-    {
+        _git = git;
+        _repoHostProvider = repoHostProvider;
     }
 
     /// <summary>
@@ -94,8 +47,8 @@ public sealed class PullRequestManager
     /// <param name="cancellationToken">A token that cancels the reconciliation.</param>
     public async Task<PullRequestResult> CreateOrUpdateAsync(
         PullRequestDefinition definition,
-        GitHubRepo upstream,
-        GitHubRepo? fork = null,
+        TRepository upstream,
+        TRepository? fork = default,
         PullRequestUpdateStrategy updateStrategy = PullRequestUpdateStrategy.Append,
         ForeignCommitPolicy onForeignCommits = ForeignCommitPolicy.Proceed,
         CancellationToken cancellationToken = default)
@@ -134,32 +87,19 @@ public sealed class PullRequestManager
         // target branch: there is nothing to stack on (no pull request), or Replace will
         // overwrite the branch entirely with a force-push.
         bool appendToExistingPullRequest = existing is not null && updateStrategy == PullRequestUpdateStrategy.Append;
-        GitHubRepo pullRequestSourceRepo = fork ?? upstream;
-        GitHubRepo cloneRepo = appendToExistingPullRequest ? pullRequestSourceRepo : upstream;
+        RepositoryRole cloneRepository = appendToExistingPullRequest ? RepositoryRole.Source : RepositoryRole.Target;
         string cloneBranch = appendToExistingPullRequest ? definition.Key : definition.TargetBranch;
-        string token = await host.GetTokenAsync();
-        string authorization =
-            GitHttpAuthentication.CreateBasicAuthorization("x-access-token", token);
 
-        _logger.LogInformation("Cloning {Url} branch '{Branch}'.", cloneRepo.GetCloneUrl(), cloneBranch);
-
-        using GitWorkspace workspace = await GitWorkspace.CloneAsync(
-            _git,
-            _gitLogger,
-            cloneRepo.GetCloneUrl(),
-            secret: authorization,
-            authenticationArguments: GitHttpAuthentication.GetArguments(),
-            authenticationEnvironmentVariables:
-                GitHttpAuthentication.GetEnvironmentVariables(authorization),
-            cloneBranch,
-            identity.AuthorName,
-            identity.AuthorEmail,
-            cancellationToken);
+        using GitWorkspace workspace = await host.CloneAsync(cloneRepository, cloneBranch, cancellationToken);
 
         GitContext gitContext = new(workspace.WorkingDirectory, _git, _gitLogger);
 
         string clonedCommit = await _git.RunAsync(
-            secret: null, workspace.WorkingDirectory, cancellationToken, "rev-parse", "HEAD");
+            secret: null,
+            workspace.WorkingDirectory,
+            cancellationToken,
+            "rev-parse",
+            "HEAD");
 
         _logger.LogInformation(
             "Cloned branch '{Branch}' at commit {Commit} into {Directory}.",
@@ -197,15 +137,16 @@ public sealed class PullRequestManager
 
         TargetBranchState targetBranch = new(targetBranchTreeHash);
 
-        IOperation[] operations = Planner.Plan(
-            workspace.WorkingDirectory,
-            identity,
-            desired,
-            targetBranch,
-            existing,
-            updateStrategy,
-            onForeignCommits
-        ).ToArray();
+        IOperation[] operations = Planner
+            .Plan(
+                workspace.WorkingDirectory,
+                identity,
+                desired,
+                targetBranch,
+                existing,
+                updateStrategy,
+                onForeignCommits)
+            .ToArray();
 
         if (operations.Length == 0)
         {
@@ -233,11 +174,5 @@ public sealed class PullRequestManager
         // alongside the existing pull request — null when none exists.
         PullRequestAction action = results.Count > 0 ? PullRequestAction.Updated : PullRequestAction.NoChange;
         return new PullRequestResult(action, existing?.Url);
-    }
-
-    private static IProcessRunner CreateDefaultProcessRunner(ILoggerFactory? loggerFactory)
-    {
-        ILoggerFactory effectiveLoggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-        return new ProcessRunner(effectiveLoggerFactory.CreateLogger<ProcessRunner>());
     }
 }

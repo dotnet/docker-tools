@@ -10,7 +10,7 @@ similar pull requests or issues, like dependency or version updates.
 
 | Feature | GitHub | Azure DevOps |
 | ------- | ------ | ------------ |
-| Pull requests | ✅ | - |
+| Pull requests | ✅ | ✅ |
 | Issues | - | - |
 | Groups of issues | - | - |
 
@@ -26,7 +26,7 @@ using Microsoft.DotNet.GitAutomation;
 using Microsoft.DotNet.GitAutomation.GitHub;
 
 // Instantiate the pull request manager.
-var pullRequestManager = new PullRequestManager(
+PullRequestManager<GitHubRepo> pullRequestManager = PullRequestAutomation.ForGitHub(
     token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "",
     identity: new AutomationIdentity("bot", "bot@example.com"),
     // Microsoft.Extensions.Logging support:
@@ -88,10 +88,12 @@ resulting `PullRequestManager` can be injected into application services:
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
 
-services.AddPullRequestAutomation(
+services.AddGitHubPullRequestAutomation(
     identity: new AutomationIdentity("bot", "bot@example.com"),
     token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "");
 ```
+
+Inject `PullRequestManager<GitHubRepo>` into application services.
 
 For more control, register each dependency directly:
 
@@ -100,10 +102,10 @@ services.AddLogging(builder => builder.AddSimpleConsole());
 services.AddSingleton<IProcessRunner, CustomProcessRunner>();
 
 var identity = new AutomationIdentity("bot", "bot@example.com");
-var accessProvider = new StaticGitHubAccessProvider(yourTokenHere, identity)
+var accessProvider = new StaticGitHubAccessProvider(yourTokenHere, identity);
 services.AddSingleton<IGitHubAccessProvider>(accessProvider);
 
-services.AddSingleton<PullRequestManager>();
+services.AddGitHubPullRequestAutomation();
 ```
 
 `IGitHubAccessProvider` is queried before each operation, so implementations
@@ -132,5 +134,49 @@ var secret = new Uri("https://your-azure-key-vault.vault.azure.net/keys/github-a
 var credential = new AzureCliCredential();
 var cryptographyClient = new CryptographyClient(secret, credential);
 var accessProvider = new GitHubAppAccessProvider(yourAppClientId, cryptographyClient);
-var pullRequestManager = new PullRequestManager(accessProvider);
+var pullRequestManager = PullRequestAutomation.ForGitHub(accessProvider);
+```
+
+### Azure DevOps
+
+Azure DevOps uses the same pull request definition and policies with an
+`AzureDevOpsRepo` identifier:
+
+```csharp
+using Microsoft.DotNet.GitAutomation;
+using Microsoft.DotNet.GitAutomation.AzureDevOps;
+
+var identity = new AutomationIdentity("bot", "bot@example.com");
+PullRequestManager<AzureDevOpsRepo> pullRequestManager =
+    PullRequestAutomation.ForAzureDevOps(
+        token: Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN") ?? "",
+        identity: identity,
+        authenticationType: AzureDevOpsAuthenticationType.Bearer);
+
+var repository = new AzureDevOpsRepo(
+    new Uri("https://dev.azure.com/example"),
+    project: "project",
+    name: "repository");
+
+PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
+    definition: pullRequest,
+    upstream: repository,
+    cancellationToken: ct);
+```
+
+The organization URI must use HTTPS.
+
+OAuth credentials, including `SYSTEM_ACCESSTOKEN` and Microsoft Entra access
+tokens, are sent to both the Azure DevOps REST API and git through an
+authorization header. For a personal access token, use
+`AzureDevOpsAuthenticationType.PersonalAccessToken`.
+
+Register Azure DevOps automation for dependency injection with
+`AddAzureDevOpsPullRequestAutomation`; inject
+`PullRequestManager<AzureDevOpsRepo>`. Implement and register
+`IAzureDevOpsAccessProvider` when credentials need to be refreshed:
+
+```csharp
+services.AddSingleton<IAzureDevOpsAccessProvider, CustomAzureDevOpsAccessProvider>();
+services.AddAzureDevOpsPullRequestAutomation();
 ```

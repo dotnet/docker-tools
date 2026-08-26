@@ -13,29 +13,23 @@ internal sealed class Git(IProcessRunner processRunner, ILogger logger)
         string? workingDirectory,
         CancellationToken cancellationToken,
         params string[] args) =>
-        RunAsync(
-            secret,
-            environmentVariables: new Dictionary<string, string>(),
-            workingDirectory,
-            cancellationToken,
-            args);
+        RunAsync(secret, environmentVariables: null, workingDirectory, cancellationToken, args);
 
     public async Task<string> RunAsync(
         string? secret,
-        IReadOnlyDictionary<string, string> environmentVariables,
+        IReadOnlyDictionary<string, string>? environmentVariables,
         string? workingDirectory,
         CancellationToken cancellationToken,
         params string[] args)
     {
-        ArgumentNullException.ThrowIfNull(environmentVariables);
         logger.LogDebug("Running: git {Args}", Redact(string.Join(' ', args), secret));
 
         ProcessResult result = await processRunner.RunAsync(
             workingDirectory,
             fileName: "git",
             args,
-            environmentVariables,
-            cancellationToken);
+            cancellationToken,
+            environmentVariables);
         string output = result.StandardOutput;
         string error = result.StandardError;
 
@@ -47,8 +41,7 @@ internal sealed class Git(IProcessRunner processRunner, ILogger logger)
                 git stderr:
                 {Error}
                 """,
-                Redact(error.Trim(), secret)
-            );
+                Redact(error.Trim(), secret));
         }
 
         if (!string.IsNullOrWhiteSpace(output))
@@ -58,8 +51,7 @@ internal sealed class Git(IProcessRunner processRunner, ILogger logger)
                 git stdout:
                 {Output}
                 """,
-                Redact(output.Trim(), secret)
-            );
+                Redact(output.Trim(), secret));
         }
 
         if (result.ExitCode != 0)

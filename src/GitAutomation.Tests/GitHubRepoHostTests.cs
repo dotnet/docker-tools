@@ -36,16 +36,16 @@ public sealed class GitHubRepoHostTests
 
         Assert.HasCount(3, processRunner.Arguments);
         Assert.IsTrue(processRunner.Arguments[0].Contains(
-            "--config-env=http.extraHeader=GIT_AUTOMATION_AUTHORIZATION"));
+            "--config-env=http.https://github.com/.extraHeader=GIT_AUTOMATION_AUTHORIZATION"));
         Assert.IsTrue(processRunner.Arguments[2].Contains(
-            "--config-env=http.extraHeader=GIT_AUTOMATION_AUTHORIZATION"));
+            "--config-env=http.https://github.com/.extraHeader=GIT_AUTOMATION_AUTHORIZATION"));
         Assert.IsFalse(processRunner.Arguments
             .SelectMany(arguments => arguments)
             .Any(argument => argument.Contains(Token, StringComparison.Ordinal)));
         Assert.AreEqual(
             $"AUTHORIZATION: Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"x-access-token:{Token}"))}",
-            processRunner.EnvironmentVariables[0]["GIT_AUTOMATION_AUTHORIZATION"]);
-        Assert.IsEmpty(processRunner.EnvironmentVariables[1]);
+            processRunner.EnvironmentVariables[0]!["GIT_AUTOMATION_AUTHORIZATION"]);
+        Assert.IsNull(processRunner.EnvironmentVariables[1]);
         Assert.IsFalse(processRunner.Arguments
             .SelectMany(arguments => arguments)
             .Any(argument =>
@@ -56,22 +56,14 @@ public sealed class GitHubRepoHostTests
     private sealed class RecordingProcessRunner : IProcessRunner
     {
         public List<string[]> Arguments { get; } = [];
-        public List<IReadOnlyDictionary<string, string>> EnvironmentVariables { get; } = [];
+        public List<IReadOnlyDictionary<string, string>?> EnvironmentVariables { get; } = [];
 
         public Task<ProcessResult> RunAsync(
             string? workingDirectory,
             string fileName,
             IEnumerable<string> arguments,
-            CancellationToken cancellationToken) =>
-            throw new InvalidOperationException(
-                "The authenticated process overload should be used.");
-
-        public Task<ProcessResult> RunAsync(
-            string? workingDirectory,
-            string fileName,
-            IEnumerable<string> arguments,
-            IReadOnlyDictionary<string, string> environmentVariables,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            IReadOnlyDictionary<string, string>? environmentVariables = null)
         {
             string[] argumentArray = arguments.ToArray();
             Arguments.Add(argumentArray);

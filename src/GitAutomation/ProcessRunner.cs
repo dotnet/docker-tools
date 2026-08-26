@@ -14,29 +14,15 @@ namespace Microsoft.DotNet.GitAutomation;
 public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunner
 {
     /// <inheritdoc/>
-    public Task<ProcessResult> RunAsync(
-        string? workingDirectory,
-        string fileName,
-        IEnumerable<string> arguments,
-        CancellationToken cancellationToken) =>
-        RunAsync(
-            workingDirectory,
-            fileName,
-            arguments,
-            environmentVariables: new Dictionary<string, string>(),
-            cancellationToken);
-
-    /// <inheritdoc/>
     public async Task<ProcessResult> RunAsync(
         string? workingDirectory,
         string fileName,
         IEnumerable<string> arguments,
-        IReadOnlyDictionary<string, string> environmentVariables,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string>? environmentVariables = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentNullException.ThrowIfNull(arguments);
-        ArgumentNullException.ThrowIfNull(environmentVariables);
 
         ProcessStartInfo startInfo = new(fileName)
         {
@@ -55,12 +41,16 @@ public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunne
             startInfo.ArgumentList.Add(argument);
         }
 
-        foreach ((string name, string value) in environmentVariables)
+        if (environmentVariables is not null)
         {
-            startInfo.Environment[name] = value;
+            foreach ((string name, string value) in environmentVariables)
+            {
+                startInfo.Environment[name] = value;
+            }
         }
 
-        using Process process = Process.Start(startInfo)
+        using Process process =
+            Process.Start(startInfo)
             ?? throw new InvalidOperationException($"Failed to start process '{startInfo.FileName}'.");
 
         Task<string> outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
@@ -85,9 +75,6 @@ public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunne
             throw;
         }
 
-        return new ProcessResult(
-            process.ExitCode,
-            await outputTask,
-            await errorTask);
+        return new ProcessResult(process.ExitCode, await outputTask, await errorTask);
     }
 }

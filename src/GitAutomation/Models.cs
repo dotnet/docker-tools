@@ -36,18 +36,16 @@ public sealed partial record PullRequestDefinition(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key, nameof(Key));
 
-        bool hasValidComponents = key
-            .Split('/')
+        bool hasValidComponents = key.Split('/')
             .All(component =>
-                ValidKeyComponentRegex.IsMatch(component)
-                && !component.EndsWith(".lock", StringComparison.Ordinal));
+                ValidKeyComponentRegex.IsMatch(component) && !component.EndsWith(".lock", StringComparison.Ordinal));
 
         if (key.StartsWith('-') || !hasValidComponents)
         {
             throw new ArgumentException(
-                $"'{key}' is not a valid pull request key. Use slash-separated components containing " +
-                "ASCII letters, digits, underscores, dashes, and periods. Periods must separate non-empty " +
-                "groups, components cannot end in '.lock', and the key cannot start with a dash.",
+                $"'{key}' is not a valid pull request key. Use slash-separated components containing "
+                    + "ASCII letters, digits, underscores, dashes, and periods. Periods must separate non-empty "
+                    + "groups, components cannot end in '.lock', and the key cannot start with a dash.",
                 nameof(Key));
         }
 
@@ -95,7 +93,7 @@ public enum ForeignCommitPolicy
 }
 
 /// <summary>
-/// The action a <see cref="PullRequestManager"/> took to reconcile a pull request.
+/// The action a <see cref="PullRequestManager{TRepository}"/> took to reconcile a pull request.
 /// </summary>
 public enum PullRequestAction
 {
@@ -131,7 +129,11 @@ public sealed record PullRequestResult(PullRequestAction Action, Uri? Url);
 /// output-only convenience for callers; the planner deliberately ignores it so it can
 /// never influence planning.
 /// </summary>
-internal sealed record ExistingPullRequest(PullRequestState Content, int Number, Uri Url, IReadOnlyList<CommitInfo> Commits);
+internal sealed record ExistingPullRequest(
+    PullRequestState Content,
+    int Number,
+    Uri Url,
+    IReadOnlyList<CommitInfo> Commits);
 
 /// <summary>
 /// The observed state of the branch a new pull request would be created from.
@@ -154,16 +156,28 @@ internal sealed record CommitInfo(string Sha, string AuthorName, string AuthorEm
 
 // TODO: Use C# 15 unions after .NET 11's release
 internal interface IOperation;
-internal sealed record PushCommitsOperation(string WorkspaceDirectory, string SourceBranch, bool ForcePush) : IOperation;
-internal sealed record CreatePullRequestOperation(string Title, string Body, string SourceBranch, string TargetBranch) : IOperation;
+
+internal sealed record PushCommitsOperation(string WorkspaceDirectory, string SourceBranch, bool ForcePush)
+    : IOperation;
+
+internal sealed record CreatePullRequestOperation(string Title, string Body, string SourceBranch, string TargetBranch)
+    : IOperation;
+
 internal sealed record UpdateTitleOperation(int Number, string Title) : IOperation;
+
 internal sealed record UpdateBodyOperation(int Number, string Body) : IOperation;
+
 internal sealed record UpdateBaseBranchOperation(int Number, string TargetBranch) : IOperation;
 
 // TODO: Use C# 15 unions after .NET 11's release
 internal interface IOperationResult;
+
 internal sealed record CommitsPushed(string Branch, string FromSha, string ToSha, Uri Url) : IOperationResult;
+
 internal sealed record PullRequestCreated(int Number, Uri Url) : IOperationResult;
+
 internal sealed record TitleUpdated(int Number, string Title) : IOperationResult;
+
 internal sealed record BodyUpdated(int Number, string Body) : IOperationResult;
+
 internal sealed record BaseBranchUpdated(int Number, string TargetBranch) : IOperationResult;

@@ -5,6 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.DotNet.GitAutomation.AzureDevOps;
 using Microsoft.DotNet.GitAutomation.GitHub;
 
 namespace Microsoft.DotNet.GitAutomation.Tests;
@@ -16,13 +17,11 @@ public sealed class DependencyInjectionTests
     public void PullRequestManager_ResolvesWithDefaultServices()
     {
         ServiceCollection services = new();
-        services.AddPullRequestAutomation(
-            new AutomationIdentity("bot", "bot@example.com"),
-            "token");
+        var identity = new AutomationIdentity("bot", "bot@example.com");
+        services.AddGitHubPullRequestAutomation(identity, "token");
 
         using ServiceProvider serviceProvider = services.BuildServiceProvider();
-
-        PullRequestManager manager = serviceProvider.GetRequiredService<PullRequestManager>();
+        PullRequestManager<GitHubRepo> manager = serviceProvider.GetRequiredService<PullRequestManager<GitHubRepo>>();
 
         Assert.IsNotNull(manager);
     }
@@ -33,22 +32,25 @@ public sealed class DependencyInjectionTests
         ServiceCollection services = new();
         bool processRunnerResolved = false;
         bool accessTokenProviderResolved = false;
+
         services.AddSingleton<IProcessRunner>(_ =>
         {
             processRunnerResolved = true;
             return new StubProcessRunner();
         });
+
         services.AddSingleton<IGitHubAccessProvider>(_ =>
         {
             accessTokenProviderResolved = true;
             return new StaticGitHubAccessProvider("token", new AutomationIdentity("bot", "bot@example.com"));
         });
+
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        services.AddSingleton<PullRequestManager>();
+        services.AddGitHubPullRequestAutomation();
 
         using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-        PullRequestManager manager = serviceProvider.GetRequiredService<PullRequestManager>();
+        PullRequestManager<GitHubRepo> manager = serviceProvider.GetRequiredService<PullRequestManager<GitHubRepo>>();
 
         Assert.IsNotNull(manager);
         Assert.IsTrue(processRunnerResolved);
@@ -58,11 +60,23 @@ public sealed class DependencyInjectionTests
     [TestMethod]
     public void PullRequestManager_CanBeCreatedWithoutDependencyInjection()
     {
-        PullRequestManager manager = new(
-            "token",
-            new AutomationIdentity("bot", "bot@example.com"));
-
+        var identity = new AutomationIdentity("bot", "bot@example.com");
+        PullRequestManager<GitHubRepo> manager = PullRequestAutomation.ForGitHub("token", identity);
         Assert.IsNotNull(manager);
+    }
+
+    [TestMethod]
+    public void GitHubAndAzureDevOpsManagers_CanBeRegisteredTogether()
+    {
+        ServiceCollection services = new();
+        AutomationIdentity identity = new("bot", "bot@example.com");
+        services.AddGitHubPullRequestAutomation(identity, "github-token");
+        services.AddAzureDevOpsPullRequestAutomation(identity, "azure-devops-token");
+
+        using ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+        Assert.IsNotNull(serviceProvider.GetRequiredService<PullRequestManager<GitHubRepo>>());
+        Assert.IsNotNull(serviceProvider.GetRequiredService<PullRequestManager<AzureDevOpsRepo>>());
     }
 
     private sealed class StubProcessRunner : IProcessRunner
@@ -71,7 +85,8 @@ public sealed class DependencyInjectionTests
             string? workingDirectory,
             string fileName,
             IEnumerable<string> arguments,
-            CancellationToken cancellationToken) =>
+            CancellationToken cancellationToken,
+            IReadOnlyDictionary<string, string>? environmentVariables = null) =>
             Task.FromResult(new ProcessResult(0, string.Empty, string.Empty));
     }
 }

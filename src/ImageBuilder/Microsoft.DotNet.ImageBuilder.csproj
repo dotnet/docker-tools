@@ -12,6 +12,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <MicrosoftExtensionsVersion>10.0.10</MicrosoftExtensionsVersion>
+    <SystemPackagesVersion>10.0.10</SystemPackagesVersion>
+  </PropertyGroup>
+
   <PropertyGroup Label="Tool Packaging">
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
@@ -32,10 +37,10 @@
     <PackageReference Include="Cottle" Version="2.1.0" />
     <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
@@ -46,16 +51,16 @@
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="Polly.RateLimiting" Version="8.7.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.10" />
-    <PackageReference Include="System.Formats.Cbor" Version="10.0.10" />
+    <PackageReference Include="System.Formats.Cbor" Version="$(SystemPackagesVersion)" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.10" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="$(SystemPackagesVersion)" />
     <PackageReference Include="YamlDotNet" Version="18.1.0" />
 
     <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.10" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(SystemPackagesVersion)" />
 
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
-    <PackageReference Include="System.Drawing.Common" Version="10.0.10" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemPackagesVersion)" />
 
   </ItemGroup>
 

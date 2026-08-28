@@ -11,35 +11,21 @@
 
   <PropertyGroup Label="Documentation Settings">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Arcade suppresses CS1591 by default. Remove it so missing XML docs on public API fail the build. -->
     <NoWarn>$(NoWarn.Replace(';1591', ''))</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Label="Packaging Settings">
     <IsPackable>true</IsPackable>
     <MajorVersion>0</MajorVersion>
-    <MinorVersion>2</MinorVersion>
+    <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <Description>Declarative git automation library.</Description>
+    <Description>HTTP client for Azure DevOps Repos.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <!-- Octokit does not have a strong name. -->
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Security.KeyVault.Keys" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
-    <PackageReference Include="Octokit" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\GitAutomation.AzureDevOps\Microsoft.DotNet.GitAutomation.AzureDevOps.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.DotNet.GitAutomation.Tests" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
   </ItemGroup>
 
   <ItemGroup>

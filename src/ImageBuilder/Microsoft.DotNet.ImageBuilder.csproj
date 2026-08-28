@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftExtensionsVersion>10.0.10</MicrosoftExtensionsVersion>
-    <SystemPackagesVersion>10.0.10</SystemPackagesVersion>
+    <MicrosoftExtensionsVersion>10.0.11</MicrosoftExtensionsVersion>
+    <SystemPackagesVersion>10.0.11</SystemPackagesVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="Tool Packaging">

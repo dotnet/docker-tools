@@ -18,6 +18,7 @@ WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
+COPY Directory.Packages.props ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
 COPY ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj ./ImageBuilder.Models/
 COPY Infrastructure/Microsoft.DotNet.DockerTools.Infrastructure.csproj ./Infrastructure/

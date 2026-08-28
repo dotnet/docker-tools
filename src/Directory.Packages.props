@@ -36,8 +36,13 @@
     <PackageVersion Include="Polly.RateLimiting" Version="8.7.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.10" />
+
+    <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
     <PackageVersion Include="System.Configuration.ConfigurationManager" Version="$(SystemPackagesVersion)" />
+
+    <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
     <PackageVersion Include="System.Drawing.Common" Version="$(SystemPackagesVersion)" />
+
     <PackageVersion Include="System.Formats.Cbor" Version="$(SystemPackagesVersion)" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
     <PackageVersion Include="System.Threading.RateLimiting" Version="$(SystemPackagesVersion)" />

@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly Argument<string> DestinationImageInfoPathArgument = new(nameof(DestinationImageInfoPath))
         {
-            Description = "Path to store the merged image info content"
+            Description = "Artifact-relative path to store the merged image info content"
         };
 
         private static readonly Option<bool> PublishOption = new("--publish")

@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<AnnotateEolDigestsCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly IArtifactService _artifactService;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _existingAnnotationImageDigests = [];
@@ -36,18 +37,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public AnnotateEolDigestsCommand(
             ILogger<AnnotateEolDigestsCommand> logger,
             ILifecycleMetadataService lifecycleMetadataService,
-            IRegistryCredentialsProvider registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IArtifactService artifactService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Annotates EOL digests in Docker Registry";
 
         public override async Task ExecuteAsync()
         {
-            EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
+            string eolDigestsListPath = _artifactService.ResolvePath(Options.EolDigestsListPath);
+            EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(eolDigestsListPath);
             DateOnly? globalEolDate = eolAnnotations.EolDate;
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
@@ -78,7 +82,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"Some digest annotations failed or were skipped due to existing non-matching EOL date annotations (failed: {_failedAnnotationImageDigests.Count}, skipped: {_existingAnnotationImageDigests.Count}).");
             }
 
-            File.WriteAllLines(Options.AnnotationDigestsOutputPath, _createdAnnotationDigests.Order());
+            string annotationDigests = string.Join(Environment.NewLine, _createdAnnotationDigests.Order());
+            if (annotationDigests.Length > 0)
+            {
+                annotationDigests += Environment.NewLine;
+            }
+
+            _artifactService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
         }
 
         private void WriteNonEmptySummaryForAnnotationDigests(IEnumerable<string> annotationDigests, string message)

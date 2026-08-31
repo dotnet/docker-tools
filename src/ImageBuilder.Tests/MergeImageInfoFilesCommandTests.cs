@@ -181,9 +181,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
+                MergeImageInfoCommand command = CreateCommand(context.Path);
                 command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
-                command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
+                command.Options.DestinationImageInfoPath = "output.json";
                 command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
 
                 Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
@@ -228,7 +228,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+                string resultsContent = File.ReadAllText(Path.Combine(context.Path, command.Options.DestinationImageInfoPath));
                 ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
                 PlatformData expectedPlatform = CreatePlatform(
@@ -485,9 +485,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
+                MergeImageInfoCommand command = CreateCommand(context.Path);
                 command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
-                command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
+                command.Options.DestinationImageInfoPath = "output.json";
                 command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
 
                 Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
@@ -524,7 +524,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+                string resultsContent = File.ReadAllText(Path.Combine(context.Path, command.Options.DestinationImageInfoPath));
                 ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
                 ImageArtifactDetails expected = new ImageArtifactDetails
@@ -620,7 +620,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [TestMethod]
         public async Task MergeImageInfoFilesCommand_SourceFolderPathNotFound()
         {
-            MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
+            MergeImageInfoCommand command = CreateCommand(Path.GetTempPath());
             command.Options.SourceImageInfoFolderPath = "foo";
             command.Options.DestinationImageInfoPath = "output.json";
 
@@ -643,7 +643,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // Store the content in a .txt file which the command should NOT be looking for.
                 File.WriteAllText("image-info.txt", JsonHelper.SerializeObject(imageArtifactDetails));
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
+                MergeImageInfoCommand command = CreateCommand(context.Path);
                 command.Options.SourceImageInfoFolderPath = context.Path;
                 command.Options.DestinationImageInfoPath = "output.json";
 
@@ -772,9 +772,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService());
+            MergeImageInfoCommand command = CreateCommand(tempFolderContext.Path);
             command.Options.SourceImageInfoFolderPath = Path.Combine(tempFolderContext.Path, "image-infos");
-            command.Options.DestinationImageInfoPath = Path.Combine(tempFolderContext.Path, "output.json");
+            command.Options.DestinationImageInfoPath = "output.json";
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPublishScenario = true;
 
@@ -828,7 +828,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+            string resultsContent = File.ReadAllText(
+                Path.Combine(tempFolderContext.Path, command.Options.DestinationImageInfoPath));
             ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
             CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
@@ -939,9 +940,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService());
+            MergeImageInfoCommand command = CreateCommand(tempFolderContext.Path);
             command.Options.SourceImageInfoFolderPath = Path.Combine(tempFolderContext.Path, "image-infos");
-            command.Options.DestinationImageInfoPath = Path.Combine(tempFolderContext.Path, "output.json");
+            command.Options.DestinationImageInfoPath = "output.json";
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPublishScenario = true;
 
@@ -983,7 +984,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+            string resultsContent = File.ReadAllText(
+                Path.Combine(tempFolderContext.Path, command.Options.DestinationImageInfoPath));
             ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
             CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
@@ -1116,9 +1118,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(updatedImageInfoFile, JsonHelper.SerializeObject(updatedImageInfo));
             File.WriteAllText(manifestFile, JsonConvert.SerializeObject(manifest));
 
-            var outputImageInfoFile = Path.Combine(context.Path, "merged-image-info.json");
+            const string outputImageInfoFile = "merged-image-info.json";
 
-            MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
+            MergeImageInfoCommand command = CreateCommand(context.Path);
             command.Options.SourceImageInfoFolderPath = sourceImageInfoDir;
             command.Options.DestinationImageInfoPath = outputImageInfoFile;
             command.Options.InitialImageInfoPath = initialImageInfoFile;
@@ -1128,7 +1130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync();
 
             // Verify the merged result
-            string resultContent = File.ReadAllText(outputImageInfoFile);
+            string resultContent = File.ReadAllText(Path.Combine(context.Path, outputImageInfoFile));
             ImageArtifactDetails mergedImageInfo = ImageArtifactDetails.FromJson(resultContent);
 
             mergedImageInfo.Repos.ShouldHaveSingleItem();
@@ -1154,5 +1156,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var initialCommitResult = initialShaMatches[0].Value;
             initialCommitResult.ShouldBe(CommitOverride);
         }
+
+        private static MergeImageInfoCommand CreateCommand(string artifactStagingDirectory) =>
+            new(
+                TestHelper.CreateManifestJsonService(),
+                TestHelper.CreateArtifactService(artifactStagingDirectory));
     }
 }

@@ -22,13 +22,15 @@ public class GenerateEolAnnotationDataForPublishCommand :
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
-        IRegistryCredentialsProvider registryCredentialsProvider)
+        IRegistryCredentialsProvider registryCredentialsProvider,
+        IArtifactService artifactService)
         : base(
             logger,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,
-            registryCredentialsProvider)
+            registryCredentialsProvider,
+            artifactService)
     {
         _logger = logger;
     }
@@ -37,14 +39,17 @@ public class GenerateEolAnnotationDataForPublishCommand :
 
     protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {
-        if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
+        string oldImageInfoPath = ArtifactService.ResolvePath(Options.OldImageInfoPath);
+        string newImageInfoPath = ArtifactService.ResolvePath(Options.NewImageInfoPath);
+
+        if (!File.Exists(oldImageInfoPath) && !File.Exists(newImageInfoPath))
         {
             _logger.LogInformation("No digests to annotate because no image info files were provided.");
             return [];
         }
 
-        ImageArtifactDetails oldImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(Options.OldImageInfoPath);
-        ImageArtifactDetails newImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(Options.NewImageInfoPath);
+        ImageArtifactDetails oldImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(oldImageInfoPath);
+        ImageArtifactDetails newImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(newImageInfoPath);
 
         try
         {

@@ -277,7 +277,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Callback<string, string, string, string, IServiceConnection>(
                     (csv, _, _, table, _) => ingestedData.Add(table, csv));
 
-            IngestKustoImageInfoCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<ILogger<IngestKustoImageInfoCommand>>(), kustoClientMock.Object);
+            IngestKustoImageInfoCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                Mock.Of<ILogger<IngestKustoImageInfoCommand>>(),
+                kustoClientMock.Object,
+                TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.ImageInfoPath = imageInfoPath;
             command.Options.Manifest = manifestPath;
             command.Options.ImageTable = "ImageInfo";

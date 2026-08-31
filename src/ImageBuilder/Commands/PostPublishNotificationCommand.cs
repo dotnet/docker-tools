@@ -24,22 +24,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly INotificationService _notificationService;
         private readonly IOctokitClientFactory _octokitClientFactory;
+        private readonly IArtifactService _artifactService;
 
         public PostPublishNotificationCommand(
             IManifestJsonService manifestJsonService,
             IVssConnectionFactory connectionFactory,
             INotificationService notificationService,
-            IOctokitClientFactory octokitClientFactory) : base(manifestJsonService)
+            IOctokitClientFactory octokitClientFactory,
+            IArtifactService artifactService) : base(manifestJsonService)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
             _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Posts a notification about a publishing event";
 
         public override async Task ExecuteAsync()
         {
+            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
             StringBuilder notificationMarkdown = new();
             string buildUrl = string.Empty;
             Dictionary<string, TaskResult?> taskResults = Options.TaskNames
@@ -95,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             notificationMarkdown.AppendLine("Published images are listed in comments below.");
             notificationMarkdown.AppendLine();
 
-            IEnumerable<string> imagesMarkdown = GetImagesMarkdown();
+            IEnumerable<string> imagesMarkdown = GetImagesMarkdown(imageInfoPath);
 
             await _notificationService.PostAsync(
                 $"Publish Result - {Options.SourceRepo}/{Options.SourceBranch}",
@@ -227,14 +231,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<string> GetImagesMarkdown()
+        private IEnumerable<string> GetImagesMarkdown(string imageInfoPath)
         {
-            if (!File.Exists(Options.ImageInfoPath))
+            if (!File.Exists(imageInfoPath))
             {
                 return Enumerable.Empty<string>();
             }
 
-            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
 
             List<(string digestSha, string repo, IEnumerable<string> tags)> imageInfos = new();
             foreach (RepoData repoData in imageArtifactDetails.Repos)

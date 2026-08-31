@@ -14,12 +14,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger<WaitForMarAnnotationIngestionCommand> _logger;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
+        private readonly IArtifactService _artifactService;
 
         public WaitForMarAnnotationIngestionCommand(
-            ILogger<WaitForMarAnnotationIngestionCommand> logger, IMarImageIngestionReporter imageIngestionReporter)
+            ILogger<WaitForMarAnnotationIngestionCommand> logger,
+            IMarImageIngestionReporter imageIngestionReporter,
+            IArtifactService artifactService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));
+            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
         }
 
         protected override string Description => "Waits for annotations to complete ingestion into MAR";
@@ -27,8 +31,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _logger.LogInformation("WAITING FOR ANNOTATION INGESTION");
+            string annotationDigestsPath = _artifactService.ResolvePath(Options.AnnotationDigestsPath);
 
-            string[] annotationDigests = File.ReadAllLines(Options.AnnotationDigestsPath);
+            string[] annotationDigests = File.ReadAllLines(annotationDigestsPath);
             IEnumerable<DigestInfo> digests = annotationDigests
                 .Select(digest =>
                 {

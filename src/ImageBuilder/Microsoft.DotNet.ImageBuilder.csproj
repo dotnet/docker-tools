@@ -26,36 +26,36 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Containers.ContainerRegistry" Version="1.3.0" />
-    <PackageReference Include="Azure.Identity" Version="1.17.1" />
-    <PackageReference Include="Azure.ResourceManager.ContainerRegistry" Version="1.4.0" />
-    <PackageReference Include="Cottle" Version="2.1.0" />
-    <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
-    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
-    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
-    <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
-    <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="OrasProject.Oras" Version="0.5.0" />
-    <PackageReference Include="Polly" Version="8.7.0" />
-    <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-    <PackageReference Include="Polly.RateLimiting" Version="8.7.0" />
-    <PackageReference Include="System.CommandLine" Version="2.0.10" />
-    <PackageReference Include="System.Formats.Cbor" Version="10.0.10" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.10" />
-    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    <PackageReference Include="Azure.Containers.ContainerRegistry" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.ResourceManager.ContainerRegistry" />
+    <PackageReference Include="Cottle" />
+    <PackageReference Include="LibGit2Sharp" />
+    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" />
+    <PackageReference Include="Newtonsoft.Json.Schema" />
+    <PackageReference Include="Octokit" />
+    <PackageReference Include="OrasProject.Oras" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="Polly.Contrib.WaitAndRetry" />
+    <PackageReference Include="Polly.RateLimiting" />
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="System.Formats.Cbor" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="System.Threading.RateLimiting" />
+    <PackageReference Include="YamlDotNet" />
 
     <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.10" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" />
 
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
-    <PackageReference Include="System.Drawing.Common" Version="10.0.10" />
+    <PackageReference Include="System.Drawing.Common" />
 
   </ItemGroup>
 

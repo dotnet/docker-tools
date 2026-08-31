@@ -18,12 +18,13 @@ public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunne
         string? workingDirectory,
         string fileName,
         IEnumerable<string> arguments,
+        IReadOnlyDictionary<string, string>? environment,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentNullException.ThrowIfNull(arguments);
 
-        ProcessStartInfo startInfo = new(fileName)
+        ProcessStartInfo startInfo = new ProcessStartInfo(fileName)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -38,6 +39,14 @@ public sealed class ProcessRunner(ILogger<ProcessRunner> logger) : IProcessRunne
         foreach (string argument in arguments)
         {
             startInfo.ArgumentList.Add(argument);
+        }
+
+        if (environment is not null)
+        {
+            foreach ((string key, string value) in environment)
+            {
+                startInfo.Environment[key] = value;
+            }
         }
 
         using Process process = Process.Start(startInfo)

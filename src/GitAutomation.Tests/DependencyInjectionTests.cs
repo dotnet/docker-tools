@@ -5,7 +5,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.DotNet.GitAutomation.GitHub;
 
 namespace Microsoft.DotNet.GitAutomation.Tests;
 
@@ -16,9 +15,7 @@ public sealed class DependencyInjectionTests
     public void PullRequestManager_ResolvesWithDefaultServices()
     {
         ServiceCollection services = new();
-        services.AddPullRequestAutomation(
-            new AutomationIdentity("bot", "bot@example.com"),
-            "token");
+        services.AddPullRequestAutomation();
 
         using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -32,19 +29,13 @@ public sealed class DependencyInjectionTests
     {
         ServiceCollection services = new();
         bool processRunnerResolved = false;
-        bool accessTokenProviderResolved = false;
         services.AddSingleton<IProcessRunner>(_ =>
         {
             processRunnerResolved = true;
             return new StubProcessRunner();
         });
-        services.AddSingleton<IGitHubAccessProvider>(_ =>
-        {
-            accessTokenProviderResolved = true;
-            return new StaticGitHubAccessProvider("token", new AutomationIdentity("bot", "bot@example.com"));
-        });
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        services.AddSingleton<PullRequestManager>();
+        services.AddPullRequestAutomation();
 
         using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -52,15 +43,12 @@ public sealed class DependencyInjectionTests
 
         Assert.IsNotNull(manager);
         Assert.IsTrue(processRunnerResolved);
-        Assert.IsTrue(accessTokenProviderResolved);
     }
 
     [TestMethod]
     public void PullRequestManager_CanBeCreatedWithoutDependencyInjection()
     {
-        PullRequestManager manager = new(
-            "token",
-            new AutomationIdentity("bot", "bot@example.com"));
+        PullRequestManager manager = new PullRequestManager();
 
         Assert.IsNotNull(manager);
     }
@@ -71,6 +59,7 @@ public sealed class DependencyInjectionTests
             string? workingDirectory,
             string fileName,
             IEnumerable<string> arguments,
+            IReadOnlyDictionary<string, string>? environment,
             CancellationToken cancellationToken) =>
             Task.FromResult(new ProcessResult(0, string.Empty, string.Empty));
     }

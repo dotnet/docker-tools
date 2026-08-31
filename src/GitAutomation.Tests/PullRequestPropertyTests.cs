@@ -9,8 +9,6 @@ namespace Microsoft.DotNet.GitAutomation.Tests;
 [TestClass]
 public sealed class PullRequestPlannerTests
 {
-    private const string Workspace = "test-workspace";
-
     private static readonly AutomationIdentity AutomationIdentity = new("bot", "bot@example.com");
 
     private static readonly Uri Url = new("https://github.com/dotnet/example/pull/1");
@@ -74,7 +72,6 @@ public sealed class PullRequestPlannerTests
     {
         public IEnumerable<IOperation> Plan() =>
             Planner.Plan(
-                workspaceDirectory: Workspace,
                 identity: AutomationIdentity,
                 desiredState: DesiredState,
                 targetBranch: TargetBranch,

@@ -60,7 +60,26 @@ public sealed partial record PullRequestDefinition(
     private static partial Regex ValidKeyComponentRegex { get; }
 }
 
-internal sealed record PullRequestState(string Key, string Title, string Body, string TargetBranch, string TreeHash);
+/// <summary>The content and source tree of a pull request.</summary>
+/// <param name="Key">The source branch key.</param>
+/// <param name="Title">The pull request title.</param>
+/// <param name="Body">The pull request body.</param>
+/// <param name="TargetBranch">The branch the pull request targets.</param>
+/// <param name="TreeHash">The source branch tree hash.</param>
+public sealed record PullRequestState(string Key, string Title, string Body, string TargetBranch, string TreeHash);
+
+/// <summary>The properties used to create a pull request.</summary>
+/// <param name="Title">The title.</param>
+/// <param name="Body">The body.</param>
+/// <param name="SourceBranch">The source branch.</param>
+/// <param name="TargetBranch">The target branch.</param>
+public sealed record NewPullRequest(string Title, string Body, string SourceBranch, string TargetBranch);
+
+/// <summary>Optional changes to an existing pull request.</summary>
+/// <param name="Title">The new title, or <see langword="null"/> to leave it unchanged.</param>
+/// <param name="Body">The new body, or <see langword="null"/> to leave it unchanged.</param>
+/// <param name="TargetBranch">The new target branch, or <see langword="null"/> to leave it unchanged.</param>
+public sealed record PullRequestChanges(string? Title = null, string? Body = null, string? TargetBranch = null);
 
 /// <summary>
 /// Determines how commits are pushed when updating an existing pull request branch.
@@ -126,12 +145,17 @@ public enum PullRequestAction
 public sealed record PullRequestResult(PullRequestAction Action, Uri? Url);
 
 /// <summary>
-/// An existing pull request as observed on the host: its <see cref="Content"/> plus
-/// host-assigned facts that only exist once it has been opened. <see cref="Url"/> is an
-/// output-only convenience for callers; the planner deliberately ignores it so it can
-/// never influence planning.
+/// An existing pull request and its host-assigned metadata.
 /// </summary>
-internal sealed record ExistingPullRequest(PullRequestState Content, int Number, Uri Url, IReadOnlyList<CommitInfo> Commits);
+/// <param name="Content">The pull request content.</param>
+/// <param name="Number">The host-assigned pull request number.</param>
+/// <param name="Url">The pull request URL.</param>
+/// <param name="Commits">The commits on the source branch.</param>
+public sealed record ExistingPullRequest(
+    PullRequestState Content,
+    int Number,
+    Uri Url,
+    IReadOnlyList<CommitInfo> Commits);
 
 /// <summary>
 /// The observed state of the branch a new pull request would be created from.
@@ -147,23 +171,16 @@ internal sealed record TargetBranchState(string TreeHash);
 /// <param name="AuthorEmail">The git author email used for automation commits.</param>
 public sealed record AutomationIdentity(string AuthorName, string AuthorEmail);
 
-/// <summary>
-/// A single commit observed on an existing pull request's branch.
-/// </summary>
-internal sealed record CommitInfo(string Sha, string AuthorName, string AuthorEmail);
+/// <summary>A single commit observed on an existing pull request's branch.</summary>
+/// <param name="Sha">The commit SHA.</param>
+/// <param name="AuthorName">The commit author name.</param>
+/// <param name="AuthorEmail">The commit author email.</param>
+public sealed record CommitInfo(string Sha, string AuthorName, string AuthorEmail);
 
 // TODO: Use C# 15 unions after .NET 11's release
 internal interface IOperation;
-internal sealed record PushCommitsOperation(string WorkspaceDirectory, string SourceBranch, bool ForcePush) : IOperation;
+internal sealed record PushCommitsOperation(string SourceBranch, bool ForcePush) : IOperation;
 internal sealed record CreatePullRequestOperation(string Title, string Body, string SourceBranch, string TargetBranch) : IOperation;
 internal sealed record UpdateTitleOperation(int Number, string Title) : IOperation;
 internal sealed record UpdateBodyOperation(int Number, string Body) : IOperation;
 internal sealed record UpdateBaseBranchOperation(int Number, string TargetBranch) : IOperation;
-
-// TODO: Use C# 15 unions after .NET 11's release
-internal interface IOperationResult;
-internal sealed record CommitsPushed(string Branch, string FromSha, string ToSha, Uri Url) : IOperationResult;
-internal sealed record PullRequestCreated(int Number, Uri Url) : IOperationResult;
-internal sealed record TitleUpdated(int Number, string Title) : IOperationResult;
-internal sealed record BodyUpdated(int Number, string Body) : IOperationResult;
-internal sealed record BaseBranchUpdated(int Number, string TargetBranch) : IOperationResult;

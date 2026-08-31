@@ -7,7 +7,6 @@ namespace Microsoft.DotNet.GitAutomation;
 internal static class Planner
 {
     public static IEnumerable<IOperation> Plan(
-        string workspaceDirectory,
         AutomationIdentity identity,
         PullRequestState desiredState,
         TargetBranchState targetBranch,
@@ -36,10 +35,7 @@ internal static class Planner
         {
             bool forcePush = existingPullRequest is null || updateStrategy == PullRequestUpdateStrategy.Replace;
 
-            operations.Add(new PushCommitsOperation(
-                workspaceDirectory,
-                desiredState.Key,
-                forcePush));
+            operations.Add(new PushCommitsOperation(desiredState.Key, forcePush));
         }
 
         if (existingPullRequest is null)

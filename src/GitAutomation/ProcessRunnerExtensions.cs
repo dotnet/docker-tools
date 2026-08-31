@@ -22,12 +22,33 @@ public static class ProcessRunnerExtensions
         string fileName,
         IEnumerable<string> arguments,
         CancellationToken cancellationToken)
+        => processRunner.RunAsync(workingDirectory: null, fileName, arguments, cancellationToken);
+
+    /// <summary>
+    /// Runs an external process in the specified working directory.
+    /// </summary>
+    /// <param name="processRunner">The process runner.</param>
+    /// <param name="workingDirectory">
+    /// The process working directory, or <see langword="null"/> to use the current directory.
+    /// </param>
+    /// <param name="fileName">The executable to run.</param>
+    /// <param name="arguments">The arguments passed to the executable.</param>
+    /// <param name="cancellationToken">A token that cancels the process.</param>
+    /// <returns>The process exit code and captured output.</returns>
+    public static Task<ProcessResult> RunAsync(
+        this IProcessRunner processRunner,
+        string? workingDirectory,
+        string fileName,
+        IEnumerable<string> arguments,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(processRunner);
+
         return processRunner.RunAsync(
-            workingDirectory: null,
+            workingDirectory,
             fileName,
             arguments,
+            environment: null,
             cancellationToken);
     }
 }

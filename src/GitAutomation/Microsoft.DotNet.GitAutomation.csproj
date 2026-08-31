@@ -27,11 +27,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.10.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
-    <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Octokit" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
 
   <ItemGroup>

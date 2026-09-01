@@ -75,7 +75,7 @@ public sealed class AzureDevOpsPullRequestEndpoint(
     public async Task<ExistingPullRequest?> FindPullRequestAsync(string key, CancellationToken cancellationToken)
     {
         string sourceRefName = GetRefName(key);
-        AzureDevOpsPullRequest[] pullRequests =
+        AzureDevOpsPullRequestSearchResult[] pullRequests =
             await _client.ListActivePullRequestsAsync(_repositoryIdOrName, sourceRefName, cancellationToken);
 
         if (pullRequests.Length == 0)

@@ -94,18 +94,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
                   "count": 1,
                   "value": [
                     {
-                      "pullRequestId": 42,
-                      "title": "Update dependencies",
-                      "description": "Truncated description",
-                      "sourceRefName": "refs/heads/automation/update",
-                      "targetRefName": "refs/heads/release/10.0",
-                      "repository": {
-                        "id": "repository-id",
-                        "name": "repository",
-                        "remoteUrl": "https://dev.azure.com/example/project/_git/repository",
-                        "webUrl": "https://dev.azure.com/example/project/_git/repository"
-                      },
-                      "lastMergeSourceCommit": { "commitId": "source-commit" }
+                      "pullRequestId": 42
                     }
                   ]
                 }

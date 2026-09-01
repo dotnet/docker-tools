@@ -9,13 +9,13 @@ namespace Microsoft.DotNet.GitAutomation.AzureDevOps;
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
-[JsonSerializable(typeof(AzureDevOpsRepository))]
-[JsonSerializable(typeof(AzureDevOpsPullRequestSearchResult))]
-[JsonSerializable(typeof(AzureDevOpsPullRequest))]
-[JsonSerializable(typeof(AzureDevOpsCommit))]
-[JsonSerializable(typeof(AzureDevOpsCreatePullRequest))]
-[JsonSerializable(typeof(AzureDevOpsUpdatePullRequest))]
-[JsonSerializable(typeof(ArrayResponse<AzureDevOpsPullRequestSearchResult>))]
-[JsonSerializable(typeof(ArrayResponse<AzureDevOpsPullRequest>))]
-[JsonSerializable(typeof(ArrayResponse<AzureDevOpsCommit>))]
+[JsonSerializable(typeof(Repository))]
+[JsonSerializable(typeof(PullRequestSearchResult))]
+[JsonSerializable(typeof(PullRequest))]
+[JsonSerializable(typeof(Commit))]
+[JsonSerializable(typeof(CreatePullRequest))]
+[JsonSerializable(typeof(UpdatePullRequest))]
+[JsonSerializable(typeof(ArrayResponse<PullRequestSearchResult>))]
+[JsonSerializable(typeof(ArrayResponse<PullRequest>))]
+[JsonSerializable(typeof(ArrayResponse<Commit>))]
 internal sealed partial class JsonContext : JsonSerializerContext;

@@ -36,13 +36,13 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <summary>Gets a repository by name or ID.</summary>
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsRepository> GetRepositoryAsync(string repository, CancellationToken cancellationToken)
+    public async Task<Repository> GetRepositoryAsync(string repository, CancellationToken cancellationToken)
     {
         string uri = new RequestUriBuilder(repository).Build();
 
         return await _httpClient.GetFromJsonAsync(
             uri,
-            JsonContext.Default.AzureDevOpsRepository,
+            JsonContext.Default.Repository,
             cancellationToken)
                 ?? throw new InvalidOperationException("Azure DevOps returned null for a repository response.");
     }
@@ -55,7 +55,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="sourceRefName">The full source ref name.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsPullRequestSearchResult[]> ListActivePullRequestsAsync(
+    public async Task<PullRequestSearchResult[]> ListActivePullRequestsAsync(
         string repository,
         string sourceRefName,
         CancellationToken cancellationToken)
@@ -66,9 +66,9 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
             .AddQueryParameter("searchCriteria.sourceRefName", sourceRefName)
             .Build();
 
-        ArrayResponse<AzureDevOpsPullRequestSearchResult> response = await _httpClient.GetFromJsonAsync(
+        ArrayResponse<PullRequestSearchResult> response = await _httpClient.GetFromJsonAsync(
             uri,
-            JsonContext.Default.ArrayResponseAzureDevOpsPullRequestSearchResult,
+            JsonContext.Default.ArrayResponsePullRequestSearchResult,
             cancellationToken)
                 ?? throw new InvalidOperationException("Azure DevOps returned null for a pull request list response.");
 
@@ -79,7 +79,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="pullRequestId">The pull request ID.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsPullRequest> GetPullRequestAsync(
+    public async Task<PullRequest> GetPullRequestAsync(
         string repository,
         int pullRequestId,
         CancellationToken cancellationToken)
@@ -89,7 +89,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
             .AppendPath(pullRequestId)
             .Build();
 
-        return await _httpClient.GetFromJsonAsync(uri, JsonContext.Default.AzureDevOpsPullRequest, cancellationToken)
+        return await _httpClient.GetFromJsonAsync(uri, JsonContext.Default.PullRequest, cancellationToken)
             ?? throw new InvalidOperationException("Azure DevOps returned null for a pull request response.");
     }
 
@@ -97,7 +97,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="pullRequestId">The pull request ID.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public IAsyncEnumerable<AzureDevOpsCommit> GetPullRequestCommits(
+    public IAsyncEnumerable<Commit> GetPullRequestCommits(
         string repository,
         int pullRequestId,
         CancellationToken cancellationToken)
@@ -115,7 +115,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
 
                 return uri.Build();
             },
-            JsonContext.Default.ArrayResponseAzureDevOpsCommit,
+            JsonContext.Default.ArrayResponseCommit,
             cancellationToken);
     }
 
@@ -123,7 +123,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="commitId">The commit ID.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsCommit> GetCommitAsync(
+    public async Task<Commit> GetCommitAsync(
         string repository,
         string commitId,
         CancellationToken cancellationToken)
@@ -133,7 +133,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
             .AppendPath(commitId)
             .Build();
 
-        return await _httpClient.GetFromJsonAsync(uri, JsonContext.Default.AzureDevOpsCommit, cancellationToken)
+        return await _httpClient.GetFromJsonAsync(uri, JsonContext.Default.Commit, cancellationToken)
             ?? throw new InvalidOperationException("Azure DevOps returned null for a commit response.");
     }
 
@@ -141,9 +141,9 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="pullRequest">The pull request to create.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsPullRequest> CreatePullRequestAsync(
+    public async Task<PullRequest> CreatePullRequestAsync(
         string repository,
-        AzureDevOpsCreatePullRequest pullRequest,
+        CreatePullRequest pullRequest,
         CancellationToken cancellationToken)
     {
         string uri = new RequestUriBuilder(repository)
@@ -153,12 +153,12 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             uri,
             pullRequest,
-            JsonContext.Default.AzureDevOpsCreatePullRequest,
+            JsonContext.Default.CreatePullRequest,
             cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync(JsonContext.Default.AzureDevOpsPullRequest, cancellationToken)
+        return await response.Content.ReadFromJsonAsync(JsonContext.Default.PullRequest, cancellationToken)
             ?? throw new InvalidOperationException("Azure DevOps returned null for a pull request response.");
     }
 
@@ -167,10 +167,10 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="pullRequestId">The pull request ID.</param>
     /// <param name="pullRequest">The pull request changes.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsPullRequest> UpdatePullRequestAsync(
+    public async Task<PullRequest> UpdatePullRequestAsync(
         string repository,
         int pullRequestId,
-        AzureDevOpsUpdatePullRequest pullRequest,
+        UpdatePullRequest pullRequest,
         CancellationToken cancellationToken)
     {
         string uri = new RequestUriBuilder(repository)
@@ -181,12 +181,12 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
         using HttpResponseMessage response = await _httpClient.PatchAsJsonAsync(
             uri,
             pullRequest,
-            JsonContext.Default.AzureDevOpsUpdatePullRequest,
+            JsonContext.Default.UpdatePullRequest,
             cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync(JsonContext.Default.AzureDevOpsPullRequest, cancellationToken)
+        return await response.Content.ReadFromJsonAsync(JsonContext.Default.PullRequest, cancellationToken)
             ?? throw new InvalidOperationException("Azure DevOps returned null for a pull request response.");
     }
 

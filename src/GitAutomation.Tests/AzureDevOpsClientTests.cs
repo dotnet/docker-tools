@@ -62,7 +62,7 @@ public sealed class AzureDevOpsClientTests
         };
         using AzureDevOpsClient client = new AzureDevOpsClient(httpClient);
 
-        AzureDevOpsPullRequestSearchResult[] results = await client.ListActivePullRequestsAsync(
+        PullRequestSearchResult[] results = await client.ListActivePullRequestsAsync(
             "repository",
             "refs/heads/automation/update",
             CancellationToken.None);

@@ -25,7 +25,7 @@ public sealed class AzureDevOpsPullRequestEndpoint(
     private readonly string _accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken));
     private readonly AutomationIdentity _identity = identity ?? throw new ArgumentNullException(nameof(identity));
 
-    private readonly Lazy<Task<AzureDevOpsRepository>> _repositoryDetails =
+    private readonly Lazy<Task<Repository>> _repositoryDetails =
         new(() => client.GetRepositoryAsync(repositoryIdOrName, CancellationToken.None));
 
     /// <inheritdoc/>
@@ -61,7 +61,7 @@ public sealed class AzureDevOpsPullRequestEndpoint(
         bool force,
         CancellationToken cancellationToken)
     {
-        AzureDevOpsRepository repository = await _repositoryDetails.Value.WaitAsync(cancellationToken);
+        Repository repository = await _repositoryDetails.Value.WaitAsync(cancellationToken);
 
         await workingCopy.PushAsync(
             new Uri(repository.RemoteUrl),
@@ -75,7 +75,7 @@ public sealed class AzureDevOpsPullRequestEndpoint(
     public async Task<ExistingPullRequest?> FindPullRequestAsync(string key, CancellationToken cancellationToken)
     {
         string sourceRefName = GetRefName(key);
-        AzureDevOpsPullRequestSearchResult[] pullRequests =
+        PullRequestSearchResult[] pullRequests =
             await _client.ListActivePullRequestsAsync(_repositoryIdOrName, sourceRefName, cancellationToken);
 
         if (pullRequests.Length == 0)
@@ -90,12 +90,12 @@ public sealed class AzureDevOpsPullRequestEndpoint(
                 $"in repository '{_repositoryIdOrName}', but found {pullRequests.Length}.");
         }
 
-        AzureDevOpsPullRequest pullRequest = await _client.GetPullRequestAsync(
+        PullRequest pullRequest = await _client.GetPullRequestAsync(
             _repositoryIdOrName,
             pullRequests[0].PullRequestId,
             cancellationToken);
 
-        AzureDevOpsCommit sourceCommit = await _client.GetCommitAsync(
+        Commit sourceCommit = await _client.GetCommitAsync(
             _repositoryIdOrName,
             pullRequest.LastMergeSourceCommit.CommitId,
             cancellationToken);
@@ -105,10 +105,10 @@ public sealed class AzureDevOpsPullRequestEndpoint(
                 $"Azure DevOps did not return a tree ID for commit '{sourceCommit.CommitId}'.");
 
         List<CommitInfo> commits = [];
-        IAsyncEnumerable<AzureDevOpsCommit> pullRequestCommits =
+        IAsyncEnumerable<Commit> pullRequestCommits =
             _client.GetPullRequestCommits(_repositoryIdOrName, pullRequest.PullRequestId, cancellationToken);
 
-        await foreach (AzureDevOpsCommit commit in pullRequestCommits)
+        await foreach (Commit commit in pullRequestCommits)
         {
             commits.Add(CommitInfo.FromAzureDevOpsCommit(commit));
         }
@@ -126,13 +126,13 @@ public sealed class AzureDevOpsPullRequestEndpoint(
     /// <inheritdoc/>
     public async Task<Uri> CreatePullRequestAsync(NewPullRequest pullRequest, CancellationToken cancellationToken)
     {
-        AzureDevOpsCreatePullRequest request = new AzureDevOpsCreatePullRequest(
+        CreatePullRequest request = new CreatePullRequest(
             SourceRefName: GetRefName(pullRequest.SourceBranch),
             TargetRefName: GetRefName(pullRequest.TargetBranch),
             Title: pullRequest.Title,
             Description: pullRequest.Body);
 
-        AzureDevOpsPullRequest created =
+        PullRequest created =
             await _client.CreatePullRequestAsync(_repositoryIdOrName, request, cancellationToken);
 
         return new Uri(created.WebUrl);
@@ -144,7 +144,7 @@ public sealed class AzureDevOpsPullRequestEndpoint(
         PullRequestChanges changes,
         CancellationToken cancellationToken)
     {
-        AzureDevOpsUpdatePullRequest update = new AzureDevOpsUpdatePullRequest(
+        UpdatePullRequest update = new UpdatePullRequest(
             changes.Title,
             changes.Body,
             changes.TargetBranch is null ? null : GetRefName(changes.TargetBranch));
@@ -158,7 +158,7 @@ public sealed class AzureDevOpsPullRequestEndpoint(
         AutomationIdentity identity,
         CancellationToken cancellationToken)
     {
-        AzureDevOpsRepository repository = await _repositoryDetails.Value.WaitAsync(cancellationToken);
+        Repository repository = await _repositoryDetails.Value.WaitAsync(cancellationToken);
 
         await workingCopy.CloneAsync(
             new Uri(repository.RemoteUrl),

@@ -142,7 +142,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
                       "treeId": "second-tree",
                       "author": {
                         "name": "Contributor",
-                        "email": "contributor@example.com"
+                        "email": null
                       }
                     }
                   ]
@@ -175,7 +175,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
         Assert.AreEqual("source-tree", pullRequest.Content.TreeHash);
         Assert.AreEqual(2, pullRequest.Commits.Count);
         Assert.AreEqual(
-            new CommitInfo("second", "Contributor", "contributor@example.com"),
+            new CommitInfo("second", "Contributor", null),
             pullRequest.Commits[1]);
         Assert.AreEqual(
             "api-version=7.1&searchCriteria.status=active&searchCriteria.sourceRefName=refs%2Fheads%2Fautomation%2Fupdate",

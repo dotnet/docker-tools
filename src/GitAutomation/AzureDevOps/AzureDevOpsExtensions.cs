@@ -8,7 +8,7 @@ internal static class AzureDevOpsExtensions
 {
     extension(CommitInfo)
     {
-        public static CommitInfo FromAzureDevOpsCommit(AzureDevOpsCommit commit) =>
+        public static CommitInfo FromAzureDevOpsCommit(Commit commit) =>
             new CommitInfo(commit.CommitId, commit.Author.Name, commit.Author.Email);
     }
 }

@@ -174,8 +174,8 @@ public sealed record AutomationIdentity(string AuthorName, string AuthorEmail);
 /// <summary>A single commit observed on an existing pull request's branch.</summary>
 /// <param name="Sha">The commit SHA.</param>
 /// <param name="AuthorName">The commit author name.</param>
-/// <param name="AuthorEmail">The commit author email.</param>
-public sealed record CommitInfo(string Sha, string AuthorName, string AuthorEmail);
+/// <param name="AuthorEmail">The commit author email, when available.</param>
+public sealed record CommitInfo(string Sha, string AuthorName, string? AuthorEmail);
 
 // TODO: Use C# 15 unions after .NET 11's release
 internal interface IOperation;

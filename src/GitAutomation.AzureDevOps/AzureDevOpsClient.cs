@@ -48,6 +48,10 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     }
 
     /// <summary>Lists active pull requests from a source ref.</summary>
+    /// <remarks>
+    /// Azure DevOps truncates descriptions in pull request list responses to 400 characters.
+    /// Use <see cref="GetPullRequestAsync"/> to retrieve the full description.
+    /// </remarks>
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="sourceRefName">The full source ref name.</param>
     /// <param name="cancellationToken">Stops the request.</param>

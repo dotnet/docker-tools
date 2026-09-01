@@ -10,10 +10,12 @@ namespace Microsoft.DotNet.GitAutomation.AzureDevOps;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(AzureDevOpsRepository))]
+[JsonSerializable(typeof(AzureDevOpsPullRequestSearchResult))]
 [JsonSerializable(typeof(AzureDevOpsPullRequest))]
 [JsonSerializable(typeof(AzureDevOpsCommit))]
 [JsonSerializable(typeof(AzureDevOpsCreatePullRequest))]
 [JsonSerializable(typeof(AzureDevOpsUpdatePullRequest))]
+[JsonSerializable(typeof(ArrayResponse<AzureDevOpsPullRequestSearchResult>))]
 [JsonSerializable(typeof(ArrayResponse<AzureDevOpsPullRequest>))]
 [JsonSerializable(typeof(ArrayResponse<AzureDevOpsCommit>))]
 internal sealed partial class JsonContext : JsonSerializerContext;

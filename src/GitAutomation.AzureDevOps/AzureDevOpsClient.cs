@@ -47,15 +47,15 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
                 ?? throw new InvalidOperationException("Azure DevOps returned null for a repository response.");
     }
 
-    /// <summary>Lists active pull requests from a source ref.</summary>
+    /// <summary>Searches for active pull requests from a source ref.</summary>
     /// <remarks>
-    /// Azure DevOps truncates descriptions in pull request list responses to 400 characters.
-    /// Use <see cref="GetPullRequestAsync"/> to retrieve the full description.
+    /// Azure DevOps returns partial pull request and repository data from searches.
+    /// Use <see cref="GetPullRequestAsync"/> to retrieve the full pull request.
     /// </remarks>
     /// <param name="repository">The repository name or ID.</param>
     /// <param name="sourceRefName">The full source ref name.</param>
     /// <param name="cancellationToken">Stops the request.</param>
-    public async Task<AzureDevOpsPullRequest[]> ListActivePullRequestsAsync(
+    public async Task<AzureDevOpsPullRequestSearchResult[]> ListActivePullRequestsAsync(
         string repository,
         string sourceRefName,
         CancellationToken cancellationToken)
@@ -66,9 +66,9 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
             .AddQueryParameter("searchCriteria.sourceRefName", sourceRefName)
             .Build();
 
-        ArrayResponse<AzureDevOpsPullRequest> response = await _httpClient.GetFromJsonAsync(
+        ArrayResponse<AzureDevOpsPullRequestSearchResult> response = await _httpClient.GetFromJsonAsync(
             uri,
-            JsonContext.Default.ArrayResponseAzureDevOpsPullRequest,
+            JsonContext.Default.ArrayResponseAzureDevOpsPullRequestSearchResult,
             cancellationToken)
                 ?? throw new InvalidOperationException("Azure DevOps returned null for a pull request list response.");
 

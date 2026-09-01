@@ -11,6 +11,10 @@ namespace Microsoft.DotNet.GitAutomation.AzureDevOps;
 /// <param name="WebUrl">The browser URL.</param>
 public sealed record AzureDevOpsRepository(string Id, string Name, string RemoteUrl, string WebUrl);
 
+/// <summary>Identifies a pull request returned from a search.</summary>
+/// <param name="PullRequestId">The pull request ID.</param>
+public sealed record AzureDevOpsPullRequestSearchResult(int PullRequestId);
+
 /// <summary>Describes an Azure DevOps pull request.</summary>
 /// <param name="PullRequestId">The pull request ID.</param>
 /// <param name="Title">The title.</param>

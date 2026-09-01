@@ -85,7 +85,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
     }
 
     [TestMethod]
-    public async Task FindPullRequestAsync_MapsPullRequestAndCommits()
+    public async Task FindPullRequestAsync_MapsFullPullRequestAndCommits()
     {
         Queue<HttpResponseMessage> responses = new Queue<HttpResponseMessage>(
         [
@@ -96,7 +96,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
                     {
                       "pullRequestId": 42,
                       "title": "Update dependencies",
-                      "description": "Generated update",
+                      "description": "Truncated description",
                       "sourceRefName": "refs/heads/automation/update",
                       "targetRefName": "refs/heads/release/10.0",
                       "repository": {
@@ -108,6 +108,22 @@ public sealed class AzureDevOpsPullRequestEndpointTests
                       "lastMergeSourceCommit": { "commitId": "source-commit" }
                     }
                   ]
+                }
+                """),
+            JsonResponse("""
+                {
+                  "pullRequestId": 42,
+                  "title": "Update dependencies",
+                  "description": "Full generated update description",
+                  "sourceRefName": "refs/heads/automation/update",
+                  "targetRefName": "refs/heads/release/10.0",
+                  "repository": {
+                    "id": "repository-id",
+                    "name": "repository",
+                    "remoteUrl": "https://dev.azure.com/example/project/_git/repository",
+                    "webUrl": "https://dev.azure.com/example/project/_git/repository"
+                  },
+                  "lastMergeSourceCommit": { "commitId": "source-commit" }
                 }
                 """),
             JsonResponse("""
@@ -165,7 +181,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
             pullRequest.Url);
         Assert.AreEqual("automation/update", pullRequest.Content.Key);
         Assert.AreEqual("Update dependencies", pullRequest.Content.Title);
-        Assert.AreEqual("Generated update", pullRequest.Content.Body);
+        Assert.AreEqual("Full generated update description", pullRequest.Content.Body);
         Assert.AreEqual("release/10.0", pullRequest.Content.TargetBranch);
         Assert.AreEqual("source-tree", pullRequest.Content.TreeHash);
         Assert.AreEqual(2, pullRequest.Commits.Count);
@@ -175,6 +191,9 @@ public sealed class AzureDevOpsPullRequestEndpointTests
         Assert.AreEqual(
             "api-version=7.1&searchCriteria.status=active&searchCriteria.sourceRefName=refs%2Fheads%2Fautomation%2Fupdate",
             requests[0].Query.TrimStart('?'));
+        Assert.AreEqual(
+            "/example/project/_apis/git/repositories/repository/pullrequests/42",
+            requests[1].AbsolutePath);
     }
 
     [TestMethod]

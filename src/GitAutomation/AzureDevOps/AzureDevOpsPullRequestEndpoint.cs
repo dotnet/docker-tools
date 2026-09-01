@@ -90,7 +90,11 @@ public sealed class AzureDevOpsPullRequestEndpoint(
                 $"in repository '{_repositoryIdOrName}', but found {pullRequests.Length}.");
         }
 
-        AzureDevOpsPullRequest pullRequest = pullRequests[0];
+        AzureDevOpsPullRequest pullRequest = await _client.GetPullRequestAsync(
+            _repositoryIdOrName,
+            pullRequests[0].PullRequestId,
+            cancellationToken);
+
         AzureDevOpsCommit sourceCommit = await _client.GetCommitAsync(
             _repositoryIdOrName,
             pullRequest.LastMergeSourceCommit.CommitId,

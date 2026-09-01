@@ -15,7 +15,12 @@ internal static class OctokitExtensions
 
     extension(CommitInfo)
     {
+        // PullRequestCommit.Author identifies the GitHub user and does not reliably
+        // populate the commit author's name or email.
         public static CommitInfo FromPullRequestCommit(PullRequestCommit prCommit) =>
-            new CommitInfo(prCommit.Sha, prCommit.Author.Name, prCommit.Author.Email);
+            new CommitInfo(
+                prCommit.Sha,
+                prCommit.Commit.Author.Name,
+                prCommit.Commit.Author.Email);
     }
 }

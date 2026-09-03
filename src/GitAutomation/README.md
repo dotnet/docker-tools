@@ -25,16 +25,22 @@ accomplish https://github.com/dotnet/docker-tools/issues/1658.
 using Microsoft.DotNet.GitAutomation;
 using Microsoft.DotNet.GitAutomation.GitHub;
 
-// Instantiate the pull request manager.
-var pullRequestManager = new PullRequestManager(
-    token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "",
-    identity: new AutomationIdentity("bot", "bot@example.com"),
-    // Microsoft.Extensions.Logging support:
-    // loggerFactory: ...
+AutomationIdentity identity = new AutomationIdentity("bot", "bot@example.com");
+StaticGitHubAccessProvider accessProvider = new StaticGitHubAccessProvider(
+    Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "",
+    identity);
+
+GitHubPullRequestEndpoint endpoint = new GitHubPullRequestEndpoint(
+    accessProvider,
+    upstream: new GitHubRepo("dotnet", "example"),
+    // To submit the PR from a fork:
+    // fork: new GitHubRepo("bot-account", "example")
 );
 
+PullRequestManager pullRequestManager = new PullRequestManager();
+
 // Declare the pull request that you want to create.
-var pullRequest = new PullRequestDefinition(
+PullRequestDefinition pullRequest = new PullRequestDefinition(
     // `Key` is the sole method used to identify pull requests managed by this automation.
     // There will never be two pull requests open against the same repo with the same key.
     // To open two simultaneous pull requests against the same repo, use different keys.
@@ -55,10 +61,7 @@ var pullRequest = new PullRequestDefinition(
 // request if one is already open.
 PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
     definition: pullRequest,
-    upstream: new GitHubRepo("dotnet", "example"),
-
-    // To submit the PR from a fork:
-    // fork: new GitHubRepo("bot-account", "example"),
+    endpoint: endpoint,
 
     // Update strategies:
     // - Append: for an existing pull request, take the source branch and add new
@@ -82,15 +85,13 @@ PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
 
 ### Dependency injection
 
-Register pull request automation with a git identity and fixed token. The
-resulting `PullRequestManager` can be injected into application services:
+Register the endpoint's access provider separately. `PullRequestManager` only
+depends on process and logging services:
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
 
-services.AddPullRequestAutomation(
-    identity: new AutomationIdentity("bot", "bot@example.com"),
-    token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "");
+services.AddPullRequestAutomation();
 ```
 
 For more control, register each dependency directly:
@@ -98,16 +99,12 @@ For more control, register each dependency directly:
 ```csharp
 services.AddLogging(builder => builder.AddSimpleConsole());
 services.AddSingleton<IProcessRunner, CustomProcessRunner>();
-
-var identity = new AutomationIdentity("bot", "bot@example.com");
-var accessProvider = new StaticGitHubAccessProvider(yourTokenHere, identity)
-services.AddSingleton<IGitHubAccessProvider>(accessProvider);
-
-services.AddSingleton<PullRequestManager>();
+services.AddPullRequestAutomation();
 ```
 
-`IGitHubAccessProvider` is queried before each operation, so implementations
-can refresh credentials and resolve the identity represented by them.
+Create a `GitHubPullRequestEndpoint` for each repository operation. The endpoint
+acquires repository access before GitHub API calls. Git commands request credentials
+immediately before accessing a remote, so providers can refresh expiring tokens.
 
 ### GitHub App authentication
 
@@ -126,9 +123,13 @@ using Azure.Security.KeyVault.Keys.Cryptography;
 using Microsoft.DotNet.GitAutomation;
 using Microsoft.DotNet.GitAutomation.GitHub;
 
-var secret = new Uri("https://your-azure-key-vault.vault.azure.net/keys/github-app-key");
-var credential = new AzureCliCredential();
-var cryptographyClient = new CryptographyClient(secret, credential);
-var accessProvider = new GitHubAppAccessProvider(yourAppClientId, cryptographyClient);
-var pullRequestManager = new PullRequestManager(accessProvider);
+Uri secret = new Uri("https://your-azure-key-vault.vault.azure.net/keys/github-app-key");
+AzureCliCredential credential = new AzureCliCredential();
+CryptographyClient cryptographyClient = new CryptographyClient(secret, credential);
+GitHubAppAccessProvider accessProvider = new GitHubAppAccessProvider(yourAppClientId, cryptographyClient);
+GitHubPullRequestEndpoint endpoint = new GitHubPullRequestEndpoint(
+    accessProvider,
+    new GitHubRepo("dotnet", "example"));
+
+PullRequestManager pullRequestManager = new PullRequestManager();
 ```

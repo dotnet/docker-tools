@@ -30,7 +30,7 @@ ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Updater");
 CancellationToken cancellationToken = GetCancellationToken();
 
 IGitHubAccessProvider accessProvider = await GetAccessProviderAsync(processRunner, logger, cancellationToken);
-PullRequestManager pullRequestManager = new(accessProvider, loggerFactory);
+PullRequestManager pullRequestManager = new PullRequestManager(processRunner, loggerFactory);
 
 // Pull image builder reference
 await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", imageBuilderRef], cancellationToken);
@@ -88,10 +88,11 @@ foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
 
     try
     {
+        GitHubPullRequestEndpoint gitHub = new GitHubPullRequestEndpoint(accessProvider, repository);
+
         PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
             definition: definition,
-            upstream: repository,
-            fork: null,
+            endpoint: gitHub,
             updateStrategy: PullRequestUpdateStrategy.Append,
             onForeignCommits: ForeignCommitPolicy.Proceed,
             cancellationToken: cancellationToken);

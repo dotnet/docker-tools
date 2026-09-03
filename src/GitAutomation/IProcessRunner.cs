@@ -17,12 +17,16 @@ public interface IProcessRunner
     /// </param>
     /// <param name="fileName">The executable to run.</param>
     /// <param name="arguments">The arguments passed to the executable.</param>
+    /// <param name="environment">
+    /// Environment variables set for the process, or <see langword="null"/> for no overrides.
+    /// </param>
     /// <param name="cancellationToken">A token that cancels the process.</param>
     /// <returns>The process exit code and captured output.</returns>
     Task<ProcessResult> RunAsync(
         string? workingDirectory,
         string fileName,
         IEnumerable<string> arguments,
+        IReadOnlyDictionary<string, string>? environment,
         CancellationToken cancellationToken);
 }
 

@@ -12,4 +12,15 @@ internal static class OctokitExtensions
     public static bool IsValid([NotNullWhen(true)] this AccessToken? accessToken) =>
         accessToken is not null
         && accessToken.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(1);
+
+    extension(CommitInfo)
+    {
+        // PullRequestCommit.Author identifies the GitHub user and does not reliably
+        // populate the commit author's name or email.
+        public static CommitInfo FromPullRequestCommit(PullRequestCommit prCommit) =>
+            new CommitInfo(
+                prCommit.Sha,
+                prCommit.Commit.Author.Name,
+                prCommit.Commit.Author.Email);
+    }
 }

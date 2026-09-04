@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
+            IReadOnlyDictionary<string, string> buildSecrets,
+            BuildSecretMode buildSecretMode,
             IEnumerable<string> dockerBuildOptions,
             bool isRetryEnabled,
             bool isDryRun);

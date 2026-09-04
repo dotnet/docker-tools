@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
         private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
-        private readonly Lazy<string?> _storageAccountToken;
+        private readonly Lazy<string> _storageAccountToken;
 
         /// <summary>
         /// Maps a source digest from the image info file to the corresponding digest in the copied location for image caching.
@@ -74,13 +74,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.RepoPrefix,
                     Options.SourceRepoPrefix));
 
-            _storageAccountToken = new Lazy<string?>(() =>
+            _storageAccountToken = new Lazy<string>(() =>
             {
-                if (!Options.Internal)
-                {
-                    return null;
-                }
-
                 var tokenObject = _tokenCredentialProvider.GetToken(
                     Options.StorageServiceConnection,
                     AzureScopes.StorageAccount);
@@ -487,12 +482,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
+                BuildSecretMode buildSecretMode = platform.IsWindows
+                    ? BuildSecretMode.BuildArgs
+                    : BuildSecretMode.SecretMounts;
+
                 string? buildOutput = _dockerService.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
                     platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
+                    GetBuildSecrets(),
+                    buildSecretMode,
                     GetDockerBuildOptions(),
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
@@ -523,10 +524,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         /// <summary>
-        /// Gets all the necessary Docker build-args for the specified platform. When building internal images, this
-        /// also includes the access token for the storage account service connection's access token. This refers to
-        /// arguments passed via the <c>--build-arg</c> option to the <c>docker build</c> command, not the arguments
-        /// passed directly to <c>docker build</c>.
+        /// Gets all the necessary Docker build arguments for the specified platform.
         /// </summary>
         /// <remarks>
         /// Platform build args (from the manifest) take precedence over any build args specified via the command line.
@@ -536,11 +534,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private Dictionary<string, string?> GetBuildArgs(PlatformInfo platform)
         {
             Dictionary<string, string?> buildArgs = [];
-
-            if (Options.Internal)
-            {
-                buildArgs["ACCESSTOKEN"] = _storageAccountToken.Value;
-            }
 
             foreach (var kvp in Options.BuildArgs)
             {
@@ -554,6 +547,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return buildArgs;
         }
+
+        private IReadOnlyDictionary<string, string> GetBuildSecrets() =>
+            Options.Internal
+                ? new Dictionary<string, string> { ["ACCESSTOKEN"] = _storageAccountToken.Value }
+                : new Dictionary<string, string>();
 
         private IEnumerable<string> GetDockerBuildOptions() =>
             Options.DockerBuildOptions.Where(option => !string.IsNullOrWhiteSpace(option));

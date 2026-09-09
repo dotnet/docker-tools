@@ -7,21 +7,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using FluentAssertions;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
@@ -142,7 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     "1.0/aspnet/os", tempFolderContext, $"{runtimeRepo}:{tag}");
 
                 const string dockerfileCommitSha = "mycommit";
-                Mock<IGitService> gitServiceMock = new();
+                Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
                 gitServiceMock
                     .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
@@ -345,7 +343,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 "1.0/runtime/os", tempFolderContext, baseImageTag);
 
             const string dockerfileCommitSha = "mycommit";
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(dockerfileCommitSha);
@@ -537,8 +535,195 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies that the manifest's platform architecture settings match the architecture of the base image.
+        /// Verifies that image build metadata (source, revision, Dockerfile, and base image) is attached to the
+        /// pushed image as an OCI referrer artifact, using the image digest as the subject.
         /// </summary>
+        [TestMethod]
+        public async Task BuildCommand_AttachesImageMetadataReferrer()
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+            string baseImageDigest = $"{baseImageRepo}@sha256:baseImageDigestSha";
+            string imageDigest = $"{repoName}@sha256:builtImageDigestSha";
+            const string sourceRepoUrl = "https://github.com/dotnet/test";
+            const string commitSha = "c0ff33c0ff33c0ff33c0ff33c0ff33c0ff33c0ff";
+            const string dockerfileRepoRootPath = "1.0/runtime/os/Dockerfile";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), true))
+                .Returns(commitSha);
+
+            Mock<IOrasServiceFactory> orasServiceFactoryMock = CreateOrasServiceFactoryMock(out Mock<IOrasService> orasServiceMock);
+
+            BuildCommand command = CreateBuildCommand(
+                dockerService: dockerServiceMock.Object,
+                gitService: gitServiceMock.Object,
+                copyImageService: Mock.Of<ICopyImageService>(),
+                manifestServiceFactory: CreateManifestServiceFactoryMock(
+                    localImageDigestResults:
+                    [
+                        new(baseImageTag, baseImageDigest),
+                        new($"{repoName}:{tag}", imageDigest)
+                    ]).Object,
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()),
+                orasServiceFactory: orasServiceFactoryMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.SourceRepoUrl = sourceRepoUrl;
+            command.Options.IsPushEnabled = true;
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
+
+            Platform platform = CreatePlatform(dockerfileRelativePath, [tag]);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        [platform])));
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            orasServiceMock.Verify(
+                o => o.AttachArtifactAsync(
+                    imageDigest,
+                    OciArtifactType.ImageInfo,
+                    It.Is<IDictionary<string, string>>(annotations =>
+                        annotations.Count == 5 &&
+                        annotations[ImageBuilderAnnotations.Source] == sourceRepoUrl &&
+                        annotations[ImageBuilderAnnotations.Revision] == commitSha &&
+                        annotations[ImageBuilderAnnotations.BaseName] == baseImageTag &&
+                        annotations[ImageBuilderAnnotations.BaseDigest] == "sha256:baseImageDigestSha" &&
+                        annotations[ImageBuilderAnnotations.Dockerfile] == dockerfileRepoRootPath),
+                    It.IsAny<CancellationToken>()));
+
+            // The ORAS service must be created with the command's registry credentials so it can push to ACR.
+            orasServiceFactoryMock.Verify(o => o.Create(command.Options.CredentialsOptions));
+        }
+
+        /// <summary>
+        /// Verifies that no referrer artifact is attached when there is no metadata to record (no source repo
+        /// and no base image).
+        /// </summary>
+        [TestMethod]
+        public async Task BuildCommand_SkipsMetadataReferrerWhenDataUnavailable()
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            Mock<IOrasServiceFactory> orasServiceFactoryMock = CreateOrasServiceFactoryMock(out Mock<IOrasService> orasServiceMock);
+
+            BuildCommand command = CreateBuildCommand(
+                dockerService: dockerServiceMock.Object,
+                copyImageService: Mock.Of<ICopyImageService>(),
+                manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()),
+                orasServiceFactory: orasServiceFactoryMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.IsPushEnabled = true;
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileAbsolutePath, "FROM scratch");
+
+            Platform platform = CreatePlatform(dockerfileRelativePath, [tag]);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        [platform])));
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            orasServiceMock.Verify(
+                o => o.AttachArtifactAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        /// Verifies that no referrer artifact is attached when pushing is disabled, since a referrer can only be
+        /// attached to an image that exists in the registry.
+        /// </summary>
+        [TestMethod]
+        public async Task BuildCommand_SkipsMetadataReferrerWhenPushDisabled()
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+            const string sourceRepoUrl = "https://github.com/dotnet/test";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), true))
+                .Returns("c0ff33");
+
+            Mock<IOrasServiceFactory> orasServiceFactoryMock = CreateOrasServiceFactoryMock(out Mock<IOrasService> orasServiceMock);
+
+            BuildCommand command = CreateBuildCommand(
+                dockerService: dockerServiceMock.Object,
+                gitService: gitServiceMock.Object,
+                copyImageService: Mock.Of<ICopyImageService>(),
+                manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()),
+                orasServiceFactory: orasServiceFactoryMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.SourceRepoUrl = sourceRepoUrl;
+            command.Options.IsPushEnabled = false;
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
+
+            Platform platform = CreatePlatform(dockerfileRelativePath, [tag]);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        [platform])));
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            orasServiceMock.Verify(
+                o => o.AttachArtifactAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
         [TestMethod]
         public async Task BuildCommand_VerifyOnBaseImageArchMismatch()
         {
@@ -849,7 +1034,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/linux", tempFolderContext, "scratch");
 
-            Mock<IGitService> gitServiceMock = new();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -997,8 +1182,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(
                 o => o.GetImageSize(It.IsAny<string>(), false),
@@ -1035,7 +1219,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
                 const string dockerfileCommitSha = "mycommit";
-                Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+                Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
                 gitServiceMock
                     .Setup(o => o.GetCommitSha(dockerfileRelativePath, It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
@@ -1286,7 +1470,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime/os", tempFolderContext, $"$REPO:{tag}");
 
-            Mock<IGitService> gitServiceMock = new();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -1496,7 +1680,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsWindowsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/windows", tempFolderContext, windowsBaseImageTag);
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -1810,7 +1994,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -2098,7 +2282,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -2306,7 +2490,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
 
-            Mock<IGitService> gitServiceMock = new();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -2549,7 +2733,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/linux", tempFolderContext, baseImageTag);
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -2702,8 +2886,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(
                 o => o.GetImageSize(It.IsAny<string>(), false),
@@ -2771,7 +2954,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/linux", tempFolderContext, baseImageTag);
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -3078,7 +3261,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 "1.0/aspnet/os", tempFolderContext, $"$REPO:{Tag}");
 
             const string dockerfileCommitSha = "mycommit";
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
                 .Returns(dockerfileCommitSha);
@@ -3423,7 +3606,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 "1.0/samples/os", tempFolderContext, $"{baseImageRegistry}/{RuntimeRepo}:{Tag}");
 
             const string dockerfileCommitSha = "mycommit";
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
                 .Returns(dockerfileCommitSha);
@@ -3519,7 +3702,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ], []);
 
             const string dockerfileCommitSha = "mycommit";
-            Mock<IGitService> gitServiceMock = new();
+            Mock<IGitService> gitServiceMock = CreateGitServiceMock(tempFolderContext);
             gitServiceMock
                 .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
                 .Returns(dockerfileCommitSha);
@@ -3641,7 +3824,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IManifestServiceFactory? manifestServiceFactory = null,
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
-            IImageCacheService? imageCacheService = null)
+            IImageCacheService? imageCacheService = null,
+            IOrasServiceFactory? orasServiceFactory = null)
         {
             BuildCommand command = new(
                 manifestJsonService ?? TestHelper.CreateManifestJsonService(),
@@ -3653,7 +3837,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceFactory ?? Mock.Of<IManifestServiceFactory>(),
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
-                imageCacheService ?? Mock.Of<IImageCacheService>());
+                imageCacheService ?? Mock.Of<IImageCacheService>(),
+                orasServiceFactory ?? CreateOrasServiceFactoryMock(out _).Object);
 
             return command;
         }
@@ -3684,6 +3869,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns((Architecture.AMD64, null));
 
             return dockerServiceMock;
+        }
+
+        private static Mock<IGitService> CreateGitServiceMock(TempFolderContext tempFolderContext)
+        {
+            Mock<IGitService> mock = new();
+            mock
+                .Setup(o => o.GetRepoRoot(It.IsAny<string>()))
+                .Returns(tempFolderContext.Path);
+            return mock;
+        }
+
+        private static Mock<IOrasServiceFactory> CreateOrasServiceFactoryMock(out Mock<IOrasService> orasServiceMock)
+        {
+            orasServiceMock = new Mock<IOrasService>();
+            Mock<IOrasService> capturedMock = orasServiceMock;
+            Mock<IOrasServiceFactory> factoryMock = new();
+            factoryMock
+                .Setup(o => o.Create(It.IsAny<IRegistryCredentialsHost>()))
+                .Returns(() => capturedMock.Object);
+            return factoryMock;
         }
 
         private static void VerifyImportImage(Mock<ICopyImageService> copyImageServiceMock, BuildCommand command,

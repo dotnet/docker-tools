@@ -1,54 +1,70 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
+using System;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public abstract class ImageNameResolver
+/// <summary>
+/// Controls how internal image names are resolved when querying for digests.
+/// </summary>
+public enum DigestResolutionMode
+{
+    /// <summary>
+    /// Use the staging ACR registry as-is for internal image digest queries (build scenario).
+    /// </summary>
+    Staging,
+
+    /// <summary>
+    /// Use the public MCR registry for internal image digest queries (matrix generation scenario).
+    /// </summary>
+    Public
+}
+
+/// <inheritdoc/>
+public class ImageNameResolver : IImageNameResolver
 {
     private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
     private readonly string? _repoPrefix;
     private readonly string? _sourceRepoPrefix;
+    private readonly DigestResolutionMode _digestResolutionMode;
+    private readonly ManifestInfo _manifest;
 
-    public ImageNameResolver(BaseImageOverrideOptions baseImageOverrideOptions, ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
+    public ImageNameResolver(
+        DigestResolutionMode digestResolutionMode,
+        BaseImageOverrideOptions baseImageOverrideOptions,
+        ManifestInfo manifest,
+        string? repoPrefix,
+        string? sourceRepoPrefix)
     {
+        _digestResolutionMode = digestResolutionMode;
         _baseImageOverrideOptions = baseImageOverrideOptions;
-        Manifest = manifest;
+        _manifest = manifest;
         _repoPrefix = repoPrefix;
         _sourceRepoPrefix = sourceRepoPrefix;
     }
 
-    protected ManifestInfo Manifest { get; }
-
-    /// <summary>
-    /// Returns the tag to use for interacting with the image of a FROM instruction that has been pulled or built locally.
-    /// </summary>
-    /// <param name="fromImage">Tag of the FROM image.</param>
+    /// <inheritdoc/>
     public string GetFromImageLocalTag(string fromImage) =>
         // Provides the overridable value of the registry (e.g. dotnetdocker.azurecr.io) because that is the registry that
         // would be used for tags that exist locally.
-        GetFromImageTag(fromImage, Manifest.Registry);
+        GetFromImageTag(fromImage, _manifest.Registry);
 
-    /// <summary>
-    /// Returns the tag to use for pulling the image of a FROM instruction.
-    /// </summary>
-    /// <param name="fromImage">Tag of the FROM image.</param>
+    /// <inheritdoc/>
     public string GetFromImagePullTag(string fromImage) =>
         // Provides the raw registry value from the manifest (e.g. mcr.microsoft.com). This accounts for images that
         // are classified as external within the model but they are owned internally and not mirrored. An example of
         // this is sample images. By comparing their base image tag to that raw registry value from the manifest, we
         // can know that these are owned internally and not to attempt to pull them from the mirror location.
-        GetFromImageTag(fromImage, Manifest.Model.Registry);
+        GetFromImageTag(fromImage, _manifest.Model.Registry);
 
-    /// <summary>
-    /// Returns the tag that represents the publicly available tag of a FROM instruction.
-    /// </summary>
-    /// <param name="fromImage">Tag of the FROM image.</param>
+    /// <inheritdoc/>
     /// <remarks>
     /// This compares the registry of the image tag to determine if it's internally owned. If so, it returns
-    /// the tag using the raw (non-overriden) registry from the manifest (e.g. mcr.microsoft.com). Otherwise,
+    /// the tag using the raw (non-overridden) registry from the manifest (e.g. mcr.microsoft.com). Otherwise,
     /// it returns the image tag unchanged.
     /// </remarks>
     public string GetFromImagePublicTag(string fromImage)
@@ -60,11 +76,36 @@ public abstract class ImageNameResolver
         }
         else
         {
-            return $"{Manifest.Model.Registry}/{trimmed}";
+            return $"{_manifest.Model.Registry}/{trimmed}";
         }
     }
 
-    public abstract string GetFinalStageImageNameForDigestQuery(PlatformInfo platform);
+    /// <inheritdoc/>
+    public string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
+    {
+        string imageName = platform.FinalStageFromImage ?? string.Empty;
+
+        if (platform.IsInternalFromImage(imageName))
+        {
+            return _digestResolutionMode switch
+            {
+                // For build scenarios, the image is already formatted with the staging ACR registry and repo prefix
+                // (e.g. dotnetdocker.azurecr.io/dotnet-staging/12345/sdk:8.0), so use it as-is.
+                DigestResolutionMode.Staging => imageName,
+
+                // For matrix generation scenarios, strip the staging prefix and re-prefix with the public MCR
+                // registry (e.g. mcr.microsoft.com/dotnet/sdk:8.0).
+                DigestResolutionMode.Public =>
+                    $"{_manifest.Model.Registry}/{TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(imageName))}",
+
+                _ => throw new NotSupportedException($"Unsupported digest resolution mode: {_digestResolutionMode}")
+            };
+        }
+
+        // External images are formatted to target the mirror location in the ACR
+        // (e.g. dotnetdocker.azurecr.io/mirror/amd64/alpine:3.XX).
+        return GetFromImagePullTag(imageName);
+    }
 
     /// <summary>
     /// Gets the tag to use for the image of a FROM instruction.
@@ -78,88 +119,26 @@ public abstract class ImageNameResolver
     {
         fromImage = _baseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
 
-        if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
-            DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
+        if (IsInRegistry(fromImage, registry)
+            || IsInRegistry(fromImage, _manifest.Model.Registry)
             || _sourceRepoPrefix is null)
         {
             return fromImage;
         }
 
         string srcImage = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(fromImage));
-        return $"{Manifest.Registry}/{_sourceRepoPrefix}{srcImage}";
+        return $"{_manifest.Registry}/{_sourceRepoPrefix}{srcImage}";
     }
 
-    protected string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
+    private string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
         IsInInternallyOwnedRegistry(imageTag) ?
             DockerHelper.TrimRegistry(imageTag).TrimStartString(_repoPrefix ?? string.Empty) :
             imageTag;
 
     private bool IsInInternallyOwnedRegistry(string imageTag) =>
-        DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
-        DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
-}
+        IsInRegistry(imageTag, _manifest.Registry) ||
+        IsInRegistry(imageTag, _manifest.Model.Registry);
 
-public class ImageNameResolverForBuild : ImageNameResolver
-{
-    public ImageNameResolverForBuild(
-        BaseImageOverrideOptions baseImageOverrideOptions,
-        ManifestInfo manifest,
-        string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
-    {
-    }
-
-    public override string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
-    {
-        // For build scenarios, we want to query for the digest of the image according to whether it's internal or not.
-        // An internal image will already be formatted with the registry and staging repo prefix, so we can use it as is
-        // (e.g. dotnetdocker.azurecr.io/dotnet-staging/12345/sdk:8.0). An external image should be formatted to target
-        // the mirror location in the ACR (e.g. dotnetdocker.azurecr.io/mirror/amd64/alpine:3.20).
-
-        string imageName = platform.FinalStageFromImage ?? string.Empty;
-
-        if (platform.IsInternalFromImage(imageName))
-        {
-            return imageName;
-        }
-        else
-        {
-            return GetFromImagePullTag(imageName);
-        }
-    }
-}
-
-public class ImageNameResolverForMatrix : ImageNameResolver
-{
-    public ImageNameResolverForMatrix(
-        BaseImageOverrideOptions baseImageOverrideOptions,
-        ManifestInfo manifest,
-        string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
-    {
-    }
-
-    public override string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
-    {
-        // For matrix generation scenarios, we want to query for the digest of the image according
-        // to whether it's internal or not, just like we do for build. But the target location will
-        // be different. For internal images, we want to query mcr.microsoft.com (e.g.
-        // mcr.microsoft.com/dotnet/sdk/8.0). For external images,
-        // we want to query the mirror location in the ACR (e.g.
-        // dotnetdockerstaging.azurecr.io/mirror/amd64/alpine:3.20)
-
-        string imageName = platform.FinalStageFromImage ?? string.Empty;
-
-        if (platform.IsInternalFromImage(imageName))
-        {
-            string trimmedImageName = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(imageName));
-            return $"{Manifest.Model.Registry}/{trimmedImageName}";
-        }
-        else
-        {
-            return GetFromImagePullTag(imageName);
-        }
-    }
+    private static bool IsInRegistry(string imageReference, string? registry) =>
+        !string.IsNullOrEmpty(registry) && imageReference.StartsWith(registry);
 }

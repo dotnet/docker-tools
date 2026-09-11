@@ -7,7 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using FluentAssertions;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -521,6 +523,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         TagInfo.GetFullyQualifiedName(repoName, sharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -637,31 +641,51 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies that manifest-defined and globally-defined build args can be used.
+        /// Verifies build argument precedence and platform-specific handling of internal build secrets.
         /// </summary>
         [TestMethod]
-        public async Task BuildCommand_BuildArgs()
+        [DataRow(OS.Linux, false, BuildSecretMode.SecretMounts)]
+        [DataRow(OS.Linux, true, BuildSecretMode.SecretMounts)]
+        [DataRow(OS.Windows, false, BuildSecretMode.BuildArgs)]
+        [DataRow(OS.Windows, true, BuildSecretMode.BuildArgs)]
+        public async Task BuildCommand_BuildArgs(OS os, bool isInternal, BuildSecretMode expectedSecretMode)
         {
             const string repoName = "runtime";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
+            const string accessToken = "test-storage-token";
+            const string storageScope = "https://storage.azure.com/.default";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            Mock<TokenCredential> credentialMock = new();
+            credentialMock
+                .Setup(credential => credential.GetToken(
+                    It.Is<TokenRequestContext>(context => context.Scopes.SequenceEqual(new[] { storageScope })),
+                    It.IsAny<CancellationToken>()))
+                .Returns(new AccessToken(accessToken, DateTimeOffset.UtcNow.AddHours(1)));
+            Mock<IAzureTokenCredentialProvider> credentialProviderMock = new();
+            credentialProviderMock
+                .Setup(provider => provider.GetCredential(It.IsAny<IServiceConnection>()))
+                .Returns(credentialMock.Object);
 
             BuildCommand command = CreateBuildCommand(
                 dockerService: dockerServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
+                azureTokenCredentialProvider: credentialProviderMock.Object,
                 imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.Internal = isInternal;
             command.Options.BuildArgs.Add("arg1", "val1");
             command.Options.BuildArgs.Add("arg2", "val2a");
 
             Platform platform = CreatePlatform(
                 DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, baseImageTag),
-                new string[] { tag });
+                new string[] { tag },
+                os: os,
+                osVersion: os == OS.Windows ? "nanoserver-ltsc2022" : "noble");
             platform.BuildArgs.Add("arg2", "val2b");
             platform.BuildArgs.Add("arg3", "val3");
 
@@ -687,11 +711,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<List<string>>(),
                     It.Is<Dictionary<string, string>>(
                         args => args.Count == 3 && args["arg1"] == "val1" && args["arg2"] == "val2b" && args["arg3"] == "val3"),
+                    It.Is<IReadOnlyDictionary<string, string>>(secrets => isInternal
+                        ? secrets.Count == 1 && secrets["ACCESSTOKEN"] == accessToken
+                        : secrets.Count == 0),
+                    expectedSecretMode,
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
             dockerServiceMock.Verify(
                 o => o.GetImageSize(It.IsAny<string>(), false));
+            credentialProviderMock.Verify(
+                provider => provider.GetCredential(command.Options.StorageServiceConnection),
+                isInternal ? Times.Once() : Times.Never());
+            credentialMock.Verify(
+                credential => credential.GetToken(
+                    It.Is<TokenRequestContext>(context => context.Scopes.SequenceEqual(new[] { storageScope })),
+                    It.IsAny<CancellationToken>()),
+                isInternal ? Times.Once() : Times.Never());
         }
 
         /// <summary>
@@ -741,6 +777,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<List<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.Is<IEnumerable<string>>(args => args.SequenceEqual(command.Options.DockerBuildOptions)),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -805,6 +843,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         TagInfo.GetFullyQualifiedName(repoName, sharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -998,6 +1038,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(
@@ -1726,7 +1767,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
-                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
+                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -2034,6 +2076,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -2241,6 +2285,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<string>(),
                         new string[] { expectedTag },
                         It.IsAny<IDictionary<string, string>>(),
+                        It.IsAny<IReadOnlyDictionary<string, string>>(),
+                        It.IsAny<BuildSecretMode>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()),
@@ -2485,6 +2531,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<string>(),
                         new string[] { expectedTag },
                         It.IsAny<IDictionary<string, string>>(),
+                        It.IsAny<IReadOnlyDictionary<string, string>>(),
+                        It.IsAny<BuildSecretMode>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()),
@@ -2703,6 +2751,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(
@@ -2962,7 +3011,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
-                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
+                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
@@ -3322,6 +3372,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -3468,6 +3520,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -3610,6 +3664,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<IReadOnlyDictionary<string, string>>(),
+                    It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
@@ -3674,6 +3730,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<string>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<IDictionary<string, string>>(),
+                        It.IsAny<IReadOnlyDictionary<string, string>>(),
+                        It.IsAny<BuildSecretMode>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()))

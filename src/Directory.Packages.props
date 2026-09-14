@@ -17,14 +17,7 @@
     <PackageVersion Include="LibGit2Sharp" Version="0.32.0" />
     <PackageVersion Include="Microsoft.Azure.Kusto.Ingest" Version="14.1.1" />
     <PackageVersion Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
@@ -36,17 +29,31 @@
     <PackageVersion Include="Polly.RateLimiting" Version="8.7.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.10" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
 
+  <ItemGroup Label="Microsoft Extensions Packages">
+    <!-- Microsoft.Extensions.* packages that version together. -->
+    <!-- Keep this group up to date with .github/dependabot.yml -->
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Label="System Packages">
+    <!-- System.* packages that version together. -->
+    <!-- Keep this group up to date with .github/dependabot.yml -->
+    <PackageVersion Include="System.Formats.Cbor" Version="$(SystemPackagesVersion)" />
+    <PackageVersion Include="System.Threading.RateLimiting" Version="$(SystemPackagesVersion)" />
     <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
     <PackageVersion Include="System.Configuration.ConfigurationManager" Version="$(SystemPackagesVersion)" />
-
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
     <PackageVersion Include="System.Drawing.Common" Version="$(SystemPackagesVersion)" />
-
-    <PackageVersion Include="System.Formats.Cbor" Version="$(SystemPackagesVersion)" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
-    <PackageVersion Include="System.Threading.RateLimiting" Version="$(SystemPackagesVersion)" />
-    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 
 </Project>

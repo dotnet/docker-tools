@@ -325,7 +325,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
             CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
         }
 
@@ -361,7 +361,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails();
-            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
 
             CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
         }
@@ -489,7 +489,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
 
             ImageArtifactDetails expected = new ImageArtifactDetails
             {
@@ -646,7 +646,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
 
             ImageArtifactDetails expected = new ImageArtifactDetails
             {
@@ -735,6 +735,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
+                                    SyndicatedDigests =
+                                    {
+                                        "syndicated2",
+                                        "syndicated1"
+                                    },
                                     SharedTags =
                                     {
                                         "sharedtag1b",
@@ -789,6 +794,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
+                                    SyndicatedDigests =
+                                    {
+                                        "obsolete"
+                                    },
                                     SharedTags =
                                     {
                                         "sharedtag2",
@@ -806,7 +815,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IsPublish = true
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails, options);
+            imageArtifactDetails.MergeInto(targetImageArtifactDetails, options);
 
             ImageArtifactDetails expected = new ImageArtifactDetails
             {
@@ -834,6 +843,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
+                                    SyndicatedDigests =
+                                    {
+                                        "syndicated1",
+                                        "syndicated2"
+                                    },
                                     SharedTags =
                                     {
                                         "sharedtag1a",
@@ -948,7 +962,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
             CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
 
             targetImageArtifactDetails.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(imageInfo1);
@@ -1099,7 +1113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageArtifactDetails source = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(imageArtifactDetails), manifestInfo);
             ImageArtifactDetails target = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(targetImageArtifactDetails), manifestInfo);
 
-            ImageInfoHelper.MergeImageArtifactDetails(source, target);
+            source.MergeInto(target);
             CompareImageArtifactDetails(expectedImageArtifactDetails, target);
         }
 
@@ -1173,7 +1187,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+            srcImageArtifactDetails.MergeInto(targetImageArtifactDetails);
             CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
         }
 
@@ -1247,8 +1261,130 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+            srcImageArtifactDetails.MergeInto(targetImageArtifactDetails);
             CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+        }
+
+        [TestMethod]
+        public void MergeInto_ExistingPlatform_UsesExplicitPropertyRules()
+        {
+            DateTime sourceCreated = DateTime.UtcNow;
+            ImageInfo sourceImageInfo = CreateImageInfo();
+            ImageInfo targetImageInfo = CreateImageInfo();
+            List<Layer> sourceLayers =
+            [
+                new("layer2", 2),
+                new("layer1", 1)
+            ];
+
+            ImageArtifactDetails source = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "2.0",
+                                ManifestImage = sourceImageInfo,
+                                Manifest = new ManifestData
+                                {
+                                    Digest = "source-manifest-digest",
+                                    SyndicatedDigests = ["syndicated2", "syndicated1"],
+                                    Created = sourceCreated,
+                                    SharedTags = ["shared2", "shared1"]
+                                },
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "Dockerfile",
+                                        SimpleTags = ["tag2", "tag1"],
+                                        Digest = "source-digest",
+                                        BaseImageDigest = "source-base-digest",
+                                        OsType = "linux",
+                                        OsVersion = "noble",
+                                        Architecture = "amd64",
+                                        Created = sourceCreated,
+                                        CommitUrl = "source-commit",
+                                        Layers = sourceLayers,
+                                        IsUnchanged = true,
+                                        ImageInfo = sourceImageInfo
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails target = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                ManifestImage = targetImageInfo,
+                                Manifest = new ManifestData
+                                {
+                                    Digest = "target-manifest-digest",
+                                    SyndicatedDigests = ["syndicated3", "syndicated2"],
+                                    Created = sourceCreated.AddDays(-1),
+                                    SharedTags = ["shared3", "shared2"]
+                                },
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "Dockerfile",
+                                        SimpleTags = ["tag3", "tag2"],
+                                        Digest = "target-digest",
+                                        BaseImageDigest = "target-base-digest",
+                                        OsType = "linux",
+                                        OsVersion = "noble",
+                                        Architecture = "amd64",
+                                        Created = sourceCreated.AddDays(-1),
+                                        CommitUrl = "target-commit",
+                                        Layers = [new Layer("old-layer", 3)],
+                                        ImageInfo = targetImageInfo
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            source.MergeInto(target);
+
+            ImageData mergedImage = target.Repos.Single().Images.Single();
+            mergedImage.ProductVersion.ShouldBe("2.0");
+            mergedImage.ManifestImage.ShouldBeSameAs(targetImageInfo);
+            mergedImage.Manifest.Digest.ShouldBe("source-manifest-digest");
+            mergedImage.Manifest.SyndicatedDigests.ShouldBe(
+                ["syndicated1", "syndicated2", "syndicated3"]);
+            mergedImage.Manifest.Created.ShouldBe(sourceCreated);
+            mergedImage.Manifest.SharedTags.ShouldBe(["shared1", "shared2", "shared3"]);
+
+            PlatformData mergedPlatform = mergedImage.Platforms.Single();
+            mergedPlatform.SimpleTags.ShouldBe(["tag1", "tag2", "tag3"]);
+            mergedPlatform.Digest.ShouldBe("source-digest");
+            mergedPlatform.BaseImageDigest.ShouldBe("source-base-digest");
+            mergedPlatform.Created.ShouldBe(sourceCreated);
+            mergedPlatform.CommitUrl.ShouldBe("source-commit");
+            mergedPlatform.Layers.ShouldBeSameAs(sourceLayers);
+            mergedPlatform.Layers.ShouldBe([new Layer("layer2", 2), new Layer("layer1", 1)]);
+            mergedPlatform.IsUnchanged.ShouldBeTrue();
+            mergedPlatform.ImageInfo.ShouldBeSameAs(targetImageInfo);
         }
 
         private static ImageInfo CreateImageInfo() =>

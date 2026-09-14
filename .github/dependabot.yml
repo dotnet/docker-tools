@@ -12,6 +12,21 @@ updates:
       timezone: "America/Los_Angeles"
     commit-message:
       prefix: "[dependabot]"
+    groups:
+      dotnet-packages:
+        patterns:
+          # Keep up to date with groups in src/Directory.Packages.props
+          - "Microsoft.Extensions.Configuration"
+          - "Microsoft.Extensions.DependencyInjection"
+          - "Microsoft.Extensions.DependencyInjection.Abstractions"
+          - "Microsoft.Extensions.Hosting"
+          - "Microsoft.Extensions.Http"
+          - "Microsoft.Extensions.Logging"
+          - "Microsoft.Extensions.Logging.Console"
+          - "System.Configuration.ConfigurationManager"
+          - "System.Drawing.Common"
+          - "System.Formats.Cbor"
+          - "System.Threading.RateLimiting"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

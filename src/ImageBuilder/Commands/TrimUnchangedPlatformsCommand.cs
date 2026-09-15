@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Trims platforms marked as unchanged from the image info file";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
 
@@ -34,14 +34,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
+            string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath, cancellationToken);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
             RemoveUnchangedPlatforms(imageArtifactDetails);
             imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
 
             if (!Options.IsDryRun)
             {
-                await File.WriteAllTextAsync(Options.ImageInfoPath, imageInfoContents);
+                await File.WriteAllTextAsync(Options.ImageInfoPath, imageInfoContents, cancellationToken);
             }
         }
 

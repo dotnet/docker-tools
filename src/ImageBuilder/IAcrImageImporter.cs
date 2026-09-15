@@ -23,5 +23,6 @@ public interface IAcrImageImporter
     Task ImportImageAsync(
         string destAcrName,
         ResourceIdentifier destResourceId,
-        ContainerRegistryImportImageContent importContent);
+        ContainerRegistryImportImageContent importContent,
+        CancellationToken cancellationToken);
 }

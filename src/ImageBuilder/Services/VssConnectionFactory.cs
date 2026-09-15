@@ -74,9 +74,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     _inner.Dispose();
                 }
 
-                public Task<TeamProject> GetProjectAsync(string projectId) =>
+                public Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken) =>
                     RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                        .ExecuteAsync(() => _inner.GetProject(projectId));
+                        .ExecuteAsync(_ => _inner.GetProject(projectId), cancellationToken);
             }
 
             private class BuildHttpClientWrapper : IBuildHttpClient
@@ -96,22 +96,22 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     _inner.Dispose();
                 }
 
-                public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag) =>
+                public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken) =>
                     RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                        .ExecuteAsync(() => _inner.AddBuildTagAsync(project, buildId, tag));
+                        .ExecuteAsync(ct => _inner.AddBuildTagAsync(project, buildId, tag, cancellationToken: ct), cancellationToken);
 
-                public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId) =>
-                    _inner.GetBuildAsync(projectId, buildId);
+                public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId, CancellationToken cancellationToken) =>
+                    _inner.GetBuildAsync(projectId, buildId, cancellationToken: cancellationToken);
 
-                public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
+                public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, CancellationToken cancellationToken, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
                     RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                        .ExecuteAsync(() => _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter));
+                        .ExecuteAsync(ct => _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter, cancellationToken: ct), cancellationToken);
 
-                public Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId) =>
-                    _inner.GetBuildTimelineAsync(projectId, buildId);
+                public Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId, CancellationToken cancellationToken) =>
+                    _inner.GetBuildTimelineAsync(projectId, buildId, cancellationToken: cancellationToken);
 
-                public Task<WebApi.Build> QueueBuildAsync(WebApi.Build build) =>
-                    _inner.QueueBuildAsync(build);
+                public Task<WebApi.Build> QueueBuildAsync(WebApi.Build build, CancellationToken cancellationToken) =>
+                    _inner.QueueBuildAsync(build, cancellationToken: cancellationToken);
             }
         }
     }

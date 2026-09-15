@@ -22,5 +22,5 @@ public interface IEsrpSigningService
     Task SignFilesAsync(
         IEnumerable<string> filePaths,
         int signingKeyCode,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 }

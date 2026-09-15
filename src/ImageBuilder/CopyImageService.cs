@@ -21,6 +21,7 @@ public interface ICopyImageService
         string destAcrName,
         string srcTagName,
         bool copyReferrers,
+        CancellationToken cancellationToken,
         string? srcRegistryName = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false);
@@ -50,6 +51,7 @@ public class CopyImageService : ICopyImageService
         string destAcrName,
         string srcTagName,
         bool copyReferrers,
+        CancellationToken cancellationToken,
         string? srcRegistryName = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false)
@@ -60,7 +62,7 @@ public class CopyImageService : ICopyImageService
         string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
 
         IReadOnlyList<ReferrerInfo> referrers = copyReferrers
-            ? await _orasService.GetReferrersAsync(reference: sourceImageName, isDryRun: isDryRun)
+            ? await _orasService.GetReferrersAsync(sourceImageName, cancellationToken, isDryRun)
             : [];
 
         var destinationImageNames =
@@ -101,7 +103,7 @@ public class CopyImageService : ICopyImageService
 
         importImageContent.TargetTags.AddRange(destTagNames);
 
-        await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, importImageContent);
+        await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, importImageContent, cancellationToken);
 
         foreach (ReferrerInfo referrer in referrers)
         {
@@ -119,7 +121,7 @@ public class CopyImageService : ICopyImageService
             };
             referrerImportContent.UntaggedTargetRepositories.Add(destRepo);
 
-            await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, referrerImportContent);
+            await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, referrerImportContent, cancellationToken);
         }
     }
 }

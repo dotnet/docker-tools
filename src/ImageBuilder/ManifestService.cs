@@ -12,7 +12,7 @@ internal class ManifestService(IOrasService orasService) : IManifestService
 {
     private readonly IOrasService _orasService = orasService;
 
-    public Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun)
+    public Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
         if (isDryRun)
         {
@@ -27,6 +27,6 @@ internal class ManifestService(IOrasService orasService) : IManifestService
             ? $"{image.Registry}/{image.Repo}:{image.Tag}"
             : $"{image.Registry}/{image.Repo}@{image.Digest}";
 
-        return _orasService.GetManifestAsync(reference);
+        return _orasService.GetManifestAsync(reference, cancellationToken);
     }
 }

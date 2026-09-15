@@ -46,6 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     WorkingDirectory = directory.FullName
                 },
                 false,
+                CancellationToken.None,
                 $"Unable to retrieve the latest commit SHA for {filePath}");
         }
 
@@ -58,13 +59,13 @@ namespace Microsoft.DotNet.ImageBuilder
         public static Uri GetCommitUrl(IGitHubRepoRef repoRef, string sha) =>
             new Uri($"https://github.com/{repoRef.Owner}/{repoRef.Repo}/commit/{sha}");
 
-        public static async Task<GitReference> PushChangesAsync(IGitHubClient client, IGitOptionsHost options, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
+        public static async Task<GitReference> PushChangesAsync(IGitHubClient client, IGitOptionsHost options, string commitMessage, Func<GitHubBranch, CancellationToken, Task<IEnumerable<GitObject>>> getChanges, CancellationToken cancellationToken)
         {
             GitOptions gitOptions = options.GitOptions;
             GitHubProject project = new GitHubProject(gitOptions.Repo, gitOptions.Owner);
             GitHubBranch branch = new GitHubBranch(gitOptions.Branch, project);
 
-            IEnumerable<GitObject> changes = await getChanges(branch);
+            IEnumerable<GitObject> changes = await getChanges(branch, cancellationToken);
 
             if (!changes.Any())
             {

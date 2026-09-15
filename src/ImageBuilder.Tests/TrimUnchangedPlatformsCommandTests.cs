@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class TrimUnchangedPlatformsCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         [TestMethod]
         public async Task NoPlatforms()
         {
@@ -245,7 +246,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(input));
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             string expectedContents = JsonHelper.SerializeObject(expectedOutput);
             string actualContents = File.ReadAllText(command.Options.ImageInfoPath);

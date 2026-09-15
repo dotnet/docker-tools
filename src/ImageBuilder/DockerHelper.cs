@@ -34,10 +34,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static Uri GetAcrUri(string acrName) => new($"https://{FormatAcrName(acrName)}");
 
-        public static IEnumerable<string> GetImageDigests(string image, bool isDryRun)
+        public static IEnumerable<string> GetImageDigests(string image, bool isDryRun, CancellationToken cancellationToken)
         {
             string digests = ExecuteCommandWithFormat(
-                "inspect", "index .RepoDigests", "Failed to retrieve image digests", image, isDryRun);
+                "inspect", "index .RepoDigests", "Failed to retrieve image digests", cancellationToken, image, isDryRun);
 
             string trimmedDigests = digests.TrimStart('[').TrimEnd(']');
             if (trimmedDigests == string.Empty)
@@ -48,10 +48,10 @@ namespace Microsoft.DotNet.ImageBuilder
             return trimmedDigests.Split(' ');
         }
 
-        public static long GetImageSize(string image, bool isDryRun)
+        public static long GetImageSize(string image, bool isDryRun, CancellationToken cancellationToken)
         {
             string size = ExecuteCommandWithFormat(
-                "inspect", ".Size", "Failed to retrieve image size", additionalArgs: image, isDryRun: isDryRun);
+                "inspect", ".Size", "Failed to retrieve image size", cancellationToken, additionalArgs: image, isDryRun: isDryRun);
             return isDryRun ? 0 : long.Parse(size);
         }
 
@@ -66,9 +66,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return image;
         }
 
-        public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists(ManagementType.Image, tag, isDryRun);
+        public static bool LocalImageExists(string tag, bool isDryRun, CancellationToken cancellationToken) => ResourceExists(ManagementType.Image, tag, isDryRun, cancellationToken);
 
-        public static void Login(RegistryCredentials credentials, string server, bool isDryRun)
+        public static void Login(RegistryCredentials credentials, string server, bool isDryRun, CancellationToken cancellationToken)
         {
             ProcessStartInfo startInfo = new(
                 "docker", $"login -u {credentials.Username} --password-stdin {server}")
@@ -77,6 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder
             };
             ExecuteHelper.ExecuteWithRetry(
                 startInfo,
+                cancellationToken,
                 process =>
                 {
                     process.StandardInput.WriteLine(credentials.Password);
@@ -85,10 +86,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 isDryRun);
         }
 
-        public static void Logout(string server, bool isDryRun) =>
-            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
+        public static void Logout(string server, bool isDryRun, CancellationToken cancellationToken) =>
+            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun, cancellationToken);
 
-        public static void PullImage(string image, string? platform, bool isDryRun)
+        public static void PullImage(string image, string? platform, bool isDryRun, CancellationToken cancellationToken)
         {
             string platformArg = "";
             if (platform is not null)
@@ -96,21 +97,21 @@ namespace Microsoft.DotNet.ImageBuilder
                 platformArg = $"--platform {platform} ";
             }
 
-            ExecuteHelper.ExecuteWithRetry("docker", $"pull {platformArg}{image}", isDryRun);
+            ExecuteHelper.ExecuteWithRetry("docker", $"pull {platformArg}{image}", isDryRun, cancellationToken);
         }
 
         public static string ReplaceRepo(string image, string newRepo) =>
             newRepo + image.Substring(GetTagOrDigestSeparatorIndex(image));
 
-        public static void CreateTag(string image, string tag, bool isDryRun)
+        public static void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken)
         {
-            DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
+            DockerHelper.ExecuteCommand("tag", "Failed to create tag", cancellationToken, $"{image} {tag}", isDryRun);
         }
 
-        public static string GetCreatedDate(string image, bool isDryRun)
+        public static string GetCreatedDate(string image, bool isDryRun, CancellationToken cancellationToken)
         {
             return ExecuteCommandWithFormat(
-                "inspect", ".Created", "Failed to retrieve created date", image, isDryRun);
+                "inspect", ".Created", "Failed to retrieve created date", cancellationToken, image, isDryRun);
         }
 
         public static string GetDigestSha(string digest) => digest.Substring(digest.IndexOf("@") + 1);
@@ -198,7 +199,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static OS GetOS()
         {
-            string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
+            string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS", CancellationToken.None);
             if (!Enum.TryParse(osString, true, out OS os))
             {
                 throw new PlatformNotSupportedException("Unknown Docker OS");
@@ -207,11 +208,12 @@ namespace Microsoft.DotNet.ImageBuilder
             return os;
         }
 
-        private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)
+        private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun, CancellationToken cancellationToken)
         {
             string output = ExecuteCommand(
                 $"{Enum.GetName(typeof(ManagementType), type)?.ToLowerInvariant()} ls -a -q {filterArg}",
                 "Failed to find resource",
+                cancellationToken,
                 isDryRun: isDryRun);
             return output != "";
         }
@@ -221,7 +223,7 @@ namespace Microsoft.DotNet.ImageBuilder
             Architecture architecture;
 
             string infoArchitecture = ExecuteCommandWithFormat(
-                "info", ".Architecture", "Failed to detect Docker architecture");
+                "info", ".Architecture", "Failed to detect Docker architecture", CancellationToken.None);
             switch (infoArchitecture)
             {
                 case "x86_64":
@@ -244,15 +246,15 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static string ExecuteCommand(
-            string command, string errorMessage, string? additionalArgs = null, bool isDryRun = false)
+            string command, string errorMessage, CancellationToken cancellationToken, string? additionalArgs = null, bool isDryRun = false)
         {
-            string output = ExecuteHelper.Execute("docker", $"{command} {additionalArgs}", isDryRun, errorMessage);
+            string output = ExecuteHelper.Execute("docker", $"{command} {additionalArgs}", isDryRun, cancellationToken, errorMessage);
             return isDryRun ? "" : output;
         }
 
         private static string ExecuteCommandWithFormat(
-            string command, string outputFormat, string errorMessage, string? additionalArgs = null, bool isDryRun = false) =>
-            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
+            string command, string outputFormat, string errorMessage, CancellationToken cancellationToken, string? additionalArgs = null, bool isDryRun = false) =>
+            ExecuteCommand(command, errorMessage, cancellationToken, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
 
         private enum ManagementType
         {

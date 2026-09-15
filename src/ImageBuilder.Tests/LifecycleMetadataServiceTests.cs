@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class LifecycleMetadataServiceTests
 {
+    public TestContext TestContext { get; set; } = null!;
     private const string Digest = "myregistry.azurecr.io/public/dotnet/runtime@sha256:0123456789abcdef";
 
     /// <summary>
@@ -34,13 +35,13 @@ public class LifecycleMetadataServiceTests
 
         Mock<IOrasService> orasServiceMock = new();
         orasServiceMock
-            .Setup(o => o.GetReferrersAsync(Digest, false, It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
             .ThrowsAsync(rateLimitException);
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         ResponseException thrown = await Should.ThrowAsync<ResponseException>(
-            () => service.GetLifecycleArtifactAsync(Digest));
+            () => service.GetLifecycleArtifactAsync(Digest, TestContext.CancellationToken));
         thrown.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
     }
 
@@ -49,12 +50,12 @@ public class LifecycleMetadataServiceTests
     {
         Mock<IOrasService> orasServiceMock = new();
         orasServiceMock
-            .Setup(o => o.GetReferrersAsync(Digest, false, It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
             .ReturnsAsync([]);
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.GetLifecycleArtifactAsync(Digest);
+        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext.CancellationToken);
 
         result.ShouldBeNull();
     }
@@ -74,12 +75,12 @@ public class LifecycleMetadataServiceTests
 
         Mock<IOrasService> orasServiceMock = new();
         orasServiceMock
-            .Setup(o => o.GetReferrersAsync(Digest, false, It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
             .ReturnsAsync([lifecycleReferrer]);
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.GetLifecycleArtifactAsync(Digest);
+        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext.CancellationToken);
 
         result.ShouldNotBeNull();
         result.Annotations[LifecycleMetadataService.EndOfLifeAnnotation].ShouldBe("2026-05-22");

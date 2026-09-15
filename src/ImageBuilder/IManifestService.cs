@@ -13,16 +13,16 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IManifestService
 {
-    Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun);
+    Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken);
 
-    public async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun)
+    public async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
         if (isDryRun)
         {
             return [];
         }
 
-        ManifestQueryResult manifestResult = await GetManifestAsync(image, isDryRun);
+        ManifestQueryResult manifestResult = await GetManifestAsync(image, isDryRun, cancellationToken);
         if (!manifestResult.Manifest.ContainsKey("layers"))
         {
             JsonArray manifests = (JsonArray)(manifestResult.Manifest["manifests"] ??
@@ -38,9 +38,9 @@ public interface IManifestService
             .Reverse();
     }
 
-    public async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun)
+    public async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
-        IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
+        IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun, cancellationToken);
 
         // A digest will not exist for images that have been built locally or have been manually installed
         if (!digests.Any())
@@ -48,7 +48,7 @@ public interface IManifestService
             return null;
         }
 
-        string digestSha = await GetManifestDigestShaAsync(image, isDryRun);
+        string digestSha = await GetManifestDigestShaAsync(image, isDryRun, cancellationToken);
         if (digestSha is null)
         {
             return null;
@@ -66,9 +66,9 @@ public interface IManifestService
         return digest;
     }
 
-    public async Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun)
+    public async Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun, CancellationToken cancellationToken)
     {
-        ManifestQueryResult manifestResult = await GetManifestAsync(tag, isDryRun);
+        ManifestQueryResult manifestResult = await GetManifestAsync(tag, isDryRun, cancellationToken);
         return manifestResult.ContentDigest;
     }
 }

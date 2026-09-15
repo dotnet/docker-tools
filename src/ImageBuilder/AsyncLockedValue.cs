@@ -38,17 +38,18 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public async Task<T> GetValueAsync(Func<Task<T>> valueInitializer)
+        public async Task<T> GetValueAsync(Func<CancellationToken, Task<T>> valueInitializer, CancellationToken cancellationToken)
         {
             return await _semaphore.DoubleCheckedLockAsync<T>(
                 () => _value,
                 val => val is null,
-                async () => _value = await valueInitializer());
+                async ct => _value = await valueInitializer(ct),
+                cancellationToken);
         }
 
-        public async Task<T> ResetValueAsync(Func<Task<T>> valueInitializer = null)
+        public async Task<T> ResetValueAsync(CancellationToken cancellationToken, Func<CancellationToken, Task<T>> valueInitializer = null)
         {
-            await _semaphore.LockAsync(async () =>
+            await _semaphore.LockAsync(async ct =>
             {
                 if (valueInitializer is null)
                 {
@@ -56,9 +57,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else
                 {
-                    _value = await valueInitializer();
+                    _value = await valueInitializer(ct);
                 }
-            });
+            }, cancellationToken);
 
             return _value;
         }

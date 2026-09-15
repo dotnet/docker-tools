@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class GenerateReadmesCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
         private const string RepoReadmePath = "RepoReadme.md";
         private const string DefaultReadme = "Default Readme Contents";
@@ -52,7 +53,7 @@ Referenced Template Content";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
             generatedReadme.ShouldBe(ExpectedProductFamilyReadme.NormalizeLineEndings(generatedReadme));
@@ -72,7 +73,7 @@ Referenced Template Content";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, Template);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
             generatedReadme.ShouldBe(Expected);
@@ -92,7 +93,7 @@ Referenced Template Content";
             DockerfileHelper.CreateFile("template-with-args.md", tempFolderContext, templateWithArgs);
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, readmeTemplate);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
             string expectedReadme =
@@ -108,7 +109,7 @@ ABC-123";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, template);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
 
             actualException.ShouldBeSameAs(_exitException);
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
@@ -120,7 +121,7 @@ ABC-123";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, null, allowOptionalTemplates: false);
 
-            await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync);
+            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
         }
 
         [TestMethod]
@@ -130,7 +131,7 @@ ABC-123";
             GenerateReadmesCommand command = InitializeCommand(
                 tempFolderContext, productFamilyReadme: ExpectedProductFamilyReadme, repoReadme: ExpectedRepoReadme, validate: true);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
@@ -141,7 +142,7 @@ ABC-123";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, validate: true);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
 
             actualException.ShouldBeSameAs(_exitException);
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
@@ -165,11 +166,11 @@ ABC-123";
             (IReadOnlyDictionary<Value, Value> Symbols, string Indent) templateState;
             if (isManifest)
             {
-                templateState = command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty);
+                templateState = command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty, TestContext.CancellationToken);
             }
             else
             {
-                templateState = command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty);
+                templateState = command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty, TestContext.CancellationToken);
             }
 
             Value actualSymbolValue = templateState.Symbols[symbol];

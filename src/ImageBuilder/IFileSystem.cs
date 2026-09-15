@@ -21,7 +21,7 @@ public interface IFileSystem
     /// <summary>
     /// Asynchronously creates a new file, writes the specified string to the file, and then closes the file.
     /// </summary>
-    Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default);
+    Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken);
 
     /// <summary>
     /// Creates or overwrites a file in the specified path and returns a writable stream
@@ -37,7 +37,7 @@ public interface IFileSystem
     /// <summary>
     /// Asynchronously opens a binary file, reads the contents into a byte array, and then closes the file.
     /// </summary>
-    Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default);
+    Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken);
 
     /// <summary>
     /// Opens a text file, reads all the text in the file, and then closes the file.
@@ -47,7 +47,7 @@ public interface IFileSystem
     /// <summary>
     /// Asynchronously opens a text file, reads all the text in the file, and then closes the file.
     /// </summary>
-    Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default);
+    Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken);
 
     /// <summary>
     /// Determines whether the specified file exists.

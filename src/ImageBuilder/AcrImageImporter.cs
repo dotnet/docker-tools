@@ -37,7 +37,8 @@ internal class AcrImageImporter : IAcrImageImporter
     public async Task ImportImageAsync(
         string destAcrName,
         ResourceIdentifier destResourceId,
-        ContainerRegistryImportImageContent importContent)
+        ContainerRegistryImportImageContent importContent,
+        CancellationToken cancellationToken)
     {
         var armClient = GetArmClientForAcr(destAcrName);
         var registryResource = armClient.GetContainerRegistryResource(destResourceId);
@@ -45,7 +46,9 @@ internal class AcrImageImporter : IAcrImageImporter
         try
         {
             await RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importContent));
+                .ExecuteAsync(
+                    ct => registryResource.ImportImageAsync(WaitUntil.Completed, importContent, ct),
+                    cancellationToken);
         }
         catch (Exception e)
         {

@@ -28,5 +28,5 @@ public interface IImageSigningService
     Task<IReadOnlyList<ImageSigningResult>> SignImagesAsync(
         ImageArtifactDetails imageArtifactDetails,
         int signingKeyCode,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 }

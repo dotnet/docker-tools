@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class WaitForMcrDocIngestionCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         [TestMethod]
         public async Task SuccessfulPublish()
         {
@@ -71,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMcrStatusClient> statusClientMock = new();
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
             statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest))
+                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
                     if (commitResultEnumerator.MoveNext())
@@ -92,10 +93,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(4));
+            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
         }
 
         [TestMethod]
@@ -152,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMcrStatusClient> statusClientMock = new();
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
             statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest))
+                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
                     if (commitResultEnumerator.MoveNext())
@@ -164,7 +165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId))
+                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CommitResultDetailed());
 
             Mock<IEnvironmentService> environmentServiceMock = new();
@@ -181,11 +182,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
 
             actualException.ShouldBeSameAs(exitException);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(4));
-            statusClientMock.Verify(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId), Times.Once);
+            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
+            statusClientMock.Verify(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         /// <summary>
@@ -256,7 +257,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMcrStatusClient> statusClientMock = new();
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
             statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest))
+                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
                     if (commitResultEnumerator.MoveNext())
@@ -268,7 +269,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId))
+                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CommitResultDetailed());
 
             Mock<IEnvironmentService> environmentServiceMock = new();
@@ -281,10 +282,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(3));
+            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
 
         /// <summary>
@@ -340,7 +341,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMcrStatusClient> statusClientMock = new();
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
             statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest))
+                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
                     if (commitResultEnumerator.MoveNext())
@@ -352,10 +353,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId1))
+                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId1, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CommitResultDetailed());
             statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId2))
+                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId2, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CommitResultDetailed());
 
             Mock<IEnvironmentService> environmentServiceMock = new();
@@ -372,11 +373,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
 
             actualException.ShouldBeSameAs(exitException);
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         /// <summary>
@@ -390,7 +391,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMcrStatusClient> statusClientMock = new();
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
             statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest))
+                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
                     new CommitResult
                     {
@@ -414,7 +415,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            await Should.ThrowAsync<TimeoutException>(command.ExecuteAsync);
+            await Should.ThrowAsync<TimeoutException>(() => command.ExecuteAsync(TestContext.CancellationToken));
         }
     }
 }

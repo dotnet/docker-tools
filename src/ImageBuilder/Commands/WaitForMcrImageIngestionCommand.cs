@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Waits for images to complete ingestion into MCR";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("WAITING FOR IMAGE INGESTION");
 
@@ -47,7 +47,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     imageInfos,
                     Options.IngestionOptions.WaitTimeout,
                     Options.IngestionOptions.RequeryDelay,
-                    Options.MinimumQueueTime);
+                    Options.MinimumQueueTime,
+                    cancellationToken);
             }
         }
 

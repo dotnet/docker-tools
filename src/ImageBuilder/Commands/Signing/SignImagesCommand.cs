@@ -29,7 +29,7 @@ public class SignImagesCommand(
     protected override string Description =>
         "Signs container images listed in the image info file using ESRP";
 
-    public override async Task ExecuteAsync()
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("SIGNING CONTAINER IMAGES");
 
@@ -47,7 +47,7 @@ public class SignImagesCommand(
             return;
         }
 
-        string imageInfoContents = await fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
+        string imageInfoContents = await fileSystem.ReadAllTextAsync(Options.ImageInfoPath, cancellationToken);
         ImageArtifactDetails imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
         logger.LogDebug(
@@ -75,7 +75,7 @@ public class SignImagesCommand(
 
         logger.LogInformation("Signing images with key code {KeyCode}.", keyCode);
         IReadOnlyList<ImageSigningResult> results =
-            await signingService.SignImagesAsync(imageArtifactDetails, keyCode);
+            await signingService.SignImagesAsync(imageArtifactDetails, keyCode, cancellationToken);
 
         logger.LogInformation("Successfully signed {Count} image(s).", results.Count);
         foreach (ImageSigningResult result in results)

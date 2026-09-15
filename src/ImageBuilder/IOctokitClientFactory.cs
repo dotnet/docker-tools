@@ -9,11 +9,11 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IOctokitClientFactory
 {
-    Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions);
+    Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken);
 
-    Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions);
+    Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken);
 
-    Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions);
+    Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken);
 
-    Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions);
+    Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken);
 }

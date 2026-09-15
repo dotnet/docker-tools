@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class GenerateDockerfilesCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         private const string DockerfilePath = "1.0/sdk/os/Dockerfile";
         private const string DefaultDockerfile = "FROM Base";
         private const string DockerfileTemplatePath = "Dockerfile.Template";
@@ -47,7 +48,7 @@ ENV TEST2 Value1";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             string generatedDockerfile = File.ReadAllText(Path.Combine(tempFolderContext.Path, DockerfilePath));
             generatedDockerfile.ShouldBe(ExpectedDockerfile.NormalizeLineEndings(generatedDockerfile));
@@ -60,7 +61,7 @@ ENV TEST2 Value1";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, template);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
 
             actualException.ShouldBeSameAs(_exitException);
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
@@ -72,7 +73,7 @@ ENV TEST2 Value1";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, null, allowOptionalTemplates: false);
 
-            await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync);
+            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
         }
 
         /// <summary>
@@ -120,7 +121,7 @@ ENV TEST2 Value1";
             command.Options.Manifest = manifestPath;
             command.LoadManifest();
 
-            InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
             exception.Message.ShouldStartWith("Multiple unique template files are associated with the generated artifact path");
         }
 
@@ -130,7 +131,7 @@ ENV TEST2 Value1";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, dockerfile: ExpectedDockerfile, validate: true);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
@@ -141,7 +142,7 @@ ENV TEST2 Value1";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, validate: true);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
 
             actualException.ShouldBeSameAs(_exitException);
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
@@ -183,7 +184,7 @@ ENV TEST2 Value1";
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext);
 
             (IReadOnlyDictionary<Value, Value> symbols, string indent) = command.GetTemplateState(
-                command.Manifest.GetPlatformByTag(tag), DockerfileTemplatePath, string.Empty);
+                command.Manifest.GetPlatformByTag(tag), DockerfileTemplatePath, string.Empty, TestContext.CancellationToken);
 
             Value variableValue;
             if (isVariable)

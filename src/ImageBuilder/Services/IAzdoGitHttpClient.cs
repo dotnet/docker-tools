@@ -10,10 +10,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IAzdoGitHttpClient : IDisposable
     {
-        Task<List<GitRepository>> GetRepositoriesAsync();
-        Task<List<GitRef>> GetBranchRefsAsync(Guid repositoryId);
-        Task<GitItem> GetItemAsync(Guid repositoryId, string path, GitVersionDescriptor? versionDescriptor = null);
-        Task<GitPush> CreatePushAsync(GitPush push, Guid repositoryId);
-        Task<GitCommit> GetCommitAsync(string commitId, Guid repositoryId);
+        Task<List<GitRepository>> GetRepositoriesAsync(CancellationToken cancellationToken);
+        Task<List<GitRef>> GetBranchRefsAsync(Guid repositoryId, CancellationToken cancellationToken);
+        Task<GitItem> GetItemAsync(Guid repositoryId, string path, CancellationToken cancellationToken, GitVersionDescriptor? versionDescriptor = null);
+        Task<GitPush> CreatePushAsync(GitPush push, Guid repositoryId, CancellationToken cancellationToken);
+        Task<GitCommit> GetCommitAsync(string commitId, Guid repositoryId, CancellationToken cancellationToken);
     }
 }

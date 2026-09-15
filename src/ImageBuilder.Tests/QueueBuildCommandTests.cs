@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class QueueBuildCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         /// <summary>
         /// Verifies that no build is queued if a build is currently in progress.
         /// </summary>
@@ -62,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
             {
-                await fixture.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
                 // Normally this state would cause a build to be queued but since
                 // a build is marked as in progress, it doesn't.
@@ -110,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync();
+            await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
             fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
         }
@@ -154,7 +155,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync();
+            await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
 
             Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
@@ -218,7 +219,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync();
+            await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
             Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
             {
@@ -287,7 +288,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await fixture.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -346,7 +347,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await fixture.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
                 fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
             }
@@ -397,7 +398,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await fixture.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -532,9 +533,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.command = this.CreateCommand(connectionFactoryMock);
             }
 
-            public Task ExecuteCommandAsync()
+            public Task ExecuteCommandAsync(CancellationToken cancellationToken)
             {
-                return this.command.ExecuteAsync();
+                return this.command.ExecuteAsync(cancellationToken);
             }
 
             /// <summary>
@@ -560,12 +561,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             GitRepo,
                             s_gitHubAuthOptions,
                             It.IsAny<bool>(),
+                            It.IsAny<CancellationToken>(),
                             It.IsAny<IEnumerable<string>>()),
                         Times.Exactly(notificationPostCallCount));
 
                 if (!isQueuedBuildExpected)
                 {
-                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
+                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
                 }
                 else
                 {
@@ -581,7 +583,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             this.buildHttpClientMock
                                 .Verify(o =>
                                     o.QueueBuildAsync(
-                                        It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
+                                        It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value)),
+                                        It.IsAny<CancellationToken>()));
                         }
                     }
                 }
@@ -645,7 +648,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Mock<IProjectHttpClient> projectHttpClientMock = new Mock<IProjectHttpClient>();
                 projectHttpClientMock
-                    .Setup(o => o.GetProjectAsync(It.IsAny<string>()))
+                    .Setup(o => o.GetProjectAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(project);
                 return projectHttpClientMock;
             }
@@ -657,15 +660,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IBuildHttpClient> buildHttpClientMock = new();
                 buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), WebApi.BuildStatus.InProgress))
+                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<CancellationToken>(), It.IsAny<IEnumerable<int>>(), WebApi.BuildStatus.InProgress))
                     .ReturnsAsync(inProgressBuilds);
 
                 buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), null))
+                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<CancellationToken>(), It.IsAny<IEnumerable<int>>(), null))
                     .ReturnsAsync(failedBuilds);
 
                 buildHttpClientMock
-                    .Setup(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()))
+                    .Setup(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(build);
 
                 return buildHttpClientMock;

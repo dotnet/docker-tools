@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 [TestClass]
 public class VerifySignaturesCommandTests
 {
+    public TestContext TestContext { get; set; } = null!;
     private const string ImageInfoPath = "/data/image-info.json";
     private const string TrustBasePath = "/notation-trust";
     private const string TrustStoreName = "test";
@@ -115,22 +116,22 @@ public class VerifySignaturesCommandTests
     {
         TestFixture testFixture = CreateSeededCommand();
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         testFixture.NotationClientMock.Verify(
-            x => x.AddCertificate("ca", TrustStoreName, It.IsAny<string>()),
+            x => x.AddCertificate("ca", TrustStoreName, It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         testFixture.NotationClientMock.Verify(
-            x => x.ImportTrustPolicy(It.IsAny<string>()),
+            x => x.ImportTrustPolicy(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         testFixture.NotationClientMock.Verify(
-            x => x.Verify(PlatformDigestA, false),
+            x => x.Verify(PlatformDigestA, false, It.IsAny<CancellationToken>()),
             Times.Once);
         testFixture.NotationClientMock.Verify(
-            x => x.Verify(PlatformDigestB, false),
+            x => x.Verify(PlatformDigestB, false, It.IsAny<CancellationToken>()),
             Times.Once);
         testFixture.NotationClientMock.Verify(
-            x => x.Verify(ManifestDigest, false),
+            x => x.Verify(ManifestDigest, false, It.IsAny<CancellationToken>()),
             Times.Once);
         testFixture.NotationClientMock.VerifyNoOtherCalls();
     }
@@ -139,7 +140,7 @@ public class VerifySignaturesCommandTests
     public async Task VerifySignatures_DoesNotSetExitCodeOnSuccess()
     {
         TestFixture testFixture = CreateSeededCommand();
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
         testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = It.IsAny<int>(), Times.Never);
     }
 
@@ -149,30 +150,30 @@ public class VerifySignaturesCommandTests
         TestFixture testFixture = CreateSeededCommand();
 
         testFixture.NotationClientMock
-            .Setup(x => x.Verify(PlatformDigestB, false))
+            .Setup(x => x.Verify(PlatformDigestB, false, It.IsAny<CancellationToken>()))
             .Throws(new InvalidOperationException("Verification failed"));
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
-        testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestA, false), Times.Once);
-        testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestB, false), Times.Once);
-        testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestA, false, It.IsAny<CancellationToken>()), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestB, false, It.IsAny<CancellationToken>()), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
     public async Task VerifySignatures_SetsExitCodeOnceForMultipleFailures()
     {
         TestFixture testFixture = CreateSeededCommand();
-        testFixture.NotationClientMock.Setup(x => x.Verify(PlatformDigestA, false))
+        testFixture.NotationClientMock.Setup(x => x.Verify(PlatformDigestA, false, It.IsAny<CancellationToken>()))
             .Throws(new InvalidOperationException("fail 1"));
-        testFixture.NotationClientMock.Setup(x => x.Verify(PlatformDigestB, false))
+        testFixture.NotationClientMock.Setup(x => x.Verify(PlatformDigestB, false, It.IsAny<CancellationToken>()))
             .Throws(new InvalidOperationException("fail 2"));
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
-        testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
@@ -186,7 +187,7 @@ public class VerifySignaturesCommandTests
         };
 
         TestFixture testFixture = CreateCommand(notationClientMock.Object, signingConfig);
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
         notationClientMock.VerifyNoOtherCalls();
     }
 
@@ -196,7 +197,7 @@ public class VerifySignaturesCommandTests
         var notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, signingConfig: null);
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         notationClientMock.VerifyNoOtherCalls();
     }
@@ -208,7 +209,7 @@ public class VerifySignaturesCommandTests
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig());
         testFixture.Command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         notationClientMock.VerifyNoOtherCalls();
     }
@@ -219,7 +220,7 @@ public class VerifySignaturesCommandTests
         TestFixture testFixture = CreateSeededCommand();
         testFixture.Command.Options.IsDryRun = true;
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         testFixture.NotationClientMock.VerifyNoOtherCalls();
     }
@@ -235,10 +236,10 @@ public class VerifySignaturesCommandTests
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
-        await testFixture.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync(TestContext.CancellationToken);
 
         notationClientMock.Verify(
-            x => x.Verify(It.IsAny<string>(), It.IsAny<bool>()),
+            x => x.Verify(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -254,7 +255,7 @@ public class VerifySignaturesCommandTests
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
-        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testFixture.Command.ExecuteAsync());
+        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testFixture.Command.ExecuteAsync(TestContext.CancellationToken));
         exception.Message.ShouldContain("Root CA certificate not found");
     }
 
@@ -270,7 +271,7 @@ public class VerifySignaturesCommandTests
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
-        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testFixture.Command.ExecuteAsync());
+        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testFixture.Command.ExecuteAsync(TestContext.CancellationToken));
         exception.Message.ShouldContain("Trust policy not found");
     }
 

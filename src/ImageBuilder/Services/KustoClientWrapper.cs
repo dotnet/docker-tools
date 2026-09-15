@@ -31,7 +31,8 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             string cluster,
             string database,
             string table,
-            IServiceConnection serviceConnection)
+            IServiceConnection serviceConnection,
+            CancellationToken cancellationToken)
         {
             _logger.LogInformation("INGESTING DATA INTO KUSTO");
 
@@ -54,14 +55,15 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                         RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _logger));
 
                 IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
-                    () => IngestFromStreamAsync(csv, client, properties, sourceOptions));
+                    ct => IngestFromStreamAsync(csv, client, properties, sourceOptions, ct),
+                    cancellationToken);
 
                 IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                 for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
                 {
                     _logger.LogInformation(
                         $"Waiting for ingestion from source ID {sourceOptions.SourceId} to complete...");
-                    await Task.Delay(TimeSpan.FromSeconds(30));
+                    await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
                     ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                 }
 
@@ -81,7 +83,8 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             string csv,
             IKustoIngestClient client,
             KustoIngestionProperties properties,
-            StreamSourceOptions sourceOptions)
+            StreamSourceOptions sourceOptions,
+            CancellationToken cancellationToken)
         {
             _logger.LogInformation(
                 $"Ingesting {csv.Length} bytes of data to Kusto (source ID: {sourceOptions.SourceId})");

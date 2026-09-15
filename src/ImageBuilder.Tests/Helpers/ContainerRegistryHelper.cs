@@ -40,7 +40,7 @@ internal static class ContainerRegistryHelper
         {
             foreach (KeyValuePair<string, ManifestQueryResult> kvp in imageNameToQueryResultsMapping)
             {
-                acrClientContentMock.Setup(o => o.GetManifestAsync(kvp.Key)).ReturnsAsync(kvp.Value);
+                acrClientContentMock.Setup(o => o.GetManifestAsync(kvp.Key, It.IsAny<CancellationToken>())).ReturnsAsync(kvp.Value);
             }
         }
 
@@ -109,7 +109,7 @@ internal static class ContainerRegistryHelper
             .ToAsyncEnumerable();
 
         acrClientMock
-            .Setup(o => o.GetRepositoryNamesAsync())
+            .Setup(o => o.GetRepositoryNamesAsync(It.IsAny<CancellationToken>()))
             .Returns(repositoryNames);
 
         foreach (ContainerRepository repo in repositories)

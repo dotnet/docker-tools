@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class PublishMcrDocsCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
         private const string RepoReadmePath = "RepoReadme.md";
         private const string TagsYamlPath = "tags.yml";
@@ -68,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             // Verify published file list does not contain ProductFamilyReadmePath
             gitHubClientMock
@@ -126,7 +127,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RootPath = Path.Combine(tempFolderContext.Path, "dir");
             command.LoadManifest();
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             gitHubClientMock
                 .Verify(o =>
@@ -195,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();
 
-            await Should.ThrowAsync<ValidationException>(() => command.ExecuteAsync());
+            await Should.ThrowAsync<ValidationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
         }
 
         private static string CreateMcrTagsMetadataTemplateFile(TempFolderContext tempFolderContext)
@@ -233,7 +234,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IGitHubClientFactory> gitHubClientFactoryMock = new();
             gitHubClientFactoryMock
-                            .Setup(o => o.GetClientAsync(It.IsAny<GitOptions>(), false))
+                            .Setup(o => o.GetClientAsync(It.IsAny<GitOptions>(), false, It.IsAny<CancellationToken>()))
                             .ReturnsAsync(gitHubClientMock.Object);
             return gitHubClientFactoryMock.Object;
         }

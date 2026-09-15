@@ -25,6 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class GenerateBuildMatrixCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         /// <summary>
         /// Verifies the platformVersionedOs matrix type.
         /// </summary>
@@ -80,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
                 matrixInfos.ShouldHaveSingleItem();
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -148,7 +149,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
                 matrixInfos.ShouldHaveSingleItem();
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -169,7 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<ImageNameResolver>(),
                     It.IsAny<string>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()))
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ImageCacheResult(cacheState, false, null));
         }
 
@@ -340,7 +341,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -405,7 +406,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.Count().ShouldBe(2);
 
             BuildMatrixInfo matrixInfo = matrixInfos.ElementAt(0);
@@ -454,7 +455,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
 
             BuildMatrixInfo matrixInfo = matrixInfos.ShouldHaveSingleItem();
             matrixInfo.Name.ShouldBe("windowsLtsc2025Amd64");
@@ -544,7 +545,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
                 matrixInfos.ShouldHaveSingleItem();
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -634,7 +635,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -700,7 +701,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -800,7 +801,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -921,7 +922,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
 
             if (isRuntimeCached && isAspnetCached && isSdkCached)
             {
@@ -1101,7 +1102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
 
             matrixInfos.ShouldHaveSingleItem();
             matrixInfos.First().Legs.ShouldHaveSingleItem();
@@ -1153,7 +1154,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1217,7 +1218,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
@@ -1278,7 +1279,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
@@ -1325,7 +1326,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1391,7 +1392,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1439,7 +1440,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1562,7 +1563,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrix = matrixInfos.First();
@@ -1603,7 +1604,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // The digest query throws a generic exception (simulating auth failure).
             // This should propagate instead of being silently swallowed.
-            await Should.ThrowAsync<Exception>(command.GenerateMatrixInfoAsync);
+            await Should.ThrowAsync<Exception>(() => command.GenerateMatrixInfoAsync(TestContext.CancellationToken));
         }
 
         /// <summary>
@@ -1618,7 +1619,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IManifestService> manifestServiceMock = new();
             manifestServiceMock
-                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new HttpRequestException("Not Found", null, System.Net.HttpStatusCode.NotFound));
 
             GenerateBuildMatrixCommand command = SetupTrimCacheTest(
@@ -1626,7 +1627,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceMock: manifestServiceMock);
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
 
             // Image not found → cache miss → platform should be included in the matrix
             matrixInfos.ShouldHaveSingleItem();
@@ -1648,7 +1649,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             // Create a mock that returns a matching digest for any image query
             Mock<IManifestService> manifestServiceMock = new();
             manifestServiceMock
-                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(baseImageDigestSha);
 
             GenerateBuildMatrixCommand command = SetupTrimCacheTest(
@@ -1656,7 +1657,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceMock: manifestServiceMock);
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext.CancellationToken);
 
             // Digest matches and Dockerfile unchanged → platform is cached → trimmed from matrix
             matrixInfos.ShouldBeEmpty();

@@ -49,55 +49,53 @@ namespace Microsoft.DotNet.ImageBuilder
             return value;
         }
 
-        public static async Task<T> DoubleCheckedLockAsync<T>(
-            this SemaphoreSlim semaphore, Func<T> getValue, Func<T, bool> checkLockCondition, Func<Task> lockedAction)
+        public static async Task<T> DoubleCheckedLockAsync<T>(this SemaphoreSlim semaphore, Func<T> getValue, Func<T, bool> checkLockCondition, Func<CancellationToken, Task> lockedAction, CancellationToken cancellationToken)
         {
             T value = getValue();
             if (checkLockCondition(value))
             {
-                await semaphore.LockAsync(async () =>
+                await semaphore.LockAsync(async ct =>
                 {
                     value = getValue();
                     if (checkLockCondition(value))
                     {
-                        await lockedAction();
+                        await lockedAction(ct);
                         value = getValue();
                     }
-                });
+                }, cancellationToken);
             }
 
             return value;
         }
 
-        public static async Task<TValue> DoubleCheckedLockLookupAsync<TKey, TValue>(
-            this SemaphoreSlim semaphore, IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> getValue, Func<TValue, bool> addToDictionary = null)
+        public static async Task<TValue> DoubleCheckedLockLookupAsync<TKey, TValue>(this SemaphoreSlim semaphore, IDictionary<TKey, TValue> dictionary, TKey key, Func<CancellationToken, Task<TValue>> getValue, CancellationToken cancellationToken, Func<TValue, bool> addToDictionary = null)
         {
             if (!dictionary.TryGetValue(key, out TValue value))
             {
-                await semaphore.LockAsync(async () =>
+                await semaphore.LockAsync(async ct =>
                 {
                     if (!dictionary.TryGetValue(key, out value))
                     {
-                        value = await getValue();
+                        value = await getValue(ct);
 
                         if (addToDictionary is null || addToDictionary(value))
                         {
                             dictionary.Add(key, value);
                         }
                     }
-                });
+                }, cancellationToken);
             }
 
             return value;
         }
 
-        public static async Task LockAsync(this SemaphoreSlim semaphore, Func<Task> func)
+        public static async Task LockAsync(this SemaphoreSlim semaphore, Func<CancellationToken, Task> func, CancellationToken cancellationToken)
         {
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync(cancellationToken);
 
             try
             {
-                await func();
+                await func(cancellationToken);
             }
             finally
             {

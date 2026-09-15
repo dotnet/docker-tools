@@ -37,11 +37,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (!options.NoVersionLogging)
                     {
-                        LogDockerVersions();
+                        LogDockerVersions(cancellationToken);
                     }
 
                     Initialize(options);
-                    await ExecuteAsync();
+                    await ExecuteAsync(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -64,13 +68,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Options = options;
         }
 
-        private static void LogDockerVersions()
+        private static void LogDockerVersions(CancellationToken cancellationToken)
         {
             // Capture the Docker version and info in the output.
-            ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
-            ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
+            ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false, cancellationToken);
+            ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false, cancellationToken);
         }
 
-        public abstract Task ExecuteAsync();
+        public abstract Task ExecuteAsync(CancellationToken cancellationToken);
     }
 }

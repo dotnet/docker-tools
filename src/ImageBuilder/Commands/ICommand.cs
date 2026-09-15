@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         Options Options { get; }
 
-        Task ExecuteAsync();
+        Task ExecuteAsync(CancellationToken cancellationToken);
 
         Command GetCliCommand();
     }

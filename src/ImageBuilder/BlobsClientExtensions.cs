@@ -11,7 +11,11 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class BlobsClientExtensions
     {
         public static async Task<string> GetFileContentAsync(
-            this IBlobsClient blobsClient, string repoOwner, string repoName, string fileSha)
+            this IBlobsClient blobsClient,
+            string repoOwner,
+            string repoName,
+            string fileSha,
+            CancellationToken cancellationToken)
         {
             Blob fileBlob = await blobsClient.Get(repoOwner, repoName, fileSha);
 

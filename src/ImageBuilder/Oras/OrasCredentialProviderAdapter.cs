@@ -36,7 +36,7 @@ public class OrasCredentialProviderAdapter(
             : hostname;
 
         RegistryCredentials? registryCredentials =
-            await _credentialsProvider.GetCredentialsAsync(lookupHost, _credentialsHost);
+            await _credentialsProvider.GetCredentialsAsync(lookupHost, _credentialsHost, cancellationToken);
 
         if (registryCredentials is null) return default;
 

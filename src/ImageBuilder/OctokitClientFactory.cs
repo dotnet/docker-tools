@@ -20,22 +20,22 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private readonly ILogger<OctokitClientFactory> _logger = logger;
 
-        public async Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions)
+        public async Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
         {
-            var credentials = await CreateCredentialsAsync(authOptions);
+            var credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
             var client = CreateClient(credentials);
             return client;
         }
 
-        public async Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions)
+        public async Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
         {
-            var apiConnection = await CreateApiConnectionAsync(authOptions);
+            var apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
             return new BlobsClient(apiConnection);
         }
 
-        public async Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions)
+        public async Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
         {
-            var apiConnection = await CreateApiConnectionAsync(authOptions);
+            var apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
             return new TreesClient(apiConnection);
         }
 
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <exception cref="InvalidOperationException">
         /// Thrown if no installations are found for the GitHub App specified by authOptions.
         /// </exception>
-        public async Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions)
+        public async Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
         {
             if (authOptions.IsGitHubAppAuth)
             {
@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 var jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
                 var appCredentials = CreateCredentials(jwt);
                 var appClient = CreateClient(appCredentials);
-                var appInfo = await GetCurrentAppInfoAsync(appClient.Credentials);
+                var appInfo = await GetCurrentAppInfoAsync(appClient.Credentials, cancellationToken);
 
                 Installation appInstallation;
                 if (authOptions.InstallationId is string providedId)
@@ -96,9 +96,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return authOptions.AuthToken;
         }
 
-        private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions)
+        private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
         {
-            var credentials = await CreateCredentialsAsync(authOptions);
+            var credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
             var connection = new Connection(s_productHeaderValue)
             {
                 Credentials = credentials
@@ -107,9 +107,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return new ApiConnection(connection);
         }
 
-        private async Task<Credentials> CreateCredentialsAsync(GitHubAuthOptions authOptions)
+        private async Task<Credentials> CreateCredentialsAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
         {
-            var token = await CreateGitHubTokenAsync(authOptions);
+            var token = await CreateGitHubTokenAsync(authOptions, cancellationToken);
             return CreateCredentials(token);
         }
 
@@ -147,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static Credentials CreateCredentials(string token) =>
             new Credentials(token, AuthenticationType.Bearer);
 
-        private static async Task<GitHubAppInfoResult> GetCurrentAppInfoAsync(Credentials credentials)
+        private static async Task<GitHubAppInfoResult> GetCurrentAppInfoAsync(Credentials credentials, CancellationToken cancellationToken)
         {
             var client = CreateClient(credentials);
             var currentApp = await client.GitHubApps.GetCurrent();

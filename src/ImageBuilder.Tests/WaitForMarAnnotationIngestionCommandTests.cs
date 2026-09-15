@@ -16,6 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class WaitForMarAnnotationIngestionCommandTests
 {
+    public TestContext TestContext { get; set; } = null!;
     [TestMethod]
     public async Task WaitForMarAnnotationIngestionCommand()
     {
@@ -34,7 +35,7 @@ public class WaitForMarAnnotationIngestionCommandTests
             ingestionReporter.Object);
         cmd.Options.AnnotationDigestsPath = annotationsDigestsPath;
 
-        await cmd.ExecuteAsync();
+        await cmd.ExecuteAsync(TestContext.CancellationToken);
 
         DigestInfo[] expectedDigests =
             [
@@ -49,6 +50,6 @@ public class WaitForMarAnnotationIngestionCommandTests
                     actualDigests.SequenceEqual(expectedDigests, DigestInfoEqualityComparer.Instance)),
                 It.IsAny<TimeSpan>(),
                 It.IsAny<TimeSpan>(),
-                It.IsAny<DateTime?>()));
+                It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()));
     }
 }

@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class UpdateCommandTests
 {
+    public TestContext TestContext { get; set; } = null!;
     // Use the platform's directory separator for the fake root so that paths derived via
     // Path.Combine and Path.GetDirectoryName stay consistent (Path.GetDirectoryName normalizes
     // a leading '/' to '\' on Windows, which would otherwise not match the in-memory entries).
@@ -33,7 +34,7 @@ public class UpdateCommandTests
         fileSystem.AddDirectory(s_outputPath);
         UpdateCommand command = CreateCommand(fileSystem);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         IReadOnlyList<string> expectedPaths = InfrastructureContent.GetRelativePaths();
         expectedPaths.ShouldNotBeEmpty();
@@ -66,7 +67,7 @@ public class UpdateCommandTests
         fileSystem.AddDirectory(s_outputPath);
         UpdateCommand command = CreateCommand(fileSystem, imageBuilderRef);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         string content = GetRenderedDockerImagesContent(fileSystem);
         content.ShouldContain(imageBuilderRef);
@@ -82,7 +83,7 @@ public class UpdateCommandTests
         Mock<ILogger<UpdateCommand>> logger = new();
         UpdateCommand command = CreateCommand(fileSystem, imageBuilderRef: null, logger: logger);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         string content = GetRenderedDockerImagesContent(fileSystem);
         content.ShouldContain(latestRef);
@@ -107,7 +108,7 @@ public class UpdateCommandTests
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         fileSystem.FileExists(staleFile).ShouldBeFalse();
         fileSystem.FilesDeleted.ShouldContain(staleFile);
@@ -123,7 +124,7 @@ public class UpdateCommandTests
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         fileSystem.DirectoryExists(staleDirectory).ShouldBeFalse();
         fileSystem.DirectoriesDeleted.ShouldContain(staleDirectory);
@@ -137,7 +138,7 @@ public class UpdateCommandTests
         UpdateCommand command = CreateCommand(fileSystem);
 
         InvalidOperationException exception =
-            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
         exception.Message.ShouldContain("root of a git repository");
     }
 
@@ -148,7 +149,7 @@ public class UpdateCommandTests
         UpdateCommand command = CreateCommand(fileSystem);
 
         InvalidOperationException exception =
-            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
         exception.Message.ShouldContain("--init");
         fileSystem.FilesWritten.ShouldBeEmpty();
     }
@@ -160,7 +161,7 @@ public class UpdateCommandTests
         UpdateCommand command = CreateCommand(fileSystem);
         command.Options.Init = true;
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         fileSystem.DirectoriesCreated.ShouldContain(s_outputPath);
         fileSystem.FilesWritten.ShouldNotBeEmpty();
@@ -176,7 +177,7 @@ public class UpdateCommandTests
         UpdateCommand command = CreateCommand(fileSystem);
         command.Options.IsDryRun = true;
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext.CancellationToken);
 
         fileSystem.FilesWritten.ShouldBeEmpty();
         fileSystem.FilesDeleted.ShouldBeEmpty();

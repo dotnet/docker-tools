@@ -15,18 +15,20 @@ namespace Microsoft.DotNet.ImageBuilder
         public static async Task<HttpResponseMessage> SendRequestAsync(
             this HttpClient httpClient,
             Func<HttpRequestMessage> createMessage,
-            Func<Task<string>> getAccessToken,
-            AsyncPolicy<HttpResponseMessage> policy)
+            Func<CancellationToken, Task<string>> getAccessToken,
+            AsyncPolicy<HttpResponseMessage> policy,
+            CancellationToken cancellationToken)
         {
             HttpResponseMessage response = await policy
-                .ExecuteAsync(async () =>
+                .ExecuteAsync(async ct =>
                 {
                     HttpRequestMessage message = createMessage();
 
-                    string accessToken = await getAccessToken();
+                    string accessToken = await getAccessToken(ct);
                     message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    return await httpClient.SendAsync(message);
-                });
+                    return await httpClient.SendAsync(message, ct);
+                },
+                cancellationToken);
 
             response.EnsureSuccessStatusCode();
 

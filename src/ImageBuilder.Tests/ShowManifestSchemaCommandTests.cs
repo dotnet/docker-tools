@@ -16,6 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class ShowManifestSchemaCommandTests
     {
+        public TestContext TestContext { get; set; } = null!;
         /// <summary>
         /// Simple verification that the output of the command can be deserialized as JSON.
         /// </summary>
@@ -26,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(loggerServiceMock.Object);
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext.CancellationToken);
 
             bool hasSchemaJsonLog = loggerServiceMock.Invocations.Any(invocation =>
             {

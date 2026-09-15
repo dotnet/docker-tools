@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
@@ -17,25 +19,28 @@ namespace Microsoft.DotNet.ImageBuilder
             string fileName,
             string args,
             bool isDryRun,
+            CancellationToken cancellationToken,
             string? errorMessage = null,
             string? executeMessageOverride = null)
         {
-            return Execute(new ProcessStartInfo(fileName, args), isDryRun, errorMessage, executeMessageOverride);
+            return Execute(new ProcessStartInfo(fileName, args), isDryRun, cancellationToken, errorMessage, executeMessageOverride);
         }
 
         public static string Execute(
             ProcessStartInfo info,
             bool isDryRun,
+            CancellationToken cancellationToken,
             string? errorMessage = null,
             string? executeMessageOverride = null)
         {
-            return Execute(info, info => ExecuteProcess(info), isDryRun, errorMessage, executeMessageOverride);
+            return Execute(info, info => ExecuteProcess(info, cancellationToken), isDryRun, errorMessage, executeMessageOverride);
         }
 
         public static string ExecuteWithRetry(
             string fileName,
             string args,
             bool isDryRun,
+            CancellationToken cancellationToken,
             string? errorMessage = null,
             string? executeMessageOverride = null)
         {
@@ -43,12 +48,13 @@ namespace Microsoft.DotNet.ImageBuilder
                 new ProcessStartInfo(fileName, args),
                 isDryRun: isDryRun,
                 errorMessage: errorMessage,
-                executeMessageOverride: executeMessageOverride
-            );
+                executeMessageOverride: executeMessageOverride,
+                cancellationToken: cancellationToken);
         }
 
         public static string ExecuteWithRetry(
             ProcessStartInfo info,
+            CancellationToken cancellationToken,
             Action<Process>? processStartedCallback = null,
             bool isDryRun = false,
             string? errorMessage = null,
@@ -56,11 +62,10 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             return Execute(
                 info,
-                startInfo => ExecuteWithRetry(startInfo, info => ExecuteProcess(info, processStartedCallback)),
+                startInfo => ExecuteWithRetry(startInfo, info => ExecuteProcess(info, cancellationToken, processStartedCallback), cancellationToken),
                 isDryRun,
                 errorMessage,
-                executeMessageOverride
-            );
+                executeMessageOverride);
         }
 
         private static string Execute(
@@ -99,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return processResult.StandardOutput;
         }
 
-        private static ProcessResult ExecuteProcess(ProcessStartInfo info, Action<Process>? processStartedCallback = null)
+        private static ProcessResult ExecuteProcess(ProcessStartInfo info, CancellationToken cancellationToken, Action<Process>? processStartedCallback = null)
         {
             info.RedirectStandardOutput = true;
             info.RedirectStandardError = true;
@@ -129,16 +134,60 @@ namespace Microsoft.DotNet.ImageBuilder
             StringBuilder stdError = new StringBuilder();
             process.ErrorDataReceived += getDataReceivedHandler(stdError, Console.Error);
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+
             process.Start();
+            using CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (NotSupportedException)
+                {
+                    TryKillProcess(process);
+                }
+                catch (InvalidOperationException)
+                {
+                    // The process exited before cancellation was observed.
+                }
+                catch (Win32Exception)
+                {
+                    // The process exited or could not be terminated before cancellation was observed.
+                }
+            });
             processStartedCallback?.Invoke(process);
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             process.WaitForExit();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
 
             return new ProcessResult(process, stdOutput.ToString().Trim(), stdError.ToString().Trim());
         }
 
-        private static ProcessResult ExecuteWithRetry(ProcessStartInfo info, Func<ProcessStartInfo, ProcessResult> executor)
+        private static void TryKillProcess(Process process)
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                // The process exited before cancellation was observed.
+            }
+            catch (Win32Exception)
+            {
+                // The process exited or could not be terminated before cancellation was observed.
+            }
+        }
+
+        private static ProcessResult ExecuteWithRetry(ProcessStartInfo info, Func<ProcessStartInfo, ProcessResult> executor, CancellationToken cancellationToken)
         {
             ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
             ProcessResult processResult = Policy
@@ -146,7 +195,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .WaitAndRetry(
                     Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
                     RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, logger))
-                .Execute(() => executor(info));
+                .Execute((_, _) => executor(info), new Context(), cancellationToken);
 
             return processResult;
         }

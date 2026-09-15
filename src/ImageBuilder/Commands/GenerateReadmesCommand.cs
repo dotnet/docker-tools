@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// Orchestrates readme generation for both the product family and individual repos,
         /// then validates all generated artifacts.
         /// </summary>
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("GENERATING READMES");
 
@@ -40,9 +40,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 contexts: new ManifestInfo[] { Manifest },
                 getTemplatePath: (manifest) => manifest.ReadmeTemplatePath,
                 getArtifactPath: (manifest) => manifest.ReadmePath,
-                getState: (manifest, templatePath, indent) => GetTemplateState(manifest, templatePath, indent),
+                getState: (manifest, templatePath, indent) =>
+                    GetTemplateState(manifest, templatePath, indent, cancellationToken),
                 templatePropertyName: nameof(Readme.TemplatePath),
-                artifactName: ArtifactName);
+                artifactName: ArtifactName,
+                cancellationToken);
 
             // Generate Repo Readmes
             await GenerateArtifactsAsync(
@@ -52,9 +54,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 getTemplatePath: ((RepoInfo repo, Readme readme) context) => context.readme.TemplatePath,
                 getArtifactPath: ((RepoInfo repo, Readme readme) context) => context.readme.Path,
                 getState: ((RepoInfo repo, Readme readme) context, string templatePath, string indent) =>
-                    GetTemplateState(context.repo, templatePath, indent),
+                    GetTemplateState(context.repo, templatePath, indent, cancellationToken),
                 templatePropertyName: nameof(Readme.TemplatePath),
                 artifactName: ArtifactName,
+                cancellationToken,
                 postProcess: (string readmeContent, (RepoInfo repo, Readme readme) context) =>
                     UpdateTagsListing(readmeContent, context.repo));
 
@@ -66,21 +69,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </summary>
         /// <param name="templatePath">Must be a valid path to an existing Cottle template file.</param>
         /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
-        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(ManifestInfo manifest, string templatePath, string indent) =>
-            GetCommonTemplateState(templatePath, manifest, (manifest, templatePath, currentIndent) => GetTemplateState(manifest, templatePath, currentIndent + indent), indent);
+        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(ManifestInfo manifest, string templatePath, string indent, CancellationToken cancellationToken) =>
+            GetCommonTemplateState(templatePath, manifest, (manifest, templatePath, currentIndent) => GetTemplateState(manifest, templatePath, currentIndent + indent, cancellationToken), indent, cancellationToken);
 
         /// <summary>
         /// Builds template state for repo-specific readmes, adding repo-specific symbols like FULL_REPO and SHORT_REPO.
         /// </summary>
         /// <param name="templatePath">Must be a valid path to an existing Cottle template file.</param>
         /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
-        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent)
+        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent, CancellationToken cancellationToken)
         {
             (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = GetCommonTemplateState(
                 templatePath,
                 repo,
-                (repo, templatePath, currentIndent) => GetTemplateState(repo, templatePath, currentIndent + indent),
-                indent);
+                (repo, templatePath, currentIndent) =>
+                    GetTemplateState(repo, templatePath, currentIndent + indent, cancellationToken),
+                indent,
+                cancellationToken);
             Dictionary<Value, Value> symbols = new(state.Symbols);
             symbols["FULL_REPO"] = repo.QualifiedName;
             symbols["REPO"] = repo.Name;
@@ -99,9 +104,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string sourceTemplatePath,
             TContext context,
             GetTemplateState<TContext> getState,
-            string indent)
+            string indent,
+            CancellationToken cancellationToken)
         {
-            Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getState, indent);
+            Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getState, indent, cancellationToken);
             symbols["IS_PRODUCT_FAMILY"] = context is ManifestInfo;
 
             return (symbols, indent);

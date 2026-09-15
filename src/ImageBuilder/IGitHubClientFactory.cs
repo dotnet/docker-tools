@@ -10,6 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IGitHubClientFactory
     {
-        Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun);
+        Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken);
     }
 }

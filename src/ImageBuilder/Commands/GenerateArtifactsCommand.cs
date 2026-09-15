@@ -46,6 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             GetTemplateState<TContext> getState,
             string templatePropertyName,
             string artifactName,
+            CancellationToken cancellationToken,
             Func<string, TContext, string> postProcess = null)
         {
             long allArtifactsStartTime = Stopwatch.GetTimestamp();
@@ -84,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     continue;
                 }
 
-                await GenerateArtifactAsync(templatePath, artifactPath, context, getState, artifactName, postProcess);
+                await GenerateArtifactAsync(templatePath, artifactPath, context, getState, artifactName, postProcess, cancellationToken);
                 generatedArtifacts.Add(artifactPath, templatePath);
             }
 
@@ -102,11 +103,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             TContext context,
             GetTemplateState<TContext> getState,
             string artifactName,
-            Func<string, TContext, string> postProcess)
+            Func<string, TContext, string> postProcess,
+            CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Generating '{artifactPath}' from '{templatePath}'");
 
-            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false);
+            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false, cancellationToken);
 
             if (generatedArtifact != null)
             {
@@ -116,7 +118,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 string currentArtifact = File.Exists(artifactPath) ?
-                    await File.ReadAllTextAsync(artifactPath) : string.Empty;
+                    await File.ReadAllTextAsync(artifactPath, cancellationToken) : string.Empty;
                 if (currentArtifact == generatedArtifact)
                 {
                     _logger.LogInformation($"{artifactName} in sync with template");
@@ -131,7 +133,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 else if (!Options.IsDryRun)
                 {
-                    await File.WriteAllTextAsync(artifactPath, generatedArtifact);
+                    await File.WriteAllTextAsync(artifactPath, generatedArtifact, cancellationToken);
                     _logger.LogInformation($"Updated '{artifactPath}'");
                 }
             }
@@ -143,7 +145,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string sourceTemplatePath,
             TContext context,
             GetTemplateState<TContext> getTemplateState,
-            string indent)
+            string indent,
+            CancellationToken cancellationToken)
         {
             return new Dictionary<Value, Value>
             {
@@ -158,7 +161,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 getTemplateState,
                                 args.Count > 1 ? args[1] : Value.EmptyMap,
                                 args.Count > 2 ? args[2].AsString : null,
-                                trimTemplate: true).Result,
+                                trimTemplate: true,
+                                cancellationToken).GetAwaiter().GetResult(),
                         min: 1,
                         max: 3)),
                 ["replace"] = Value.FromFunction(
@@ -181,11 +185,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             GetTemplateState<TContext> getTemplateState,
             Value templateArgs,
             string currentIndent,
-            bool trimTemplate)
+            bool trimTemplate,
+            CancellationToken cancellationToken)
         {
             string artifact = null;
 
-            string template = await File.ReadAllTextAsync(templatePath);
+            string template = await File.ReadAllTextAsync(templatePath, cancellationToken);
 
             if (trimTemplate)
             {

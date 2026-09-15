@@ -13,7 +13,12 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class TreesClientExtensions
     {
         public static async Task<string> GetFileShaAsync(
-            this ITreesClient treesClient, string repoOwner, string repoName, string branch, string path)
+            this ITreesClient treesClient,
+            string repoOwner,
+            string repoName,
+            string branch,
+            string path,
+            CancellationToken cancellationToken)
         {
             string? dirPath = Path.GetDirectoryName(path)?.Replace("\\", "/");
             TreeResponse treeResponse = await treesClient.Get(repoOwner, repoName, HttpUtility.UrlEncode($"{branch}:{dirPath}"));

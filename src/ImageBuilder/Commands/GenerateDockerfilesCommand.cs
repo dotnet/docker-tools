@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("GENERATING DOCKERFILES");
 
@@ -31,14 +31,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest.GetFilteredPlatforms(),
                 (platform) => platform.DockerfileTemplate,
                 (platform) => platform.DockerfilePath,
-                (platform, templatePath, indent) => GetTemplateState(platform, templatePath, indent),
+                (platform, templatePath, indent) => GetTemplateState(platform, templatePath, indent, cancellationToken),
                 nameof(Platform.DockerfileTemplate),
-                "Dockerfile");
+                "Dockerfile",
+                cancellationToken);
 
             ValidateArtifacts();
         }
 
-        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(PlatformInfo platform, string templatePath, string indent)
+        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(PlatformInfo platform, string templatePath, string indent, CancellationToken cancellationToken)
         {
             string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
             ImageInfo image = Manifest.GetImageByPlatform(platform);
@@ -46,8 +47,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<Value, Value> symbols = GetSymbols(
                 templatePath,
                 platform,
-                (platform, templatePath, currentIndent) => GetTemplateState(platform, templatePath, currentIndent + indent),
-                indent);
+                (platform, templatePath, currentIndent) =>
+                    GetTemplateState(platform, templatePath, currentIndent + indent, cancellationToken),
+                indent,
+                cancellationToken);
             symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;

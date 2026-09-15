@@ -17,7 +17,7 @@ public interface ILifecycleMetadataService
     /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The lifecycle artifact manifest, or null if none exists.</returns>
-    Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken = default);
+    Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken);
 
     /// <summary>
     /// Annotates the given digest with an end-of-life date.
@@ -26,5 +26,5 @@ public interface ILifecycleMetadataService
     /// <param name="date">The end-of-life date to set.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created lifecycle artifact manifest, or null on failure.</returns>
-    Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken = default);
+    Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken);
 }

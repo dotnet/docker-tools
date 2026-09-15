@@ -25,16 +25,16 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
             ?? throw new ArgumentNullException(nameof(octokitClientFactory));
 
-        public async Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun)
+        public async Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken)
         {
-            var token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions);
+            var token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions, cancellationToken);
 
             var auth = new GitHubAuth(
                 authToken: token,
                 user: gitOptions.Username,
                 email: gitOptions.Email);
 
-            return new GitHubClientWrapper(_loggerFactory, new GitHubClient(auth), isDryRun);
+            return new GitHubClientWrapper(_loggerFactory, new GitHubClient(auth), isDryRun, cancellationToken);
         }
 
         // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled
@@ -43,12 +43,14 @@ namespace Microsoft.DotNet.ImageBuilder
             private readonly ILogger<GitHubClientWrapper> _logger;
             private readonly GitHubClient _innerClient;
             private readonly bool _isDryRun;
+            private readonly CancellationToken _cancellationToken;
 
-            public GitHubClientWrapper(ILoggerFactory loggerFactory, GitHubClient innerClient, bool isDryRun)
+            public GitHubClientWrapper(ILoggerFactory loggerFactory, GitHubClient innerClient, bool isDryRun, CancellationToken cancellationToken)
             {
                 _logger = loggerFactory.CreateLogger<GitHubClientWrapper>();
                 _innerClient = innerClient;
                 _isDryRun = isDryRun;
+                _cancellationToken = cancellationToken;
             }
 
             public GitHubAuth Auth => _innerClient.Auth;
@@ -63,19 +65,19 @@ namespace Microsoft.DotNet.ImageBuilder
 
             public Task<GitCommit> GetCommitAsync(GitHubProject project, string sha) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _innerClient.GetCommitAsync(project, sha));
+                    .ExecuteAsync(_ => _innerClient.GetCommitAsync(project, sha), _cancellationToken);
 
             public Task<GitHubContents> GetGitHubFileAsync(string path, GitHubProject project, string @ref) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _innerClient.GetGitHubFileAsync(path, project, @ref));
+                    .ExecuteAsync(_ => _innerClient.GetGitHubFileAsync(path, project, @ref), _cancellationToken);
 
             public Task<string> GetGitHubFileContentsAsync(string path, GitHubBranch branch) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _innerClient.GetGitHubFileContentsAsync(path, branch));
+                    .ExecuteAsync(_ => _innerClient.GetGitHubFileContentsAsync(path, branch), _cancellationToken);
 
             public Task<string> GetGitHubFileContentsAsync(string path, GitHubProject project, string @ref) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _innerClient.GetGitHubFileContentsAsync(path, project, @ref));
+                    .ExecuteAsync(_ => _innerClient.GetGitHubFileContentsAsync(path, project, @ref), _cancellationToken);
 
             public Task<string> GetMyAuthorIdAsync() =>
                 _innerClient.GetMyAuthorIdAsync();
@@ -130,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             public Task<GitHubPullRequest> SearchPullRequestsAsync(GitHubProject project, string headPrefix, string author, string sortType = "created") =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _innerClient.SearchPullRequestsAsync(project, headPrefix, author, sortType));
+                    .ExecuteAsync(_ => _innerClient.SearchPullRequestsAsync(project, headPrefix, author, sortType), _cancellationToken);
 
             public Task UpdateGitHubPullRequestAsync(GitHubProject project, int number, string title = null, string body = null, string state = null, bool? maintainersCanModify = null)
             {

@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Displays statistics about the number of images";
 
-        public override Task ExecuteAsync()
+        public override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("IMAGE STATISTICS");
 

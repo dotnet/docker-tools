@@ -22,7 +22,7 @@ public sealed class FileSystem : IFileSystem
         File.WriteAllText(path, contents);
 
     /// <inheritdoc/>
-    public Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default) =>
+    public Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken) =>
         File.WriteAllTextAsync(path, contents, cancellationToken);
 
     /// <inheritdoc/>
@@ -34,7 +34,7 @@ public sealed class FileSystem : IFileSystem
         File.ReadAllBytes(path);
 
     /// <inheritdoc/>
-    public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
+    public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken) =>
         File.ReadAllBytesAsync(path, cancellationToken);
 
     /// <inheritdoc/>
@@ -42,7 +42,7 @@ public sealed class FileSystem : IFileSystem
         File.ReadAllText(path);
 
     /// <inheritdoc/>
-    public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>
+    public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken) =>
         File.ReadAllTextAsync(path, cancellationToken);
 
     /// <inheritdoc/>

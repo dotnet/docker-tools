@@ -17,5 +17,6 @@ public interface INotificationService
         string repoName,
         GitHubAuthOptions gitHubAuth,
         bool isDryRun,
+        CancellationToken cancellationToken,
         IEnumerable<string>? comments = null);
 }

@@ -9,7 +9,7 @@ public interface IAcrContentClient
 {
     public string RepositoryName { get; }
 
-    public Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest);
+    public Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest, CancellationToken cancellationToken);
 
-    public Task DeleteManifestAsync(string tagOrDigest);
+    public Task DeleteManifestAsync(string tagOrDigest, CancellationToken cancellationToken);
 }

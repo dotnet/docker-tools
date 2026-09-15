@@ -27,25 +27,25 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 _gitHttpClient = gitHttpClient;
             }
 
-            public Task<List<GitRepository>> GetRepositoriesAsync() =>
+            public Task<List<GitRepository>> GetRepositoriesAsync(CancellationToken cancellationToken) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _gitHttpClient.GetRepositoriesAsync());
+                    .ExecuteAsync(ct => _gitHttpClient.GetRepositoriesAsync(cancellationToken: ct), cancellationToken);
 
-            public Task<List<GitRef>> GetBranchRefsAsync(Guid repositoryId) =>
+            public Task<List<GitRef>> GetBranchRefsAsync(Guid repositoryId, CancellationToken cancellationToken) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _gitHttpClient.GetBranchRefsAsync(repositoryId));
+                    .ExecuteAsync(_ => _gitHttpClient.GetBranchRefsAsync(repositoryId), cancellationToken);
 
-            public Task<GitItem> GetItemAsync(Guid repositoryId, string path, GitVersionDescriptor? versionDescriptor = null) =>
+            public Task<GitItem> GetItemAsync(Guid repositoryId, string path, CancellationToken cancellationToken, GitVersionDescriptor? versionDescriptor = null) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _gitHttpClient.GetItemAsync(repositoryId, path, versionDescriptor: versionDescriptor));
+                    .ExecuteAsync(ct => _gitHttpClient.GetItemAsync(repositoryId, path, versionDescriptor: versionDescriptor, cancellationToken: ct), cancellationToken);
 
-            public Task<GitPush> CreatePushAsync(GitPush push, Guid repositoryId) =>
+            public Task<GitPush> CreatePushAsync(GitPush push, Guid repositoryId, CancellationToken cancellationToken) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _gitHttpClient.CreatePushAsync(push, repositoryId));
+                    .ExecuteAsync(ct => _gitHttpClient.CreatePushAsync(push, repositoryId, cancellationToken: ct), cancellationToken);
 
-            public Task<GitCommit> GetCommitAsync(string commitId, Guid repositoryId) =>
+            public Task<GitCommit> GetCommitAsync(string commitId, Guid repositoryId, CancellationToken cancellationToken) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => _gitHttpClient.GetCommitAsync(commitId, repositoryId));
+                    .ExecuteAsync(ct => _gitHttpClient.GetCommitAsync(commitId, repositoryId, cancellationToken: ct), cancellationToken);
 
             public void Dispose() => _gitHttpClient.Dispose();
         }

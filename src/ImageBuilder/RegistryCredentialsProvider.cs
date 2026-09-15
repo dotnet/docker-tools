@@ -24,7 +24,9 @@ public class RegistryCredentialsProvider(
     private static readonly TimeSpan s_refreshBuffer = TimeSpan.FromMinutes(5);
 
     // Cache refresh tokens per-registry to prevent rate limit/throttling errors from many parallel requests.
-    private readonly ConcurrentDictionary<string, Lazy<Task<CachedRefreshToken>>> _refreshTokenCache =
+    private readonly ConcurrentDictionary<string, CachedRefreshToken> _refreshTokenCache =
+        new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _refreshTokenLocks =
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
@@ -38,7 +40,7 @@ public class RegistryCredentialsProvider(
     public async ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,
         IRegistryCredentialsHost? credsHost,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         RegistryInfo registryInfo = registryResolver.Resolve(registry, credsHost);
 
@@ -62,45 +64,30 @@ public class RegistryCredentialsProvider(
         IServiceConnection serviceConnection,
         CancellationToken ct)
     {
-        Lazy<Task<CachedRefreshToken>> lazyRefreshTokenTask = _refreshTokenCache.GetOrAdd(
-            acr.Server,
-            _ => new Lazy<Task<CachedRefreshToken>>(() =>
-                ExchangeAadTokenForAcrRefreshTokenAsync(acr, serviceConnection, ct)
-            )
-        );
-
-        CachedRefreshToken refreshToken = await GetValueOrEvictCache(lazyRefreshTokenTask);
-
-        // Re-exchange once when the cached token is at or near its expiration. The fresh token is
-        // then used unconditionally, so a token that somehow reads as near-expiry can't cause an
-        // exchange loop.
-        if (refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
+        if (_refreshTokenCache.TryGetValue(acr.Server, out CachedRefreshToken? refreshToken)
+            && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
         {
-            // Evict the stale entry (only if it's still the one we read) and exchange a fresh token.
-            _refreshTokenCache.TryRemove(acr.Server, lazyRefreshTokenTask);
-
-            Lazy<Task<CachedRefreshToken>> freshRefreshTokenExchange = _refreshTokenCache.GetOrAdd(
-                acr.Server,
-                _ => new Lazy<Task<CachedRefreshToken>>(() =>
-                    ExchangeAadTokenForAcrRefreshTokenAsync(acr, serviceConnection, ct)
-                )
-            );
-            refreshToken = await GetValueOrEvictCache(freshRefreshTokenExchange);
+            return refreshToken;
         }
 
-        return refreshToken;
+        SemaphoreSlim refreshTokenLock = _refreshTokenLocks.GetOrAdd(acr.Server, _ => new SemaphoreSlim(1, 1));
+        await refreshTokenLock.WaitAsync(ct);
 
-        async Task<CachedRefreshToken> GetValueOrEvictCache(Lazy<Task<CachedRefreshToken>> refreshTokenExchange)
+        try
         {
-            try
+            if (_refreshTokenCache.TryGetValue(acr.Server, out refreshToken)
+                && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
             {
-                return await refreshTokenExchange.Value;
+                return refreshToken;
             }
-            catch
-            {
-                _refreshTokenCache.TryRemove(acr.Server, refreshTokenExchange);
-                throw;
-            }
+
+            refreshToken = await ExchangeAadTokenForAcrRefreshTokenAsync(acr, serviceConnection, ct);
+            _refreshTokenCache[acr.Server] = refreshToken;
+            return refreshToken;
+        }
+        finally
+        {
+            refreshTokenLock.Release();
         }
     }
 

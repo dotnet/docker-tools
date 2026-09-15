@@ -13,11 +13,11 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public static class AzdoGitHttpClientExtensions
     {
-        public static async Task<bool> FileExistsAsync(this IAzdoGitHttpClient gitHttpClient, Guid repositoryId, string branchName, string path)
+        public static async Task<bool> FileExistsAsync(this IAzdoGitHttpClient gitHttpClient, Guid repositoryId, string branchName, string path, CancellationToken cancellationToken)
         {
             try
             {
-                await gitHttpClient.GetItemAsync(repositoryId, path, versionDescriptor: new GitVersionDescriptor
+                await gitHttpClient.GetItemAsync(repositoryId, path, cancellationToken, versionDescriptor: new GitVersionDescriptor
                 {
                     Version = branchName,
                     VersionType = GitVersionType.Branch
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         }
 
         public static async Task<GitPush> PushChangesAsync(this IAzdoGitHttpClient gitHttpClient, string commitMessage, Guid repositoryId, GitRef branchRef,
-            IDictionary<string, string> files)
+            IDictionary<string, string> files, CancellationToken cancellationToken)
         {
             GitRefUpdate branchRefUpdate = new GitRefUpdate
             {
@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             var fileInfos = files
                 .Select(kvp => new
                 {
-                    Exists = FileExistsAsync(gitHttpClient, repositoryId, branchName, kvp.Key),
+                    Exists = FileExistsAsync(gitHttpClient, repositoryId, branchName, kvp.Key, cancellationToken),
                     Path = kvp.Key,
                     FileContents = kvp.Value
                 })
@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 Commits = new GitCommitRef[] { commitRef }
             };
 
-            return await gitHttpClient.CreatePushAsync(push, repositoryId);
+            return await gitHttpClient.CreatePushAsync(push, repositoryId, cancellationToken);
         }
     }
 }

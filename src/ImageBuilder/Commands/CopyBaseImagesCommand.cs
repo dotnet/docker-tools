@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("COPYING IMAGES");
 
@@ -69,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<Task> copyImageTasks = manifests
                 .SelectMany(manifest => GetFromImages(manifest))
                 .Distinct()
-                .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName));
+                .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName, cancellationToken));
 
             await Task.WhenAll(copyImageTasks);
         }
@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
                 .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
 
-        private Task CopyImageAsync(string fromImage, string destinationRegistryName)
+        private Task CopyImageAsync(string fromImage, string destinationRegistryName, CancellationToken cancellationToken)
         {
             fromImage = DockerHelper.NormalizeRepo(fromImage);
 
@@ -101,7 +101,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 srcTagName: srcImage,
                 srcRegistryName: registry,
                 sourceCredentials: importSourceCreds,
-                copyReferrers: false);
+                copyReferrers: false,
+                cancellationToken: cancellationToken);
         }
     }
 }

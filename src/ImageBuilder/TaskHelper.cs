@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -14,25 +13,35 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <summary>
         /// Acts as an overload of <see cref="Task.WhenAll(IEnumerable{Task})"/> that adds timeout logic.
         /// </summary>
-        public static async Task WhenAll(IEnumerable<Task> tasks, TimeSpan timeout)
+        public static async Task WhenAll(IEnumerable<Task> tasks, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            Task delay = Task.Delay(timeout);
-            Task completedTask = await Task.WhenAny(Task.WhenAll(tasks), delay);
+            Task allTasks = Task.WhenAll(tasks);
+            Task delay = Task.Delay(timeout, cancellationToken);
+            Task completedTask = await Task.WhenAny(allTasks, delay);
             if (completedTask == delay)
             {
+                await delay;
                 throw new TimeoutException($"Timed out after waiting '{timeout}'.");
             }
+
+            await allTasks;
         }
 
         /// <summary>
         /// Acts as an overload of <see cref="Task.WhenAll{TResult}(IEnumerable{Task{TResult}})"/> that adds timeout logic.
         /// </summary>
-        public static async Task<TResult[]> WhenAll<TResult>(IEnumerable<Task<TResult>> tasks, TimeSpan timeout)
+        public static async Task<TResult[]> WhenAll<TResult>(IEnumerable<Task<TResult>> tasks, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            await WhenAll((IEnumerable<Task>)tasks, timeout);
-            return tasks
-                .Select(task => task.Result)
-                .ToArray();
+            Task<TResult[]> allTasks = Task.WhenAll(tasks);
+            Task delay = Task.Delay(timeout, cancellationToken);
+            Task completedTask = await Task.WhenAny(allTasks, delay);
+            if (completedTask == delay)
+            {
+                await delay;
+                throw new TimeoutException($"Timed out after waiting '{timeout}'.");
+            }
+
+            return await allTasks;
         }
     }
 }

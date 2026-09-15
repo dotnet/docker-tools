@@ -24,6 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 [TestClass]
 public class ImageSigningServiceTests
 {
+    public TestContext? TestContext { get; set; }
+
     private const string ArtifactStagingDir = "/artifacts/staging";
 
     [TestMethod]
@@ -33,7 +35,7 @@ public class ImageSigningServiceTests
 
         var imageArtifactDetails = new ImageArtifactDetails { Repos = [] };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.ShouldBeEmpty();
     }
@@ -63,7 +65,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.ShouldBeEmpty();
         mockOras.Verify(
@@ -103,7 +105,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.Count.ShouldBe(1);
     }
@@ -143,7 +145,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 42);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 42, TestContext?.CancellationToken ?? default);
 
         mockOras.Verify(
             s => s.GetDescriptorAsync("sha256:abc123", It.IsAny<CancellationToken>()),
@@ -196,7 +198,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.Count.ShouldBe(3);
         results.Select(r => r.ImageName).ShouldBe(
@@ -218,7 +220,7 @@ public class ImageSigningServiceTests
             });
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<ReferrerInfo>());
 
         var fileSystem = new InMemoryFileSystem();
@@ -248,7 +250,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+        await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         fileSystem.FilesWritten.ShouldContain(
             path => path.Contains("sha256-manifest123") && path.EndsWith(".payload"));
@@ -283,7 +285,7 @@ public class ImageSigningServiceTests
         };
 
         var ex = await Should.ThrowAsync<InvalidOperationException>(
-            () => service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100));
+            () => service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default));
 
         ex.Message.ShouldContain("ArtifactStagingDirectory");
     }
@@ -306,7 +308,7 @@ public class ImageSigningServiceTests
                 $"sha256:sig-{p.ImageName}");
         mock
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<ReferrerInfo>());
         return mock;
     }
@@ -370,7 +372,7 @@ public class ImageSigningServiceTests
         // Both digests already have signature referrers
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
@@ -401,16 +403,16 @@ public class ImageSigningServiceTests
         };
 
         IReadOnlyList<ImageSigningResult> results =
-            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.ShouldBeEmpty();
 
         // Referrers should be checked for each digest
         mockOras.Verify(
-            s => s.GetReferrersAsync("sha256:abc123", It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            s => s.GetReferrersAsync("sha256:abc123", It.IsAny<CancellationToken>(), It.IsAny<bool>()),
             Times.Once);
         mockOras.Verify(
-            s => s.GetReferrersAsync("sha256:def456", It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            s => s.GetReferrersAsync("sha256:def456", It.IsAny<CancellationToken>(), It.IsAny<bool>()),
             Times.Once);
 
         // ESRP should never be called
@@ -429,14 +431,14 @@ public class ImageSigningServiceTests
         // First digest already has a signature, second does not
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                "sha256:already-signed", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                "sha256:already-signed", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
             });
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                "sha256:not-yet-signed", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                "sha256:not-yet-signed", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<ReferrerInfo>());
 
         var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
@@ -464,7 +466,7 @@ public class ImageSigningServiceTests
         };
 
         IReadOnlyList<ImageSigningResult> results =
-            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.Count.ShouldBe(1);
         results[0].ImageName.ShouldBe("sha256:not-yet-signed");
@@ -488,7 +490,7 @@ public class ImageSigningServiceTests
         // Referrer exists but is NOT a Notary signature (e.g., an SBOM)
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("registry/repo@sha256:sbom123", "application/spdx+json")
@@ -518,7 +520,7 @@ public class ImageSigningServiceTests
         };
 
         IReadOnlyList<ImageSigningResult> results =
-            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         // Should still sign because the referrer is not a Notary signature
         results.Count.ShouldBe(1);

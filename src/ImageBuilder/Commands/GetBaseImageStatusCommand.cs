@@ -22,23 +22,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Displays the status of the referenced external base images";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (Options.ContinuousMode)
             {
                 while (true)
                 {
-                    CheckStatus();
-                    await Task.Delay(Options.ContinuousModeDelay);
+                    CheckStatus(cancellationToken);
+                    await Task.Delay(Options.ContinuousModeDelay, cancellationToken);
                 }
             }
             else
             {
-                CheckStatus();
+                CheckStatus(cancellationToken);
             }
         }
 
-        private void CheckStatus()
+        private void CheckStatus(CancellationToken cancellationToken)
         {
             IEnumerable<(string Tag, string Platform)> platformTags = Manifest.GetFilteredPlatforms()
                 .Select(platform =>
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation("PULLING LATEST BASE IMAGES");
             foreach ((string Tag, string Platform) imageTag in platformTags)
             {
-                _dockerService.PullImage(imageTag.Tag, imageTag.Platform, Options.IsDryRun);
+                _dockerService.PullImage(imageTag.Tag, imageTag.Platform, Options.IsDryRun, cancellationToken);
             }
 
             _logger.LogInformation("QUERYING STATUS");
@@ -66,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(imageTag => new
                 {
                     Tag = imageTag.Tag,
-                    DateCreated = _dockerService.GetCreatedDate(imageTag.Tag, Options.IsDryRun)
+                    DateCreated = _dockerService.GetCreatedDate(imageTag.Tag, Options.IsDryRun, cancellationToken)
                 })
                 .ToList();
 

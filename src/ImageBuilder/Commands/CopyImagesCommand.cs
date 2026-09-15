@@ -22,6 +22,7 @@ public abstract class CopyImagesCommand<TOptions>(
         string destRegistryName,
         string srcTagName,
         bool copyReferrers,
+        CancellationToken cancellationToken,
         string? srcRegistryName = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
             _copyImageService.ImportImageAsync(
@@ -31,5 +32,6 @@ public abstract class CopyImagesCommand<TOptions>(
                 srcRegistryName: srcRegistryName,
                 sourceCredentials: sourceCredentials,
                 isDryRun: Options.IsDryRun,
-                copyReferrers: copyReferrers);
+                copyReferrers: copyReferrers,
+                cancellationToken: cancellationToken);
 }

@@ -24,6 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class WaitForMcrImageIngestionCommandTests
     {
+        public TestContext? TestContext { get; set; }
+
         [TestMethod]
         [DataRow("")]
         [DataRow("public/")]
@@ -141,7 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
             command.LoadManifest();
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<DigestInfo> expectedDigestInfos =
                 [
@@ -157,7 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
                     It.IsAny<TimeSpan>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<DateTime>()));
+                    It.IsAny<DateTime>(), It.IsAny<CancellationToken>()));
         }
 
         [TestMethod]
@@ -274,7 +276,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
             command.LoadManifest();
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<DigestInfo> expectedDigestInfos =
                 [
@@ -291,7 +293,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
                     It.IsAny<TimeSpan>(),
                     It.IsAny<TimeSpan>(),
-                    It.IsAny<DateTime>()));
+                    It.IsAny<DateTime>(), It.IsAny<CancellationToken>()));
         }
     }
 }

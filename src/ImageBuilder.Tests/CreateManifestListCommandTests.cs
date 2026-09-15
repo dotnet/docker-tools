@@ -29,6 +29,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class CreateManifestListCommandTests
 {
+    #nullable enable annotations
+    public TestContext? TestContext { get; set; }
+
+    #nullable disable annotations
+
     /// <summary>
     /// Verifies that manifest lists are created, pushed, and digests are
     /// recorded in image-info.json.
@@ -39,7 +44,7 @@ public class CreateManifestListCommandTests
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("digest1");
 
         Mock<IDockerService> dockerServiceMock = new();
@@ -68,17 +73,17 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // Verify manifest lists were created
         dockerServiceMock.Verify(o => o.CreateManifestList(
-            "repo:sharedtag1", new[] { "repo:tag1" }, false));
+            "repo:sharedtag1", new[] { "repo:tag1" }, false, It.IsAny<CancellationToken>()));
         dockerServiceMock.Verify(o => o.CreateManifestList(
-            "repo:sharedtag2", new[] { "repo:tag1" }, false));
+            "repo:sharedtag2", new[] { "repo:tag1" }, false, It.IsAny<CancellationToken>()));
 
         // Verify manifest lists were pushed
-        dockerServiceMock.Verify(o => o.PushManifestList("repo:sharedtag1", false));
-        dockerServiceMock.Verify(o => o.PushManifestList("repo:sharedtag2", false));
+        dockerServiceMock.Verify(o => o.PushManifestList("repo:sharedtag1", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.PushManifestList("repo:sharedtag2", false, It.IsAny<CancellationToken>()));
     }
 
     /// <summary>
@@ -90,7 +95,7 @@ public class CreateManifestListCommandTests
         Mock<IManifestService> manifestServiceMock = new() { CallBase = true };
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
         manifestServiceMock
-            .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false))
+            .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManifestQueryResult("digest-sha", new JsonObject()));
 
         DateTime createdDate = DateTime.UtcNow;
@@ -118,7 +123,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         ImageArtifactDetails result = JsonConvert.DeserializeObject<ImageArtifactDetails>(
             File.ReadAllText(command.Options.ImageInfoPath));
@@ -139,11 +144,11 @@ public class CreateManifestListCommandTests
 
         manifestServiceMock
             .Setup(o => o.GetManifestAsync(
-                It.Is<ImageName>(i => i.ToString().Contains("repo:sharedtag")), false))
+                It.Is<ImageName>(i => i.ToString().Contains("repo:sharedtag")), false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManifestQueryResult("primary-digest", new JsonObject()));
         manifestServiceMock
             .Setup(o => o.GetManifestAsync(
-                It.Is<ImageName>(i => i.ToString().Contains("syndicated-repo:syn-sharedtag")), false))
+                It.Is<ImageName>(i => i.ToString().Contains("syndicated-repo:syn-sharedtag")), false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManifestQueryResult("syndicated-digest", new JsonObject()));
 
         DateTime createdDate = DateTime.UtcNow;
@@ -200,7 +205,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         ImageArtifactDetails result = JsonConvert.DeserializeObject<ImageArtifactDetails>(
             File.ReadAllText(command.Options.ImageInfoPath));
@@ -238,7 +243,7 @@ public class CreateManifestListCommandTests
         command.LoadManifest();
 
         // Should not throw
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // File should still not exist (command didn't create it)
         File.Exists(command.Options.ImageInfoPath).ShouldBeFalse();
@@ -255,12 +260,12 @@ public class CreateManifestListCommandTests
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("digest1");
         // The Windows platform is missing from image-info and gets ported from the
         // source registry; its previously-published digest is looked up here.
         manifestServiceMock
-            .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManifestQueryResult("sha256:windows-prior", new JsonObject()));
 
         Mock<IDockerService> dockerServiceMock = new();
@@ -293,7 +298,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // Manifest list should reference all 3 platforms (the ported Windows platform
         // joins the two that were built this run).
@@ -303,7 +308,7 @@ public class CreateManifestListCommandTests
                 images.Contains("repo:tag-amd64") &&
                 images.Contains("repo:tag-arm64") &&
                 images.Contains("repo:tag-windows")),
-            false));
+            false, It.IsAny<CancellationToken>()));
     }
 
     /// <summary>
@@ -334,13 +339,13 @@ public class CreateManifestListCommandTests
                     n.Registry == SourceRegistry
                     && n.Repo == "samples"
                     && n.Tag == "app-linux"),
-                It.IsAny<bool>()))
+                It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManifestQueryResult(PreviousLinuxDigestSha, new JsonObject()));
 
         // Digest returned for the freshly-published shared tag (used when the command
         // records the new manifest list digest into image-info).
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(NewSharedTagDigestSha);
 
         Mock<IDockerService> dockerServiceMock = new();
@@ -388,7 +393,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // The Linux platform should have been imported (by digest) from the source
         // registry into the scoped staging repo at its declared simple tag.
@@ -397,6 +402,7 @@ public class CreateManifestListCommandTests
             StagingRegistry,
             $"samples@{PreviousLinuxDigestSha}",
             true,
+            It.IsAny<CancellationToken>(),
             SourceRegistry,
             null,
             false));
@@ -414,8 +420,8 @@ public class CreateManifestListCommandTests
                 It.Is<IEnumerable<string>>(refs =>
                     refs.Contains($"{StagingRegistry}/{StagingRepoPrefix}samples:app-nanoserver") &&
                     refs.Contains($"{StagingRegistry}/{StagingRepoPrefix}samples:app-linux")),
-                false));
-            dockerServiceMock.Verify(o => o.PushManifestList(sharedTagRef, false));
+                false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushManifestList(sharedTagRef, false, It.IsAny<CancellationToken>()));
         }
 
         // Ported platforms are temporary scaffolding for manifest-list creation.
@@ -441,7 +447,7 @@ public class CreateManifestListCommandTests
 
         Mock<IManifestService> manifestServiceMock = new(MockBehavior.Strict);
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:shared");
 
         Mock<IDockerService> dockerServiceMock = new();
@@ -478,21 +484,22 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         manifestServiceMock.Verify(
-            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>()),
+            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
         copyImageServiceMock.Verify(o => o.ImportImageAsync(
                 It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<bool>(), It.IsAny<string>(),
+                It.IsAny<bool>(), It.IsAny<CancellationToken>(),
+                It.IsAny<string>(),
                 It.IsAny<ContainerRegistryImportSourceCredentials>(),
                 It.IsAny<bool>()),
             Times.Never);
         dockerServiceMock.Verify(o => o.CreateManifestList(
                 $"{StagingRegistry}/{StagingRepoPrefix}samples:untouched",
                 It.IsAny<IEnumerable<string>>(),
-                It.IsAny<bool>()),
+                It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -533,7 +540,7 @@ public class CreateManifestListCommandTests
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
-            () => command.ExecuteAsync());
+            () => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
         exception.Message.ShouldContain("Generated manifest list tags are missing expected platforms defined in the manifest");
         exception.Message.ShouldContain("repo:sharedtag");
@@ -541,16 +548,17 @@ public class CreateManifestListCommandTests
         exception.Message.ShouldContain(dockerfileArm64);
 
         manifestServiceMock.Verify(
-            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>()),
+            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
         copyImageServiceMock.Verify(o => o.ImportImageAsync(
                 It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<bool>(), It.IsAny<string>(),
+                It.IsAny<bool>(), It.IsAny<CancellationToken>(),
+                It.IsAny<string>(),
                 It.IsAny<ContainerRegistryImportSourceCredentials>(),
                 It.IsAny<bool>()),
             Times.Never);
         dockerServiceMock.Verify(o => o.CreateManifestList(
-                It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
+                It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -573,10 +581,10 @@ public class CreateManifestListCommandTests
         HttpRequestException notFound = new(
             "Not Found", inner: null, System.Net.HttpStatusCode.NotFound);
         manifestServiceMock
-            .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(notFound);
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:new-shared");
 
         Mock<IDockerService> dockerServiceMock = new();
@@ -620,18 +628,19 @@ public class CreateManifestListCommandTests
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
         HttpRequestException thrown =
-            await Should.ThrowAsync<HttpRequestException>(() => command.ExecuteAsync());
+            await Should.ThrowAsync<HttpRequestException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
         thrown.StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
 
         // The 404 fails the command before any imports or manifest-list creation occur.
         copyImageServiceMock.Verify(o => o.ImportImageAsync(
                 It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<bool>(), It.IsAny<string>(),
+                It.IsAny<bool>(), It.IsAny<CancellationToken>(),
+                It.IsAny<string>(),
                 It.IsAny<ContainerRegistryImportSourceCredentials>(),
                 It.IsAny<bool>()),
             Times.Never);
         dockerServiceMock.Verify(o => o.CreateManifestList(
-                It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
+                It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -645,7 +654,7 @@ public class CreateManifestListCommandTests
     {
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:new-shared");
 
         Mock<IDockerService> dockerServiceMock = new();
@@ -673,15 +682,16 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // No source-registry lookups, no imports.
         manifestServiceMock.Verify(
-            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>()),
+            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
         copyImageServiceMock.Verify(o => o.ImportImageAsync(
                 It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<bool>(), It.IsAny<string>(),
+                It.IsAny<bool>(), It.IsAny<CancellationToken>(),
+                It.IsAny<string>(),
                 It.IsAny<ContainerRegistryImportSourceCredentials>(),
                 It.IsAny<bool>()),
             Times.Never);

@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (Options.SubscriptionOptions.SubscriptionsPath is null)
             {
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         SubscriptionId = subscriptionManifest.Subscription.Id,
                         ImagePaths =
-                            (await GetPathsToRebuildAsync(subscriptionManifest.Subscription, subscriptionManifest.Manifest))
+                            (await GetPathsToRebuildAsync(subscriptionManifest.Subscription, subscriptionManifest.Manifest, cancellationToken))
                             .ToArray()
                     });
 
@@ -87,9 +87,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
         }
 
-        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
+        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest, CancellationToken cancellationToken)
         {
-            ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
+            ImageArtifactDetails imageArtifactDetails =
+                await GetImageInfoForSubscriptionAsync(subscription, manifest, cancellationToken);
 
             ImageNameResolverForMatrix imageNameResolver = new(
                 Options.BaseImageOverrideOptions,
@@ -108,7 +109,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (PlatformInfo platform in platforms)
                 {
                     pathsToRebuild.AddRange(
-                        await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails, imageNameResolver));
+                        await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails, imageNameResolver, cancellationToken));
                 }
             }
 
@@ -124,7 +125,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PlatformInfo platform,
             RepoInfo repo,
             ImageArtifactDetails imageArtifactDetails,
-            ImageNameResolverForMatrix imageNameResolver)
+            ImageNameResolverForMatrix imageNameResolver,
+            CancellationToken cancellationToken)
         {
             string? fromImage = platform.FinalStageFromImage;
             if (fromImage is null)
@@ -164,10 +166,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     semaphore: _imageDigestsLock,
                     dictionary: _imageDigests,
                     key: baseImagePullReference,
-                    getValue: () =>
+                    getValue: ct =>
                         // This reaches out to the registry to fetch the digest from the pull
                         // reference. For external images, this fetches from the mirror.
-                        _manifestService.Value.GetManifestDigestShaAsync(baseImagePullReference, Options.IsDryRun));
+                        _manifestService.Value.GetManifestDigestShaAsync(baseImagePullReference, Options.IsDryRun, ct),
+                    cancellationToken: cancellationToken,
+                    addToDictionary: null);
 
             // Build a digest-pinned reference of the form '<public-repo>@sha256:<hex>' (e.g.
             // 'mcr.microsoft.com/dotnet/runtime@sha256:abc123...'). This must be built per-call
@@ -203,14 +207,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return [];
         }
 
-        private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
+        private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest, CancellationToken cancellationToken)
         {
-            ITreesClient treesClient = await _octokitClientFactory.CreateTreesClientAsync(Options.GitOptions.GitHubAuthOptions);
+            ITreesClient treesClient = await _octokitClientFactory.CreateTreesClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
             string fileSha = await treesClient.GetFileShaAsync(
-                subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, subscription.ImageInfo.Branch, subscription.ImageInfo.Path);
+                subscription.ImageInfo.Owner,
+                subscription.ImageInfo.Repo,
+                subscription.ImageInfo.Branch,
+                subscription.ImageInfo.Path,
+                cancellationToken);
 
-            IBlobsClient blobsClient = await _octokitClientFactory.CreateBlobsClientAsync(Options.GitOptions.GitHubAuthOptions);
-            string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
+            IBlobsClient blobsClient = await _octokitClientFactory.CreateBlobsClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
+            string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha, cancellationToken);
 
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
         }

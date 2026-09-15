@@ -26,6 +26,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class GenerateEolAnnotationDataForPublishTests
     {
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         private const string DefaultRepoPrefix = "public/";
         private const string AcrName = "myacr.azurecr.io";
         private const string McrName = "mcr.microsoft.com";
@@ -181,7 +186,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -316,7 +321,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -460,7 +465,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory,
                     lifecycleMetadataService: lifecycleMetadataServiceMock.Object);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -588,7 +593,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -691,7 +696,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -800,7 +805,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -911,7 +916,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -1017,7 +1022,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {
@@ -1101,7 +1106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
                 });
             contentClientMock
-                .Setup(o => o.GetManifestAsync("deleteddigest"))
+                .Setup(o => o.GetManifestAsync("deleteddigest", It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new RequestFailedException(404, "manifest not found"));
 
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
@@ -1114,7 +1119,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             EolAnnotationsData expectedEolAnnotations = new()
             {

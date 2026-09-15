@@ -30,16 +30,19 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public Task<string?> GetLocalImageDigestAsync(string tag, bool isDryRun) =>
+        public Task<string?> GetLocalImageDigestAsync(string tag, bool isDryRun, CancellationToken cancellationToken) =>
             LockHelper.DoubleCheckedLockLookupAsync(_localDigestCacheLock, _localDigestCache, tag,
-                () => _inner.Value.GetLocalImageDigestAsync(tag, isDryRun),
+                ct => _inner.Value.GetLocalImageDigestAsync(tag, isDryRun, ct),
                 // Don't allow null digests to be cached. A locally built image won't have a digest until
                 // it is pushed so if its digest is retrieved before pushing, we don't want that
                 // null to be cached.
-                val => !string.IsNullOrEmpty(val));
+                cancellationToken: cancellationToken,
+                addToDictionary: val => !string.IsNullOrEmpty(val));
 
-        public Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun) =>
+        public Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun, CancellationToken cancellationToken) =>
             LockHelper.DoubleCheckedLockLookupAsync(_manifestDigestCacheLock, _manifestDigestCache, tag,
-                () => _inner.Value.GetManifestDigestShaAsync(tag, isDryRun));
+                ct => _inner.Value.GetManifestDigestShaAsync(tag, isDryRun, ct),
+                cancellationToken: cancellationToken,
+                addToDictionary: null);
     }
 }

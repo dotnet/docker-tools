@@ -58,7 +58,7 @@ public class OrasDotNetService(
     private readonly ResiliencePipeline _pushSignatureRetryPipeline = CreatePushSignatureRetryPipeline(logger);
 
     /// <inheritdoc/>
-    public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
+    public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
 
@@ -77,7 +77,7 @@ public class OrasDotNetService(
     }
 
     /// <inheritdoc/>
-    public async Task<ManifestQueryResult> GetManifestAsync(string reference, CancellationToken cancellationToken = default)
+    public async Task<ManifestQueryResult> GetManifestAsync(string reference, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
 
@@ -109,7 +109,7 @@ public class OrasDotNetService(
     public async Task<string> PushSignatureAsync(
         Descriptor subjectDescriptor,
         PayloadSigningResult result,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(subjectDescriptor);
         ArgumentNullException.ThrowIfNull(result);
@@ -166,8 +166,8 @@ public class OrasDotNetService(
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
         string reference,
-        bool isDryRun = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken,
+        bool isDryRun = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
         IReadOnlyList<ReferrerInfo> referrers = isDryRun ? []
@@ -209,7 +209,7 @@ public class OrasDotNetService(
         string reference,
         string artifactType,
         IDictionary<string, string> annotations,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
         ArgumentException.ThrowIfNullOrWhiteSpace(artifactType);

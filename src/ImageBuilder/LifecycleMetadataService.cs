@@ -27,12 +27,12 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         _logger = logger;
     }
 
-    public async Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken = default)
+    public async Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(digest);
 
         IReadOnlyList<ReferrerInfo> referrers =
-            await _orasService.GetReferrersAsync(digest, isDryRun: false, cancellationToken);
+            await _orasService.GetReferrersAsync(digest, cancellationToken, isDryRun: false);
 
         ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
             r => r.ArtifactType == OciArtifactType.Lifecycle);
@@ -52,7 +52,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         };
     }
 
-    public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken = default)
+    public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(digest);
 
@@ -81,7 +81,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
                 Annotations = annotations
             };
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             _logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
             return null;

@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class CopyAcrImagesCommandTests
     {
+        public TestContext? TestContext { get; set; }
+
         private const string SourceRegistry = "my.custom.registry";
         private const string DestinationRegistry = "mcr.microsoft.com";
 
@@ -91,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
                 command.LoadManifest();
-                await command.ExecuteAsync();
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
                     .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
@@ -105,6 +107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             true,
+                            It.IsAny<CancellationToken>(),
                             SourceRegistry,
                             null,
                             false));
@@ -190,7 +193,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
                 command.LoadManifest();
-                await command.ExecuteAsync();
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 List<string> expectedTags = new List<string>
                 {
@@ -207,6 +210,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             true,
+                            It.IsAny<CancellationToken>(),
                             SourceRegistry,
                             null,
                             false));
@@ -305,7 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<string> expectedTags = new List<string>
             {
@@ -321,6 +325,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             true,
+                            It.IsAny<CancellationToken>(),
                             SourceRegistry,
                             null,
                             false));
@@ -415,7 +420,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<string> expectedTags = new List<string>
             {
@@ -435,6 +440,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             It.IsAny<string>(),
                             true,
+                            It.IsAny<CancellationToken>(),
                             SourceRegistry,
                             null,
                             false));
@@ -512,7 +518,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Platform tag should be copied
             copyImageServiceMock.Verify(o =>
@@ -521,6 +527,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     "test/runtime:tag1",
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
@@ -532,6 +539,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     "test/runtime:shared1",
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
@@ -542,6 +550,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     "test/runtime:shared2",
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
@@ -627,7 +636,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Platform tag
             copyImageServiceMock.Verify(o =>
@@ -636,6 +645,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     "test/runtime:tag1",
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
@@ -647,6 +657,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     "test/runtime:shared1",
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
@@ -658,6 +669,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     "test/runtime2:syn-shared1",
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
@@ -723,7 +735,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Only platform tag should be copied - no manifest list tags
             copyImageServiceMock.Verify(o =>
@@ -732,6 +744,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     DestinationRegistry,
                     It.IsAny<string>(),
                     true,
+                    It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));

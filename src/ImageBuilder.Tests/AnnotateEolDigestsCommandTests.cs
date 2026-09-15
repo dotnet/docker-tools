@@ -21,7 +21,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class AnnotateEolDigestsCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         private readonly DateOnly _globalDate = new DateOnly(2024, 6, 10);
         private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
         private const string RepoPrefix = "public/";
@@ -43,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     out lifecycleMetadataServiceMock,
                     digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: true);
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigestAsync("digest1", _globalDate, It.IsAny<CancellationToken>()));
@@ -73,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: false);
 
-            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
             ex.Message.ShouldContain($"(failed: 2, skipped: 0)");
         }
 
@@ -92,7 +96,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAnnotationIsSuccessful: true,
                     useNonMatchingDate: true);
 
-            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
             ex.Message.ShouldContain($"(failed: 0, skipped: 2)");
 
             lifecycleMetadataServiceMock.Verify(
@@ -114,7 +118,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),

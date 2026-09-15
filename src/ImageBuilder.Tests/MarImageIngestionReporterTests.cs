@@ -18,7 +18,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class MarImageIngestionReporterTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         [TestMethod]
         [DataRow("")]
         [DataRow("public/")]
@@ -215,7 +219,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken);
+                baselineTime, TestContext?.CancellationToken ?? default);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1), It.IsAny<CancellationToken>()), Times.Exactly(4));
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -304,7 +308,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken);
+                baselineTime, TestContext?.CancellationToken ?? default);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest), It.IsAny<CancellationToken>()), Times.Exactly(3));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
@@ -396,7 +400,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken);
+                baselineTime, TestContext?.CancellationToken ?? default);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest), It.IsAny<CancellationToken>()), Times.Exactly(2));
             statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), onboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
@@ -559,7 +563,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken);
+                baselineTime, TestContext?.CancellationToken ?? default);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1), It.IsAny<CancellationToken>()), Times.Exactly(3));
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -658,7 +662,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken);
+                baselineTime, TestContext?.CancellationToken ?? default);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(2));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
@@ -790,7 +794,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken);
+                baselineTime, TestContext?.CancellationToken ?? default);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(3));
             statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1aOnboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
@@ -846,7 +850,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 digestInfos,
                 TimeSpan.FromSeconds(3),
                 TimeSpan.FromMicroseconds(1),
-                baselineTime, TestContext.CancellationToken));
+                baselineTime, TestContext?.CancellationToken ?? default));
         }
 
         private static ImageStatus Clone(ImageStatus status, StageStatus? newOverallStatusValue) =>

@@ -16,7 +16,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class WaitForMarAnnotationIngestionCommandTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     [TestMethod]
     public async Task WaitForMarAnnotationIngestionCommand()
     {
@@ -35,7 +36,7 @@ public class WaitForMarAnnotationIngestionCommandTests
             ingestionReporter.Object);
         cmd.Options.AnnotationDigestsPath = annotationsDigestsPath;
 
-        await cmd.ExecuteAsync(TestContext.CancellationToken);
+        await cmd.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         DigestInfo[] expectedDigests =
             [

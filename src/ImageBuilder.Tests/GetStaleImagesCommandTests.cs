@@ -34,7 +34,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class GetStaleImagesCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         private const string GitHubBranch = "my-branch";
         private const string GitHubRepo = "my-repo";
         private const string GitHubOwner = "my-owner";
@@ -105,7 +109,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -197,7 +201,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // The base image of the final stage has changed for only one of the images.
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -263,7 +267,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -329,7 +333,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -381,7 +385,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Since neither of the images existed in the image info data, both should be queued.
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -558,7 +562,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -652,7 +656,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Both of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -736,7 +740,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -803,7 +807,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new();
@@ -935,7 +939,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -1083,7 +1087,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new()
@@ -1181,7 +1185,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -1270,7 +1274,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -1347,7 +1351,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -1429,7 +1433,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestFixture fixture =
                 new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -1504,7 +1508,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -1596,7 +1600,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 fixture.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
                 fixture.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry.io/$1";
 
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Only one of the images has a changed digest
                 // It should be comparing against the digest of the image from the override.

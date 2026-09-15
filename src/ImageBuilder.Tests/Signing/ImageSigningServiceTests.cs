@@ -24,7 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 [TestClass]
 public class ImageSigningServiceTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     private const string ArtifactStagingDir = "/artifacts/staging";
 
     [TestMethod]
@@ -34,7 +35,7 @@ public class ImageSigningServiceTests
 
         var imageArtifactDetails = new ImageArtifactDetails { Repos = [] };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.ShouldBeEmpty();
     }
@@ -64,7 +65,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.ShouldBeEmpty();
         mockOras.Verify(
@@ -104,7 +105,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.Count.ShouldBe(1);
     }
@@ -144,7 +145,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 42, TestContext.CancellationToken);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 42, TestContext?.CancellationToken ?? default);
 
         mockOras.Verify(
             s => s.GetDescriptorAsync("sha256:abc123", It.IsAny<CancellationToken>()),
@@ -197,7 +198,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+        var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.Count.ShouldBe(3);
         results.Select(r => r.ImageName).ShouldBe(
@@ -249,7 +250,7 @@ public class ImageSigningServiceTests
             ]
         };
 
-        await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+        await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         fileSystem.FilesWritten.ShouldContain(
             path => path.Contains("sha256-manifest123") && path.EndsWith(".payload"));
@@ -284,7 +285,7 @@ public class ImageSigningServiceTests
         };
 
         var ex = await Should.ThrowAsync<InvalidOperationException>(
-            () => service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken));
+            () => service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default));
 
         ex.Message.ShouldContain("ArtifactStagingDirectory");
     }
@@ -402,7 +403,7 @@ public class ImageSigningServiceTests
         };
 
         IReadOnlyList<ImageSigningResult> results =
-            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.ShouldBeEmpty();
 
@@ -465,7 +466,7 @@ public class ImageSigningServiceTests
         };
 
         IReadOnlyList<ImageSigningResult> results =
-            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         results.Count.ShouldBe(1);
         results[0].ImageName.ShouldBe("sha256:not-yet-signed");
@@ -519,7 +520,7 @@ public class ImageSigningServiceTests
         };
 
         IReadOnlyList<ImageSigningResult> results =
-            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext.CancellationToken);
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         // Should still sign because the referrer is not a Notary signature
         results.Count.ShouldBe(1);

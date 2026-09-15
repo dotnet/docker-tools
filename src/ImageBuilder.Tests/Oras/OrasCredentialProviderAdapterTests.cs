@@ -14,7 +14,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Oras;
 [TestClass]
 public class OrasCredentialProviderAdapterTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     [TestMethod]
     public async Task ResolveCredentialAsync_ReturnsCredentials_WhenProviderReturnsCredentials()
     {

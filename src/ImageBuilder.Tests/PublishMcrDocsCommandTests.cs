@@ -21,7 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class PublishMcrDocsCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        public TestContext? TestContext { get; set; }
+
         private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
         private const string RepoReadmePath = "RepoReadme.md";
         private const string TagsYamlPath = "tags.yml";
@@ -69,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Verify published file list does not contain ProductFamilyReadmePath
             gitHubClientMock
@@ -127,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RootPath = Path.Combine(tempFolderContext.Path, "dir");
             command.LoadManifest();
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             gitHubClientMock
                 .Verify(o =>
@@ -196,7 +197,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();
 
-            await Should.ThrowAsync<ValidationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            await Should.ThrowAsync<ValidationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
         }
 
         private static string CreateMcrTagsMetadataTemplateFile(TempFolderContext tempFolderContext)

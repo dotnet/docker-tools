@@ -25,7 +25,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class PublishImageInfoCommandTests : IDisposable
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         private readonly List<string> foldersToDelete = new List<string>();
 
         public void Dispose()
@@ -161,7 +165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                await command.ExecuteAsync(TestContext.CancellationToken);
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 actualImageArtifactDetailsContents.Trim().ShouldBe(JsonHelper.SerializeObject(srcImageArtifactDetails));
 

@@ -28,7 +28,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class QueueBuildCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         /// <summary>
         /// Verifies that no build is queued if a build is currently in progress.
         /// </summary>
@@ -64,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 // Normally this state would cause a build to be queued but since
                 // a build is marked as in progress, it doesn't.
@@ -112,7 +116,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
             fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
         }
@@ -156,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
 
             Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
@@ -220,7 +224,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
             Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
             {
@@ -289,7 +293,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -348,7 +352,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
             }
@@ -428,7 +432,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await fixture.ExecuteCommandAsync(TestContext.CancellationToken);
+                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>

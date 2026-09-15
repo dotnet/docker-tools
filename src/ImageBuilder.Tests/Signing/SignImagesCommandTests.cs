@@ -20,7 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 [TestClass]
 public class SignImagesCommandTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     private const string ImageInfoPath = "/data/image-info.json";
 
     [TestMethod]
@@ -30,7 +31,7 @@ public class SignImagesCommandTests
         var signingConfig = new SigningConfiguration { Enabled = false };
         var command = CreateCommand(mockSigning: mockSigning, signingConfig: signingConfig);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         mockSigning.Verify(
             s => s.SignImagesAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
@@ -43,7 +44,7 @@ public class SignImagesCommandTests
         var mockSigning = new Mock<IImageSigningService>();
         var command = CreateCommand(mockSigning: mockSigning, signingConfig: null);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         mockSigning.Verify(
             s => s.SignImagesAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
@@ -58,7 +59,7 @@ public class SignImagesCommandTests
         var command = CreateCommand(mockSigning: mockSigning, signingConfig: signingConfig);
         command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         mockSigning.Verify(
             s => s.SignImagesAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
@@ -77,14 +78,14 @@ public class SignImagesCommandTests
         command.Options.ImageInfoPath = ImageInfoPath;
         command.Options.IsDryRun = true;
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         mockSigning.Verify(
             s => s.SignImagesAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
 
         // Verify that the image info file was still read (dry-run exercises parsing)
-        string contents = await fileSystem.ReadAllTextAsync(ImageInfoPath, TestContext.CancellationToken);
+        string contents = await fileSystem.ReadAllTextAsync(ImageInfoPath, TestContext?.CancellationToken ?? default);
         contents.ShouldNotBeNullOrEmpty();
     }
 
@@ -116,7 +117,7 @@ public class SignImagesCommandTests
             fileSystem: fileSystem);
         command.Options.ImageInfoPath = ImageInfoPath;
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         mockSigning.Verify(
             s => s.SignImagesAsync(

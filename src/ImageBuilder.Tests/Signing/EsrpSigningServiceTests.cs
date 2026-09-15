@@ -18,7 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 [TestClass]
 public class EsrpSigningServiceTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     private const string MBSignAppFolderEnv = "MBSIGN_APPFOLDER";
     private const string VsEngEsrpSslEnv = "VSENGESRPSSL";
 
@@ -28,7 +29,7 @@ public class EsrpSigningServiceTests
         var mockProcess = new Mock<IProcessService>();
         var service = CreateService(mockProcess: mockProcess);
 
-        await service.SignFilesAsync([], signingKeyCode: 100, TestContext.CancellationToken);
+        await service.SignFilesAsync([], signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         mockProcess.Verify(
             p => p.Execute(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -44,7 +45,7 @@ public class EsrpSigningServiceTests
         var service = CreateService(mockEnv: mockEnv);
 
         var ex = await Should.ThrowAsync<InvalidOperationException>(
-            () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext.CancellationToken));
+            () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default));
 
         ex.Message.ShouldContain(MBSignAppFolderEnv);
     }
@@ -57,7 +58,7 @@ public class EsrpSigningServiceTests
 
         var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv);
 
-        await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 42, TestContext.CancellationToken);
+        await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 42, TestContext?.CancellationToken ?? default);
 
         mockProcess.Verify(
             p => p.Execute(
@@ -81,7 +82,7 @@ public class EsrpSigningServiceTests
 
         var service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
 
-        await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext.CancellationToken);
+        await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         // The sign list temp file should be written then deleted
         fileSystem.FilesWritten.Count.ShouldBe(1);
@@ -103,7 +104,7 @@ public class EsrpSigningServiceTests
         var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv, fileSystem: fileSystem);
 
         await Should.ThrowAsync<InvalidOperationException>(
-            () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext.CancellationToken));
+            () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default));
 
         fileSystem.FilesDeleted.Count.ShouldBe(1);
     }
@@ -116,7 +117,7 @@ public class EsrpSigningServiceTests
 
         var service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
 
-        await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext.CancellationToken);
+        await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         fileSystem.FilesWritten.Count.ShouldBe(1);
         var signListPath = fileSystem.FilesWritten.First();

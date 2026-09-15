@@ -21,7 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class CopyAcrImagesCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        public TestContext? TestContext { get; set; }
+
         private const string SourceRegistry = "my.custom.registry";
         private const string DestinationRegistry = "mcr.microsoft.com";
 
@@ -92,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
                 command.LoadManifest();
-                await command.ExecuteAsync(TestContext.CancellationToken);
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
                     .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
@@ -192,7 +193,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
                 command.LoadManifest();
-                await command.ExecuteAsync(TestContext.CancellationToken);
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 List<string> expectedTags = new List<string>
                 {
@@ -308,7 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<string> expectedTags = new List<string>
             {
@@ -419,7 +420,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<string> expectedTags = new List<string>
             {
@@ -517,7 +518,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Platform tag should be copied
             copyImageServiceMock.Verify(o =>
@@ -635,7 +636,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Platform tag
             copyImageServiceMock.Verify(o =>
@@ -734,7 +735,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Only platform tag should be copied - no manifest list tags
             copyImageServiceMock.Verify(o =>

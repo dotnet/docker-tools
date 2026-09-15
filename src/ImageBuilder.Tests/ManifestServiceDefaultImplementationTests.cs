@@ -15,7 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class ManifestServiceDefaultImplementationTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        public TestContext? TestContext { get; set; }
+
         private const string ManifestDigest = "manifest-digest";
         private const string ManifestListDigest = "manifest-list-digest";
 
@@ -44,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetManifestAsync("tag2", false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
 
-            string digestSha = await manifestService.Object.GetManifestDigestShaAsync(tag, false, TestContext.CancellationToken);
+            string digestSha = await manifestService.Object.GetManifestDigestShaAsync(tag, false, TestContext?.CancellationToken ?? default);
             digestSha.ShouldBe(expectedDigestSha);
         }
     }

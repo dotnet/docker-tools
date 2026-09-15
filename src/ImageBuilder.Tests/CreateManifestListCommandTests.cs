@@ -29,7 +29,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class CreateManifestListCommandTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    #nullable enable annotations
+    public TestContext? TestContext { get; set; }
+
+    #nullable disable annotations
+
     /// <summary>
     /// Verifies that manifest lists are created, pushed, and digests are
     /// recorded in image-info.json.
@@ -69,7 +73,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // Verify manifest lists were created
         dockerServiceMock.Verify(o => o.CreateManifestList(
@@ -119,7 +123,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         ImageArtifactDetails result = JsonConvert.DeserializeObject<ImageArtifactDetails>(
             File.ReadAllText(command.Options.ImageInfoPath));
@@ -201,7 +205,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         ImageArtifactDetails result = JsonConvert.DeserializeObject<ImageArtifactDetails>(
             File.ReadAllText(command.Options.ImageInfoPath));
@@ -239,7 +243,7 @@ public class CreateManifestListCommandTests
         command.LoadManifest();
 
         // Should not throw
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // File should still not exist (command didn't create it)
         File.Exists(command.Options.ImageInfoPath).ShouldBeFalse();
@@ -294,7 +298,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // Manifest list should reference all 3 platforms (the ported Windows platform
         // joins the two that were built this run).
@@ -389,7 +393,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // The Linux platform should have been imported (by digest) from the source
         // registry into the scoped staging repo at its declared simple tag.
@@ -480,7 +484,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         manifestServiceMock.Verify(
             o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
@@ -536,7 +540,7 @@ public class CreateManifestListCommandTests
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
-            () => command.ExecuteAsync(TestContext.CancellationToken));
+            () => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
         exception.Message.ShouldContain("Generated manifest list tags are missing expected platforms defined in the manifest");
         exception.Message.ShouldContain("repo:sharedtag");
@@ -624,7 +628,7 @@ public class CreateManifestListCommandTests
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
         HttpRequestException thrown =
-            await Should.ThrowAsync<HttpRequestException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            await Should.ThrowAsync<HttpRequestException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
         thrown.StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
 
         // The 404 fails the command before any imports or manifest-list creation occur.
@@ -678,7 +682,7 @@ public class CreateManifestListCommandTests
 
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
-        await command.ExecuteAsync(TestContext.CancellationToken);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         // No source-registry lookups, no imports.
         manifestServiceMock.Verify(

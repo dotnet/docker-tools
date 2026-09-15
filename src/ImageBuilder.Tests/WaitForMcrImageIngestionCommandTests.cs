@@ -24,7 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class WaitForMcrImageIngestionCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        public TestContext? TestContext { get; set; }
+
         [TestMethod]
         [DataRow("")]
         [DataRow("public/")]
@@ -142,7 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
             command.LoadManifest();
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<DigestInfo> expectedDigestInfos =
                 [
@@ -275,7 +276,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
             command.LoadManifest();
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             List<DigestInfo> expectedDigestInfos =
                 [

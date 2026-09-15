@@ -20,7 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class LifecycleMetadataServiceTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     private const string Digest = "myregistry.azurecr.io/public/dotnet/runtime@sha256:0123456789abcdef";
 
     /// <summary>
@@ -41,7 +42,7 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         ResponseException thrown = await Should.ThrowAsync<ResponseException>(
-            () => service.GetLifecycleArtifactAsync(Digest, TestContext.CancellationToken));
+            () => service.GetLifecycleArtifactAsync(Digest, TestContext?.CancellationToken ?? default));
         thrown.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
     }
 
@@ -55,7 +56,7 @@ public class LifecycleMetadataServiceTests
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext.CancellationToken);
+        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext?.CancellationToken ?? default);
 
         result.ShouldBeNull();
     }
@@ -80,7 +81,7 @@ public class LifecycleMetadataServiceTests
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext.CancellationToken);
+        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext?.CancellationToken ?? default);
 
         result.ShouldNotBeNull();
         result.Annotations[LifecycleMetadataService.EndOfLifeAnnotation].ShouldBe("2026-05-22");

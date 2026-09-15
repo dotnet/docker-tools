@@ -20,7 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class CopyImageServiceTests
 {
-    public TestContext TestContext { get; set; } = null!;
+    public TestContext? TestContext { get; set; }
+
     /// <summary>
     /// When isDryRun is true and the publish configuration has no registry authentication,
     /// ImportImageAsync should succeed without throwing. This scenario occurs in PR validation
@@ -50,7 +51,7 @@ public class CopyImageServiceTests
                 sourceCredentials: null,
                 isDryRun: true,
                 copyReferrers: true,
-            cancellationToken: TestContext.CancellationToken));
+            cancellationToken: TestContext?.CancellationToken ?? default));
     }
 
     /// <summary>
@@ -101,7 +102,7 @@ public class CopyImageServiceTests
             sourceCredentials: null,
             isDryRun: false,
             copyReferrers: true,
-            cancellationToken: TestContext.CancellationToken);
+            cancellationToken: TestContext?.CancellationToken ?? default);
 
         // Verify the importer was called, proving execution reached the import step
         // (past the external registry lookup that previously threw)
@@ -147,7 +148,7 @@ public class CopyImageServiceTests
             sourceCredentials: null,
             isDryRun: false,
             copyReferrers: true,
-            cancellationToken: TestContext.CancellationToken);
+            cancellationToken: TestContext?.CancellationToken ?? default);
 
         // Main image import with TargetTags
         mockImporter.Verify(
@@ -216,7 +217,7 @@ public class CopyImageServiceTests
             sourceCredentials: null,
             isDryRun: false,
             copyReferrers: true,
-            cancellationToken: TestContext.CancellationToken);
+            cancellationToken: TestContext?.CancellationToken ?? default);
 
         mockImporter.Verify(
             x => x.ImportImageAsync(
@@ -252,7 +253,7 @@ public class CopyImageServiceTests
             sourceCredentials: null,
             isDryRun: false,
             copyReferrers: false,
-            cancellationToken: TestContext.CancellationToken);
+            cancellationToken: TestContext?.CancellationToken ?? default);
 
         // GetReferrersAsync should never be called when copyReferrers is false
         mockOras.Verify(
@@ -297,7 +298,7 @@ public class CopyImageServiceTests
             sourceCredentials: null,
             isDryRun: true,
             copyReferrers: true,
-            cancellationToken: TestContext.CancellationToken);
+            cancellationToken: TestContext?.CancellationToken ?? default);
 
         mockOras.Verify(
             o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>(), true),

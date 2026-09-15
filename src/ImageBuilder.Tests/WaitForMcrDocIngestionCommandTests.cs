@@ -19,7 +19,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class WaitForMcrDocIngestionCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         [TestMethod]
         public async Task SuccessfulPublish()
         {
@@ -93,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
@@ -182,7 +186,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
             actualException.ShouldBeSameAs(exitException);
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
@@ -282,7 +286,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(3));
@@ -373,7 +377,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
             actualException.ShouldBeSameAs(exitException);
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
@@ -415,7 +419,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            await Should.ThrowAsync<TimeoutException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            await Should.ThrowAsync<TimeoutException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
         }
     }
 }

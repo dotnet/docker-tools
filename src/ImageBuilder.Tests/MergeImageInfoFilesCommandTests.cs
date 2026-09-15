@@ -24,7 +24,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class MergeImageInfoFilesCommandTests
     {
-        public TestContext TestContext { get; set; } = null!;
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         [TestMethod]
         public async Task MergeImageInfoFilesCommand_HappyPath()
         {
@@ -227,7 +231,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                await command.ExecuteAsync(TestContext.CancellationToken);
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
                 ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
@@ -523,7 +527,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                await command.ExecuteAsync(TestContext.CancellationToken);
+                await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
                 string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
                 ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
@@ -625,7 +629,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceImageInfoFolderPath = "foo";
             command.Options.DestinationImageInfoPath = "output.json";
 
-            await Should.ThrowAsync<DirectoryNotFoundException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+            await Should.ThrowAsync<DirectoryNotFoundException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
         }
 
         [TestMethod]
@@ -648,7 +652,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.SourceImageInfoFolderPath = context.Path;
                 command.Options.DestinationImageInfoPath = "output.json";
 
-                await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext.CancellationToken));
+                await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
             }
         }
 
@@ -792,7 +796,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             ImageArtifactDetails expectedImageArtifactDetails = new()
             {
@@ -959,7 +963,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             ImageArtifactDetails expectedImageArtifactDetails = new()
             {
@@ -1126,7 +1130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitOverride = CommitOverride;
             command.Options.Manifest = manifestFile;
             command.LoadManifest();
-            await command.ExecuteAsync(TestContext.CancellationToken);
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             // Verify the merged result
             string resultContent = File.ReadAllText(outputImageInfoFile);

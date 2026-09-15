@@ -114,6 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Exception? exception = null;
             IEnumerable<string>? inProgressBuilds = null;
             IEnumerable<string>? recentFailedBuilds = null;
+            bool shouldNotifyResults = true;
 
             try
             {
@@ -153,6 +154,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                shouldNotifyResults = false;
+                throw;
+            }
             catch (Exception ex)
             {
                 exception = ex;
@@ -160,14 +166,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             finally
             {
-                await LogAndNotifyResultsAsync(
-                    subscription,
-                    pathsToRebuild,
-                    queuedBuild,
-                    exception,
-                    inProgressBuilds,
-                    recentFailedBuilds,
-                    cancellationToken);
+                if (shouldNotifyResults)
+                {
+                    await LogAndNotifyResultsAsync(
+                        subscription,
+                        pathsToRebuild,
+                        queuedBuild,
+                        exception,
+                        inProgressBuilds,
+                        recentFailedBuilds,
+                        cancellationToken);
+                }
             }
         }
 

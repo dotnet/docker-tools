@@ -20,6 +20,7 @@ using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Shouldly;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -353,6 +354,35 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
+        [TestMethod]
+        public async Task QueueBuildCommand_CancellationDoesNotNotifyFailure()
+        {
+            Subscription[] subscriptions =
+            [
+                CreateSubscription("repo1")
+            ];
+
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+            [
+                [
+                    new SubscriptionImagePaths
+                    {
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = ["path1"]
+                    }
+                ]
+            ];
+
+            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths);
+            using CancellationTokenSource cancellationTokenSource = new();
+            fixture.CancelWhenGettingProject(cancellationTokenSource);
+
+            await Should.ThrowAsync<OperationCanceledException>(
+                () => fixture.ExecuteCommandAsync(cancellationTokenSource.Token));
+
+            fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
+        }
+
         /// <summary>
         /// Verifies the correct path arguments are passed to the queued build a subscription is spread
         /// across multiple path sets.
@@ -476,6 +506,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly string subscriptionsPath;
             private readonly Mock<IBuildHttpClient> buildHttpClientMock;
+            private readonly Mock<IProjectHttpClient> projectHttpClientMock;
             private readonly QueueBuildCommand command;
             private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths;
             private readonly Mock<INotificationService> _notificationServiceMock;
@@ -523,10 +554,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Id = Guid.NewGuid()
                 };
 
-                Mock<IProjectHttpClient> projectHttpClientMock = CreateProjectHttpClientMock(project);
+                this.projectHttpClientMock = CreateProjectHttpClientMock(project);
                 this.buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
                 Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
-                    projectHttpClientMock, this.buildHttpClientMock);
+                    this.projectHttpClientMock, this.buildHttpClientMock);
 
                 _notificationServiceMock = new Mock<INotificationService>();
 
@@ -536,6 +567,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             public Task ExecuteCommandAsync(CancellationToken cancellationToken)
             {
                 return this.command.ExecuteAsync(cancellationToken);
+            }
+
+            public void CancelWhenGettingProject(CancellationTokenSource cancellationTokenSource)
+            {
+                this.projectHttpClientMock
+                    .Setup(o => o.GetProjectAsync(It.IsAny<string>(), cancellationTokenSource.Token))
+                    .Callback(cancellationTokenSource.Cancel)
+                    .ThrowsAsync(new OperationCanceledException(cancellationTokenSource.Token));
             }
 
             /// <summary>

@@ -10,9 +10,9 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IAcrClient
 {
-    Task DeleteRepositoryAsync(string name);
+    Task DeleteRepositoryAsync(string name, CancellationToken cancellationToken);
 
-    IAsyncEnumerable<string> GetRepositoryNamesAsync();
+    IAsyncEnumerable<string> GetRepositoryNamesAsync(CancellationToken cancellationToken);
 
     ContainerRepository GetRepository(string name);
 }

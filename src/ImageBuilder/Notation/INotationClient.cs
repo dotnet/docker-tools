@@ -14,13 +14,13 @@ public interface INotationClient
     /// </summary>
     /// <param name="imageReference">Fully-qualified image reference including digest (e.g., "registry.io/repo@sha256:...").</param>
     /// <param name="isDryRun">If true, logs the command without executing.</param>
-    string Verify(string imageReference, bool isDryRun);
+    string Verify(string imageReference, bool isDryRun, CancellationToken cancellationToken);
 
     /// <summary>
     /// Imports a trust policy JSON file into the notation configuration.
     /// </summary>
     /// <param name="policyPath">Path to the trust policy JSON file.</param>
-    void ImportTrustPolicy(string policyPath);
+    void ImportTrustPolicy(string policyPath, CancellationToken cancellationToken);
 
     /// <summary>
     /// Adds a certificate to a notation trust store.
@@ -28,5 +28,5 @@ public interface INotationClient
     /// <param name="storeType">Trust store type (e.g., "ca" or "tsa").</param>
     /// <param name="storeName">Name of the trust store (e.g., "supplychain").</param>
     /// <param name="certPath">Path to the certificate file.</param>
-    void AddCertificate(string storeType, string storeName, string certPath);
+    void AddCertificate(string storeType, string storeName, string certPath, CancellationToken cancellationToken);
 }

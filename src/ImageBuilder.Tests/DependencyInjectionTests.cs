@@ -23,4 +23,5 @@ public class DependencyInjectionTests
         commands.ShouldNotBeNull();
         commands.ShouldNotBeEmpty();
     }
+
 }

@@ -28,7 +28,7 @@ public class GenerateEolAnnotationDataForAllImagesCommand :
 
     protected override string Description => "Generate EOL annotation data for all images in the registry";
 
-    protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync() =>
+    protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync(CancellationToken cancellationToken) =>
         // All images in all repos of the registry are marked as unsupported.
-        await GetAllImageDigestsFromRegistryAsync();
+        await GetAllImageDigestsFromRegistryAsync(cancellationToken);
 }

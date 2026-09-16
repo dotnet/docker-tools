@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Ingests image info data into Kusto";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("INGESTING IMAGE INFO DATA INTO KUSTO");
 
@@ -46,8 +46,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            await IngestInfoAsync(imageInfo, Options.ImageTable);
-            await IngestInfoAsync(layerInfo, Options.LayerTable);
+            await IngestInfoAsync(imageInfo, Options.ImageTable, cancellationToken);
+            await IngestInfoAsync(layerInfo, Options.LayerTable, cancellationToken);
         }
 
         private (string imageInfo, string layerInfo) GetImageInfoCsv()
@@ -122,11 +122,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string timestamp) =>
                 $"\"{layerDigest}\",\"{size}\",\"{ordinal}\",{FormatImageCsv(imageDigest, platform, image, repo, timestamp)}";
 
-        private async Task IngestInfoAsync(string info, string table)
+        private async Task IngestInfoAsync(string info, string table, CancellationToken cancellationToken)
         {
             if (!Options.IsDryRun)
             {
-                await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table, Options.KustoServiceConnection);
+                await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table, Options.KustoServiceConnection, cancellationToken);
             }
             else
             {

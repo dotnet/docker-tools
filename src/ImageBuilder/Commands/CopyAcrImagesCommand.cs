@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Copies the platform images and manifest lists as specified in the manifest between repositories of an ACR";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("COPYING IMAGES");
 
@@ -60,7 +60,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
                                 copyReferrers: true,
-                                srcRegistryName: Options.SourceRegistry)))
+                                srcRegistryName: Options.SourceRegistry,
+                                sourceCredentials: null,
+                                cancellationToken: cancellationToken)))
                 .SelectMany(tasks => tasks);
 
             IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos()
@@ -70,7 +72,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Manifest.Registry,
                         DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
                         copyReferrers: true,
-                        srcRegistryName: Options.SourceRegistry));
+                        srcRegistryName: Options.SourceRegistry,
+                        sourceCredentials: null,
+                        cancellationToken: cancellationToken));
 
             await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
         }

@@ -30,9 +30,10 @@ namespace Microsoft.DotNet.ImageBuilder
             string repoName,
             GitHubAuthOptions gitHubAuth,
             bool isDryRun,
+            CancellationToken cancellationToken,
             IEnumerable<string>? comments = null)
         {
-            IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth);
+            IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth, cancellationToken);
 
             Issue? issue = null;
             if (!isDryRun)
@@ -50,8 +51,9 @@ namespace Microsoft.DotNet.ImageBuilder
                     foreach (string comment in comments)
                     {
                         await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
-                            .ExecuteAsync(() =>
-                                github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment));
+                            .ExecuteAsync(
+                                ct => github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment),
+                                cancellationToken);
                     }
                 }
             }
@@ -88,8 +90,9 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 _logger.LogInformation("No failure label found in the notification labels.");
                 await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
-                    .ExecuteAsync(() =>
-                        github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed }));
+                    .ExecuteAsync(
+                        ct => github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed }),
+                        cancellationToken);
             }
         }
     }

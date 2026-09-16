@@ -11,21 +11,22 @@ internal static class RegistryCredentialsProviderExtensions
     public static async Task ExecuteWithCredentialsAsync(
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
-        Func<Task> action,
+        Func<CancellationToken, Task> action,
         IRegistryCredentialsHost credentialsOptions,
-        string registryName)
+        string registryName,
+        CancellationToken cancellationToken)
     {
-        bool loggedIn = await LogInToRegistry(credsProvider, isDryRun, credentialsOptions, registryName);
+        bool loggedIn = await LogInToRegistry(credsProvider, isDryRun, credentialsOptions, registryName, cancellationToken);
 
         try
         {
-            await action();
+            await action(cancellationToken);
         }
         finally
         {
             if (loggedIn && !string.IsNullOrEmpty(registryName))
             {
-                DockerHelper.Logout(registryName, isDryRun);
+                DockerHelper.Logout(registryName, isDryRun, cancellationToken.IsCancellationRequested ? CancellationToken.None : cancellationToken);
             }
         }
     }
@@ -33,37 +34,40 @@ internal static class RegistryCredentialsProviderExtensions
     public static async Task ExecuteWithCredentialsAsync(
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
-        Action action,
+        Action<CancellationToken> action,
         IRegistryCredentialsHost credentialsOptions,
-        string registryName)
+        string registryName,
+        CancellationToken cancellationToken)
     {
         await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
-            () => {
-                action();
+            ct => {
+                action(ct);
                 return Task.CompletedTask;
             },
             credentialsOptions,
-            registryName);
+            registryName,
+            cancellationToken);
     }
 
     private static async Task<bool> LogInToRegistry(
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
         IRegistryCredentialsHost credentialsOptions,
-        string registryName)
+        string registryName,
+        CancellationToken cancellationToken)
     {
         bool loggedIn = false;
 
         RegistryCredentials? credentials = null;
         if (!isDryRun)
         {
-            credentials = await credsProvider.GetCredentialsAsync(registryName, credentialsOptions);
+            credentials = await credsProvider.GetCredentialsAsync(registryName, credentialsOptions, cancellationToken);
         }
 
         if (!string.IsNullOrEmpty(registryName) && credentials is not null)
         {
-            DockerHelper.Login(credentials, registryName, isDryRun);
+            DockerHelper.Login(credentials, registryName, isDryRun, cancellationToken);
             loggedIn = true;
         }
 

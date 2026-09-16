@@ -10,8 +10,9 @@ using System.Linq;
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 [TestClass]
-public class ImageArtifactDetailsTests(TestContext testContext)
+public class ImageArtifactDetailsTests
 {
+    public TestContext? TestContext { get; set; }
 
     [TestMethod]
     public void CanReadJsonSchemaVersion1()
@@ -145,10 +146,10 @@ public class ImageArtifactDetailsTests(TestContext testContext)
 
         string actualJson = JsonHelper.SerializeObject(imageInfo);
 
-        testContext.WriteLine("Expected JSON:");
-        testContext.WriteLine(expectedJson);
-        testContext.WriteLine("\nActual JSON:");
-        testContext.WriteLine(actualJson);
+        TestContext?.WriteLine("Expected JSON:");
+        TestContext?.WriteLine(expectedJson);
+        TestContext?.WriteLine("\nActual JSON:");
+        TestContext?.WriteLine(actualJson);
 
         // Normalize line endings and compare
         actualJson.Replace("\r\n", "\n").ShouldBe(expectedJson.Replace("\r\n", "\n"));

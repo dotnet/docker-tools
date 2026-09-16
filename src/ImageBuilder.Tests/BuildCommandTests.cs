@@ -110,28 +110,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IProcessService> processServiceMock = new();
 
                 processServiceMock
-                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
+                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
                     .Returns(string.Join(Environment.NewLine, runtimeDepsInstalledPackages));
 
                 processServiceMock
-                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
+                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
                     .Returns(string.Join(Environment.NewLine, runtimeInstalledPackages));
 
                 processServiceMock
-                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{aspnetRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
+                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{aspnetRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
                     .Returns(string.Join(Environment.NewLine, aspnetInstalledPackages));
 
                 DateTime createdDate = DateTime.Now;
 
                 Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
                 dockerServiceMock
-                    .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                    .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                     .Returns(createdDate);
                 dockerServiceMock
-                    .Setup(o => o.GetCreatedDate($"{runtimeRepo}:{tag}", false))
+                    .Setup(o => o.GetCreatedDate($"{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                     .Returns(createdDate);
                 dockerServiceMock
-                    .Setup(o => o.GetCreatedDate($"{aspnetRepo}:{tag}", false))
+                    .Setup(o => o.GetCreatedDate($"{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                     .Returns(createdDate);
 
                 string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -202,7 +202,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                await command.ExecuteAsync();
+                await command.ExecuteAsync(testContext.CancellationToken);
 
                 ImageArtifactDetails imageArtifactDetails = new()
                 {
@@ -340,7 +340,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -389,7 +389,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
@@ -473,7 +473,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
             dockerServiceMock
-                .Setup(o => o.GetImageArch(baseImageTag, false))
+                .Setup(o => o.GetImageArch(baseImageTag, false, It.IsAny<CancellationToken>()))
                 .Returns((Architecture.ARM, "v7"));
 
             Mock<ICopyImageService> copyImageServiceMock = new();
@@ -510,7 +510,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(
@@ -527,15 +527,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>()));
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>()));
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(
-                o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false));
+                o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false, It.IsAny<CancellationToken>()));
 
             copyImageServiceMock.VerifyNoOtherCalls();
         }
@@ -582,7 +582,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
 
-            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(testContext.CancellationToken));
             ex.Message.ShouldStartWith($"Platform '{PathHelper.NormalizePath(dockerfileRelativePath)}' is configured with an architecture that is not compatible with the base image '{baseImageTag}'");
         }
 
@@ -605,7 +605,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
             dockerServiceMock
-                .Setup(o => o.GetImageArch(baseImageTag, false))
+                .Setup(o => o.GetImageArch(baseImageTag, false, It.IsAny<CancellationToken>()))
                 .Returns((Architecture.ARM, baseImageVariant));
 
             BuildCommand command = CreateBuildCommand(
@@ -635,9 +635,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
-            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false, It.IsAny<CancellationToken>()));
         }
 
         /// <summary>
@@ -701,7 +701,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(
@@ -717,9 +717,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     expectedSecretMode,
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(
-                o => o.GetImageSize(It.IsAny<string>(), false));
+                o => o.GetImageSize(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
             credentialProviderMock.Verify(
                 provider => provider.GetCredential(command.Options.StorageServiceConnection),
                 isInternal ? Times.Once() : Times.Never());
@@ -768,7 +768,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(
@@ -781,9 +781,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.Is<IEnumerable<string>>(args => args.SequenceEqual(command.Options.DockerBuildOptions)),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(
-                o => o.GetImageSize(It.IsAny<string>(), false));
+                o => o.GetImageSize(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
         }
 
         /// <summary>
@@ -830,7 +830,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(
@@ -847,14 +847,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(
-                o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false));
+                o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>()));
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>()));
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
         }
 
         /// <summary>
@@ -879,11 +879,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{newTag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{newTag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -977,7 +977,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new()
             {
@@ -1027,22 +1027,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                 Times.Never);
             dockerServiceMock.Verify(
-                o => o.GetImageSize(It.IsAny<string>(), false),
+                o => o.GetImageSize(It.IsAny<string>(), false, It.IsAny<CancellationToken>()),
                 Times.Never);
 
             VerifyImportImage(copyImageServiceMock, command,
@@ -1100,7 +1100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                await command.ExecuteAsync();
+                await command.ExecuteAsync(testContext.CancellationToken);
 
                 ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(
                     File.ReadAllText(command.Options.ImageInfoOutputPath));
@@ -1154,11 +1154,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (isSkipPullingEnabled)
             {
-                await command.ExecuteAsync();
+                await command.ExecuteAsync(testContext.CancellationToken);
             }
             else
             {
-                await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync);
+                await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(testContext.CancellationToken));
             }
         }
 
@@ -1315,10 +1315,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -1437,7 +1437,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Run command
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             // Validate
             string actualOutputText = File.ReadAllText(command.Options.ImageInfoOutputPath);
@@ -1446,14 +1446,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string runtimeDepsDigestDestCache = $"{overridePrefix}{DockerHelper.TrimRegistry(runtimeDepsDigest)}";
             Times expectedTimes = isRuntimeDepsCached ? Times.Once() : Times.Never();
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigestDestCache, null, false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigestDestCache, $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigestDestCache, $"{overridePrefix}{runtimeDepsRepo}:shared", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigestDestCache, null, false, It.IsAny<CancellationToken>()), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigestDestCache, $"{overridePrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigestDestCache, $"{overridePrefix}{runtimeDepsRepo}:shared", false, It.IsAny<CancellationToken>()), expectedTimes);
 
             string runtimeDigestDestCache = $"{overridePrefix}{DockerHelper.TrimRegistry(runtimeDigest)}";
             expectedTimes = isRuntimeCached ? Times.Once() : Times.Never();
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDigestDestCache, null, false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDigestDestCache, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDigestDestCache, null, false, It.IsAny<CancellationToken>()), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDigestDestCache, $"{overridePrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()), expectedTimes);
 
             if (isRuntimeDepsCached)
             {
@@ -1520,15 +1520,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{linuxTag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{linuxTag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-               .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{windowsTag}", false))
+               .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{windowsTag}", false, It.IsAny<CancellationToken>()))
                .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{linuxTag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{linuxTag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -1653,7 +1653,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
             {
@@ -1749,26 +1749,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(linuxBaseImageTag, false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(windowsBaseImageTag, false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(linuxBaseImageTag, "linux/amd64", false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(windowsBaseImageTag, "windows/amd64", false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, null, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsWindowsDigest, null, false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(linuxBaseImageTag, false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(windowsBaseImageTag, false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{linuxTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{windowsTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{linuxTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(linuxBaseImageTag, "linux/amd64", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(windowsBaseImageTag, "windows/amd64", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, null, false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsWindowsDigest, null, false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:{linuxTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:{windowsTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:shared", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -1838,15 +1838,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps3Repo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps3Repo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -1958,7 +1958,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
             {
@@ -2060,15 +2060,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps3Repo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(It.IsAny<ImageName>(), false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps3Repo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()));
 
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false));
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)),
@@ -2080,12 +2080,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
-            dockerServiceMock.Verify(o => o.GetImageSize($"{runtimeDeps3Repo}:{tag}", false));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageSize($"{runtimeDeps3Repo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
-            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
 
@@ -2132,11 +2132,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -2193,7 +2193,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
             {
@@ -2265,8 +2265,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
 
             string[] expectedTags = new string[]
             {
@@ -2276,7 +2276,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (string expectedTag in expectedTags)
             {
-                dockerServiceMock.Verify(o => o.PushImage(expectedTag, false));
+                dockerServiceMock.Verify(o => o.PushImage(expectedTag, false, It.IsAny<CancellationToken>()));
 
                 dockerServiceMock.Verify(o =>
                     o.BuildImage(
@@ -2289,22 +2289,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<BuildSecretMode>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<bool>(),
-                        It.IsAny<bool>()),
+                        It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                     Times.Once);
                 dockerServiceMock.Verify(
-                    o => o.GetImageSize(expectedTag, false),
+                    o => o.GetImageSize(expectedTag, false, It.IsAny<CancellationToken>()),
                     Times.Once);
             }
 
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
-            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
 
@@ -2342,11 +2342,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -2439,7 +2439,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new()
             {
@@ -2511,8 +2511,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
 
             string[] expectedTags = new string[]
             {
@@ -2522,7 +2522,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (string expectedTag in expectedTags)
             {
-                dockerServiceMock.Verify(o => o.PushImage(expectedTag, false));
+                dockerServiceMock.Verify(o => o.PushImage(expectedTag, false, It.IsAny<CancellationToken>()));
 
                 dockerServiceMock.Verify(o =>
                     o.BuildImage(
@@ -2535,22 +2535,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<BuildSecretMode>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<bool>(),
-                        It.IsAny<bool>()),
+                        It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                     Times.Once);
                 dockerServiceMock.Verify(
-                    o => o.GetImageSize(expectedTag, false),
+                    o => o.GetImageSize(expectedTag, false, It.IsAny<CancellationToken>()),
                     Times.Once);
             }
 
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
-            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -2587,11 +2587,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{newTag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{newTag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -2686,7 +2686,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
             {
@@ -2737,25 +2737,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false, It.IsAny<CancellationToken>()), Times.Once);
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                 Times.Never);
             dockerServiceMock.Verify(
-                o => o.GetImageSize(It.IsAny<string>(), false),
+                o => o.GetImageSize(It.IsAny<string>(), false, It.IsAny<CancellationToken>()),
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -2806,15 +2806,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -2916,7 +2916,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
             {
@@ -2997,24 +2997,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false, It.IsAny<CancellationToken>()), Times.Once);
 
-            dockerServiceMock.Verify(o => o.PullImage($"{overridePrefix}{runtimeDepsLinuxDigest}", null, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage($"{overridePrefix}{runtimeDepsLinuxDigest}", null, false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:shared", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false, It.IsAny<CancellationToken>()), Times.Once);
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(), It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<BuildSecretMode>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                 Times.Never);
-            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
 
@@ -3093,29 +3093,29 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceMock = CreateManifestServiceMock([], []);
 
                 manifestServiceMock
-                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false))
+                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
 
                 manifestServiceMock
-                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false))
+                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}" : null);
 
                 manifestServiceMock
-                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false))
+                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(callCount => callCount > 0 ? $"{RegistryOverride}/{RepoPrefix}{AspnetRepo}@{AspnetDigest}" : null);
             }
 
             manifestServiceMock
-                .Setup(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false))
+                .Setup(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mirrorBaseImageDigest);
 
             manifestServiceMock
-                .Setup(o => o.GetManifestDigestShaAsync(mirrorBaseTag, false))
+                .Setup(o => o.GetManifestDigestShaAsync(mirrorBaseTag, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(srcBaseImageDigestSha);
 
             DateTime createdDate = DateTime.Now.ToUniversalTime();
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate(It.IsAny<string>(), false))
+                .Setup(o => o.GetCreatedDate(It.IsAny<string>(), false, It.IsAny<CancellationToken>()))
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -3259,7 +3259,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
             {
@@ -3362,8 +3362,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             actualOutput.ShouldBe(expectedOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, referencedBaseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, "linux/amd64", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, referencedBaseImageTag, false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(
@@ -3376,12 +3376,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
 
             if (hasCachedImage)
             {
-                dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", null, false));
-                dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", null, false, It.IsAny<CancellationToken>()));
+                dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
                 VerifyImportImage(copyImageServiceMock, command,
                     new string[] { $"{RepoPrefix}{RuntimeDepsRepo}:{Tag}" },
@@ -3389,8 +3389,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     RegistryOverride,
                     Registry);
 
-                dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", null, false));
-                dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", null, false, It.IsAny<CancellationToken>()));
+                dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
                 VerifyImportImage(copyImageServiceMock, command,
                     new string[] { $"{RepoPrefix}{RuntimeRepo}:{Tag}" },
@@ -3400,40 +3400,40 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-                manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+                manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+                manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
             }
 
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             if (!hasCachedImage)
             {
-                dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-                dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+                dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
-                dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-                dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+                dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
             }
 
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             if (!hasCachedImage)
             {
-                dockerServiceMock.Verify(o => o.GetImageArch(mirrorBaseTag, false));
-                dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.GetImageArch(mirrorBaseTag, false, It.IsAny<CancellationToken>()));
+                dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
             }
 
-            dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
             copyImageServiceMock.VerifyNoOtherCalls();
@@ -3511,7 +3511,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(
@@ -3524,23 +3524,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
-            dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
-            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", "linux/amd64", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", "linux/amd64", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             if (isExternallyOwnedBaseImage)
             {
                 dockerServiceMock.Verify(o =>
-                    o.CreateTag($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRegistry}/{RuntimeRepo}:{Tag}", false));
+                    o.CreateTag($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRegistry}/{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
             }
 
-            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -3610,7 +3610,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             ImageArtifactDetails imageArtifactDetails = new()
             {
@@ -3668,20 +3668,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<BuildSecretMode>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<bool>(),
-                    It.IsAny<bool>()));
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(
-                o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
+                o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
 
-            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
+            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(o =>
-                o.CreateTag($"{baseImageRepoPrefix}/{MirroredBaseTag}", SrcBaseTag, false));
-            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
+                o.CreateTag($"{baseImageRepoPrefix}/{MirroredBaseTag}", SrcBaseTag, false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{MirroredBaseTag}", false, It.IsAny<CancellationToken>()));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -3734,11 +3734,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<BuildSecretMode>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<bool>(),
-                        It.IsAny<bool>()))
+                        It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(buildOutput ?? string.Empty);
 
             dockerServiceMock
-                .Setup(o => o.GetImageArch(It.IsAny<string>(), It.IsAny<bool>()))
+                .Setup(o => o.GetImageArch(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns((Architecture.AMD64, null));
 
             return dockerServiceMock;
@@ -3753,6 +3753,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         destRegistryName,
                         srcTagName,
                         true,
+                        It.IsAny<CancellationToken>(),
                         srcRegistryName,
                         It.IsAny<ContainerRegistryImportSourceCredentials>(),
                         false));

@@ -35,7 +35,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
 
     protected override string Description => "Generate EOL annotation data for all images not described in the new image info file";
 
-    protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
+    protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
@@ -59,7 +59,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
                 .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo))
                 .Select(name => Options.RegistryOptions.RepoPrefix + name);
             IEnumerable<EolDigestData> registryTagsByDigest =
-                await GetAllImageDigestsFromRegistryAsync(repo => repoNames.Contains(repo));
+                await GetAllImageDigestsFromRegistryAsync(cancellationToken, repo => repoNames.Contains(repo));
 
             if (!Options.IsDryRun)
             {

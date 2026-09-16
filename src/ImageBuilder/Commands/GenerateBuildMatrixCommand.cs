@@ -48,11 +48,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("GENERATING BUILD MATRIX");
 
-            IEnumerable<BuildMatrixInfo> matrices = await GenerateMatrixInfoAsync();
+            IEnumerable<BuildMatrixInfo> matrices = await GenerateMatrixInfoAsync(cancellationToken);
             LogDiagnostics(matrices);
             EmitVstsVariables(matrices);
         }
@@ -407,7 +407,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
-        private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
+        private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync(CancellationToken cancellationToken)
         {
             IEnumerable<RepoInfo> filteredRepos = Manifest.FilteredRepos.ToList();
 
@@ -451,10 +451,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         ).Select(platformInfo => platformMappings.First(mapping => mapping.PlatformInfo == platformInfo)));
 
             ConcurrentBag<PlatformInfo> nonCachedPlatforms = [];
-            await Parallel.ForEachAsync(subgraphs, async (subgraph, _) =>
+            await Parallel.ForEachAsync(subgraphs, cancellationToken, async (subgraph, outerCt) =>
             {
                 ConcurrentBag<PlatformInfo> subgraphNonCachedPlatforms = [];
-                await Parallel.ForEachAsync(subgraph, async (platformMapping, _) =>
+                await Parallel.ForEachAsync(subgraph, outerCt, async (platformMapping, ct) =>
                 {
                     if (platformMapping.PlatformData is null)
                     {
@@ -470,7 +470,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         _imageNameResolver.Value,
                         Options.SourceRepoUrl,
                         isLocalBaseImageExpected: false,
-                        Options.IsDryRun);
+                        Options.IsDryRun,
+                        ct);
 
                     bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
 
@@ -500,12 +501,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return nonCachedPlatforms.OrderBy(platform => platform.DockerfilePath);
         }
 
-        public async Task<IEnumerable<BuildMatrixInfo>> GenerateMatrixInfoAsync()
+        public async Task<IEnumerable<BuildMatrixInfo>> GenerateMatrixInfoAsync(CancellationToken cancellationToken)
         {
             List<BuildMatrixInfo> matrices = [];
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
-            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = (await GetPlatformsAsync())
+            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = (await GetPlatformsAsync(cancellationToken))
                 .GroupBy(platform => CreatePlatformId(platform))
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)

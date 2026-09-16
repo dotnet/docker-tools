@@ -29,13 +29,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Waits for docs to complete ingestion into Docker Hub";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("QUERYING COMMIT RESULT");
 
             if (!Options.IsDryRun)
             {
-                CommitResult result = await WaitForIngestionAsync(_mcrStatusClient.Value);
+                CommitResult result = await WaitForIngestionAsync(_mcrStatusClient.Value, cancellationToken);
 
                 LogSuccessfulResults(result);
             }
@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation("Doc ingestion successfully completed!");
         }
 
-        private async Task<CommitResult> WaitForIngestionAsync(IMcrStatusClient statusClient)
+        private async Task<CommitResult> WaitForIngestionAsync(IMcrStatusClient statusClient, CancellationToken cancellationToken)
         {
             CommitResult commitResult = null;
 
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isComplete = false;
             while (!isComplete)
             {
-                commitResult = await statusClient.GetCommitResultAsync(Options.CommitDigest);
+                commitResult = await statusClient.GetCommitResultAsync(Options.CommitDigest, cancellationToken);
 
                 foreach (CommitStatus commitStatus in commitResult.Value)
                 {
@@ -64,10 +64,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         case StageStatus.Processing:
                         case StageStatus.NotStarted:
-                            await Task.Delay(Options.IngestionOptions.RequeryDelay);
+                            await Task.Delay(Options.IngestionOptions.RequeryDelay, cancellationToken);
                             break;
                         case StageStatus.Failed:
-                            _logger.LogError(await GetFailureResultsAsync(statusClient, commitStatus));
+                            _logger.LogError(await GetFailureResultsAsync(statusClient, commitStatus, cancellationToken));
                             break;
                         case StageStatus.Succeeded:
                             isComplete = true;
@@ -103,9 +103,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             commitResult.ContentFiles.ForEach(file => _logger.LogInformation($"\t\t{file}"));
         }
 
-        private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus)
+        private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus, CancellationToken cancellationToken)
         {
-            CommitResultDetailed result = await statusClient.GetCommitResultDetailedAsync(Options.CommitDigest, commitStatus.OnboardingRequestId);
+            CommitResultDetailed result =
+                await statusClient.GetCommitResultDetailedAsync(Options.CommitDigest, commitStatus.OnboardingRequestId, cancellationToken);
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine($"Failure for commit digest '{Options.CommitDigest}':");

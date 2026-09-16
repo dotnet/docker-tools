@@ -12,9 +12,11 @@ public class AcrClientWrapper(ContainerRegistryClient innerClient) : IAcrClient
 {
     private readonly ContainerRegistryClient _innerClient = innerClient;
 
-    public Task DeleteRepositoryAsync(string name) => _innerClient.DeleteRepositoryAsync(name);
+    public Task DeleteRepositoryAsync(string name, CancellationToken cancellationToken) =>
+        _innerClient.DeleteRepositoryAsync(name, cancellationToken);
 
-    public IAsyncEnumerable<string> GetRepositoryNamesAsync() => _innerClient.GetRepositoryNamesAsync();
+    public IAsyncEnumerable<string> GetRepositoryNamesAsync(CancellationToken cancellationToken) =>
+        _innerClient.GetRepositoryNamesAsync(cancellationToken);
 
     public ContainerRepository GetRepository(string name) => _innerClient.GetRepository(name);
 }

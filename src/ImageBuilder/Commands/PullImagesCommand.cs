@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Pulls the images described in the manifest";
 
-        public override Task ExecuteAsync()
+        public override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             IEnumerable<(string Tag, string Platform)> platformTags;
             if (string.IsNullOrEmpty(Options.ImageInfoPath))
@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation("PULLING IMAGES");
             foreach ((string tag, string platform) in platformTags)
             {
-                _dockerService.PullImage(tag, platform, Options.IsDryRun);
+                _dockerService.PullImage(tag, platform, Options.IsDryRun, cancellationToken);
             }
 
             if (Options.OutputVariableName is not null)

@@ -40,7 +40,8 @@ namespace Microsoft.DotNet.ImageBuilder
             BuildSecretMode buildSecretMode,
             IEnumerable<string> dockerBuildOptions,
             bool isRetryEnabled,
-            bool isDryRun) =>
+            bool isDryRun,
+            CancellationToken cancellationToken) =>
                 _inner.BuildImage(
                     dockerfilePath,
                     buildContextPath,
@@ -51,39 +52,40 @@ namespace Microsoft.DotNet.ImageBuilder
                     buildSecretMode,
                     dockerBuildOptions,
                     isRetryEnabled,
-                    isDryRun);
+                    isDryRun,
+                    cancellationToken);
 
-        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun) =>
-            _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun));
+        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun, CancellationToken cancellationToken) =>
+            _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun, cancellationToken));
 
-        public void CreateTag(string image, string tag, bool isDryRun) =>
-            _inner.CreateTag(image, tag, isDryRun);
+        public void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken) =>
+            _inner.CreateTag(image, tag, isDryRun, cancellationToken);
 
-        public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun) =>
-            _inner.CreateManifestList(manifestListTag, images, isDryRun);
+        public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun, CancellationToken cancellationToken) =>
+            _inner.CreateManifestList(manifestListTag, images, isDryRun, cancellationToken);
 
-        public DateTime GetCreatedDate(string image, bool isDryRun) =>
-            _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun));
+        public DateTime GetCreatedDate(string image, bool isDryRun, CancellationToken cancellationToken) =>
+            _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun, cancellationToken));
 
-        public long GetImageSize(string image, bool isDryRun) =>
-            _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));
+        public long GetImageSize(string image, bool isDryRun, CancellationToken cancellationToken) =>
+            _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun, cancellationToken));
 
-        public bool LocalImageExists(string tag, bool isDryRun) =>
-            _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
+        public bool LocalImageExists(string tag, bool isDryRun, CancellationToken cancellationToken) =>
+            _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun, cancellationToken));
 
-        public void PullImage(string image, string? platform, bool isDryRun)
+        public void PullImage(string image, string? platform, bool isDryRun, CancellationToken cancellationToken)
         {
             _pulledImages.GetOrAdd(image, _ =>
             {
-                _inner.PullImage(image, platform, isDryRun);
+                _inner.PullImage(image, platform, isDryRun, cancellationToken);
                 return true;
             });
         }
 
-        public void PushImage(string tag, bool isDryRun) =>
-            _inner.PushImage(tag, isDryRun);
+        public void PushImage(string tag, bool isDryRun, CancellationToken cancellationToken) =>
+            _inner.PushImage(tag, isDryRun, cancellationToken);
 
-        public void PushManifestList(string tag, bool isDryRun) =>
-            _inner.PushManifestList(tag, isDryRun);
+        public void PushManifestList(string tag, bool isDryRun, CancellationToken cancellationToken) =>
+            _inner.PushManifestList(tag, isDryRun, cancellationToken);
     }
 }

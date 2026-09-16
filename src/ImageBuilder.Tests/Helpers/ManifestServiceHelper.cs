@@ -47,7 +47,7 @@ internal static class ManifestServiceHelper
 
         // By default, have it throw an exception which indicates that the manifest was not found
         manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception());
 
         localImageDigestResults ??= [];
@@ -57,21 +57,21 @@ internal static class ManifestServiceHelper
         foreach ((string image, string digest, int onCallCount) in localImageDigestResults)
         {
             manifestServiceMock
-                .Setup(o => o.GetLocalImageDigestAsync(image, false))
+                .Setup(o => o.GetLocalImageDigestAsync(image, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(callCount => callCount >= onCallCount ? digest : null);
         }
 
         foreach ((string image, string digest, int onCallIndex) in externalImageDigestResults)
         {
             manifestServiceMock
-                .Setup(o => o.GetManifestDigestShaAsync(image, false))
+                .Setup(o => o.GetManifestDigestShaAsync(image, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(callIndex => callIndex >= onCallIndex ? digest : throw new Exception());
         }
 
         foreach ((string image, IEnumerable<Layer> layers) in imageLayersResults)
         {
             manifestServiceMock
-                .Setup(o => o.GetImageLayersAsync(image, false))
+                .Setup(o => o.GetImageLayersAsync(image, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(layers);
         }
 

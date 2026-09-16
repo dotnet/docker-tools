@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Builds Dockerfiles";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             Options.BaseImageOverrideOptions.Validate();
 
@@ -95,39 +95,42 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync);
-            await BuildImagesAsync();
+            await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync, cancellationToken);
+            await BuildImagesAsync(cancellationToken);
 
             if (_processedTags.Count > 0 || _imageCacheService.HasAnyCachedPlatforms)
             {
                 // Log in again to refresh token as it may have expired from a long build
-                await ExecuteWithDockerCredentialsAsync(async () =>
+                await ExecuteWithDockerCredentialsAsync(async ct =>
                     {
-                        PushImages();
-                        await PublishImageInfoAsync();
-                    });
+                        PushImages(ct);
+                        await PublishImageInfoAsync(ct);
+                    },
+                    cancellationToken);
             }
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
         }
 
-        private async Task ExecuteWithDockerCredentialsAsync(Func<Task> action)
+        private async Task ExecuteWithDockerCredentialsAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
         {
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 isDryRun: Options.IsDryRun,
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
-                registryName: Manifest.Registry);
+                registryName: Manifest.Registry,
+                cancellationToken);
         }
 
-        private async Task ExecuteWithDockerCredentialsAsync(Action action)
+        private async Task ExecuteWithDockerCredentialsAsync(Action<CancellationToken> action, CancellationToken cancellationToken)
         {
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 isDryRun: Options.IsDryRun,
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
-                registryName: Manifest.Registry);
+                registryName: Manifest.Registry,
+                cancellationToken);
         }
 
         private void WriteBuiltImagesToOutputVar()
@@ -144,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task PublishImageInfoAsync()
+        private async Task PublishImageInfoAsync(CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(Options.ImageInfoOutputPath))
             {
@@ -179,12 +182,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (Options.IsPushEnabled)
                     {
-                        await SetPlatformDataDigestAsync(platform, tag.FullyQualifiedName);
+                        await SetPlatformDataDigestAsync(platform, tag.FullyQualifiedName, cancellationToken);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
-                        await SetPlatformDataLayersAsync(platform, tag.FullyQualifiedName);
+                        await SetPlatformDataLayersAsync(platform, tag.FullyQualifiedName, cancellationToken);
                     }
 
-                    SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
+                    SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName, cancellationToken);
                 }
 
                 if (!pushTags.Any())
@@ -217,9 +220,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
         }
 
-        private void SetPlatformDataCreatedDate(PlatformData platform, string tag)
+        private void SetPlatformDataCreatedDate(PlatformData platform, string tag, CancellationToken cancellationToken)
         {
-            DateTime createdDate = _dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
+            DateTime createdDate = _dockerService.GetCreatedDate(tag, Options.IsDryRun, cancellationToken).ToUniversalTime();
             if (platform.Created != default && platform.Created != createdDate)
             {
                 // All of the tags associated with the platform should have the same Created date
@@ -260,18 +263,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.BaseImageDigest = baseImageDigest;
         }
 
-        private async Task SetPlatformDataLayersAsync(PlatformData platform, string tag)
+        private async Task SetPlatformDataLayersAsync(PlatformData platform, string tag, CancellationToken cancellationToken)
         {
             if (platform.Layers == null || !platform.Layers.Any())
             {
-                platform.Layers = (await _manifestService.Value.GetImageLayersAsync(tag, Options.IsDryRun)).ToList();
+                platform.Layers = (await _manifestService.Value.GetImageLayersAsync(tag, Options.IsDryRun, cancellationToken)).ToList();
             }
         }
 
-        private async Task SetPlatformDataDigestAsync(PlatformData platform, string tag)
+        private async Task SetPlatformDataDigestAsync(PlatformData platform, string tag, CancellationToken cancellationToken)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
-            string? digest = await _imageDigestCache.GetLocalImageDigestAsync(tag, Options.IsDryRun);
+            string? digest = await _imageDigestCache.GetLocalImageDigestAsync(tag, Options.IsDryRun, cancellationToken);
             if (digest is not null && platform.PlatformInfo is not null)
             {
                 digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
@@ -295,7 +298,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Digest = digest;
         }
 
-        private async Task BuildImagesAsync()
+        private async Task BuildImagesAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("BUILDING IMAGES");
 
@@ -343,7 +346,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 _imageNameResolver.Value,
                                 sourceRepoUrl: Options.SourceRepoUrl,
                                 isLocalBaseImageExpected: true,
-                                isDryRun: Options.IsDryRun);
+                                isDryRun: Options.IsDryRun,
+                                cancellationToken);
 
                             if (cacheResult.State.HasFlag(ImageCacheState.Cached))
                             {
@@ -352,7 +356,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
                                 platformData.IsUnchanged = cacheResult.State != ImageCacheState.CachedWithMissingTags;
 
-                                await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest);
+                                await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest, cancellationToken);
                             }
                         }
 
@@ -360,14 +364,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             _processedTags.AddRange(allTagInfos);
 
-                            BuildImage(platform, allTags);
+                            BuildImage(platform, allTags, cancellationToken);
                             _builtPlatforms.Add(platformData);
 
                             if (Options.IsPushEnabled && platform.FinalStageFromImage is not null)
                             {
                                 platformData.BaseImageDigest =
                                    await _imageDigestCache.GetLocalImageDigestAsync(
-                                       _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+                                       _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage),
+                                       Options.IsDryRun,
+                                       cancellationToken);
                             }
                         }
                     }
@@ -426,7 +432,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return imageData;
         }
 
-        private void ValidatePlatformIsCompatibleWithBaseImage(PlatformInfo platform)
+        private void ValidatePlatformIsCompatibleWithBaseImage(PlatformInfo platform, CancellationToken cancellationToken)
         {
             if (platform.FinalStageFromImage is null || Options.SkipPlatformCheck)
             {
@@ -437,7 +443,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // Base image should already be pulled or built so it's ok to inspect it
             (Models.Manifest.Architecture baseImageArch, string? baseImageVariant) =
-                _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
+                _dockerService.GetImageArch(baseImageTag, Options.IsDryRun, cancellationToken);
 
             // The containerd/platforms library treats default variants as implicit. Its normalizeArch
             // function maps arm/"" to arm/v7, arm64/v8 to arm64/"", and amd64/v1 to amd64/"". Its
@@ -474,9 +480,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags)
+        private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags, CancellationToken cancellationToken)
         {
-            ValidatePlatformIsCompatibleWithBaseImage(platform);
+            ValidatePlatformIsCompatibleWithBaseImage(platform, cancellationToken);
 
             bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -496,13 +502,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     buildSecretMode,
                     GetDockerBuildOptions(),
                     Options.IsRetryEnabled,
-                    Options.IsDryRun);
+                    Options.IsDryRun,
+                    cancellationToken);
 
                 // Print image size
                 string? firstTag = allTags.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
                 if (firstTag is not null)
                 {
-                    long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun);
+                    long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun, cancellationToken);
                     _logger.LogInformation($"Image size (on disk): {size} bytes");
                 }
 
@@ -556,7 +563,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<string> GetDockerBuildOptions() =>
             Options.DockerBuildOptions.Where(option => !string.IsNullOrWhiteSpace(option));
 
-        private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
+        private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest, CancellationToken cancellationToken)
         {
             _logger.LogInformation(string.Empty);
             _logger.LogInformation("CACHE HIT");
@@ -572,18 +579,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string copiedSourceDigest = sourceDigest;
             if (Options.IsPushEnabled)
             {
-                copiedSourceDigest = await CopyCachedImage(allTags, sourceDigest);
+                copiedSourceDigest = await CopyCachedImage(allTags, sourceDigest, cancellationToken);
             }
 
             // Pull the image instead of building it
             if (pullImage)
             {
-                await ExecuteWithDockerCredentialsAsync(() =>
+                await ExecuteWithDockerCredentialsAsync(ct =>
                     {
                         // Don't need to provide the platform because we're pulling by digest. No need to worry about multi-arch tags.
-                        _dockerService.PullImage(copiedSourceDigest, null, Options.IsDryRun);
+                        _dockerService.PullImage(copiedSourceDigest, null, Options.IsDryRun, ct);
                         _sourceDigestCopyLocationMapping[sourceDigest] = copiedSourceDigest;
-                    });
+                    },
+                    cancellationToken);
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it
@@ -593,7 +601,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     throw new InvalidOperationException("Digest should be mapped by this point");
                 }
-                _dockerService.CreateTag(resolvedSourceDigest, tag.FullyQualifiedName, Options.IsDryRun);
+                _dockerService.CreateTag(resolvedSourceDigest, tag.FullyQualifiedName, Options.IsDryRun, cancellationToken);
 
                 // Rewrite the digest to match the repo of the tags being associated with it. This is necessary
                 // in order to handle scenarios where shared Dockerfiles are being used across different repositories.
@@ -610,7 +618,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task<string> CopyCachedImage(IEnumerable<TagInfo> allTags, string sourceDigest)
+        private async Task<string> CopyCachedImage(IEnumerable<TagInfo> allTags, string sourceDigest, CancellationToken cancellationToken)
         {
             string[] destTags = allTags
                                 .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
@@ -623,7 +631,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 destAcrName: Manifest.Registry,
                 srcTagName: DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
                 copyReferrers: true,
-                srcRegistryName: srcRegistry);
+                srcRegistryName: srcRegistry,
+                sourceCredentials: null,
+                isDryRun: Options.IsDryRun,
+                cancellationToken: cancellationToken);
 
             // Redefine the source digest to be from the destination of the copy, not the source. The canonical scenario
             // here is to copy the cached image from MCR to the staging location in an ACR. This allows test jobs to always pull
@@ -633,7 +644,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return sourceDigest;
         }
 
-        private async Task PullBaseImagesAsync()
+        private async Task PullBaseImagesAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("PULLING LATEST BASE IMAGES");
 
@@ -658,7 +669,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         // Pull the image, specifying its platform to ensure we get the necessary image in the case of
                         // a multi-arch tag.
-                        _dockerService.PullImage(pullTag, platform.PlatformLabel, Options.IsDryRun);
+                        _dockerService.PullImage(pullTag, platform.PlatformLabel, Options.IsDryRun, cancellationToken);
                     }
                 }
             }
@@ -686,13 +697,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string.Join(", ", finalStageExternalFromImages.Except(pulledTags).ToArray()));
             }
 
-            await Parallel.ForEachAsync(finalStageExternalFromImages, async (fromImage, cancellationToken) =>
+            await Parallel.ForEachAsync(
+                finalStageExternalFromImages,
+                cancellationToken,
+                async (fromImage, ct) =>
             {
                 // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
                 // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
                 // greater chance the tag could be updated resulting in a different digest returned than what was
                 // originally pulled.
-                await _imageDigestCache.GetLocalImageDigestAsync(fromImage, Options.IsDryRun);
+                await _imageDigestCache.GetLocalImageDigestAsync(fromImage, Options.IsDryRun, ct);
             });
 
             // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles
@@ -701,7 +715,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string pullTag = _imageNameResolver.Value.GetFromImagePullTag(fromImage);
                 if (pullTag != fromImage)
                 {
-                    _dockerService.CreateTag(pullTag, fromImage, Options.IsDryRun);
+                    _dockerService.CreateTag(pullTag, fromImage, Options.IsDryRun, cancellationToken);
                 }
             });
         }
@@ -712,7 +726,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .SelectMany(imageData => imageData.Platforms)
             ?? Enumerable.Empty<PlatformData>();
 
-        private void PushImages()
+        private void PushImages(CancellationToken cancellationToken)
         {
             if (Options.IsPushEnabled)
             {
@@ -720,7 +734,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (TagInfo tag in _processedTags)
                 {
-                    _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
+                    _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun, cancellationToken);
                 }
             }
         }

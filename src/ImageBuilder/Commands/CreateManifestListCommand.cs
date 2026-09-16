@@ -47,7 +47,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
     protected override string Description => "Creates manifest lists and records their digests in image info";
 
-    public override async Task ExecuteAsync()
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("CREATING MANIFEST LISTS");
 
@@ -64,14 +64,14 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,
-            async () =>
+            async ct =>
             {
                 // Path-filtered builds may include only one platform of a shared-tag image. Import
                 // any missing sibling platforms into staging first, then add them to image-info so
                 // manifest-list creation sees the complete set.
                 _logger.LogInformation("Looking for platforms missing from the current build.");
                 IReadOnlyList<PlatformImportData> platformsToImport =
-                    await GetMissingPlatformsAsync(imageArtifactDetails);
+                    await GetMissingPlatformsAsync(imageArtifactDetails, ct);
                 _logger.LogInformation(
                     "Found {NumberOfPlatformsToImport} platforms to import.",
                     platformsToImport.Count);
@@ -83,7 +83,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                         platformToImport.Platform.PlatformLabel,
                         platformToImport.Image.SharedTags.GetDisplayString());
 
-                    await ImportPlatformToStagingAsync(platformToImport);
+                    await ImportPlatformToStagingAsync(platformToImport, ct);
 
                     // Add the imported platform to the image-info so that it's present for
                     // manifest list creation.
@@ -104,7 +104,8 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                     _dockerService.CreateManifestList(
                         manifestListTag: manifestListInfo.Tag,
                         images: manifestListInfo.PlatformTags,
-                        isDryRun: Options.IsDryRun);
+                        isDryRun: Options.IsDryRun,
+                        cancellationToken: ct);
                 }
 
                 DateTime createdDate = _dateTimeService.UtcNow;
@@ -112,15 +113,16 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                 // Push the manifest lists, then record their digests back into image-info.
                 Parallel.ForEach(manifestLists, manifestListInfo =>
                 {
-                    _dockerService.PushManifestList(manifestListInfo.Tag, Options.IsDryRun);
+                    _dockerService.PushManifestList(manifestListInfo.Tag, Options.IsDryRun, ct);
                 });
 
                 WriteManifestSummary(manifestLists);
 
-                await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
+                await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails, ct);
             },
             Options.CredentialsOptions,
-            registryName: Manifest.Registry);
+            registryName: Manifest.Registry,
+            cancellationToken);
     }
 
     /// <summary>
@@ -130,7 +132,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     /// platforms. This method finds the missing platforms that need to be imported, and returns
     /// instructions for how to import them (i.e. where to import from and what tags they need).
     /// </summary>
-    private async Task<IReadOnlyList<PlatformImportData>> GetMissingPlatformsAsync(ImageArtifactDetails imageArtifactDetails)
+    private async Task<IReadOnlyList<PlatformImportData>> GetMissingPlatformsAsync(ImageArtifactDetails imageArtifactDetails, CancellationToken cancellationToken)
     {
         // Find every (imageData, platform) pair that the manifest declares for a shared-tag image
         // but that wasn't built this run. These are the platforms we need to port.
@@ -193,7 +195,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                 "Resolving digest for image {SharedTags} platform {Platform} from {SourceName}",
                 imageData.ManifestImage.SharedTags.GetDisplayString(), platform.PlatformLabel, sourceName);
 
-            ManifestQueryResult result = await _manifestService.Value.GetManifestAsync(sourceName, isDryRun: false);
+            ManifestQueryResult result = await _manifestService.Value.GetManifestAsync(sourceName, isDryRun: false, cancellationToken);
 
             var platformImportData = new PlatformImportData(
                 Repo: imageData.ManifestRepo,
@@ -212,7 +214,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     /// <summary>
     /// Imports a platform image into the scoped staging registry.
     /// </summary>
-    private async Task ImportPlatformToStagingAsync(PlatformImportData platformToImport)
+    private async Task ImportPlatformToStagingAsync(PlatformImportData platformToImport, CancellationToken cancellationToken)
     {
         // Build the registry-less reference 'repo@sha256:...' that ImportImageAsync expects for
         // srcTagName. ImportImageAsync concatenates srcRegistryName and srcTagName itself (see
@@ -231,7 +233,9 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
             srcTagName: srcReference,
             copyReferrers: true,
             srcRegistryName: Manifest.Model.Registry,
-            isDryRun: Options.IsDryRun);
+            sourceCredentials: null,
+            isDryRun: Options.IsDryRun,
+            cancellationToken: cancellationToken);
     }
 
     private IReadOnlyList<string> GetDestinationTagsForImage(PlatformInfo platform, string sourceRepo)
@@ -270,7 +274,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
         importedPlatform.SiblingPlatforms.Add(platformData);
     }
 
-    private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
+    private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails, CancellationToken cancellationToken)
     {
         _logger.LogInformation("SETTING TAG INFO");
 
@@ -292,7 +296,9 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
             image.Manifest.Digest = DockerHelper.GetDigestString(
                 image.ManifestRepo.FullModelName,
                 await _manifestService.Value.GetManifestDigestShaAsync(
-                    sharedTag.FullyQualifiedName, Options.IsDryRun));
+                    sharedTag.FullyQualifiedName,
+                    Options.IsDryRun,
+                    cancellationToken));
 
             IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
                 .Where(tag => tag.SyndicatedRepo is not null)
@@ -307,7 +313,8 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                     DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
                     await _manifestService.Value.GetManifestDigestShaAsync(
                         DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
-                        Options.IsDryRun));
+                        Options.IsDryRun,
+                        cancellationToken));
                 image.Manifest.SyndicatedDigests.Add(digest);
             }
         }

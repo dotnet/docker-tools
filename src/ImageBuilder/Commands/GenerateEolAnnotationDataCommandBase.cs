@@ -42,21 +42,23 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         _registryCredentialsProvider = registryCredentialsProvider;
     }
 
-    public sealed override async Task ExecuteAsync()
+    public sealed override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         IEnumerable<EolDigestData> digestsToAnnotate = [];
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,
-            async () => digestsToAnnotate = await GetDigestsWithoutExistingAnnotationAsync(await GetDigestsToAnnotateAsync()),
+            async ct => digestsToAnnotate = await GetDigestsWithoutExistingAnnotationAsync(await GetDigestsToAnnotateAsync(ct), ct),
             Options.CredentialsOptions,
-            registryName: Options.RegistryOptions.Registry);
+            registryName: Options.RegistryOptions.Registry,
+            cancellationToken);
 
         WriteDigestDataJson(digestsToAnnotate);
     }
 
-    protected abstract Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync();
+    protected abstract Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync(CancellationToken cancellationToken);
 
     protected async Task<IEnumerable<EolDigestData>> GetAllImageDigestsFromRegistryAsync(
+        CancellationToken cancellationToken,
         Func<string, bool>? repoNameFilter = null)
     {
         _logger.LogInformation("Querying registry for all image digests...");
@@ -69,11 +71,14 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryOptions.Registry);
 
         IAsyncEnumerable<string> repositoryNames =
-            acrClient.GetRepositoryNamesAsync()
+            acrClient.GetRepositoryNamesAsync(cancellationToken)
                      .Where(repo => repoNameFilter is null || repoNameFilter(repo));
 
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
-        await Parallel.ForEachAsync(repositoryNames, async (repositoryName, outerCT) =>
+        await Parallel.ForEachAsync(
+            repositoryNames,
+            cancellationToken,
+            async (repositoryName, outerCT) =>
         {
             IAcrContentClient contentClient =
                 _acrContentClientFactory.Create(
@@ -81,13 +86,14 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
                     repositoryName);
 
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
-            IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
+            IAsyncEnumerable<ArtifactManifestProperties> manifests =
+                repo.GetAllManifestPropertiesAsync(cancellationToken: outerCT);
             await Parallel.ForEachAsync(manifests, outerCT, async (manifestProps, innerCT) =>
             {
                 ManifestQueryResult manifestResult;
                 try
                 {
-                    manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
+                    manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest, innerCT);
                 }
                 catch (RequestFailedException ex) when (ex.Status == 404)
                 {
@@ -131,7 +137,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
     }
 
     private async Task<IEnumerable<EolDigestData>> GetDigestsWithoutExistingAnnotationAsync(
-        IEnumerable<EolDigestData> unsupportedDigests)
+        IEnumerable<EolDigestData> unsupportedDigests,
+        CancellationToken cancellationToken)
     {
         if (Options.IsDryRun)
         {
@@ -139,7 +146,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         }
 
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];
-        await Parallel.ForEachAsync(unsupportedDigests, CancellationToken.None, async (digest, ct) =>
+        await Parallel.ForEachAsync(unsupportedDigests, cancellationToken, async (digest, ct) =>
         {
             _logger.LogInformation($"Checking digest for existing annotation: {digest.Digest}");
             if (await _lifecycleMetadataService.GetLifecycleArtifactAsync(digest.Digest, ct) is null)

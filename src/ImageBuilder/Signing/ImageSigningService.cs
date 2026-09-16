@@ -42,7 +42,7 @@ public class ImageSigningService(
     public async Task<IReadOnlyList<ImageSigningResult>> SignImagesAsync(
         ImageArtifactDetails imageArtifactDetails,
         int signingKeyCode,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         // Note: GetAllDigests returns platform and manifest list digests only. It does not
         // include signature digests because ImageArtifactDetails does not store signature
@@ -63,7 +63,7 @@ public class ImageSigningService(
         await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
         {
             IReadOnlyList<ReferrerInfo> referrers =
-                await _orasService.GetReferrersAsync(imageDigest, isDryRun: false, ct);
+                await _orasService.GetReferrersAsync(imageDigest, ct, isDryRun: false);
 
             bool alreadySigned = referrers.Any(r => r.ArtifactType == OciArtifactType.NotarySignatureV2);
             if (alreadySigned)

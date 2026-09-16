@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Publishes a build's merged image info.";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("PUBLISHING IMAGE INFO");
 
@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _logger.LogInformation("Cloning GitHub repo");
 
                 CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
-                CredentialsHandler credentials = await GetCredentialsAsync();
+                CredentialsHandler credentials = await GetCredentialsAsync(cancellationToken);
                 cloneOptions.FetchOptions.CredentialsProvider = credentials;
 
                 using IRepository repo =_gitService.CloneRepository(
@@ -111,9 +111,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"The '{Options.GitOptions.Path}' file was updated. Remote URL: {gitHubCommitUrl}");
         }
 
-        private async Task<CredentialsHandler> GetCredentialsAsync()
+        private async Task<CredentialsHandler> GetCredentialsAsync(CancellationToken cancellationToken)
         {
-            string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions);
+            string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
             return (_, _, _) => new UsernamePasswordCredentials
             {
                 Username = "_",

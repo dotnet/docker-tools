@@ -38,7 +38,7 @@ public class VerifySignaturesCommand(
     protected override string Description =>
         "Verifies container image signatures listed in the image info file using notation";
 
-    public override async Task ExecuteAsync()
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("VERIFYING CONTAINER IMAGE SIGNATURES");
 
@@ -63,9 +63,9 @@ public class VerifySignaturesCommand(
             return;
         }
 
-        SetupTrustConfiguration(signingConfig);
+        SetupTrustConfiguration(signingConfig, cancellationToken);
 
-        var imageInfoContents = await _fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
+        var imageInfoContents = await _fileSystem.ReadAllTextAsync(Options.ImageInfoPath, cancellationToken);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
@@ -77,21 +77,21 @@ public class VerifySignaturesCommand(
             return;
         }
 
-        await LoginToRegistriesAsync(imageReferences);
+        await LoginToRegistriesAsync(imageReferences, cancellationToken);
 
         _logger.LogInformation("Verifying signatures for {Count} image(s)...", imageReferences.Count);
 
         ConcurrentBag<(string Reference, Exception Error)> failures = [];
 
-        await Parallel.ForEachAsync(imageReferences, (reference, _) =>
+        await Parallel.ForEachAsync(imageReferences, cancellationToken, (reference, ct) =>
         {
             try
             {
                 _logger.LogInformation("Verifying: {Reference}", reference);
-                _notationClient.Verify(reference, Options.IsDryRun);
+                _notationClient.Verify(reference, Options.IsDryRun, ct);
                 _logger.LogInformation("OK: {Reference}", reference);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Failed: {Reference}", reference);
                 failures.Add((reference, ex));
@@ -119,7 +119,7 @@ public class VerifySignaturesCommand(
     /// Authenticates the notation CLI to each unique registry found in the image references.
     /// Uses docker login since notation reads credentials from Docker's credential store.
     /// </summary>
-    private async Task LoginToRegistriesAsync(List<string> imageReferences)
+    private async Task LoginToRegistriesAsync(List<string> imageReferences, CancellationToken cancellationToken)
     {
         var registries = imageReferences
             .Select(r => ImageName.Parse(r).Registry)
@@ -128,7 +128,7 @@ public class VerifySignaturesCommand(
 
         foreach (var registry in registries)
         {
-            var credentials = await _registryCredentialsProvider.GetCredentialsAsync(registry, credsHost: null);
+            var credentials = await _registryCredentialsProvider.GetCredentialsAsync(registry, credsHost: null, cancellationToken);
             if (credentials is null)
             {
                 _logger.LogInformation("No credentials found for '{Registry}'. Notation may fail if the registry requires authentication.", registry);
@@ -136,7 +136,7 @@ public class VerifySignaturesCommand(
             }
 
             _logger.LogInformation("Logging in to '{Registry}' for notation...", registry);
-            DockerHelper.Login(credentials, registry, isDryRun: false);
+            DockerHelper.Login(credentials, registry, isDryRun: false, cancellationToken);
         }
     }
 
@@ -144,7 +144,7 @@ public class VerifySignaturesCommand(
     /// Configures notation trust by importing the baked-in root CA certificate and trust policy
     /// for the specified trust store name.
     /// </summary>
-    private void SetupTrustConfiguration(SigningConfiguration signingConfig)
+    private void SetupTrustConfiguration(SigningConfiguration signingConfig, CancellationToken cancellationToken)
     {
         var trustStoreName = signingConfig.TrustStoreName;
 
@@ -157,7 +157,7 @@ public class VerifySignaturesCommand(
         }
 
         _logger.LogInformation("Adding root CA certificate from '{CertPath}' to trust store '{TrustStoreName}'...", certPath, trustStoreName);
-        _notationClient.AddCertificate("ca", trustStoreName, certPath);
+        _notationClient.AddCertificate("ca", trustStoreName, certPath, cancellationToken);
 
         var policyPath = Path.Combine(Options.TrustMaterialsPath, "policies", $"{trustStoreName}.json");
         if (!_fileSystem.FileExists(policyPath))
@@ -168,7 +168,7 @@ public class VerifySignaturesCommand(
         }
 
         _logger.LogInformation("Importing trust policy from '{PolicyPath}'...", policyPath);
-        _notationClient.ImportTrustPolicy(policyPath);
+        _notationClient.ImportTrustPolicy(policyPath, cancellationToken);
     }
 
     /// <summary>

@@ -45,20 +45,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Annotates EOL digests in Docker Registry";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
             DateOnly? globalEolDate = eolAnnotations.EolDate;
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
-                async () =>
+                async ct =>
                 {
-                    await Parallel.ForEachAsync(eolAnnotations.EolDigests, CancellationToken.None,
+                    await Parallel.ForEachAsync(eolAnnotations.EolDigests, ct,
                         async (digestData, ct) => await AnnotateDigestAsync(digestData, globalEolDate, ct));
                 },
                 Options.CredentialsOptions,
-                registryName: Options.AcrName);
+                registryName: Options.AcrName,
+                cancellationToken);
 
             WriteNonEmptySummaryForImageDigests(_skippedAnnotationImageDigests,
                 "The following image digests were skipped because they have existing annotations with matching EOL dates.");

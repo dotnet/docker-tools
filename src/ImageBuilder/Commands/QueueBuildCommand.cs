@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Queues builds to update images";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson)
@@ -55,7 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             subscriptions.FirstOrDefault(sub => sub.Id == kvp.SubscriptionId)
                                 ?? throw new InvalidOperationException(
                                     $"Subscription with ID {kvp.SubscriptionId} not found."),
-                            pathsToRebuild: kvp.ImagePaths
+                            pathsToRebuild: kvp.ImagePaths,
+                            cancellationToken
                         )
                     )
                 );
@@ -88,7 +89,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ToList();
         }
 
-        private async Task QueueBuildForStaleImages(Subscription subscription, IEnumerable<string> pathsToRebuild)
+        private async Task QueueBuildForStaleImages(Subscription subscription, IEnumerable<string> pathsToRebuild, CancellationToken cancellationToken)
         {
             if (!pathsToRebuild.Any())
             {
@@ -113,6 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Exception? exception = null;
             IEnumerable<string>? inProgressBuilds = null;
             IEnumerable<string>? recentFailedBuilds = null;
+            bool shouldNotifyResults = true;
 
             try
             {
@@ -122,7 +124,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
                 using (IBuildHttpClient client = connection.GetBuildHttpClient())
                 {
-                    TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project);
+                    TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
 
                     WebApi.Build build = new()
                     {
@@ -132,11 +134,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Parameters = parameters
                     };
 
-                    inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
+                    inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id, cancellationToken);
                     if (!inProgressBuilds.Any())
                     {
                         (bool shouldDisallowBuild, IEnumerable<string> recentFailedBuildsLocal) =
-                            await ShouldDisallowBuildDueToRecentFailuresAsync(client, subscription.PipelineTrigger.Id, project.Id);
+                            await ShouldDisallowBuildDueToRecentFailuresAsync(client, subscription.PipelineTrigger.Id, project.Id, cancellationToken);
                         recentFailedBuilds = recentFailedBuildsLocal;
                         if (shouldDisallowBuild)
                         {
@@ -146,11 +148,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
                         else
                         {
-                            queuedBuild = await client.QueueBuildAsync(build);
-                            await client.AddBuildTagAsync(project.Id, queuedBuild.Id, AzdoTags.AutoBuilder);
+                            queuedBuild = await client.QueueBuildAsync(build, cancellationToken);
+                            await client.AddBuildTagAsync(project.Id, queuedBuild.Id, AzdoTags.AutoBuilder, cancellationToken);
                         }
                     }
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                shouldNotifyResults = false;
+                throw;
             }
             catch (Exception ex)
             {
@@ -159,14 +166,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             finally
             {
-                await LogAndNotifyResultsAsync(
-                    subscription, pathsToRebuild, queuedBuild, exception, inProgressBuilds, recentFailedBuilds);
+                if (shouldNotifyResults)
+                {
+                    await LogAndNotifyResultsAsync(
+                        subscription,
+                        pathsToRebuild,
+                        queuedBuild,
+                        exception,
+                        inProgressBuilds,
+                        recentFailedBuilds,
+                        cancellationToken);
+                }
             }
         }
 
         private async Task LogAndNotifyResultsAsync(
             Subscription subscription, IEnumerable<string> pathsToRebuild, WebApi.Build? queuedBuild, Exception? exception,
-            IEnumerable<string>? inProgressBuilds, IEnumerable<string>? recentFailedBuilds)
+            IEnumerable<string>? inProgressBuilds, IEnumerable<string>? recentFailedBuilds,
+            CancellationToken cancellationToken)
         {
             StringBuilder notificationMarkdown = new();
             notificationMarkdown.AppendLine($"Subscription: {subscription}");
@@ -274,21 +291,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.GitOptions.Owner,
                     Options.GitOptions.Repo,
                     Options.GitOptions.GitHubAuthOptions,
-                    Options.IsDryRun);
+                    Options.IsDryRun,
+                    cancellationToken);
             }
         }
 
-        private static async Task<IEnumerable<string>> GetInProgressBuildsAsync(IBuildHttpClient client, int pipelineId, Guid projectId)
+        private static async Task<IEnumerable<string>> GetInProgressBuildsAsync(IBuildHttpClient client, int pipelineId, Guid projectId, CancellationToken cancellationToken)
         {
             IPagedList<WebApi.Build> builds = await client.GetBuildsAsync(
-                projectId, definitions: new int[] { pipelineId }, statusFilter: WebApi.BuildStatus.InProgress);
+                projectId,
+                cancellationToken,
+                definitions: new int[] { pipelineId },
+                statusFilter: WebApi.BuildStatus.InProgress);
             return builds.Select(build => build.GetWebLink());
         }
 
         private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
-            IBuildHttpClient client, int pipelineId, Guid projectId)
+            IBuildHttpClient client,
+            int pipelineId,
+            Guid projectId,
+            CancellationToken cancellationToken)
         {
-            List<WebApi.Build> recentBuilds = (await client.GetBuildsAsync(projectId, definitions: new int[] { pipelineId }))
+            List<WebApi.Build> recentBuilds = (await client.GetBuildsAsync(projectId, cancellationToken, definitions: new int[] { pipelineId }))
                 .OrderByDescending(build => build.QueueTime)
                 .Take(BuildFailureLimit)
                 .ToList();

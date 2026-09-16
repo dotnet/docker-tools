@@ -10,6 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IProjectHttpClient : IDisposable
     {
-        Task<TeamProject> GetProjectAsync(string projectId);
+        Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken);
     }
 }

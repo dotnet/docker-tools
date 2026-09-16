@@ -18,7 +18,8 @@ public interface IMarImageIngestionReporter
         IEnumerable<DigestInfo> digestInfos,
         TimeSpan timeout,
         TimeSpan requeryDelay,
-        DateTime? minimumQueueTime);
+        DateTime? minimumQueueTime,
+        CancellationToken cancellationToken);
 }
 public class MarImageIngestionReporter : IMarImageIngestionReporter
 {
@@ -41,7 +42,8 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         IEnumerable<DigestInfo> digestInfos,
         TimeSpan timeout,
         TimeSpan requeryDelay,
-        DateTime? minimumQueueTime)
+        DateTime? minimumQueueTime,
+        CancellationToken cancellationToken)
     {
         // Authentication is required to connect to MAR status service
         ArgumentNullException.ThrowIfNull(serviceConnection, nameof(serviceConnection));
@@ -55,7 +57,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             requeryDelay,
             minimumQueueTime);
 
-        return reporter.ReportImageStatusesAsync(digestInfos);
+        return reporter.ReportImageStatusesAsync(digestInfos, cancellationToken);
     }
 
     private class ReporterImpl
@@ -78,28 +80,29 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             _minimumQueueTime = minimumQueueTime;
         }
 
-        public async Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos)
+        public async Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, CancellationToken cancellationToken)
         {
             List<Task<ImageResultInfo>> tasks = digestInfos
-                .Select(digestInfo => ReportImageStatusAsync(digestInfo))
+                .Select(digestInfo => ReportImageStatusAsync(digestInfo, cancellationToken))
                 .ToList();
-            IEnumerable<ImageResultInfo> imageResultInfos = await TaskHelper.WhenAll(tasks, _timeout);
+            IEnumerable<ImageResultInfo> imageResultInfos =
+                await TaskHelper.WhenAll(tasks, _timeout, cancellationToken);
             _logger.LogInformation(string.Empty);
-            await LogResults(imageResultInfos);
+            await LogResults(imageResultInfos, cancellationToken);
             _logger.LogInformation("Image ingestion complete!");
         }
 
-        private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo)
+        private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo, CancellationToken cancellationToken)
         {
-            return await (await ReportImageStatusCoreAsync(digestInfo)
+            return await (await ReportImageStatusCoreAsync(digestInfo, cancellationToken)
                 .ContinueWith(async task =>
                 {
                     if (task.IsCompletedSuccessfully)
                     {
                         if (!task.Result.DigestInfo.IsComplete)
                         {
-                            await Task.Delay(_requeryDelay);
-                            return await ReportImageStatusAsync(digestInfo);
+                            await Task.Delay(_requeryDelay, cancellationToken);
+                            return await ReportImageStatusAsync(digestInfo, cancellationToken);
                         }
                         else
                         {
@@ -112,10 +115,10 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
 
                     throw new NotSupportedException();
-                }));
+                }, cancellationToken));
         }
 
-        private async Task<ImageResultInfo> ReportImageStatusCoreAsync(DigestInfo digestInfo)
+        private async Task<ImageResultInfo> ReportImageStatusCoreAsync(DigestInfo digestInfo, CancellationToken cancellationToken)
         {
             string qualifiedDigest = GetQualifiedDigest(digestInfo.Repo, digestInfo.Digest);
 
@@ -125,7 +128,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             digestInfo.RemainingTags.ForEach(tag => stringBuilder.AppendLine(tag));
             _logger.LogInformation(stringBuilder.ToString());
 
-            ImageResult imageResult = await _statusClient.GetImageResultAsync(digestInfo.Digest);
+            ImageResult imageResult = await _statusClient.GetImageResultAsync(digestInfo.Digest, cancellationToken);
 
             IEnumerable<ImageStatus> imageStatuses = imageResult.Value
                 .Where(status => ShouldProcessImageStatus(status, digestInfo));
@@ -197,7 +200,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
             imageStatus.SourceRepository == digestInfo.Repo && (_minimumQueueTime is null || imageStatus.QueueTime >= _minimumQueueTime);
 
-        private async Task LogResults(IEnumerable<ImageResultInfo> imageResultInfos)
+        private async Task LogResults(IEnumerable<ImageResultInfo> imageResultInfos, CancellationToken cancellationToken)
         {
             _logger.LogInformation("IMAGE RESULTS");
 
@@ -222,7 +225,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                         Status: status
                     ))
                     .OrderBy(statusInfo => statusInfo.Status.Tag)
-                    .Select(statusInfo => GetFailedStatusAsync(result.DigestInfo.Digest, statusInfo.Status))
+                    .Select(statusInfo => GetFailedStatusAsync(result.DigestInfo.Digest, statusInfo.Status, cancellationToken))
                     .ToList();
 
                 failedStatusTasks.AddRange(resultFailedStatusTasks);
@@ -266,9 +269,10 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             }
         }
 
-        private async Task<string> GetFailedStatusAsync(string digest, ImageStatus imageStatus)
+        private async Task<string> GetFailedStatusAsync(string digest, ImageStatus imageStatus, CancellationToken cancellationToken)
         {
-            ImageResultDetailed result = await _statusClient.GetImageResultDetailedAsync(digest, imageStatus.OnboardingRequestId);
+            ImageResultDetailed result =
+                await _statusClient.GetImageResultDetailedAsync(digest, imageStatus.OnboardingRequestId, cancellationToken);
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine($"Failure for '{GetQualifiedDigest(imageStatus.TargetRepository, digest)}':");

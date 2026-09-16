@@ -13,14 +13,14 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IBuildHttpClient : IDisposable
     {
-        Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag);
+        Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken);
         
-        Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId);
+        Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId, CancellationToken cancellationToken);
 
-        Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);
+        Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, CancellationToken cancellationToken, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);
 
-        Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId);
+        Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId, CancellationToken cancellationToken);
 
-        Task<WebApi.Build> QueueBuildAsync(WebApi.Build build);
+        Task<WebApi.Build> QueueBuildAsync(WebApi.Build build, CancellationToken cancellationToken);
     }
 }

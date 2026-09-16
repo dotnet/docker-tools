@@ -45,7 +45,7 @@ public class EsrpSigningService(
     public async Task SignFilesAsync(
         IEnumerable<string> filePaths,
         int signingKeyCode,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         string[] filesToSign = filePaths.ToArray();
         if (filesToSign.Length == 0)
@@ -86,6 +86,7 @@ public class EsrpSigningService(
                 fileName: "dotnet",
                 args: string.Join(' ', args),
                 isDryRun: false,
+                cancellationToken,
                 errorMessage: "ESRP signing failed");
 
             _logger.LogInformation("ESRP signing completed.");

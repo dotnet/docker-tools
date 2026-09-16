@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Oras;
 [TestClass]
 public class OrasDotNetServiceTests
 {
+    public TestContext? TestContext { get; set; }
+
     [TestMethod]
     [DataRow(null)]
     [DataRow("")]
@@ -29,7 +31,7 @@ public class OrasDotNetServiceTests
         var service = CreateService();
 
         var exception = await Should.ThrowAsync<ArgumentException>(async () =>
-            await service.GetReferrersAsync(reference!));
+            await service.GetReferrersAsync(reference!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
     }
@@ -48,7 +50,7 @@ public class OrasDotNetServiceTests
             "sha256:abcd1234");
 
         var exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
-            await service.PushSignatureAsync(subjectDescriptor, result));
+            await service.PushSignatureAsync(subjectDescriptor, result, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
     }
@@ -60,7 +62,7 @@ public class OrasDotNetServiceTests
         var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
         var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
-            await service.PushSignatureAsync(subjectDescriptor, null!));
+            await service.PushSignatureAsync(subjectDescriptor, null!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
         exception.ParamName.ShouldBe("result");
@@ -75,7 +77,7 @@ public class OrasDotNetServiceTests
         var service = CreateService();
 
         var exception = await Should.ThrowAsync<ArgumentException>(async () =>
-            await service.GetDescriptorAsync(reference!));
+            await service.GetDescriptorAsync(reference!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
     }
@@ -92,7 +94,7 @@ public class OrasDotNetServiceTests
             "[\"thumbprint\"]");
 
         var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
-            await service.PushSignatureAsync(null!, signedPayload));
+            await service.PushSignatureAsync(null!, signedPayload, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
         exception.ParamName.ShouldBe("subjectDescriptor");
@@ -110,7 +112,7 @@ public class OrasDotNetServiceTests
         OrasDotNetService service = CreateService(httpClientFactory: httpClientFactory.Object);
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(async () =>
-            await service.GetDescriptorAsync("registry.io/repo:tag"));
+            await service.GetDescriptorAsync("registry.io/repo:tag", TestContext?.CancellationToken ?? default));
 
         exception.ShouldBeSameAs(expectedException);
         httpClientFactory.Verify(factory => factory.CreateClient(nameof(OrasDotNetService)), Times.Once);

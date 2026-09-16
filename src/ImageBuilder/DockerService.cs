@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -16,19 +17,20 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Architecture Architecture => DockerHelper.Architecture;
 
-        public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
+        public void PullImage(string image, string? platform, bool isDryRun, CancellationToken cancellationToken) => DockerHelper.PullImage(image, platform, isDryRun, cancellationToken);
 
-        public void PushImage(string tag, bool isDryRun) => ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
+        public void PushImage(string tag, bool isDryRun, CancellationToken cancellationToken) =>
+            ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun, cancellationToken);
 
-        public void PushManifestList(string manifestListTag, bool isDryRun) =>
-            ExecuteHelper.ExecuteWithRetry("docker", $"manifest push {manifestListTag}", isDryRun);
+        public void PushManifestList(string manifestListTag, bool isDryRun, CancellationToken cancellationToken) =>
+            ExecuteHelper.ExecuteWithRetry("docker", $"manifest push {manifestListTag}", isDryRun, cancellationToken);
 
-        public void CreateTag(string image, string tag, bool isDryRun) => DockerHelper.CreateTag(image, tag, isDryRun);
+        public void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken) => DockerHelper.CreateTag(image, tag, isDryRun, cancellationToken);
 
-        public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun) =>
+        public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun, CancellationToken cancellationToken) =>
             // Use the --amend option to handle potential retries: https://github.com/dotnet/docker-tools/issues/1098
             ExecuteHelper.ExecuteWithRetry(
-                "docker", $"manifest create --amend {manifestListTag} {string.Join(' ', images.ToArray())}", isDryRun);
+                "docker", $"manifest create --amend {manifestListTag} {string.Join(' ', images.ToArray())}", isDryRun, cancellationToken);
 
         public string? BuildImage(
             string dockerfilePath,
@@ -40,7 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder
             BuildSecretMode buildSecretMode,
             IEnumerable<string> dockerBuildOptions,
             bool isRetryEnabled,
-            bool isDryRun)
+            bool isDryRun,
+            CancellationToken cancellationToken)
         {
             List<string> dockerArgs = ["build", "--platform", platform];
             ProcessStartInfo processStartInfo = new("docker");
@@ -76,11 +79,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
             if (isRetryEnabled)
             {
-                return ExecuteHelper.ExecuteWithRetry(processStartInfo, isDryRun: isDryRun);
+                return ExecuteHelper.ExecuteWithRetry(processStartInfo, cancellationToken, isDryRun: isDryRun);
             }
             else
             {
-                return ExecuteHelper.Execute(processStartInfo, isDryRun);
+                return ExecuteHelper.Execute(processStartInfo, isDryRun, cancellationToken);
             }
         }
 
@@ -115,28 +118,28 @@ namespace Microsoft.DotNet.ImageBuilder
             return buildSecretArgs;
         }
 
-        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun)
+        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun, CancellationToken cancellationToken)
         {
             string archAndVariant = DockerHelper.ExecuteCommand(
-                "inspect", "Failed to retrieve image architecture", $"-f \"{{{{ .Architecture }}}}/{{{{ .Variant }}}}\" {image}", isDryRun);
+                "inspect", "Failed to retrieve image architecture", cancellationToken, $"-f \"{{{{ .Architecture }}}}/{{{{ .Variant }}}}\" {image}", isDryRun);
             string[] parts = archAndVariant.Split('/', StringSplitOptions.RemoveEmptyEntries);
             Architecture arch = Enum.Parse<Architecture>(parts[0], ignoreCase: true);
             string? variant = parts.Length > 1 ? parts[1] : null;
             return (arch, variant);
         }
 
-        public bool LocalImageExists(string tag, bool isDryRun) => DockerHelper.LocalImageExists(tag, isDryRun);
+        public bool LocalImageExists(string tag, bool isDryRun, CancellationToken cancellationToken) => DockerHelper.LocalImageExists(tag, isDryRun, cancellationToken);
 
-        public long GetImageSize(string image, bool isDryRun) => DockerHelper.GetImageSize(image, isDryRun);
+        public long GetImageSize(string image, bool isDryRun, CancellationToken cancellationToken) => DockerHelper.GetImageSize(image, isDryRun, cancellationToken);
 
-        public DateTime GetCreatedDate(string image, bool isDryRun)
+        public DateTime GetCreatedDate(string image, bool isDryRun, CancellationToken cancellationToken)
         {
             if (isDryRun)
             {
                 return default;
             }
 
-            return DateTime.Parse(DockerHelper.GetCreatedDate(image, isDryRun));
+            return DateTime.Parse(DockerHelper.GetCreatedDate(image, isDryRun, cancellationToken));
         }
     }
 }

@@ -74,7 +74,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
         FilesWritten.Add(path);
     }
 
-    public Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default)
+    public Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken)
     {
         SetFile(path, Encoding.UTF8.GetBytes(contents ?? string.Empty));
         FilesWritten.Add(path);
@@ -91,7 +91,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
             : throw new FileNotFoundException("File not found", path);
     }
 
-    public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
+    public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken) =>
         Task.FromResult(ReadAllBytes(path));
 
     public string ReadAllText(string path)
@@ -102,7 +102,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
             : throw new FileNotFoundException("File not found", path);
     }
 
-    public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
+    public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken)
     {
         FilesRead.Add(path);
         return _files.TryGetValue(path, out var bytes)

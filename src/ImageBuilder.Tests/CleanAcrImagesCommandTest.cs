@@ -23,6 +23,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class CleanAcrImagesCommandTest
     {
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         private const string AcrName = "myacr.azurecr.io";
 
         [TestMethod]
@@ -49,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IAcrClient> acrClientMock = CreateAcrClientMock([nonPublicRepo1, nonPublicRepo2]);
             acrClientMock
-                .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name))
+                .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name, It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
@@ -61,10 +66,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Action = CleanAcrImagesAction.Delete;
             command.Options.Age = 15;
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo1Name), Times.Never);
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo2Name));
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo1Name, It.IsAny<CancellationToken>()), Times.Never);
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo2Name, It.IsAny<CancellationToken>()));
         }
 
         [TestMethod]
@@ -124,15 +129,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Action = CleanAcrImagesAction.PruneDangling;
             command.Options.Age = 30;
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1), Times.Never);
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
-            repo2ContentClient.Verify(o => o.DeleteManifestAsync(It.IsAny<string>()), Times.Never);
-            repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest1), Times.Never);
-            repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest2));
-            repo4ContentClient.Verify(o => o.DeleteManifestAsync(repo4Digest1));
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(publicRepo4Name), Times.Never);
+            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()), Times.Never);
+            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+            repo2ContentClient.Verify(o => o.DeleteManifestAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest1, It.IsAny<CancellationToken>()), Times.Never);
+            repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest2, It.IsAny<CancellationToken>()));
+            repo4ContentClient.Verify(o => o.DeleteManifestAsync(repo4Digest1, It.IsAny<CancellationToken>()));
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(publicRepo4Name, It.IsAny<CancellationToken>()), Times.Never);
         }
 
         /// <summary>
@@ -157,7 +162,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
             acrClientMock
-                .Setup(o => o.DeleteRepositoryAsync(repo2Name))
+                .Setup(o => o.DeleteRepositoryAsync(repo2Name, It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
@@ -169,10 +174,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Action = CleanAcrImagesAction.PruneAll;
             command.Options.Age = 7;
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name), Times.Never);
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo2Name));
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name, It.IsAny<CancellationToken>()), Times.Never);
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo2Name, It.IsAny<CancellationToken>()));
         }
 
         /// <summary>
@@ -209,11 +214,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Action = CleanAcrImagesAction.PruneAll;
             command.Options.Age = 7;
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
-            acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2));
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name), Times.Never);
+            acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+            acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()));
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name, It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [TestMethod]
@@ -260,12 +265,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Action = CleanAcrImagesAction.PruneAll;
             command.Options.Age = 7;
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
-            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest1), Times.Never);
-            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest2));
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest1, It.IsAny<CancellationToken>()), Times.Never);
+            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest2, It.IsAny<CancellationToken>()));
         }
 
         /// <summary>
@@ -308,7 +313,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             { referrerDigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
                         });
             repo1ContentClientMock
-                .Setup(o => o.GetManifestAsync(missingDigest))
+                .Setup(o => o.GetManifestAsync(missingDigest, It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new RequestFailedException(404, "Manifest not found"));
 
             IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock]);
@@ -323,13 +328,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Action = CleanAcrImagesAction.PruneEol;
             command.Options.Age = age;
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(missingDigest), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(referrerDigest), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3, It.IsAny<CancellationToken>()), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(missingDigest, It.IsAny<CancellationToken>()), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(referrerDigest, It.IsAny<CancellationToken>()), Times.Never);
             lifecycleMetadataServiceMock.Verify(
                 o => o.GetLifecycleArtifactAsync(
                     $"{AcrName}/{repo1Name}@{missingDigest}",
@@ -384,18 +389,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     $"{publicRepo2Name}:tag2"
                 ];
 
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1));
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
+            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
             repo1ContentClient.Verify(o => o.RepositoryName);
             repo1ContentClient.VerifyNoOtherCalls();
 
-            repo2ContentClient.Verify(o => o.DeleteManifestAsync(repo2Digest3), Times.Never);
+            repo2ContentClient.Verify(o => o.DeleteManifestAsync(repo2Digest3, It.IsAny<CancellationToken>()), Times.Never);
             repo2ContentClient.Verify(o => o.RepositoryName);
             repo2ContentClient.VerifyNoOtherCalls();
 
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(It.IsAny<string>()), Times.Never);
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)

@@ -15,12 +15,13 @@ public class AcrContentClientWrapper(ContainerRegistryContentClient innerClient)
 
     public string RepositoryName => _innerClient.RepositoryName;
 
-    public async Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest)
+    public async Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest, CancellationToken cancellationToken)
     {
-        Response<GetManifestResult> result = await _innerClient.GetManifestAsync(tagOrDigest);
+        Response<GetManifestResult> result = await _innerClient.GetManifestAsync(tagOrDigest, cancellationToken);
         JsonObject manifestData = (JsonObject)(JsonNode.Parse(result.Value.Manifest.ToString()) ?? throw new JsonException($"Unable to deserialize result: {result.Value.Manifest}"));
         return new ManifestQueryResult(result.Value.Digest, manifestData);
     }
 
-    public Task DeleteManifestAsync(string tagOrDigest) => _innerClient.DeleteManifestAsync(tagOrDigest);
+    public Task DeleteManifestAsync(string tagOrDigest, CancellationToken cancellationToken) =>
+        _innerClient.DeleteManifestAsync(tagOrDigest, cancellationToken);
 }

@@ -12,6 +12,6 @@ public interface IRegistryCredentialsProvider
     ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,
         IRegistryCredentialsHost? credsHost,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken
     );
 }

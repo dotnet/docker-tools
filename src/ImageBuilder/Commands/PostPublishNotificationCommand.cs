@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Posts a notification about a publishing event";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             StringBuilder notificationMarkdown = new();
             string buildUrl = string.Empty;
@@ -56,8 +56,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
                 using (IBuildHttpClient buildClient = connection.GetBuildHttpClient())
                 {
-                    TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project);
-                    TeamFoundation.Build.WebApi.Build build = await buildClient.GetBuildAsync(project.Id, Options.BuildId);
+                    TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
+                    TeamFoundation.Build.WebApi.Build build = await buildClient.GetBuildAsync(project.Id, Options.BuildId, cancellationToken);
                     buildUrl = build.GetWebLink();
                     buildReason = build.Reason;
 
@@ -74,8 +74,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
                     }
 
-                    overallResult = await GetBuildTaskResultsAsync(taskResults, buildClient, project);
-                    correlatedQueueNotificationUrl = await GetCorrelatedQueueNotificationUrlAsync();
+                    overallResult = await GetBuildTaskResultsAsync(taskResults, buildClient, project, cancellationToken);
+                    correlatedQueueNotificationUrl =
+                        await GetCorrelatedQueueNotificationUrlAsync(cancellationToken);
                 }
             }
 
@@ -109,15 +110,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.GitOptions.Repo,
                 Options.GitOptions.GitHubAuthOptions,
                 Options.IsDryRun,
+                cancellationToken,
                 imagesMarkdown);
         }
 
-        private async Task<string?> GetCorrelatedQueueNotificationUrlAsync()
+        private async Task<string?> GetCorrelatedQueueNotificationUrlAsync(CancellationToken cancellationToken)
         {
             // In the case where the publish build was queued by AutoBuilder, this finds the GitHub issue associated
             // with that queued build.
 
-            IGitHubClient gitHubClient = await _octokitClientFactory.CreateGitHubClientAsync(Options.GitOptions.GitHubAuthOptions);
+            IGitHubClient gitHubClient =
+                await _octokitClientFactory.CreateGitHubClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
             RepositoryIssueRequest issueRequest = new()
             {
                 Filter = IssueFilter.All,
@@ -127,7 +130,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             issueRequest.Labels.Add(NotificationLabels.GetRepoLocationLabel(Options.SourceRepo, Options.SourceBranch));
 
             IReadOnlyList<Octokit.Issue> issues = await gitHubClient.Issue.GetAllForRepository(
-                Options.GitOptions.Owner, Options.GitOptions.Repo, issueRequest);
+                Options.GitOptions.Owner,
+                Options.GitOptions.Repo,
+                issueRequest);
 
             foreach (Octokit.Issue issue in issues)
             {
@@ -142,10 +147,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return null;
         }
 
-        private async Task<BuildResult> GetBuildTaskResultsAsync(Dictionary<string, TaskResult?> taskResults, IBuildHttpClient buildClient, TeamProject project)
+        private async Task<BuildResult> GetBuildTaskResultsAsync(Dictionary<string, TaskResult?> taskResults, IBuildHttpClient buildClient, TeamProject project, CancellationToken cancellationToken)
         {
             BuildResult overallResult = BuildResult.None;
-            Timeline timeline = await buildClient.GetBuildTimelineAsync(project.Id, Options.BuildId);
+            Timeline timeline = await buildClient.GetBuildTimelineAsync(project.Id, Options.BuildId, cancellationToken);
             foreach (string task in Options.TaskNames)
             {
                 TimelineRecord? record = timeline.Records.FirstOrDefault(rec => rec.Name.Equals(task, StringComparison.OrdinalIgnoreCase));

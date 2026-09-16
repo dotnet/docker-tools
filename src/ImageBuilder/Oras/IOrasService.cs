@@ -21,7 +21,7 @@ public interface IOrasService
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo@sha256:...").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The OCI descriptor containing mediaType, digest, and size.</returns>
-    Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default);
+    Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken);
 
     /// <summary>
     /// Fetches the manifest for a registry reference, returning both its digest and parsed JSON body.
@@ -29,7 +29,7 @@ public interface IOrasService
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag" or "registry.io/repo@sha256:...").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The manifest digest and parsed JSON content.</returns>
-    Task<ManifestQueryResult> GetManifestAsync(string reference, CancellationToken cancellationToken = default);
+    Task<ManifestQueryResult> GetManifestAsync(string reference, CancellationToken cancellationToken);
 
     /// <summary>
     /// Pushes a signed payload to the registry as a referrer artifact.
@@ -41,7 +41,7 @@ public interface IOrasService
     Task<string> PushSignatureAsync(
         Descriptor subjectDescriptor,
         PayloadSigningResult result,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the OCI referrers for the given image.
@@ -55,8 +55,8 @@ public interface IOrasService
     /// </returns>
     Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
         string reference,
-        bool isDryRun = false,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken,
+        bool isDryRun = false);
 
     /// <summary>
     /// Creates and pushes a referrer artifact with the given type and annotations.
@@ -70,5 +70,5 @@ public interface IOrasService
         string reference,
         string artifactType,
         IDictionary<string, string> annotations,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 }

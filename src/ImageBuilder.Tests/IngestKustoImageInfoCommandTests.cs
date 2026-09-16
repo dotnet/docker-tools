@@ -273,9 +273,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>(),
-                    It.IsAny<IServiceConnection>()))
-                .Callback<string, string, string, string, IServiceConnection>(
-                    (csv, _, _, table, _) => ingestedData.Add(table, csv));
+                    It.IsAny<IServiceConnection>(), It.IsAny<CancellationToken>()))
+                .Callback<string, string, string, string, IServiceConnection, CancellationToken>(
+                    (csv, _, _, table, _, _) => ingestedData.Add(table, csv));
 
             IngestKustoImageInfoCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<ILogger<IngestKustoImageInfoCommand>>(), kustoClientMock.Object);
             command.Options.ImageInfoPath = imageInfoPath;
@@ -284,7 +284,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.LayerTable = "LayerInfo";
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(testContext.CancellationToken);
 
             testContext.WriteLine($"Expected Image Data: {Environment.NewLine}{expectedImageData}");
             testContext.WriteLine($"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
@@ -297,7 +297,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
-                It.IsAny<IServiceConnection>()));
+                It.IsAny<IServiceConnection>(), It.IsAny<CancellationToken>()));
             ingestedData[command.Options.ImageTable].ShouldBe(expectedImageData);
             ingestedData[command.Options.LayerTable].ShouldBe(expectedLayerData);
         }

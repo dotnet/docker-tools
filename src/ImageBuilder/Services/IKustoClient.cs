@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             string cluster,
             string database,
             string table,
-            IServiceConnection serviceConnection);
+            IServiceConnection serviceConnection,
+            CancellationToken cancellationToken);
     }
 }

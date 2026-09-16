@@ -22,6 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class CopyBaseImagesCommandTests
     {
+        #nullable enable annotations
+        public TestContext? TestContext { get; set; }
+
+        #nullable disable annotations
+
         private const string SubscriptionId = "my subscription";
         private const string ResourceGroup = "my resource group";
         private const string DestinationRegistry = "mcr.microsoft.com";
@@ -77,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             var expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
             {
@@ -94,6 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
                             false,
+                            It.IsAny<CancellationToken>(),
                             expectedTagInfo.Registry,
                             It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
                             false));
@@ -153,7 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            await command.ExecuteAsync();
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             var expectedTagInfos = new(string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
             {
@@ -169,6 +175,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
                             false,
+                            It.IsAny<CancellationToken>(),
                             expectedTagInfo.Registry,
                             It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
                             false));

@@ -47,7 +47,7 @@ public class UpdateCommand : Command<UpdateOptions>
 
     protected override string Description => "Writes ImageBuilder's bundled docker-tools infrastructure files to disk";
 
-    public override Task ExecuteAsync()
+    public override Task ExecuteAsync(CancellationToken cancellationToken)
     {
         string currentDirectory = _fileSystem.GetCurrentDirectory();
 

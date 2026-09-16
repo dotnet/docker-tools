@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Waits for annotations to complete ingestion into MAR";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("WAITING FOR ANNOTATION INGESTION");
 
@@ -47,7 +47,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     digests,
                     Options.IngestionOptions.WaitTimeout,
                     Options.IngestionOptions.RequeryDelay,
-                    minimumQueueTime: null);
+                    minimumQueueTime: null,
+                    cancellationToken);
             }
         }
     }

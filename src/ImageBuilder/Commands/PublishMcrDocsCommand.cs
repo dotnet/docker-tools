@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Publishes the readmes to MCR";
 
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("PUBLISHING MCR DOCS");
 
@@ -56,20 +56,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun);
+                using IGitHubClient gitHubClient =
+                    await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun, cancellationToken);
 
-                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_logger).ExecuteAsync(async () =>
+                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_logger).ExecuteAsync(async ct =>
                 {
-                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
-                    {
-                        return FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch);
-                    });
+                    GitReference gitRef = await GitHelper.PushChangesAsync(
+                        gitHubClient,
+                        Options,
+                        $"Mirroring {productRepo} readmes",
+                        (branch, innerCt) =>
+                            FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch, innerCt),
+                        ct);
 
                     if (gitRef != null)
                     {
                         _logger.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
-                });
+                }, cancellationToken);
             }
         }
 
@@ -101,7 +105,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task<IEnumerable<GitObject>> FilterUpdatedGitObjectsAsync(
-            IEnumerable<GitObject> gitObjects, IGitHubClient gitHubClient, GitHubBranch branch)
+            IEnumerable<GitObject> gitObjects,
+            IGitHubClient gitHubClient,
+            GitHubBranch branch,
+            CancellationToken cancellationToken)
         {
             List<GitObject> updatedGitObjects = new();
             foreach (GitObject gitObject in gitObjects)

@@ -10,23 +10,26 @@ public class NotationClient : INotationClient
     private const string NotationExecutable = "notation";
 
     /// <inheritdoc/>
-    public string Verify(string imageReference, bool isDryRun) =>
+    public string Verify(string imageReference, bool isDryRun, CancellationToken cancellationToken) =>
         ExecuteHelper.Execute(
             fileName: NotationExecutable,
             args: $"verify {imageReference}",
-            isDryRun: isDryRun);
+            isDryRun: isDryRun,
+            cancellationToken);
 
     /// <inheritdoc/>
-    public void ImportTrustPolicy(string policyPath) =>
+    public void ImportTrustPolicy(string policyPath, CancellationToken cancellationToken) =>
         ExecuteHelper.Execute(
             fileName: NotationExecutable,
             args: $"policy import {policyPath}",
-            isDryRun: false);
+            isDryRun: false,
+            cancellationToken);
 
     /// <inheritdoc/>
-    public void AddCertificate(string storeType, string storeName, string certPath) =>
+    public void AddCertificate(string storeType, string storeName, string certPath, CancellationToken cancellationToken) =>
         ExecuteHelper.Execute(
             fileName: NotationExecutable,
             args: $"cert add --type {storeType} --store {storeName} {certPath}",
-            isDryRun: false);
+            isDryRun: false,
+            cancellationToken);
 }

@@ -12,11 +12,12 @@ internal static class AzureTokenCredentialProviderExtensions
     public static ValueTask<AccessToken> GetTokenAsync(
         this IAzureTokenCredentialProvider provider,
         IServiceConnection? serviceConnection,
+        CancellationToken cancellationToken,
         string scope = AzureScopes.Default)
     {
         var credential = provider.GetCredential(serviceConnection);
         var requestContext = new TokenRequestContext([scope]);
-        var token = credential.GetTokenAsync(requestContext, CancellationToken.None);
+        var token = credential.GetTokenAsync(requestContext, cancellationToken);
         return token;
     }
 

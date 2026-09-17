@@ -467,6 +467,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repoName = "runtime";
             const string tag = "tag";
             const string sharedTag = "shared";
+            const string syndicatedRepo = "syndicated-runtime";
+            const string syndicatedTag = "syndicated-tag";
+            const string syndicatedSharedTag = "syndicated-shared";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
 
@@ -483,6 +486,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
                 imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
+
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -492,7 +496,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
+            // Configure both the platform and shared tags to be syndicated to custom names in a
+            // second repository.
             Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: "v7");
+            platform.Tags[tag].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepo,
+                DestinationTags = [syndicatedTag]
+            };
 
             Manifest manifest = CreateManifest(
                 CreateRepo(repoName,
@@ -503,7 +514,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         new Dictionary<string, Tag>
                         {
-                            { sharedTag, new Tag() }
+                            {
+                                sharedTag,
+                                new Tag
+                                {
+                                    Syndication = new TagSyndication
+                                    {
+                                        Repo = syndicatedRepo,
+                                        DestinationTags = [syndicatedSharedTag]
+                                    }
+                                }
+                            }
                         }))
             );
 
@@ -512,6 +533,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync(testContext.CancellationToken);
 
+            // A fresh build must assign every primary and syndicated platform and shared tag to
+            // the same local image.
             dockerServiceMock.Verify(
                 o => o.BuildImage(
                     dockerfileAbsolutePath,
@@ -520,7 +543,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[]
                     {
                         TagInfo.GetFullyQualifiedName(repoName, tag),
-                        TagInfo.GetFullyQualifiedName(repoName, sharedTag)
+                        TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedTag),
+                        TagInfo.GetFullyQualifiedName(repoName, sharedTag),
+                        TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedSharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<IReadOnlyDictionary<string, string>>(),
@@ -529,13 +554,176 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>(),
                     It.IsAny<bool>(), It.IsAny<CancellationToken>()));
 
+            // Unlike cache-hit imports, newly built images must explicitly push each alias to
+            // staging.
             dockerServiceMock.Verify(
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+
             dockerServiceMock.Verify(
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+
+            dockerServiceMock.Verify(
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedSharedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+
+            dockerServiceMock.Verify(
                 o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false, It.IsAny<CancellationToken>()));
+
+            copyImageServiceMock.VerifyNoOtherCalls();
+        }
+
+        /// <summary>
+        /// Verifies that cached images are imported and tagged with syndicated platform and shared tags.
+        /// </summary>
+        [TestMethod]
+        public async Task BuildCommand_PublishCachedImageWithSyndicatedTags()
+        {
+            const string registry = "mcr.microsoft.com";
+            const string registryOverride = "staging.azurecr.io";
+            const string repoPrefix = "build/";
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string sharedTag = "shared";
+            const string syndicatedRepo = "syndicated-runtime";
+            const string syndicatedTag = "syndicated-tag";
+            const string syndicatedSharedTag = "syndicated-shared";
+            const string digestSha = "sha256:digest";
+            string sourceDigest = $"{registry}/{repoName}@{digestSha}";
+            string stagingDigest = $"{registryOverride}/{repoPrefix}{repoName}@{digestSha}";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
+            // Simulate finding the platform in the image cache so it must be copied into staging
+            // instead of being rebuilt.
+            PlatformData cachedPlatform = new()
+            {
+                Digest = sourceDigest
+            };
+            Mock<IImageCacheService> imageCacheServiceMock = new();
+            imageCacheServiceMock
+                .SetupGet(service => service.HasAnyCachedPlatforms)
+                .Returns(true);
+
+            imageCacheServiceMock
+                .Setup(service => service.CheckForCachedImageAsync(
+                    It.IsAny<ImageData>(),
+                    It.IsAny<PlatformData>(),
+                    It.IsAny<ImageDigestCache>(),
+                    It.IsAny<ImageNameResolver>(),
+                    It.IsAny<string>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ImageCacheResult(ImageCacheState.Cached, true, cachedPlatform));
+
+            BuildCommand command = CreateBuildCommand(
+                dockerService: dockerServiceMock.Object,
+                copyImageService: copyImageServiceMock.Object,
+                imageCacheService: imageCacheServiceMock.Object);
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.IsSkipPullingEnabled = true;
+            command.Options.SkipPlatformCheck = true;
+            command.Options.RegistryOverride = registryOverride;
+            command.Options.RepoPrefix = repoPrefix;
+
+            string dockerfile = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime/os", tempFolderContext, "scratch");
+
+            Platform platform = CreatePlatform(dockerfile, [tag]);
+            platform.Tags[tag].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepo,
+                DestinationTags = [syndicatedTag]
+            };
+
+            // Configure both the platform and shared tags to be syndicated to custom names in a
+            // second repository.
+            Manifest manifest = CreateManifest(
+                CreateRepo(
+                    repoName,
+                    CreateImage(
+                        [platform],
+                        new Dictionary<string, Tag>
+                        {
+                            {
+                                sharedTag,
+                                new Tag
+                                {
+                                    Syndication = new TagSyndication
+                                    {
+                                        Repo = syndicatedRepo,
+                                        DestinationTags = [syndicatedSharedTag]
+                                    }
+                                }
+                            }
+                        })));
+
+            manifest.Registry = registry;
+            File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync(testContext.CancellationToken);
+
+            string[] expectedTags =
+            [
+                $"{repoPrefix}{repoName}:{tag}",
+                $"{repoPrefix}{syndicatedRepo}:{syndicatedTag}",
+                $"{repoPrefix}{repoName}:{sharedTag}",
+                $"{repoPrefix}{syndicatedRepo}:{syndicatedSharedTag}"
+            ];
+
+            VerifyImportImage(
+                copyImageServiceMock,
+                command,
+                expectedTags,
+                DockerHelper.TrimRegistry(sourceDigest),
+                registryOverride,
+                registry);
+
+            // The imported staging digest must also have every primary and syndicated alias
+            // available locally for any subsequent Dockerfiles that reference them.
+            foreach (string expectedTag in expectedTags)
+            {
+                dockerServiceMock.Verify(service => service.CreateTag(
+                    stagingDigest,
+                    $"{registryOverride}/{expectedTag}",
+                    false,
+                    It.IsAny<CancellationToken>()));
+            }
+
+            dockerServiceMock.Verify(service => service.PullImage(
+                stagingDigest,
+                null,
+                false,
+                It.IsAny<CancellationToken>()));
+
+            // Importing the cached image publishes its tags to staging, so no image build or
+            // separate Docker push should occur.
+            dockerServiceMock.Verify(service => service.BuildImage(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<IDictionary<string, string>>(),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<BuildSecretMode>(),
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
+
+            dockerServiceMock.Verify(service => service.PushImage(
+                It.IsAny<string>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
 
             copyImageServiceMock.VerifyNoOtherCalls();
         }

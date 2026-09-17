@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -23,6 +24,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     [TestClass]
     public class ImageInfoHelperTests
     {
+        [TestMethod]
+        public void ApplyRegistryOverride_OverridesSyndicatedManifestDigests()
+        {
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Manifest = new ManifestData
+                                {
+                                    Digest = "mcr.microsoft.com/runtime@sha256:primary",
+                                    SyndicatedDigests =
+                                    {
+                                        "mcr.microsoft.com/syndicated/runtime@sha256:syndicated"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            RegistryOptions registryOverride = new()
+            {
+                Registry = "build.azurecr.io",
+                RepoPrefix = "staging"
+            };
+
+            imageArtifactDetails.ApplyRegistryOverride(registryOverride);
+
+            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest
+                .ShouldBe("build.azurecr.io/staging/runtime@sha256:primary");
+
+            imageArtifactDetails.Repos[0].Images[0].Manifest.SyndicatedDigests
+                .ShouldBe(["build.azurecr.io/staging/syndicated/runtime@sha256:syndicated"]);
+
+        }
+
         [TestMethod]
         public void LoadFromContent()
         {

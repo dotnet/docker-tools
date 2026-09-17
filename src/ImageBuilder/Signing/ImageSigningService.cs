@@ -44,10 +44,9 @@ public class ImageSigningService(
         int signingKeyCode,
         CancellationToken cancellationToken)
     {
-        // Note: GetAllDigests returns platform and manifest list digests only. It does not
-        // include signature digests because ImageArtifactDetails does not store signature
-        // information. If signature digests were ever added to ImageArtifactDetails, we would
-        // need to filter them out here to avoid signing signature artifacts.
+        // GetAllDigests returns platform and primary or syndicated manifest list digests only.
+        // It does not include signature digests because ImageArtifactDetails does not store
+        // signature information.
         List<string> imageDigests =
             imageArtifactDetails
                 .GetAllDigests()

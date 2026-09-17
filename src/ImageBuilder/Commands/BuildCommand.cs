@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
         private readonly ImageDigestCache _imageDigestCache;
-        private readonly List<TagInfo> _processedTags = new List<TagInfo>();
+        private readonly HashSet<string> _processedTagNames = new(StringComparer.Ordinal);
         private readonly HashSet<PlatformData> _builtPlatforms = new();
         private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
         private readonly Lazy<string> _storageAccountToken;
@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync, cancellationToken);
             await BuildImagesAsync(cancellationToken);
 
-            if (_processedTags.Count > 0 || _imageCacheService.HasAnyCachedPlatforms)
+            if (_processedTagNames.Count > 0 || _imageCacheService.HasAnyCachedPlatforms)
             {
                 // Log in again to refresh token as it may have expired from a long build
                 await ExecuteWithDockerCredentialsAsync(async ct =>
@@ -325,12 +325,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         // Tag the built images with the shared tags as well as the platform tags.
                         // Some tests and image FROM instructions depend on these tags.
 
-                        IEnumerable<TagInfo> allTagInfos = platform.Tags
+                        List<TagInfo> allTagInfos = platform.Tags
                             .Concat(image.SharedTags)
-                            .ToList();
-
-                        IEnumerable<string> allTags = allTagInfos
-                            .Select(tag => tag.FullyQualifiedName)
                             .ToList();
 
                         PlatformData platformData = CreatePlatformData(image, platform);
@@ -356,13 +352,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
                                 platformData.IsUnchanged = cacheResult.State != ImageCacheState.CachedWithMissingTags;
 
-                                await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest, cancellationToken);
+                                await OnCacheHitAsync(
+                                    repoInfo,
+                                    allTagInfos,
+                                    pullImage: cacheResult.IsNewCacheHit,
+                                    cacheResult.Platform!.Digest,
+                                    cancellationToken);
                             }
                         }
 
                         if (!isCachedImage)
                         {
-                            _processedTags.AddRange(allTagInfos);
+                            IReadOnlyList<string> allTags = GetStagingTagNames(allTagInfos);
+                            _processedTagNames.UnionWith(allTags);
 
                             BuildImage(platform, allTags, cancellationToken);
                             _builtPlatforms.Add(platformData);
@@ -563,7 +565,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<string> GetDockerBuildOptions() =>
             Options.DockerBuildOptions.Where(option => !string.IsNullOrWhiteSpace(option));
 
-        private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest, CancellationToken cancellationToken)
+        private async Task OnCacheHitAsync(
+            RepoInfo repo,
+            IEnumerable<TagInfo> tagInfos,
+            bool pullImage,
+            string sourceDigest,
+            CancellationToken cancellationToken)
         {
             _logger.LogInformation(string.Empty);
             _logger.LogInformation("CACHE HIT");
@@ -576,10 +583,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // The pulled image is then tagged with the same tags it would be tagged with had it been built locally. This allows
             // dependent Dockerfiles that reference those tags to seamlessly consume the pulled image.
 
+            IReadOnlyList<string> tagNames = GetStagingTagNames(tagInfos);
             string copiedSourceDigest = sourceDigest;
             if (Options.IsPushEnabled)
             {
-                copiedSourceDigest = await CopyCachedImage(allTags, sourceDigest, cancellationToken);
+                copiedSourceDigest = await CopyCachedImage(tagNames, sourceDigest, cancellationToken);
             }
 
             // Pull the image instead of building it
@@ -595,14 +603,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it
-            foreach (TagInfo tag in allTags)
+            if (!_sourceDigestCopyLocationMapping.TryGetValue(sourceDigest, out string? resolvedSourceDigest))
             {
-                if (!_sourceDigestCopyLocationMapping.TryGetValue(sourceDigest, out string? resolvedSourceDigest))
-                {
-                    throw new InvalidOperationException("Digest should be mapped by this point");
-                }
-                _dockerService.CreateTag(resolvedSourceDigest, tag.FullyQualifiedName, Options.IsDryRun, cancellationToken);
+                throw new InvalidOperationException("Digest should be mapped by this point");
+            }
 
+            foreach (string tagName in tagNames)
+            {
+                _dockerService.CreateTag(resolvedSourceDigest, tagName, Options.IsDryRun, cancellationToken);
+            }
+
+            foreach (TagInfo tagInfo in tagInfos)
+            {
                 // Rewrite the digest to match the repo of the tags being associated with it. This is necessary
                 // in order to handle scenarios where shared Dockerfiles are being used across different repositories.
                 // In that scenario, the digest that is retrieved will be based on the repo of the first repository
@@ -614,14 +626,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // Populate the digest cache with the known digest value for the tags assigned to the image.
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
                 // because they haven't yet been pushed to staging by that time.
-                _imageDigestCache.AddDigest(tag.FullyQualifiedName, newDigest);
+                _imageDigestCache.AddDigest(tagInfo.FullyQualifiedName, newDigest);
             }
         }
 
-        private async Task<string> CopyCachedImage(IEnumerable<TagInfo> allTags, string sourceDigest, CancellationToken cancellationToken)
+        private async Task<string> CopyCachedImage(IEnumerable<string> tagNames, string sourceDigest, CancellationToken cancellationToken)
         {
-            string[] destTags = allTags
-                                .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
+            string[] destTags = tagNames
+                                .Select(DockerHelper.TrimRegistry)
                                 .ToArray();
 
             string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
@@ -726,15 +738,39 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .SelectMany(imageData => imageData.Platforms)
             ?? Enumerable.Empty<PlatformData>();
 
+        private IReadOnlyList<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
+            tagInfos
+                .SelectMany(GetStagingTagNames)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+        private IEnumerable<string> GetStagingTagNames(TagInfo tagInfo)
+        {
+            yield return tagInfo.FullyQualifiedName;
+
+            if (tagInfo.SyndicatedRepo is null)
+            {
+                yield break;
+            }
+
+            foreach (string destinationTag in tagInfo.SyndicatedDestinationTags)
+            {
+                yield return DockerHelper.GetImageName(
+                    registry: Manifest.Registry,
+                    repo: Options.RepoPrefix + tagInfo.SyndicatedRepo,
+                    tag: destinationTag);
+            }
+        }
+
         private void PushImages(CancellationToken cancellationToken)
         {
             if (Options.IsPushEnabled)
             {
                 _logger.LogInformation("PUSHING BUILT IMAGES");
 
-                foreach (TagInfo tag in _processedTags)
+                foreach (string tagName in _processedTagNames)
                 {
-                    _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun, cancellationToken);
+                    _dockerService.PushImage(tagName, Options.IsDryRun, cancellationToken);
                 }
             }
         }
@@ -777,11 +813,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger.LogInformation("IMAGES BUILT");
 
-            if (_processedTags.Any())
+            if (_processedTagNames.Count > 0)
             {
-                foreach (TagInfo tag in _processedTags)
+                foreach (string tagName in _processedTagNames)
                 {
-                    _logger.LogInformation(tag.FullyQualifiedName);
+                    _logger.LogInformation(tagName);
                 }
             }
             else

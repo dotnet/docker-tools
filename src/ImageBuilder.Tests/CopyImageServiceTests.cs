@@ -190,6 +190,61 @@ public class CopyImageServiceTests
     }
 
     /// <summary>
+    /// Referrers are repository-scoped, so each one must be imported into every repository
+    /// targeted by the main image import.
+    /// </summary>
+    [TestMethod]
+    public async Task ImportImageAsync_CopiesReferrersToEveryDestinationRepository()
+    {
+        PublishConfiguration publishConfig = CreateAcrPublishConfig("myacr.azurecr.io");
+
+        var mockImporter = new Mock<IAcrImageImporter>();
+        var mockOras = new Mock<IOrasService>();
+        mockOras
+            .Setup(o => o.GetReferrersAsync("myacr.azurecr.io/repo:tag", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(
+            [
+                new ReferrerInfo(
+                    "myacr.azurecr.io/repo@sha256:ref1",
+                    "application/vnd.cncf.notary.signature")
+            ]);
+
+        var service = new CopyImageService(
+            Mock.Of<ILogger<CopyImageService>>(),
+            mockImporter.Object,
+            mockOras.Object,
+            ConfigurationHelper.CreateOptionsMock(publishConfig));
+
+        await service.ImportImageAsync(
+            destTagNames:
+            [
+                "primary/repo:tag",
+                "primary/repo:latest",
+                "syndicated/repo:tag"
+            ],
+            destAcrName: "myacr.azurecr.io",
+            srcTagName: "repo:tag",
+            srcRegistryName: "myacr.azurecr.io",
+            sourceCredentials: null,
+            isDryRun: false,
+            copyReferrers: true,
+            cancellationToken: TestContext?.CancellationToken ?? default);
+
+        mockImporter.Verify(
+            x => x.ImportImageAsync(
+                "myacr.azurecr.io",
+                It.IsAny<ResourceIdentifier>(),
+                It.Is<ContainerRegistryImportImageContent>(c =>
+                    c.UntaggedTargetRepositories.Count == 2
+                    && c.UntaggedTargetRepositories.Contains("primary/repo")
+                    && c.UntaggedTargetRepositories.Contains("syndicated/repo")
+                    && c.Source.SourceImage == "repo@sha256:ref1"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+
+    }
+
+    /// <summary>
     /// When no referrers exist, ImportImageAsync should import only the main image.
     /// </summary>
     [TestMethod]

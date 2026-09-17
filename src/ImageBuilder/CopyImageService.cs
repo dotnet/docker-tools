@@ -59,7 +59,10 @@ public class CopyImageService : ICopyImageService
         Acr destAcr = Acr.Parse(destAcrName);
 
         string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
-        string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
+        List<string> destRepos = destTagNames
+            .Select(DockerHelper.GetRepo)
+            .Distinct()
+            .ToList();
 
         IReadOnlyList<ReferrerInfo> referrers = copyReferrers
             ? await _orasService.GetReferrersAsync(sourceImageName, cancellationToken, isDryRun)
@@ -119,7 +122,7 @@ public class CopyImageService : ICopyImageService
             {
                 Mode = ContainerRegistryImportMode.Force,
             };
-            referrerImportContent.UntaggedTargetRepositories.Add(destRepo);
+            referrerImportContent.UntaggedTargetRepositories.AddRange(destRepos);
 
             await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, referrerImportContent, cancellationToken);
         }

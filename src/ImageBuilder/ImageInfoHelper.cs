@@ -42,6 +42,21 @@ namespace Microsoft.DotNet.ImageBuilder
                             overrideOptions.ApplyOverrideToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
                     }
 
+                    if (imageData.Manifest is not null)
+                    {
+                        for (int i = 0; i < imageData.Manifest.SyndicatedDigests.Count; i++)
+                        {
+                            string syndicatedDigest = imageData.Manifest.SyndicatedDigests[i];
+                            if (!string.IsNullOrEmpty(syndicatedDigest))
+                            {
+                                string syndicatedRepo =
+                                    DockerHelper.TrimRegistry(DockerHelper.GetRepo(syndicatedDigest));
+                                imageData.Manifest.SyndicatedDigests[i] =
+                                    overrideOptions.ApplyOverrideToDigest(syndicatedDigest, repoName: syndicatedRepo);
+                            }
+                        }
+                    }
+
                     foreach (PlatformData platformData in imageData.Platforms)
                     {
                         if (!string.IsNullOrEmpty(platformData.Digest))
@@ -75,7 +90,12 @@ namespace Microsoft.DotNet.ImageBuilder
             // Include manifest list digest if it exists
             if (imageData.Manifest is not null)
             {
-                digests = [ ..digests, imageData.Manifest.Digest ];
+                digests =
+                [
+                    ..digests,
+                    imageData.Manifest.Digest,
+                    ..imageData.Manifest.SyndicatedDigests,
+                ];
             }
 
             return digests.ToList();

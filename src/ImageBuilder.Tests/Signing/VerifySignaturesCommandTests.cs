@@ -26,6 +26,7 @@ public class VerifySignaturesCommandTests
     private const string PlatformDigestA = "registry.io/repo@sha256:aaa";
     private const string PlatformDigestB = "registry.io/repo@sha256:bbb";
     private const string ManifestDigest = "registry.io/repo@sha256:ccc";
+    private const string SyndicatedManifestDigest = "registry.io/syndicated-repo@sha256:ddd";
 
     private static readonly string s_certPath = Path.Combine(TrustBasePath, "certs", TrustStoreName, "root-ca.crt");
     private static readonly string s_policyPath = Path.Combine(TrustBasePath, "policies", $"{TrustStoreName}.json");
@@ -74,6 +75,7 @@ public class VerifySignaturesCommandTests
                   ],
                   "manifest": {
                     "digest": "{{ManifestDigest}}",
+                    "syndicatedDigests": ["{{SyndicatedManifestDigest}}"],
                     "sharedTags": ["latest"]
                   }
                 }
@@ -134,6 +136,9 @@ public class VerifySignaturesCommandTests
         testFixture.NotationClientMock.Verify(
             x => x.Verify(ManifestDigest, false, It.IsAny<CancellationToken>()),
             Times.Once);
+        testFixture.NotationClientMock.Verify(
+            x => x.Verify(SyndicatedManifestDigest, false, It.IsAny<CancellationToken>()),
+            Times.Once);
         testFixture.NotationClientMock.VerifyNoOtherCalls();
     }
 
@@ -160,6 +165,7 @@ public class VerifySignaturesCommandTests
         testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestA, false, It.IsAny<CancellationToken>()), Times.Once);
         testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestB, false, It.IsAny<CancellationToken>()), Times.Once);
         testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false, It.IsAny<CancellationToken>()), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(SyndicatedManifestDigest, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
@@ -175,6 +181,7 @@ public class VerifySignaturesCommandTests
 
         testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
         testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false, It.IsAny<CancellationToken>()), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(SyndicatedManifestDigest, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]

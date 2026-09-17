@@ -172,21 +172,11 @@ public class VerifySignaturesCommand(
     }
 
     /// <summary>
-    /// Extracts all image references (platform digests and manifest list digests) from image-info.
+    /// Extracts all platform and primary or syndicated manifest list references from image-info.
     /// </summary>
-    private static List<string> GetAllImageReferences(ImageArtifactDetails imageArtifactDetails)
-    {
-        var platformRefs = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images
-                .SelectMany(image => image.Platforms
-                    .Where(platform => !string.IsNullOrEmpty(platform.Digest))
-                    .Select(platform => platform.Digest)));
-
-        var manifestRefs = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images
-                .Where(image => image.Manifest is not null && !string.IsNullOrEmpty(image.Manifest.Digest))
-                .Select(image => image.Manifest.Digest));
-
-        return platformRefs.Concat(manifestRefs).ToList();
-    }
+    private static List<string> GetAllImageReferences(ImageArtifactDetails imageArtifactDetails) =>
+        imageArtifactDetails
+            .GetAllDigests()
+            .Where(reference => !string.IsNullOrEmpty(reference))
+            .ToList();
 }

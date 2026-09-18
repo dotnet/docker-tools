@@ -10,186 +10,192 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Mcr;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
-{
-    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
-    {
-        private const string McrTagsPlaceholder = "Tags go here.";
-        private readonly IGitService _gitService;
-        private readonly IGitHubClientFactory _gitHubClientFactory;
-        private readonly ILogger<PublishMcrDocsCommand> _logger;
+namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-        public PublishMcrDocsCommand(IManifestJsonService manifestJsonService, IGitService gitService, IGitHubClientFactory gitHubClientFactory,
-            ILogger<PublishMcrDocsCommand> logger) : base(manifestJsonService)
+public class PublishMcrDocsCommand(
+    IManifestJsonService manifestJsonService,
+    IGitService gitService,
+    IGitHubClientFactory gitHubClientFactory,
+    ILogger<PublishMcrDocsCommand> logger)
+        : ManifestCommand<PublishMcrDocsOptions>(manifestJsonService)
+{
+    private const string McrTagsPlaceholder = "Tags go here.";
+
+    protected override string Description => "Publishes the readmes to MCR";
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        logger.LogInformation("PUBLISHING MCR DOCS");
+
+        ValidateReadmeFilenames(Manifest);
+
+        // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
+        Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+
+        List<GitObject> gitObjects = [];
+        gitObjects.AddRange(GetUpdatedReadmes());
+        gitObjects.AddRange(GetUpdatedTagsMetadata());
+
+        foreach (GitObject gitObject in gitObjects)
         {
-            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-            _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            logger.LogInformation(
+                "Updated file '{Path}' with contents: {Content}",
+                gitObject.Path,
+                gitObject.Content);
         }
 
-        protected override string Description => "Publishes the readmes to MCR";
-
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
+        if (!Options.IsDryRun)
         {
-            _logger.LogInformation("PUBLISHING MCR DOCS");
+            using IGitHubClient gitHubClient =
+                await gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun, cancellationToken);
 
-            ValidateReadmeFilenames(Manifest);
-
-            // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
-            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
-
-            string productRepo = GetProductRepo();
-
-            IEnumerable<GitObject> gitObjects =
-                GetUpdatedReadmes(productRepo)
-                .Concat(GetUpdatedTagsMetadata(productRepo));
-
-            foreach (GitObject gitObject in gitObjects)
-            {
-                _logger.LogInformation(
-                    $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
-            }
-
-            if (!Options.IsDryRun)
-            {
-                using IGitHubClient gitHubClient =
-                    await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun, cancellationToken);
-
-                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_logger).ExecuteAsync(async ct =>
+            await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(logger).ExecuteAsync(
+                action: async actionCt =>
                 {
                     GitReference gitRef = await GitHelper.PushChangesAsync(
                         gitHubClient,
                         Options,
-                        $"Mirroring {productRepo} readmes",
-                        (branch, innerCt) =>
-                            FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch, innerCt),
-                        ct);
+                        "Mirroring product readmes",
+                        (branch, innerCt) => FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch, innerCt),
+                        actionCt);
 
                     if (gitRef != null)
                     {
-                        _logger.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                        logger.LogInformation(
+                            "{PipelineOutputVariable}",
+                            PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
-                }, cancellationToken);
-            }
+                },
+                cancellationToken);
         }
+    }
 
-        private bool IncludeReadme(string readmePath) =>
-            Options.RootPath is null || Path.GetFullPath(readmePath).StartsWith(Path.GetFullPath(Options.RootPath));
+    private bool PathIsValid(Readme readme) =>
+        Options.RootPath is null || Path.GetFullPath(readme.Path).StartsWith(Path.GetFullPath(Options.RootPath));
 
-        private void ValidateReadmeFilenames(ManifestInfo manifest)
-        {
-            // Readme filenames must be unique across all the readmes regardless of their path.
-            // This is because they will eventually be published to mcrdocs where all of the readmes are contained within the same directory
+    private void ValidateReadmeFilenames(ManifestInfo manifest)
+    {
+        // Readme filenames must be unique within each product directory because source paths are flattened in mcrdocs.
 
-            IEnumerable<IGrouping<string, string>> readmePathsWithDuplicateFilenames = manifest.AllRepos
-                .SelectMany(repo => repo.Readmes.Select(readme => readme.Path))
-                .Where(readmePath => IncludeReadme(readmePath))
-                .GroupBy(readmePath => Path.GetFileName(readmePath))
-                .Where(group => group.Count() > 1);
-
-            if (readmePathsWithDuplicateFilenames.Any())
-            {
-                IEnumerable<string> errorMessages = readmePathsWithDuplicateFilenames
-                    .Select(group =>
-                        "Readme filenames must be unique, regardless of the directory path. " +
-                        "The following readme paths have filenames that conflict with each other:" +
-                        Environment.NewLine +
-                        string.Join(Environment.NewLine, group.ToArray()));
-
-                throw new ValidationException(string.Join(Environment.NewLine + Environment.NewLine, errorMessages.ToArray()));
-            }
-        }
-
-        private async Task<IEnumerable<GitObject>> FilterUpdatedGitObjectsAsync(
-            IEnumerable<GitObject> gitObjects,
-            IGitHubClient gitHubClient,
-            GitHubBranch branch,
-            CancellationToken cancellationToken)
-        {
-            List<GitObject> updatedGitObjects = new();
-            foreach (GitObject gitObject in gitObjects)
-            {
-                string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
-                if (currentContent == gitObject.Content)
+        var readmePathsWithDuplicateFilenames = manifest.AllRepos
+            .SelectMany(repo => repo.Readmes
+                .Where(PathIsValid)
+                .Select(readme => new
                 {
-                    _logger.LogInformation($"File '{gitObject.Path}' has not changed.");
-                }
-                else
-                {
-                    _logger.LogInformation($"File '{gitObject.Path}' has changed.");
-                    updatedGitObjects.Add(gitObject);
-                }
-            }
+                    readme.Path,
+                    TargetPath = string.Join('/', GetProductRepo(repo), Path.GetFileName(readme.Path))
+                }))
+            .GroupBy(readme => readme.TargetPath)
+            .Where(group => group.Count() > 1);
 
-            return updatedGitObjects;
-        }
-
-        private GitObject GetGitObject(
-            string repo,
-            string filePath,
-            string updatedContent)
+        if (readmePathsWithDuplicateFilenames.Any())
         {
-            // We only use the filename from the provided file path because all files in the target mcrdocs repo
-            // are located at the root of the repo directory.
-            string gitPath = string.Join('/', Options.GitOptions.Path, repo, Path.GetFileName(filePath));
+            IEnumerable<string> errorMessages = readmePathsWithDuplicateFilenames
+                .Select(group =>
+                    $"""
+                    Readme filenames must be unique within each MCR docs product directory. The following readme paths resolve to '{group.Key}':
+                    {string.Join(Environment.NewLine, group.Select(readme => readme.Path))}
+                    """);
 
-            return new GitObject
-            {
-                Path = gitPath,
-                Type = GitObject.TypeBlob,
-                Mode = GitObject.ModeFile,
-                Content = updatedContent
-            };
+            throw new ValidationException(string.Join(Environment.NewLine + Environment.NewLine, errorMessages.ToArray()));
         }
+    }
 
-        private string GetProductRepo()
+    private async Task<IEnumerable<GitObject>> FilterUpdatedGitObjectsAsync(
+        IEnumerable<GitObject> gitObjects,
+        IGitHubClient gitHubClient,
+        GitHubBranch branch,
+        CancellationToken cancellationToken)
+    {
+        List<GitObject> updatedGitObjects = [];
+        foreach (GitObject gitObject in gitObjects)
         {
-            string firstRepoName = Manifest.AllRepos.First().QualifiedName
-                .TrimStartString($"{Manifest.Registry}/");
-            return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
+            string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
+
+            // Manually check for cancellation because GetGitHubFileContentsAsync does not accept cancellation token
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (currentContent == gitObject.Content)
+            {
+                logger.LogInformation("File '{Path}' has not changed.", gitObject.Path);
+            }
+            else
+            {
+                logger.LogInformation("File '{Path}' has changed.", gitObject.Path);
+                updatedGitObjects.Add(gitObject);
+            }
         }
 
-        private GitObject[] GetUpdatedReadmes(string productRepo)
+        return updatedGitObjects;
+    }
+
+    private GitObject GetGitObject(string repo, string filePath, string updatedContent)
+    {
+        // We only use the filename from the provided file path because all files in the target mcrdocs repo
+        // are located at the root of the repo directory.
+        string gitPath = string.Join('/', Options.GitOptions.Path, repo, Path.GetFileName(filePath));
+
+        return new GitObject
         {
-            List<string> readmePaths = Manifest.FilteredRepos
-                .SelectMany(repo => repo.Readmes)
-                .Select(readme => readme.Path)
-                .Where(readmePath => IncludeReadme(readmePath))
-                .ToList();
+            Path = gitPath,
+            Type = GitObject.TypeBlob,
+            Mode = GitObject.ModeFile,
+            Content = updatedContent
+        };
+    }
 
-            if (!string.IsNullOrEmpty(Manifest.ReadmePath) && !Options.ExcludeProductFamilyReadme)
-            {
-                readmePaths.Add(Manifest.ReadmePath);
-            }
+    private string GetProductRepo(RepoInfo repo)
+    {
+        string repoName = repo.QualifiedName.TrimStartString($"{Manifest.Registry}/");
+        return repoName.Substring(0, repoName.LastIndexOf('/'));
+    }
 
-            List<GitObject> readmes = new();
+    private List<GitObject> GetUpdatedReadmes()
+    {
+        List<GitObject> readmes = [];
 
-            foreach (string readmePath in readmePaths)
-            {
-                string updatedReadMe = File.ReadAllText(readmePath);
-                updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                readmes.Add(GetGitObject(productRepo, readmePath, updatedReadMe));
-            }
-
-            return readmes.ToArray();
-        }
-
-        private GitObject[] GetUpdatedTagsMetadata(string productRepo)
+        foreach (RepoInfo repo in Manifest.FilteredRepos)
         {
-            List<GitObject> metadata = new();
+            string productRepo = GetProductRepo(repo);
+            IEnumerable<GitObject> productReadmes = repo.Readmes
+                .Where(PathIsValid)
+                .Select(readme => GetReadmeGitObject(productRepo, readme.Path));
 
-            foreach (RepoInfo repo in Manifest.FilteredRepos)
-            {
-                string updatedMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, generateGitHubLinks: true, _gitService, Options.SourceRepoUrl);
-                string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
-                metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
-            }
-
-            return metadata.ToArray();
+            readmes.AddRange(productReadmes);
         }
+
+        if (!string.IsNullOrEmpty(Manifest.ReadmePath) && !Options.ExcludeProductFamilyReadme)
+        {
+            string productRepo = GetProductRepo(Manifest.AllRepos.First());
+            readmes.Add(GetReadmeGitObject(productRepo, Manifest.ReadmePath));
+        }
+
+        return readmes;
+    }
+
+    private GitObject GetReadmeGitObject(string productRepo, string readmePath)
+    {
+        string updatedReadMe = File.ReadAllText(readmePath);
+        updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
+        return GetGitObject(productRepo, readmePath, updatedReadMe);
+    }
+
+    private List<GitObject> GetUpdatedTagsMetadata()
+    {
+        List<GitObject> metadata = [];
+
+        foreach (RepoInfo repo in Manifest.FilteredRepos)
+        {
+            string updatedMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, generateGitHubLinks: true, gitService, Options.SourceRepoUrl);
+            string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
+            metadata.Add(GetGitObject(GetProductRepo(repo), metadataFileName, updatedMetadata));
+        }
+
+        return metadata;
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -150,6 +151,85 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             gitHubClientMock.Verify(o => o.Dispose());
 
             gitHubClientMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        public async Task RoutesReadmesToEachProductRepo()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string dotnetReadmePath = Path.Combine("dotnet", "README.portal.md");
+            string aspireReadmePath = Path.Combine("aspire", "README.portal.md");
+            const string DotnetTagsMetadataPath = "runtime-tags.yml";
+            const string AspireTagsMetadataPath = "aspire-dashboard-tags.yml";
+
+            CreateFile(dotnetReadmePath, tempFolderContext, DefaultReadme);
+            CreateFile(aspireReadmePath, tempFolderContext, DefaultReadme);
+            CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
+            CreateFile(
+                DotnetTagsMetadataPath,
+                tempFolderContext,
+                "$(McrTagsYmlRepo:runtime)\n$(McrTagsYmlTagGroup:runtime-tag)");
+            CreateFile(
+                AspireTagsMetadataPath,
+                tempFolderContext,
+                "$(McrTagsYmlRepo:aspire-dashboard)\n$(McrTagsYmlTagGroup:aspire-tag)");
+
+            Repo runtimeRepo = CreateRepo(
+                "dotnet/nightly/runtime",
+                [
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/linux", tempFolderContext),
+                            ["runtime-tag"]))
+                ],
+                dotnetReadmePath,
+                ReadmeTemplatePath,
+                DotnetTagsMetadataPath);
+            runtimeRepo.Id = "runtime";
+
+            Repo aspireRepo = CreateRepo(
+                "aspire/nightly/dashboard",
+                [
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/dashboard/linux", tempFolderContext),
+                            ["aspire-tag"]))
+                ],
+                aspireReadmePath,
+                ReadmeTemplatePath,
+                AspireTagsMetadataPath);
+            aspireRepo.Id = "aspire-dashboard";
+
+            Manifest manifest = CreateManifest(runtimeRepo, aspireRepo);
+            manifest.Registry = "mcr.microsoft.com";
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
+
+            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
+            PublishMcrDocsCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                Mock.Of<IGitService>(),
+                CreateGitHubClientFactory(gitHubClientMock),
+                Mock.Of<ILogger<PublishMcrDocsCommand>>());
+            command.Options.Manifest = manifestPath;
+            command.Options.ExcludeProductFamilyReadme = true;
+            command.Options.GitOptions.Path = "teams";
+            command.LoadManifest();
+
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+            gitHubClientMock.Verify(o =>
+                o.PostTreeAsync(
+                    It.IsAny<GitHubProject>(),
+                    It.IsAny<string>(),
+                    It.Is<GitObject[]>(objects =>
+                        objects.Length == 4 &&
+                        objects.Any(obj => obj.Path == "teams/dotnet/nightly/README.portal.md") &&
+                        objects.Any(obj => obj.Path == "teams/dotnet/nightly/runtime-tags.yml") &&
+                        objects.Any(obj => obj.Path == "teams/aspire/nightly/README.portal.md") &&
+                        objects.Any(obj => obj.Path == "teams/aspire/nightly/aspire-dashboard-tags.yml"))));
         }
 
         [TestMethod]

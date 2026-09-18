@@ -42,11 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            string productRepo = GetProductRepo();
-
             IEnumerable<GitObject> gitObjects =
-                GetUpdatedReadmes(productRepo)
-                .Concat(GetUpdatedTagsMetadata(productRepo));
+                GetUpdatedReadmes()
+                .Concat(GetUpdatedTagsMetadata());
 
             foreach (GitObject gitObject in gitObjects)
             {
@@ -64,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     GitReference gitRef = await GitHelper.PushChangesAsync(
                         gitHubClient,
                         Options,
-                        $"Mirroring {productRepo} readmes",
+                        "Mirroring product readmes",
                         (branch, innerCt) =>
                             FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch, innerCt),
                         ct);
@@ -82,23 +80,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void ValidateReadmeFilenames(ManifestInfo manifest)
         {
-            // Readme filenames must be unique across all the readmes regardless of their path.
-            // This is because they will eventually be published to mcrdocs where all of the readmes are contained within the same directory
+            // Readme filenames must be unique within each product directory because source paths are flattened in mcrdocs.
 
-            IEnumerable<IGrouping<string, string>> readmePathsWithDuplicateFilenames = manifest.AllRepos
-                .SelectMany(repo => repo.Readmes.Select(readme => readme.Path))
-                .Where(readmePath => IncludeReadme(readmePath))
-                .GroupBy(readmePath => Path.GetFileName(readmePath))
+            var readmePathsWithDuplicateFilenames = manifest.AllRepos
+                .SelectMany(repo => repo.Readmes
+                    .Where(readme => IncludeReadme(readme.Path))
+                    .Select(readme => new
+                    {
+                        readme.Path,
+                        TargetPath = string.Join('/', GetProductRepo(repo), Path.GetFileName(readme.Path))
+                    }))
+                .GroupBy(readme => readme.TargetPath)
                 .Where(group => group.Count() > 1);
 
             if (readmePathsWithDuplicateFilenames.Any())
             {
                 IEnumerable<string> errorMessages = readmePathsWithDuplicateFilenames
                     .Select(group =>
-                        "Readme filenames must be unique, regardless of the directory path. " +
-                        "The following readme paths have filenames that conflict with each other:" +
+                        "Readme filenames must be unique within each MCR docs product directory. " +
+                        $"The following readme paths resolve to '{group.Key}':" +
                         Environment.NewLine +
-                        string.Join(Environment.NewLine, group.ToArray()));
+                        string.Join(Environment.NewLine, group.Select(readme => readme.Path)));
 
                 throw new ValidationException(string.Join(Environment.NewLine + Environment.NewLine, errorMessages.ToArray()));
             }
@@ -146,39 +148,43 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
         }
 
-        private string GetProductRepo()
+        private string GetProductRepo(RepoInfo repo)
         {
-            string firstRepoName = Manifest.AllRepos.First().QualifiedName
+            string repoName = repo.QualifiedName
                 .TrimStartString($"{Manifest.Registry}/");
-            return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
+            return repoName.Substring(0, repoName.LastIndexOf('/'));
         }
 
-        private GitObject[] GetUpdatedReadmes(string productRepo)
+        private GitObject[] GetUpdatedReadmes()
         {
-            List<string> readmePaths = Manifest.FilteredRepos
-                .SelectMany(repo => repo.Readmes)
-                .Select(readme => readme.Path)
-                .Where(readmePath => IncludeReadme(readmePath))
-                .ToList();
+            List<GitObject> readmes = new();
+
+            foreach (RepoInfo repo in Manifest.FilteredRepos)
+            {
+                string productRepo = GetProductRepo(repo);
+                readmes.AddRange(repo.Readmes
+                    .Select(readme => readme.Path)
+                    .Where(IncludeReadme)
+                    .Select(readmePath => GetReadmeGitObject(productRepo, readmePath)));
+            }
 
             if (!string.IsNullOrEmpty(Manifest.ReadmePath) && !Options.ExcludeProductFamilyReadme)
             {
-                readmePaths.Add(Manifest.ReadmePath);
-            }
-
-            List<GitObject> readmes = new();
-
-            foreach (string readmePath in readmePaths)
-            {
-                string updatedReadMe = File.ReadAllText(readmePath);
-                updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                readmes.Add(GetGitObject(productRepo, readmePath, updatedReadMe));
+                string productRepo = GetProductRepo(Manifest.AllRepos.First());
+                readmes.Add(GetReadmeGitObject(productRepo, Manifest.ReadmePath));
             }
 
             return readmes.ToArray();
         }
 
-        private GitObject[] GetUpdatedTagsMetadata(string productRepo)
+        private GitObject GetReadmeGitObject(string productRepo, string readmePath)
+        {
+            string updatedReadMe = File.ReadAllText(readmePath);
+            updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
+            return GetGitObject(productRepo, readmePath, updatedReadMe);
+        }
+
+        private GitObject[] GetUpdatedTagsMetadata()
         {
             List<GitObject> metadata = new();
 
@@ -186,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string updatedMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, generateGitHubLinks: true, _gitService, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
-                metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
+                metadata.Add(GetGitObject(GetProductRepo(repo), metadataFileName, updatedMetadata));
             }
 
             return metadata.ToArray();

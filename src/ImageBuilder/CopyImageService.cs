@@ -64,17 +64,40 @@ public class CopyImageService : ICopyImageService
             .Distinct()
             .ToList();
 
-        IReadOnlyList<ReferrerInfo> referrers = copyReferrers
+        IReadOnlyList<ReferrerInfo> allReferrers = copyReferrers
             ? await _orasService.GetReferrersAsync(sourceImageName, cancellationToken, isDryRun)
             : [];
+
+        // Internal-only referrers must never be published alongside the image.
+        List<ReferrerInfo> referrers = [];
+        foreach (ReferrerInfo referrer in allReferrers)
+        {
+            if (referrer.IsInternal)
+            {
+                _logger.LogDebug(
+                    "Skipping internal referrer {Referrer} (artifactType={ArtifactType}) of '{SourceImage}'",
+                    referrer.Digest,
+                    referrer.ArtifactType,
+                    sourceImageName);
+
+                continue;
+            }
+
+            referrers.Add(referrer);
+        }
 
         var destinationImageNames =
             destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
 
         _logger.LogDebug(
-            "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun}, CopyReferrers={CopyReferrers})",
-            formattedDestinationImages, referrers.Count, sourceImageName, isDryRun, copyReferrers);
+            "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}', skipping {InternalReferrerCount} internal referrer(s) (DryRun={DryRun}, CopyReferrers={CopyReferrers})",
+            formattedDestinationImages,
+            referrers.Count,
+            sourceImageName,
+            allReferrers.Count - referrers.Count,
+            isDryRun,
+            copyReferrers);
 
         if (isDryRun)
         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
@@ -113,6 +114,68 @@ public class CopyImageServiceTests
                 It.Is<ContainerRegistryImportImageContent>(c =>
                     c.Source.RegistryAddress == "docker.io" && c.Source.ResourceId == null!), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    /// <summary>
+    /// Referrers marked with the internal annotation must never be imported to the destination,
+    /// regardless of artifact type. Unmarked referrers are still imported.
+    /// </summary>
+    [TestMethod]
+    public async Task ImportImageAsync_SkipsInternalReferrers()
+    {
+        PublishConfiguration publishConfig = CreateAcrPublishConfig("myacr.azurecr.io");
+
+        var mockImporter = new Mock<IAcrImageImporter>();
+        var mockOras = new Mock<IOrasService>();
+        mockOras
+            .Setup(o => o.GetReferrersAsync("myacr.azurecr.io/repo:tag", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(
+            [
+                new ReferrerInfo("myacr.azurecr.io/repo@sha256:internalLifecycle", OciArtifactType.Lifecycle)
+                {
+                    Annotations = new Dictionary<string, string>
+                    {
+                        [LifecycleMetadataService.EndOfLifeAnnotation] = "2026-01-01T00:00:00Z",
+                        [ImageBuilderAnnotations.Internal] = "true"
+                    }
+                },
+                new ReferrerInfo("myacr.azurecr.io/repo@sha256:internalSignature", OciArtifactType.NotarySignatureV2)
+                {
+                    Annotations = new Dictionary<string, string> { [ImageBuilderAnnotations.Internal] = "true" }
+                },
+                new ReferrerInfo("myacr.azurecr.io/repo@sha256:publicLifecycle", OciArtifactType.Lifecycle)
+                {
+                    Annotations = new Dictionary<string, string>
+                    {
+                        [LifecycleMetadataService.EndOfLifeAnnotation] = "2026-01-01T00:00:00Z"
+                    }
+                },
+                new ReferrerInfo("myacr.azurecr.io/repo@sha256:publicSignature", OciArtifactType.NotarySignatureV2)
+            ]);
+
+        var service = new CopyImageService(
+            Mock.Of<ILogger<CopyImageService>>(),
+            mockImporter.Object,
+            mockOras.Object,
+            ConfigurationHelper.CreateOptionsMock(publishConfig));
+
+        await service.ImportImageAsync(
+            destTagNames: ["mirror/repo:tag"],
+            destAcrName: "myacr.azurecr.io",
+            srcTagName: "repo:tag",
+            srcRegistryName: "myacr.azurecr.io",
+            sourceCredentials: null,
+            isDryRun: false,
+            copyReferrers: true,
+            cancellationToken: TestContext?.CancellationToken ?? default);
+
+        List<string> importedSources = mockImporter.Invocations
+            .Select(invocation => ((ContainerRegistryImportImageContent)invocation.Arguments[2]).Source.SourceImage)
+            .ToList();
+
+        importedSources.ShouldBe(
+            ["repo:tag", "repo@sha256:publicLifecycle", "repo@sha256:publicSignature"],
+            ignoreOrder: true);
     }
 
     /// <summary>

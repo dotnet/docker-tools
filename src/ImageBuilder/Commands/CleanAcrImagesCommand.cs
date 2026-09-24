@@ -8,12 +8,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -138,7 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                             return manifestResult is not null
                                 && !manifestResult.IsReferrer()
-                                && await HasExpiredEndOfLifeAnnotationAsync(manifest, Options.Age, ct);
+                                && await IsEndOfLifeAsync(manifest, Options.Age, ct);
                         },
                         cancellationToken);
                     break;
@@ -286,6 +284,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         if (!Options.IsDryRun)
                         {
+                            // ACR's documentation says that deleting an image with `oras manifest delete` also
+                            // deletes its referrers (signatures, lifecycle artifacts, etc.):
+                            // https://learn.microsoft.com/azure/container-registry/container-registry-manage-artifact#deleting-all-artifacts-in-the-graph
+                            // It's unverified whether ACR does the same for this client's delete request.
+                            // TODO: Validate using experiment on a real ACR
                             await acrContentClient.DeleteManifestAsync(digest, ct);
                         }
 
@@ -376,25 +379,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestResult;
         }
 
-        private async Task<bool> HasExpiredEndOfLifeAnnotationAsync(
+        private async Task<bool> IsEndOfLifeAsync(
             ArtifactManifestProperties manifest,
             int eolGracePeriodDays,
             CancellationToken cancellationToken)
         {
-            Manifest? lifecycleArtifact = await _lifecycleMetadataService.GetLifecycleArtifactAsync(
+            LifecycleArtifact? lifecycleArtifact = await _lifecycleMetadataService.GetLatestLifecycleArtifactAsync(
                 $"{manifest.RegistryLoginServer}/{manifest.RepositoryName}@{manifest.Digest}",
+                includeInternal: true,
                 cancellationToken);
 
-            if (lifecycleArtifact?.Annotations is not null
-                && lifecycleArtifact.Annotations.TryGetValue(
-                    LifecycleMetadataService.EndOfLifeAnnotation,
-                    out string? endOfLifeValue)
-                && DateTimeOffset.TryParse(endOfLifeValue, out DateTimeOffset endOfLifeDateTime))
-            {
-                return IsExpired(endOfLifeDateTime, eolGracePeriodDays);
-            }
-
-            return false;
+            var gracePeriod = TimeSpan.FromDays(eolGracePeriodDays);
+            bool isEndOfLife = lifecycleArtifact?.IsEndOfLife(DateTimeOffset.Now, gracePeriod) ?? false;
+            return isEndOfLife;
         }
 
         /// <summary>

@@ -8,7 +8,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -22,7 +21,9 @@ public class LifecycleMetadataServiceTests
 {
     public TestContext? TestContext { get; set; }
 
-    private const string Digest = "myregistry.azurecr.io/public/dotnet/runtime@sha256:0123456789abcdef";
+    private const string Registry = "myregistry.azurecr.io";
+    private const string Repository = "public/dotnet/runtime";
+    private const string Digest = $"{Registry}/{Repository}@sha256:0123456789abcdef";
 
     /// <summary>
     /// A transient registry failure (e.g. HTTP 429) must be surfaced, not silently treated as
@@ -30,7 +31,7 @@ public class LifecycleMetadataServiceTests
     /// digests be re-annotated with a conflicting EOL date.
     /// </summary>
     [TestMethod]
-    public async Task GetLifecycleArtifactAsync_DoesNotSwallowRegistryErrors()
+    public async Task GetLatestLifecycleArtifactAsync_DoesNotSwallowRegistryErrors()
     {
         ResponseException rateLimitException = CreateRateLimitException();
 
@@ -42,49 +43,186 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         ResponseException thrown = await Should.ThrowAsync<ResponseException>(
-            () => service.GetLifecycleArtifactAsync(Digest, TestContext?.CancellationToken ?? default));
+            () => service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: true, CancellationToken));
         thrown.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
     }
 
     [TestMethod]
-    public async Task GetLifecycleArtifactAsync_NoReferrers_ReturnsNull()
+    public async Task GetLatestLifecycleArtifactAsync_NoLifecycleReferrers_ReturnsNull()
     {
-        Mock<IOrasService> orasServiceMock = new();
-        orasServiceMock
-            .Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
-            .ReturnsAsync([]);
+        LifecycleMetadataService service = CreateService(
+            CreateReferrer("signature", OciArtifactType.NotarySignatureV2, created: "2026-01-01T00:00:00Z"));
 
-        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
-
-        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext?.CancellationToken ?? default);
+        LifecycleArtifact? result =
+            await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: true, CancellationToken);
 
         result.ShouldBeNull();
     }
 
     [TestMethod]
-    public async Task GetLifecycleArtifactAsync_ExistingLifecycleReferrer_ReturnsManifest()
+    public async Task GetLatestLifecycleArtifactAsync_ParsesLifecycleReferrer()
     {
-        ReferrerInfo lifecycleReferrer = new(
-            Digest: "myregistry.azurecr.io/public/dotnet/runtime@sha256:annotationdigest",
-            ArtifactType: OciArtifactType.Lifecycle)
-        {
-            Annotations = new Dictionary<string, string>
-            {
-                [LifecycleMetadataService.EndOfLifeAnnotation] = "2026-05-22"
-            }
-        };
+        LifecycleMetadataService service = CreateService(
+            CreateReferrer("lifecycle", created: "2026-05-01T12:34:56.1234567Z", endOfLife: "2026-05-22"));
 
+        LifecycleArtifact? result =
+            await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: false, CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:lifecycle");
+        result.Referrer.Created.ShouldBe(new DateTimeOffset(2026, 5, 1, 12, 34, 56, TimeSpan.Zero).AddTicks(1234567));
+        result.Referrer.IsInternal.ShouldBeFalse();
+        result.EndOfLifeDate.ShouldBe(new DateOnly(2026, 5, 22));
+    }
+
+    [TestMethod]
+    public async Task GetLatestLifecycleArtifactAsync_MultipleLifecycleReferrers_ReturnsMostRecentlyCreated()
+    {
+        LifecycleMetadataService service = CreateService(
+            CreateReferrer("noCreated", endOfLife: "2026-01-01"),
+            CreateReferrer("older", created: "2026-01-01T00:00:00Z", endOfLife: "2026-01-02"),
+            CreateReferrer("newest", created: "2026-03-01T00:00:00Z", endOfLife: "2026-01-03"),
+            CreateReferrer("newer", created: "2026-02-01T00:00:00Z", endOfLife: "2026-01-04"));
+
+        LifecycleArtifact? result =
+            await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: false, CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:newest");
+    }
+
+    [TestMethod]
+    public async Task GetLatestLifecycleArtifactAsync_NoCreatedTimestamps_ReturnsFirstReferrer()
+    {
+        LifecycleMetadataService service = CreateService(
+            CreateReferrer("first", endOfLife: "2026-01-01"),
+            CreateReferrer("second", created: "not-a-date", endOfLife: "2026-01-02"));
+
+        LifecycleArtifact? result =
+            await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: false, CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:first");
+    }
+
+    [TestMethod]
+    [DataRow(false, "public")]
+    [DataRow(true, "internal")]
+    public async Task GetLatestLifecycleArtifactAsync_FiltersInternalArtifacts(bool includeInternal, string expectedDigest)
+    {
+        LifecycleMetadataService service = CreateService(
+            CreateReferrer("public", created: "2026-01-01T00:00:00Z", endOfLife: "2026-01-01"),
+            CreateReferrer("internal", created: "2026-02-01T00:00:00Z", endOfLife: "2026-01-01", isInternal: true));
+
+        LifecycleArtifact? result =
+            await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal, CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:{expectedDigest}");
+    }
+
+    [TestMethod]
+    public async Task GetLatestLifecycleArtifactAsync_OnlyInternalArtifacts_ExcludingInternal_ReturnsNull()
+    {
+        LifecycleMetadataService service = CreateService(
+            CreateReferrer("internal", created: "2026-01-01T00:00:00Z", endOfLife: "2026-01-01", isInternal: true));
+
+        LifecycleArtifact? result =
+            await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: false, CancellationToken);
+
+        result.ShouldBeNull();
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AnnotateEolDigestAsync_AttachesLifecycleArtifact(bool isInternal)
+    {
+        IDictionary<string, string>? attachedAnnotations = null;
         Mock<IOrasService> orasServiceMock = new();
         orasServiceMock
-            .Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
-            .ReturnsAsync([lifecycleReferrer]);
+            .Setup(o => o.AttachArtifactAsync(
+                Digest, OciArtifactType.Lifecycle, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, IDictionary<string, string>, CancellationToken>(
+                (_, _, annotations, _) => attachedAnnotations = annotations)
+            .ReturnsAsync("sha256:lifecycle");
 
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        Manifest? result = await service.GetLifecycleArtifactAsync(Digest, TestContext?.CancellationToken ?? default);
+        DateTimeOffset before = DateTimeOffset.UtcNow;
+        LifecycleArtifact? result = await service.AnnotateEolDigestAsync(
+            Digest, new DateOnly(2026, 5, 22), isInternal, CancellationToken);
+        DateTimeOffset after = DateTimeOffset.UtcNow;
 
         result.ShouldNotBeNull();
-        result.Annotations[LifecycleMetadataService.EndOfLifeAnnotation].ShouldBe("2026-05-22");
+        result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:lifecycle");
+        result.Referrer.ArtifactType.ShouldBe(OciArtifactType.Lifecycle);
+        result.Referrer.IsInternal.ShouldBe(isInternal);
+        DateTimeOffset? created = result.Referrer.Created;
+        created.ShouldNotBeNull();
+        created.Value.ShouldBeInRange(before, after);
+        result.EndOfLifeDate.ShouldBe(new DateOnly(2026, 5, 22));
+
+        // The returned artifact must describe exactly what was pushed.
+        result.Referrer.Annotations.ShouldBe(attachedAnnotations);
+    }
+
+    [TestMethod]
+    public async Task AnnotateEolDigestAsync_AttachFails_ReturnsNull()
+    {
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock
+            .Setup(o => o.AttachArtifactAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(CreateRateLimitException());
+
+        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
+
+        LifecycleArtifact? result = await service.AnnotateEolDigestAsync(
+            Digest, new DateOnly(2026, 5, 22), isInternal: false, CancellationToken);
+
+        result.ShouldBeNull();
+    }
+
+    private CancellationToken CancellationToken => TestContext?.CancellationToken ?? default;
+
+    private static ReferrerInfo CreateReferrer(
+        string digest,
+        string artifactType = OciArtifactType.Lifecycle,
+        string? created = null,
+        string? endOfLife = null,
+        bool isInternal = false)
+    {
+        Dictionary<string, string> annotations = [];
+        if (created is not null)
+        {
+            annotations[OciAnnotations.ImageCreated] = created;
+        }
+
+        if (endOfLife is not null)
+        {
+            annotations[LifecycleAnnotations.EndOfLife] = endOfLife;
+        }
+
+        if (isInternal)
+        {
+            annotations[ImageBuilderAnnotations.Internal] = "true";
+        }
+
+        return new ReferrerInfo($"{Registry}/{Repository}@sha256:{digest}", artifactType)
+        {
+            Annotations = annotations
+        };
+    }
+
+    private static LifecycleMetadataService CreateService(params ReferrerInfo[] referrers)
+    {
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock
+            .Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ReturnsAsync(referrers);
+
+        return CreateService(orasServiceMock.Object);
     }
 
     private static LifecycleMetadataService CreateService(IOrasService orasService) =>

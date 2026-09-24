@@ -12,7 +12,7 @@ using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Configuration;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Options = Microsoft.Extensions.Options.Options;
@@ -336,8 +336,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(missingDigest, It.IsAny<CancellationToken>()), Times.Never);
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(referrerDigest, It.IsAny<CancellationToken>()), Times.Never);
             lifecycleMetadataServiceMock.Verify(
-                o => o.GetLifecycleArtifactAsync(
+                o => o.GetLatestLifecycleArtifactAsync(
                     $"{AcrName}/{repo1Name}@{missingDigest}",
+                    It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()),
                 Times.Never);
         }
@@ -417,22 +418,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             string reference = $"{AcrName}/{repoName}@{digest}";
 
-            Manifest manifest = null;
+            LifecycleArtifact existingArtifact = null;
             if (digestAlreadyAnnotated)
             {
-                manifest = new Manifest
-                {
-                    Annotations = new Dictionary<string, string>
-                    {
-                        { LifecycleMetadataService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
-                    },
-                    Reference = reference
-                };
+                existingArtifact = LifecycleArtifactHelper.CreateLifecycleArtifact(reference, eolDate);
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.GetLifecycleArtifactAsync(reference, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(manifest);
+                .Setup(o => o.GetLatestLifecycleArtifactAsync(reference, true, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(existingArtifact);
         }
     }
 }

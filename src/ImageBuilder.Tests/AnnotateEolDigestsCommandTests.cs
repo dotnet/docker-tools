@@ -9,8 +9,8 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.LifecycleArtifactHelper;
 using System.Threading;
 using Moq;
 using Newtonsoft.Json;
@@ -50,9 +50,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigestAsync("digest1", _globalDate, It.IsAny<CancellationToken>()));
+                o => o.AnnotateEolDigestAsync("digest1", _globalDate, false, It.IsAny<CancellationToken>()));
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigestAsync("digest2", _specificDigestDate, It.IsAny<CancellationToken>()));
+                o => o.AnnotateEolDigestAsync("digest2", _specificDigestDate, false, It.IsAny<CancellationToken>()));
 
             string[] expectedAnnotationDigests =
                 [
@@ -100,7 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ex.Message.ShouldContain($"(failed: 0, skipped: 2)");
 
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+                o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                 Times.Never());
         }
 
@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+                o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                 Times.Never());
         }
 
@@ -165,22 +165,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, "digest1", digestAlreadyAnnotated, _globalDate, useNonMatchingDate);
             SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, "digest2", digestAlreadyAnnotated, _specificDigestDate, useNonMatchingDate);
 
-            Manifest digest1Annotation = new()
-            {
-                Reference = $"{AcrName}/{RepoPrefix}@{AnnotationDigest1}"
-            };
+            LifecycleArtifact digest1Annotation = CreateLifecycleArtifact($"{AcrName}/{RepoPrefix}@{AnnotationDigest1}", _globalDate);
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigestAsync(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+                .Setup(o => o.AnnotateEolDigestAsync(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(digestAnnotationIsSuccessful ? digest1Annotation : null);
 
-            Manifest digest2Annotation = new()
-            {
-                Reference = $"{AcrName}/{RepoPrefix}@{AnnotationDigest2}"
-            };
+            LifecycleArtifact digest2Annotation = CreateLifecycleArtifact($"{AcrName}/{RepoPrefix}@{AnnotationDigest2}", _specificDigestDate);
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigestAsync(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+                .Setup(o => o.AnnotateEolDigestAsync(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(digestAnnotationIsSuccessful ? digest2Annotation : null);
 
             return lifecycleMetadataServiceMock;
@@ -193,22 +187,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 eolDate = eolDate.AddDays(1);
             }
 
-            Manifest manifest = null;
+            LifecycleArtifact existingArtifact = null;
             if (digestAlreadyAnnotated)
             {
-                manifest = new Manifest
-                {
-                    Annotations = new Dictionary<string, string>
-                    {
-                        { LifecycleMetadataService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
-                    },
-                    Reference = $"{AcrName}/{RepoPrefix}repo@{digest}"
-                };
+                existingArtifact = CreateLifecycleArtifact($"{AcrName}/{RepoPrefix}repo@{digest}", eolDate);
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.GetLifecycleArtifactAsync(digest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(manifest);
+                .Setup(o => o.GetLatestLifecycleArtifactAsync(digest, false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(existingArtifact);
         }
     }
 }

@@ -13,7 +13,6 @@ using Azure;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -438,11 +437,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string armDigest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64");
 
             // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
-            Manifest lifecycleArtifactManifest = new();
+            LifecycleArtifact lifecycleArtifact = LifecycleArtifactHelper.CreateLifecycleArtifact($"{armDigest}-lifecycle");
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.GetLifecycleArtifactAsync(armDigest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(lifecycleArtifactManifest);
+                .Setup(o => o.GetLatestLifecycleArtifactAsync(armDigest, false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(lifecycleArtifact);
 
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
@@ -1166,16 +1165,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.GetLifecycleArtifactAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Manifest)null);
+                .Setup(o => o.GetLatestLifecycleArtifactAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((LifecycleArtifact)null);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             {
                 if (digestAnnotated.Value)
                 {
                     lifecycleMetadataServiceMock
-                        .Setup(o => o.GetLifecycleArtifactAsync(digestAnnotated.Key, It.IsAny<CancellationToken>()))
-                        .ReturnsAsync(new Manifest());
+                        .Setup(o => o.GetLatestLifecycleArtifactAsync(digestAnnotated.Key, false, It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{digestAnnotated.Key}-lifecycle"));
                 }
             }
 

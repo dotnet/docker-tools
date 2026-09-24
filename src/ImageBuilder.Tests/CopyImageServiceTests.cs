@@ -135,7 +135,7 @@ public class CopyImageServiceTests
                 {
                     Annotations = new Dictionary<string, string>
                     {
-                        [LifecycleMetadataService.EndOfLifeAnnotation] = "2026-01-01T00:00:00Z",
+                        [LifecycleAnnotations.EndOfLife] = "2026-01-01T00:00:00Z",
                         [ImageBuilderAnnotations.Internal] = "true"
                     }
                 },
@@ -147,7 +147,7 @@ public class CopyImageServiceTests
                 {
                     Annotations = new Dictionary<string, string>
                     {
-                        [LifecycleMetadataService.EndOfLifeAnnotation] = "2026-01-01T00:00:00Z"
+                        [LifecycleAnnotations.EndOfLife] = "2026-01-01T00:00:00Z"
                     }
                 },
                 new ReferrerInfo("myacr.azurecr.io/repo@sha256:publicSignature", OciArtifactType.NotarySignatureV2)

@@ -42,7 +42,7 @@ public class ImageBuilderAnnotationsTests
         {
             Annotations = new Dictionary<string, string>
             {
-                [LifecycleMetadataService.EndOfLifeAnnotation] = "2026-01-01T00:00:00Z"
+                [LifecycleAnnotations.EndOfLife] = "2026-01-01T00:00:00Z"
             }
         };
 

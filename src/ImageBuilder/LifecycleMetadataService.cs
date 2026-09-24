@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -14,40 +13,46 @@ namespace Microsoft.DotNet.ImageBuilder;
 public class LifecycleMetadataService(IOrasService orasService, ILogger<LifecycleMetadataService> logger)
     : ILifecycleMetadataService
 {
-    public const string EndOfLifeAnnotation = "vnd.microsoft.artifact.lifecycle.end-of-life.date";
-    public const string EolDateFormat = "yyyy-MM-dd";
-
-    public async Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken)
+    public async Task<LifecycleArtifact?> GetLatestLifecycleArtifactAsync(
+        string digest,
+        bool includeInternal,
+        CancellationToken cancellationToken)
     {
         IReadOnlyList<ReferrerInfo> referrers =
             await orasService.GetReferrersAsync(digest, cancellationToken, isDryRun: false);
 
-        ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
-            r => r.ArtifactType == OciArtifactType.Lifecycle);
+        ReferrerInfo? lifecycleReferrer = referrers
+            .Where(r => r.ArtifactType == OciArtifactType.Lifecycle && (includeInternal || !r.IsInternal))
+            .OrderByDescending(r => r.Created)
+            .FirstOrDefault();
 
         if (lifecycleReferrer is null)
         {
             return null;
         }
 
-        return new Manifest
-        {
-            ArtifactType = lifecycleReferrer.ArtifactType ?? string.Empty,
-            Reference = lifecycleReferrer.Digest,
-            Annotations = lifecycleReferrer.Annotations is not null
-                ? new Dictionary<string, string>(lifecycleReferrer.Annotations)
-                : []
-        };
+        return new LifecycleArtifact(lifecycleReferrer);
     }
 
-    public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken)
+    public async Task<LifecycleArtifact?> AnnotateEolDigestAsync(
+        string digest,
+        DateOnly date,
+        bool isInternal,
+        CancellationToken cancellationToken)
     {
         try
         {
+            // Set the creation time explicitly so the returned artifact matches what was pushed.
             Dictionary<string, string> annotations = new()
             {
-                [EndOfLifeAnnotation] = date.ToString(EolDateFormat)
+                [LifecycleAnnotations.EndOfLife] = date.ToString(LifecycleAnnotations.EndOfLifeDateFormat),
+                [OciAnnotations.ImageCreated] = DateTimeOffset.UtcNow.ToString("o")
             };
+
+            if (isInternal)
+            {
+                annotations[ImageBuilderAnnotations.Internal] = "true";
+            }
 
             string artifactDigest = await orasService.AttachArtifactAsync(
                 digest,
@@ -60,12 +65,12 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
             string repository = digest[(digest.IndexOf('/') + 1)..digest.IndexOf('@')];
             string artifactReference = $"{registry}/{repository}@{artifactDigest}";
 
-            return new Manifest
+            var referrerInfo = new ReferrerInfo(artifactReference, OciArtifactType.Lifecycle)
             {
-                ArtifactType = OciArtifactType.Lifecycle,
-                Reference = artifactReference,
                 Annotations = annotations
             };
+
+            return new LifecycleArtifact(referrerInfo);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {

@@ -8,11 +8,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -132,14 +130,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            Manifest? existingAnnotationManifest = await _lifecycleMetadataService.GetLifecycleArtifactAsync(digestData.Digest, cancellationToken);
-            if (existingAnnotationManifest is null)
+            LifecycleArtifact? existingArtifact = await _lifecycleMetadataService
+                .GetLatestLifecycleArtifactAsync(digestData.Digest, includeInternal: false, cancellationToken);
+
+            if (existingArtifact is null)
             {
                 _logger.LogInformation($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                Manifest? createdAnnotationManifest = await _lifecycleMetadataService.AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, cancellationToken);
-                if (createdAnnotationManifest is not null)
+
+                LifecycleArtifact? createdArtifact = await _lifecycleMetadataService
+                    .AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, isInternal: false, cancellationToken);
+
+                if (createdArtifact is not null)
                 {
-                    _createdAnnotationDigests.Add(createdAnnotationManifest.Reference);
+                    _createdAnnotationDigests.Add(createdArtifact.Referrer.Digest);
                 }
                 else
                 {
@@ -150,8 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                if (existingAnnotationManifest.Annotations.TryGetValue(LifecycleMetadataService.EndOfLifeAnnotation, out string? existingEolValue) &&
-                    existingEolValue == eolDate?.ToString(LifecycleMetadataService.EolDateFormat))
+                if (existingArtifact.EndOfLifeDate == eolDate)
                 {
                     _logger.LogInformation($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
                     _skippedAnnotationImageDigests.Add(digestData);
@@ -161,9 +163,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     _logger.LogError($"Could not annotate digest '{digestData.Digest}' because it has an existing non-matching EOL date: {eolDate}.");
                     _existingAnnotationImageDigests.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
 
-                    // Reference is a fully-qualified digest name. We want to remove the registry and repo prefix from the name to reflect the repo-qualified
-                    // name that exists in MAR.
-                    string refDigest = existingAnnotationManifest.Reference.TrimStartString($"{Options.AcrName}/{Options.RepoPrefix}");
+                    // Reference is a fully-qualified digest name. We want to remove the registry and repo prefix from
+                    // the name to reflect the repo-qualified name that exists in MAR.
+                    string refDigest = existingArtifact.Referrer.Digest
+                        .TrimStartString($"{Options.AcrName}/{Options.RepoPrefix}");
+
                     _existingAnnotationDigests.Add(refDigest);
                 }
             }

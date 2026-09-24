@@ -5,34 +5,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Oras;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public class LifecycleMetadataService : ILifecycleMetadataService
+public class LifecycleMetadataService(IOrasService orasService, ILogger<LifecycleMetadataService> logger)
+    : ILifecycleMetadataService
 {
     public const string EndOfLifeAnnotation = "vnd.microsoft.artifact.lifecycle.end-of-life.date";
     public const string EolDateFormat = "yyyy-MM-dd";
 
-    private readonly IOrasService _orasService;
-    private readonly ILogger<LifecycleMetadataService> _logger;
-
-    public LifecycleMetadataService(IOrasService orasService, ILogger<LifecycleMetadataService> logger)
-    {
-        _orasService = orasService;
-        _logger = logger;
-    }
-
     public async Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(digest);
-
         IReadOnlyList<ReferrerInfo> referrers =
-            await _orasService.GetReferrersAsync(digest, cancellationToken, isDryRun: false);
+            await orasService.GetReferrersAsync(digest, cancellationToken, isDryRun: false);
 
         ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
             r => r.ArtifactType == OciArtifactType.Lifecycle);
@@ -54,8 +42,6 @@ public class LifecycleMetadataService : ILifecycleMetadataService
 
     public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(digest);
-
         try
         {
             Dictionary<string, string> annotations = new()
@@ -63,7 +49,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
                 [EndOfLifeAnnotation] = date.ToString(EolDateFormat)
             };
 
-            string artifactDigest = await _orasService.AttachArtifactAsync(
+            string artifactDigest = await orasService.AttachArtifactAsync(
                 digest,
                 OciArtifactType.Lifecycle,
                 annotations,
@@ -83,7 +69,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
+            logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
             return null;
         }
     }

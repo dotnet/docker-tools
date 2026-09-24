@@ -425,7 +425,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.GetLatestLifecycleArtifactAsync(reference, true, It.IsAny<CancellationToken>()))
+                .Setup(o => o.GetLatestLifecycleArtifactAsync(reference, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(existingArtifact);
         }
     }

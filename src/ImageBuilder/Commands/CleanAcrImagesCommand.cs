@@ -384,9 +384,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             int eolGracePeriodDays,
             CancellationToken cancellationToken)
         {
+            // Regardless of whether it is theoretically possible for internal lifecycle artifacts to reach a public-
+            // facing registry, in the event that both an internal and a public lifecycle artifact refer to the same
+            // image, we must only consider the user-facing EOL date when determining whether to clean up an image.
+            // Internal EOL dates may be intentionally incorrect.
             LifecycleArtifact? lifecycleArtifact = await _lifecycleMetadataService.GetLatestLifecycleArtifactAsync(
                 $"{manifest.RegistryLoginServer}/{manifest.RepositoryName}@{manifest.Digest}",
-                includeInternal: true,
+                includeInternal: false,
                 cancellationToken);
 
             var gracePeriod = TimeSpan.FromDays(eolGracePeriodDays);

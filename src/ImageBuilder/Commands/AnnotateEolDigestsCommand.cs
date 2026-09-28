@@ -96,7 +96,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (!_existingAnnotationImageDigests.IsEmpty || !_failedAnnotationImageDigests.IsEmpty)
             {
                 throw new InvalidOperationException(
-                    $"Some digest annotations failed or were skipped due to existing non-matching EOL date annotations (failed: {_failedAnnotationImageDigests.Count}, skipped: {_existingAnnotationImageDigests.Count}).");
+                    $"Some digest annotations failed or were skipped due to existing non-matching EOL date annotations"
+                        + $" (failed: {_failedAnnotationImageDigests.Count}, skipped:"
+                        + $" {_existingAnnotationImageDigests.Count}).");
             }
 
             string annotationDigests = string.Join(Environment.NewLine, _createdAnnotationDigests.Order());

@@ -30,7 +30,7 @@ public interface ILifecycleMetadataService
     /// </summary>
     /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
     /// <param name="date">The end-of-life date to set.</param>
-    /// <param name="isInternal">
+    /// <param name="markAsInternal">
     /// Whether to mark the lifecycle artifact as internal-only, which prevents it from being published.
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -38,6 +38,6 @@ public interface ILifecycleMetadataService
     Task<LifecycleArtifact?> AnnotateEolDigestAsync(
         string digest,
         DateOnly date,
-        bool isInternal,
+        bool markAsInternal,
         CancellationToken cancellationToken);
 }

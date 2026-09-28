@@ -18,8 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 /// <summary>
 /// Annotates unsupported images with EOL lifecycle artifacts. The <c>published</c> subcommand annotates published
-/// images that were replaced or removed. The <c>all</c> subcommand annotates every image in a registry with
-/// internal-only annotations, which keeps vulnerability scanning actionable without leaking EOL dates publicly.
+/// images that were replaced or removed. The <c>all</c> subcommand annotates every non-referrer artifact in a
+/// registry. Both support <c>--mark-as-internal</c> to keep lifecycle artifacts from being copied when publishing.
 /// </summary>
 public class AttachLifecycleMetadataCommand(
     ILogger<AttachLifecycleMetadataCommand> logger,
@@ -46,7 +46,7 @@ public class AttachLifecycleMetadataCommand(
                 name: "all",
                 description: "Attaches EOL lifecycle metadata to every non-referrer artifact in the registry",
                 options: allOptions,
-                run: ct => AttachToAllAsync(allOptions.RegistryOptions.Registry, allOptions.IsDryRun, ct)),
+                run: ct => AttachToAllAsync(allOptions, ct)),
         };
     }
 
@@ -85,7 +85,7 @@ public class AttachLifecycleMetadataCommand(
         IReadOnlyList<string> createdAnnotationDigests =
             await AttachLifecycleMetadataAsync(
                 eolDigests,
-                isInternal: false,
+                options.MarkAsInternal,
                 cancellationToken);
 
         if (options.WaitForIngestion)
@@ -100,21 +100,20 @@ public class AttachLifecycleMetadataCommand(
         }
     }
 
-    public async Task AttachToAllAsync(string registry, bool isDryRun, CancellationToken cancellationToken)
+    public async Task AttachToAllAsync(AttachLifecycleMetadataOptions options, CancellationToken cancellationToken)
     {
-        if (isDryRun)
-        {
-            logger.LogInformation(
-                "(Dry run) Skipping EOL annotation of images in {Registry}.",
-                registry);
+        string registry = options.RegistryOptions.Registry;
 
+        if (options.IsDryRun)
+        {
+            logger.LogInformation("(Dry run) Skipping EOL annotation of images in {Registry}.", registry);
             return;
         }
 
         IReadOnlyList<string> eolDigests =
             await GetRegistryNonReferrerDigestsAsync(registry, _ => true, cancellationToken);
 
-        await AttachLifecycleMetadataAsync(eolDigests, isInternal: true, cancellationToken);
+        await AttachLifecycleMetadataAsync(eolDigests, options.MarkAsInternal, cancellationToken);
     }
 
     /// <summary>
@@ -123,7 +122,7 @@ public class AttachLifecycleMetadataCommand(
     /// </summary>
     private async Task<IReadOnlyList<string>> AttachLifecycleMetadataAsync(
         IReadOnlyList<string> eolDigests,
-        bool isInternal,
+        bool markAsInternal,
         CancellationToken cancellationToken)
     {
         DateOnly eolDate = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -135,7 +134,7 @@ public class AttachLifecycleMetadataCommand(
             // Internal annotations only suppress vulnerability scanning, so any existing lifecycle artifact is
             // enough. Public annotations must not be skipped because of an internal one.
             LifecycleArtifact? existingArtifact = await lifecycleMetadataService
-                .GetLatestLifecycleArtifactAsync(digest, includeInternal: isInternal, ct);
+                .GetLatestLifecycleArtifactAsync(digest, includeInternal: markAsInternal, ct);
 
             if (existingArtifact is not null)
             {
@@ -144,13 +143,13 @@ public class AttachLifecycleMetadataCommand(
             }
 
             logger.LogInformation(
-                "Annotating EOL for digest '{Digest}', date '{EolDate}', internal '{IsInternal}'",
+                "Annotating EOL for digest '{Digest}', date '{EolDate}', internal '{MarkAsInternal}'",
                 digest,
                 eolDate,
-                isInternal);
+                markAsInternal);
 
             LifecycleArtifact? createdArtifact = await lifecycleMetadataService
-                .AnnotateEolDigestAsync(digest, eolDate, isInternal, ct);
+                .AnnotateEolDigestAsync(digest, eolDate, markAsInternal, ct);
 
             if (createdArtifact is null)
             {

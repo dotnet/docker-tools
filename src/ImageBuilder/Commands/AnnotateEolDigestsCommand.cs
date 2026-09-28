@@ -128,7 +128,7 @@ public class AnnotateEolDigestsCommand(
                 eolDate);
 
             LifecycleArtifact? createdArtifact = await lifecycleMetadataService
-                .AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, isInternal: false, cancellationToken);
+                .AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, markAsInternal: false, cancellationToken);
 
             if (createdArtifact is not null)
             {

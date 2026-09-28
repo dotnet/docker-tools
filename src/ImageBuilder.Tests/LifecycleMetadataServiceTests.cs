@@ -112,7 +112,7 @@ public class LifecycleMetadataServiceTests
     {
         LifecycleMetadataService service = CreateService(
             CreateReferrer("public", created: "2026-01-01T00:00:00Z", endOfLife: "2026-01-01"),
-            CreateReferrer("internal", created: "2026-02-01T00:00:00Z", endOfLife: "2026-01-01", isInternal: true));
+            CreateReferrer("internal", created: "2026-02-01T00:00:00Z", endOfLife: "2026-01-01", markAsInternal: true));
 
         LifecycleArtifact? result =
             await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal, CancellationToken);
@@ -125,7 +125,7 @@ public class LifecycleMetadataServiceTests
     public async Task GetLatestLifecycleArtifactAsync_OnlyInternalArtifacts_ExcludingInternal_ReturnsNull()
     {
         LifecycleMetadataService service = CreateService(
-            CreateReferrer("internal", created: "2026-01-01T00:00:00Z", endOfLife: "2026-01-01", isInternal: true));
+            CreateReferrer("internal", created: "2026-01-01T00:00:00Z", endOfLife: "2026-01-01", markAsInternal: true));
 
         LifecycleArtifact? result =
             await service.GetLatestLifecycleArtifactAsync(Digest, includeInternal: false, CancellationToken);
@@ -136,7 +136,7 @@ public class LifecycleMetadataServiceTests
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task AnnotateEolDigestAsync_AttachesLifecycleArtifact(bool isInternal)
+    public async Task AnnotateEolDigestAsync_AttachesLifecycleArtifact(bool markAsInternal)
     {
         IDictionary<string, string>? attachedAnnotations = null;
         Mock<IOrasService> orasServiceMock = new();
@@ -151,13 +151,13 @@ public class LifecycleMetadataServiceTests
 
         DateTimeOffset before = DateTimeOffset.UtcNow;
         LifecycleArtifact? result = await service.AnnotateEolDigestAsync(
-            Digest, new DateOnly(2026, 5, 22), isInternal, CancellationToken);
+            Digest, new DateOnly(2026, 5, 22), markAsInternal, CancellationToken);
         DateTimeOffset after = DateTimeOffset.UtcNow;
 
         result.ShouldNotBeNull();
         result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:lifecycle");
         result.Referrer.ArtifactType.ShouldBe(OciArtifactType.Lifecycle);
-        result.Referrer.IsInternal.ShouldBe(isInternal);
+        result.Referrer.IsInternal.ShouldBe(markAsInternal);
         DateTimeOffset? created = result.Referrer.Created;
         created.ShouldNotBeNull();
         created.Value.ShouldBeInRange(before, after);
@@ -179,7 +179,7 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         LifecycleArtifact? result = await service.AnnotateEolDigestAsync(
-            Digest, new DateOnly(2026, 5, 22), isInternal: false, CancellationToken);
+            Digest, new DateOnly(2026, 5, 22), markAsInternal: false, CancellationToken);
 
         result.ShouldBeNull();
     }
@@ -191,7 +191,7 @@ public class LifecycleMetadataServiceTests
         string artifactType = OciArtifactType.Lifecycle,
         string? created = null,
         string? endOfLife = null,
-        bool isInternal = false)
+        bool markAsInternal = false)
     {
         Dictionary<string, string> annotations = [];
         if (created is not null)
@@ -204,7 +204,7 @@ public class LifecycleMetadataServiceTests
             annotations[LifecycleAnnotations.EndOfLife] = endOfLife;
         }
 
-        if (isInternal)
+        if (markAsInternal)
         {
             annotations[ImageBuilderAnnotations.Internal] = "true";
         }

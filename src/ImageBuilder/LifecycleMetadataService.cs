@@ -37,7 +37,7 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
     public async Task<LifecycleArtifact?> AnnotateEolDigestAsync(
         string digest,
         DateOnly date,
-        bool isInternal,
+        bool markAsInternal,
         CancellationToken cancellationToken)
     {
         try
@@ -49,7 +49,7 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
                 [OciAnnotations.ImageCreated] = DateTimeOffset.UtcNow.ToString("o")
             };
 
-            if (isInternal)
+            if (markAsInternal)
             {
                 annotations[ImageBuilderAnnotations.Internal] = "true";
             }

@@ -15,8 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class AttachLifecycleMetadataOptions : Options
 {
     public RegistryOptions RegistryOptions { get; set; } = new();
+    public bool MarkAsInternal { get; set; }
 
     private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
+
+    private static readonly Option<bool> s_markAsInternalOption = new("--mark-as-internal")
+    {
+        Description = "Mark lifecycle metadata as internal-only so it is never copied when publishing"
+    };
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
@@ -24,10 +30,17 @@ public class AttachLifecycleMetadataOptions : Options
         .._registryOptionsBuilder.GetCliArguments(),
     ];
 
+    public override IEnumerable<Option> GetCliOptions() =>
+    [
+        ..base.GetCliOptions(),
+        s_markAsInternalOption,
+    ];
+
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
         _registryOptionsBuilder.Bind(result, RegistryOptions);
+        MarkAsInternal = result.GetValue(s_markAsInternalOption);
     }
 }
 

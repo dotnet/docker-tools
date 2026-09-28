@@ -13,8 +13,10 @@ The publish job now runs a single "Attach Lifecycle Metadata" step instead of th
 
 - `published` annotates images that are no longer in the new image info file, and waits for MAR
   ingestion when `--wait-for-ingestion` is passed.
-- `all` annotates every image in a registry with internal-only annotations
-  (`vnd.microsoft.dotnet.imagebuilder.internal=true`), which are never copied when publishing.
+- `all` annotates every non-referrer artifact in a registry.
+- Both subcommands create public lifecycle metadata by default. Pass `--mark-as-internal` to add
+  `vnd.microsoft.dotnet.imagebuilder.internal=true`, which prevents copying the artifact when publishing.
+  The cleanup pipeline uses `all --mark-as-internal` to keep its lifecycle metadata internal-only.
 
 - The `generateEolAnnotationDataExtraOptions` variable was removed.
 - The publish artifact no longer contains `eol-annotation-data/` or `annotation-digests/`.

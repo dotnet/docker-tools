@@ -1052,7 +1052,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AttachLifecycleMetadata_Published_WaitsForCreatedAnnotations()
+        [DataRow("", false)]
+        [DataRow("--mark-as-internal", true)]
+        [DataRow("--mark-as-internal false", false)]
+        public async Task AttachLifecycleMetadata_Published_WaitsForCreatedAnnotations(string internalOption, bool markAsInternal)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -1071,13 +1074,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSingleImageContentClientFactory(repo, "sha256:new"),
                 ingestionReporter: ingestionReporterMock.Object);
 
-            UnsupportedLifecycleMetadataOptions options = CreatePublishedOptions(oldImageInfoPath, newImageInfoPath);
-            options.WaitForIngestion = true;
-            await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
+            var parseResult = command.GetCliCommand().Parse(
+                $"published {AcrName} {DefaultRepoPrefix} \"{oldImageInfoPath}\" \"{newImageInfoPath}\""
+                + $" --wait-for-ingestion --no-version-logging {internalOption}");
+            parseResult.Errors.ShouldBeEmpty();
+            (await parseResult.InvokeAsync(cancellationToken: TestContext?.CancellationToken ?? default)).ShouldBe(0);
 
             string newDigest = DockerHelper.GetImageName(AcrName, repo, digest: "sha256:new");
             _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
-                newDigest, _globalDate, false, It.IsAny<CancellationToken>()));
+                newDigest, _globalDate, markAsInternal, It.IsAny<CancellationToken>()));
+            _lifecycleMetadataServiceMock.Verify(o => o.GetLatestLifecycleArtifactAsync(
+                newDigest, markAsInternal, It.IsAny<CancellationToken>()));
             ingestionReporterMock.Verify(r => r.ReportImageStatusesAsync(
                 It.IsAny<IServiceConnection>(),
                 It.Is<IEnumerable<DigestInfo>>(digests =>
@@ -1089,7 +1096,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AttachLifecycleMetadata_All_AnnotatesInternalAndSkipsExistingInternal()
+        [DataRow("", false)]
+        [DataRow("--mark-as-internal", true)]
+        [DataRow("--mark-as-internal false", false)]
+        public async Task AttachLifecycleMetadata_All_UsesInternalOption(string internalOption, bool markAsInternal)
         {
             AttachLifecycleMetadataCommand command = InitializeCommand(
                 CreateAcrClientFactory(AcrName, CreateAcrClientMock(
@@ -1115,12 +1125,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetLatestLifecycleArtifactAsync(existingDigest, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{existingDigest}-lifecycle"));
 
-            await command.AttachToAllAsync(AcrName, isDryRun: false, TestContext?.CancellationToken ?? default);
+            var parseResult = command.GetCliCommand().Parse(
+                $"all {AcrName} {DefaultRepoPrefix} --no-version-logging {internalOption}");
+            parseResult.Errors.ShouldBeEmpty();
+            (await parseResult.InvokeAsync(cancellationToken: TestContext?.CancellationToken ?? default)).ShouldBe(0);
 
             string newDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "sha256:new");
-            _annotatedDigests.ShouldBe([newDigest]);
+            _annotatedDigests.ShouldBe(
+                markAsInternal ? [newDigest] : [newDigest, existingDigest], ignoreOrder: true);
             _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
-                newDigest, _globalDate, true, It.IsAny<CancellationToken>()));
+                newDigest, _globalDate, markAsInternal, It.IsAny<CancellationToken>()));
+            _lifecycleMetadataServiceMock.Verify(o => o.GetLatestLifecycleArtifactAsync(
+                existingDigest, markAsInternal, It.IsAny<CancellationToken>()));
         }
 
         [TestMethod]
@@ -1131,7 +1147,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             AttachLifecycleMetadataCommand command = InitializeCommand(
                 registryClientFactory.Object, registryContentClientFactory.Object);
 
-            await command.AttachToAllAsync(AcrName, isDryRun: true, TestContext?.CancellationToken ?? default);
+            AttachLifecycleMetadataOptions options = new()
+            {
+                RegistryOptions = new() { Registry = AcrName },
+                IsDryRun = true
+            };
+
+            await command.AttachToAllAsync(options, TestContext?.CancellationToken ?? default);
 
             registryClientFactory.VerifyNoOtherCalls();
             registryContentClientFactory.VerifyNoOtherCalls();
@@ -1147,8 +1169,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSingleImageContentClientFactory("repo1", "sha256:a"),
                 annotationSucceeds: false);
 
+            AttachLifecycleMetadataOptions options = new()
+            {
+                RegistryOptions = new() { Registry = AcrName }
+            };
+
             await Should.ThrowAsync<InvalidOperationException>(
-                () => command.AttachToAllAsync(AcrName, isDryRun: false, TestContext?.CancellationToken ?? default));
+                () => command.AttachToAllAsync(options, TestContext?.CancellationToken ?? default));
         }
 
         private AttachLifecycleMetadataCommand InitializeCommand(

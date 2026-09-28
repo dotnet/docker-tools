@@ -13,4 +13,5 @@ steps:
         attachLifecycleMetadata all
         '${{ parameters.acr.server }}'
         '${{ parameters.acr.repoPrefix }}'
+        --mark-as-internal
         $(dryRunArg)

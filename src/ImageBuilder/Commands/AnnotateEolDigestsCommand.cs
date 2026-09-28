@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -52,17 +51,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 registryName: Options.AcrName,
                 cancellationToken);
 
-            WriteNonEmptySummaryForImageDigests(_skippedAnnotationImageDigests,
-                "The following image digests were skipped because they have existing annotations with matching EOL dates.");
+            if (!_skippedAnnotationImageDigests.IsEmpty)
+            {
+                string skippedJson = JsonSerializer.Serialize(
+                    new EolAnnotationsData(eolDigests: [.. _skippedAnnotationImageDigests]), s_jsonSerializerOptions);
 
-            WriteNonEmptySummaryForImageDigests(_existingAnnotationImageDigests,
-                "The following image digests were skipped because they have existing annotations with non-matching EOL dates. These need to be deleted from MAR before they can be re-annotated.");
+                logger.LogInformation(
+                    "The following image digests were skipped because they have existing annotations"
+                        + " with matching EOL dates:\n{ImageDigests}",
+                    skippedJson);
+            }
 
-            WriteNonEmptySummaryForAnnotationDigests(_existingAnnotationDigests,
-                "These are the digests of the annotations with the non-matching EOL dates. This JSON can be used as input for the bulk deletion in MAR.");
+            if (!_existingAnnotationImageDigests.IsEmpty)
+            {
+                string existingJson = JsonSerializer.Serialize(
+                    new EolAnnotationsData(eolDigests: [.. _existingAnnotationImageDigests]), s_jsonSerializerOptions);
 
-            WriteNonEmptySummaryForImageDigests(_failedAnnotationImageDigests,
-                "The following digests had annotation failures:");
+                logger.LogInformation(
+                    "The following image digests were skipped because they have existing annotations"
+                        + " with non-matching EOL dates. These need to be deleted from MAR before they can be"
+                        + " re-annotated:\n{ImageDigests}",
+                    existingJson);
+            }
+
+            if (!_existingAnnotationDigests.IsEmpty)
+            {
+                string bulkDeletionJson = JsonSerializer.Serialize(
+                    new BulkDeletionDescription { Digests = [.. _existingAnnotationDigests] }, s_jsonSerializerOptions);
+
+                logger.LogInformation(
+                    "These are the digests of the annotations with the non-matching EOL dates."
+                        + " This JSON can be used as input for the bulk deletion in MAR:\n{AnnotationDigests}",
+                    bulkDeletionJson);
+            }
+
+            if (!_failedAnnotationImageDigests.IsEmpty)
+            {
+                string failedJson = JsonSerializer.Serialize(
+                    new EolAnnotationsData(eolDigests: [.. _failedAnnotationImageDigests]), s_jsonSerializerOptions);
+
+                logger.LogError("The following digests had annotation failures:\n{ImageDigests}", failedJson);
+            }
 
             if (!_existingAnnotationImageDigests.IsEmpty || !_failedAnnotationImageDigests.IsEmpty)
             {
@@ -79,35 +108,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             artifactService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
         }
 
-        private void WriteNonEmptySummaryForAnnotationDigests(IEnumerable<string> annotationDigests, string message)
-        {
-            if (annotationDigests.Any())
-            {
-                WriteNonEmptySummary(new BulkDeletionDescription { Digests = [.. annotationDigests] }, message);
-            }
-        }
-
-        private void WriteNonEmptySummaryForImageDigests(IEnumerable<EolDigestData> eolDigests, string message)
-        {
-            if (eolDigests.Any())
-            {
-                WriteNonEmptySummary(new EolAnnotationsData(eolDigests: [.. eolDigests]), message);
-            }
-        }
-
-        private void WriteNonEmptySummary(object value, string message)
-        {
-            logger.LogInformation(message);
-            logger.LogInformation(string.Empty);
-            logger.LogInformation(JsonSerializer.Serialize(value, s_jsonSerializerOptions));
-            logger.LogInformation(string.Empty);
-        }
-
         private async Task AnnotateDigestAsync(EolDigestData digestData, DateOnly? globalEolDate, CancellationToken cancellationToken)
         {
             if (Options.IsDryRun)
             {
-                logger.LogInformation($"[DRY RUN] Set EOL annotation for digest '{digestData.Digest}'");
+                logger.LogInformation("[DRY RUN] Set EOL annotation for digest '{Digest}'", digestData.Digest);
                 return;
             }
 
@@ -115,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (eolDate is null)
             {
                 _failedAnnotationImageDigests.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
-                logger.LogError($"EOL date is not specified for digest '{digestData.Digest}'.");
+                logger.LogError("EOL date is not specified for digest '{Digest}'.", digestData.Digest);
                 return;
             }
 
@@ -124,7 +129,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (existingArtifact is null)
             {
-                logger.LogInformation($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
+                logger.LogInformation(
+                    "Annotating EOL for digest '{Digest}', date '{EolDate}'",
+                    digestData.Digest,
+                    eolDate);
 
                 LifecycleArtifact? createdArtifact = await lifecycleMetadataService
                     .AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, isInternal: false, cancellationToken);
@@ -144,12 +152,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 if (existingArtifact.EndOfLifeDate == eolDate)
                 {
-                    logger.LogInformation($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
+                    logger.LogInformation(
+                        "Skipping digest '{Digest}' because it is already annotated with a matching EOL date.",
+                        digestData.Digest);
+
                     _skippedAnnotationImageDigests.Add(digestData);
                 }
                 else
                 {
-                    logger.LogError($"Could not annotate digest '{digestData.Digest}' because it has an existing non-matching EOL date: {eolDate}.");
+                    logger.LogError(
+                        "Could not annotate digest '{Digest}' because its existing EOL date '{ExistingEolDate}'"
+                            + " does not match '{EolDate}'.",
+                        digestData.Digest,
+                        existingArtifact.EndOfLifeDate,
+                        eolDate);
+
                     _existingAnnotationImageDigests.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
 
                     // Reference is a fully-qualified digest name. We want to remove the registry and repo prefix from

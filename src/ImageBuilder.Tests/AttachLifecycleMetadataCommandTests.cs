@@ -23,7 +23,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     [TestClass]
-    public class AnnotateEolImagesCommandTests
+    public class AttachLifecycleMetadataCommandTests
     {
         #nullable enable annotations
         public TestContext? TestContext { get; set; }
@@ -38,7 +38,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private readonly Mock<ILifecycleMetadataService> _lifecycleMetadataServiceMock = new();
 
         [TestMethod]
-        public async Task AnnotateEolImages_RepoRemoved()
+        public void AttachLifecycleMetadata_CliNameAndSubcommands()
+        {
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(),
+                Mock.Of<IAcrContentClientFactory>());
+
+            var cliCommand = command.GetCliCommand();
+
+            cliCommand.Name.ShouldBe("attachLifecycleMetadata");
+            cliCommand.Subcommands.Select(subcommand => subcommand.Name).ShouldBe(["published", "all"]);
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_RepoRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -174,7 +187,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -194,7 +207,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_ImageRemoved()
+        public async Task AttachLifecycleMetadata_ImageRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -299,7 +312,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -318,7 +331,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_ExcludeDigestsThatAreAlreadyAnnotated()
+        public async Task AttachLifecycleMetadata_ExcludeDigestsThatAreAlreadyAnnotated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -425,7 +438,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory,
@@ -445,7 +458,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_DockerfileInSeveralImages_OnlyOneUpdated()
+        public async Task AttachLifecycleMetadata_DockerfileInSeveralImages_OnlyOneUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -545,7 +558,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -563,7 +576,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_ImageAndPlatformUpdated()
+        public async Task AttachLifecycleMetadata_ImageAndPlatformUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -638,7 +651,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -656,7 +669,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_JustOnePlatformUpdated()
+        public async Task AttachLifecycleMetadata_JustOnePlatformUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -737,7 +750,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -754,7 +767,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_DoNotReturnAnnotationDigest()
+        public async Task AttachLifecycleMetadata_DoNotReturnAnnotationDigest()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -838,7 +851,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -855,7 +868,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_PlatformRemoved()
+        public async Task AttachLifecycleMetadata_PlatformRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
@@ -934,7 +947,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -951,7 +964,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_ManifestDeletedDuringEnumeration_Skipped()
+        public async Task AttachLifecycleMetadata_ManifestDeletedDuringEnumeration_Skipped()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -1021,7 +1034,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [contentClientMock]);
 
-            AnnotateEolImagesCommand command =
+            AttachLifecycleMetadataCommand command =
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
@@ -1039,7 +1052,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_Published_WaitsForCreatedAnnotations()
+        public async Task AttachLifecycleMetadata_Published_WaitsForCreatedAnnotations()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -1052,13 +1065,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string repo = $"{DefaultRepoPrefix}repo1";
             Mock<IMarImageIngestionReporter> ingestionReporterMock = new();
-            AnnotateEolImagesCommand command = InitializeCommand(
+            AttachLifecycleMetadataCommand command = InitializeCommand(
                 CreateAcrClientFactory(AcrName, CreateAcrClientMock(
                     [CreateContainerRepository(repo, manifestProperties: [CreateArtifactManifestProperties(digest: "sha256:new")])]).Object),
                 CreateSingleImageContentClientFactory(repo, "sha256:new"),
                 ingestionReporter: ingestionReporterMock.Object);
 
-            AnnotatePublishedEolImagesOptions options = CreatePublishedOptions(oldImageInfoPath, newImageInfoPath);
+            AttachPublishedLifecycleMetadataOptions options = CreatePublishedOptions(oldImageInfoPath, newImageInfoPath);
             options.WaitForIngestion = true;
             await command.AnnotatePublishedAsync(options, TestContext?.CancellationToken ?? default);
 
@@ -1076,9 +1089,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_All_AnnotatesInternalAndSkipsExistingInternal()
+        public async Task AttachLifecycleMetadata_All_AnnotatesInternalAndSkipsExistingInternal()
         {
-            AnnotateEolImagesCommand command = InitializeCommand(
+            AttachLifecycleMetadataCommand command = InitializeCommand(
                 CreateAcrClientFactory(AcrName, CreateAcrClientMock(
                     [
                         CreateContainerRepository("repo1",
@@ -1111,9 +1124,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task AnnotateEolImages_AnnotationFails_Throws()
+        public async Task AttachLifecycleMetadata_AnnotationFails_Throws()
         {
-            AnnotateEolImagesCommand command = InitializeCommand(
+            AttachLifecycleMetadataCommand command = InitializeCommand(
                 CreateAcrClientFactory(AcrName, CreateAcrClientMock(
                     [CreateContainerRepository("repo1", manifestProperties: [CreateArtifactManifestProperties(digest: "sha256:a")])]).Object),
                 CreateSingleImageContentClientFactory("repo1", "sha256:a"),
@@ -1123,7 +1136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 () => command.AnnotateAllAsync(CreateAllOptions(), TestContext?.CancellationToken ?? default));
         }
 
-        private AnnotateEolImagesCommand InitializeCommand(
+        private AttachLifecycleMetadataCommand InitializeCommand(
             IAcrClientFactory registryClientFactory,
             IAcrContentClientFactory registryContentClientFactory,
             IEnumerable<string> annotatedDigests = null,
@@ -1146,8 +1159,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     return annotationSucceeds ? LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle") : null;
                 });
 
-            return new AnnotateEolImagesCommand(
-                logger: Mock.Of<ILogger<AnnotateEolImagesCommand>>(),
+            return new AttachLifecycleMetadataCommand(
+                logger: Mock.Of<ILogger<AttachLifecycleMetadataCommand>>(),
                 acrClientFactory: registryClientFactory,
                 acrContentClientFactory: registryContentClientFactory,
                 lifecycleMetadataService: _lifecycleMetadataServiceMock.Object,
@@ -1156,7 +1169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 artifactService: TestHelper.CreateArtifactService(Path.GetTempPath()));
         }
 
-        private static AnnotatePublishedEolImagesOptions CreatePublishedOptions(
+        private static AttachPublishedLifecycleMetadataOptions CreatePublishedOptions(
             string oldImageInfoPath,
             string newImageInfoPath) =>
             new()
@@ -1166,7 +1179,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 RegistryOptions = new() { RepoPrefix = DefaultRepoPrefix, Registry = AcrName }
             };
 
-        private static AnnotateEolImagesOptions CreateAllOptions() =>
+        private static AttachLifecycleMetadataOptions CreateAllOptions() =>
             new() { RegistryOptions = new() { Registry = AcrName } };
 
         private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>

@@ -6,11 +6,11 @@ parameters:
 steps:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
-      displayName: "Annotate EOL Images (${{ parameters.acr.server }})"
+      displayName: "Attach Lifecycle Metadata (${{ parameters.acr.server }})"
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-
-        annotateEolImages all
+        attachLifecycleMetadata all
         '${{ parameters.acr.server }}'
         '${{ parameters.acr.repoPrefix }}'
         $(dryRunArg)

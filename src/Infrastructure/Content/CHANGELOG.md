@@ -7,9 +7,9 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 ## 2026-09-28: Combined EOL annotation command
 
 The `generateEolAnnotationDataForPublish` and `generateEolAnnotationDataForAllImages` commands
-are replaced by the `annotateEolImages published` and `annotateEolImages all` subcommands. Each
+are replaced by the `attachLifecycleMetadata published` and `attachLifecycleMetadata all` subcommands. Each
 finds unsupported images and annotates the ones that don't already have a lifecycle artifact.
-The publish job now runs a single "Annotate EOL Images" step instead of three.
+The publish job now runs a single "Attach Lifecycle Metadata" step instead of three.
 
 - `published` annotates images that are no longer in the new image info file, and waits for MAR
   ingestion when `--wait-for-ingestion` is passed.

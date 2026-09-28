@@ -120,7 +120,7 @@ public static class ImageBuilder
 
         // Commands
         builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
-        builder.Services.AddSingleton<ICommand, AnnotateEolImagesCommand>();
+        builder.Services.AddSingleton<ICommand, AttachLifecycleMetadataCommand>();
         builder.Services.AddSingleton<ICommand, BuildCommand>();
         builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
         builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();

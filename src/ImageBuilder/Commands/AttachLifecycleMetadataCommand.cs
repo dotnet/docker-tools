@@ -21,8 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// images that were replaced or removed. The <c>all</c> subcommand annotates every image in a registry with
 /// internal-only annotations, which keeps vulnerability scanning actionable without leaking EOL dates publicly.
 /// </summary>
-public class AnnotateEolImagesCommand(
-    ILogger<AnnotateEolImagesCommand> logger,
+public class AttachLifecycleMetadataCommand(
+    ILogger<AttachLifecycleMetadataCommand> logger,
     IAcrClientFactory acrClientFactory,
     IAcrContentClientFactory acrContentClientFactory,
     ILifecycleMetadataService lifecycleMetadataService,
@@ -32,8 +32,8 @@ public class AnnotateEolImagesCommand(
 {
     public Command GetCliCommand()
     {
-        AnnotatePublishedEolImagesOptions publishedOptions = new();
-        AnnotateEolImagesOptions allOptions = new();
+        AttachPublishedLifecycleMetadataOptions publishedOptions = new();
+        AttachLifecycleMetadataOptions allOptions = new();
 
         return new Command(
             name: this.GetCommandName(),
@@ -53,7 +53,7 @@ public class AnnotateEolImagesCommand(
     }
 
     public async Task AnnotatePublishedAsync(
-        AnnotatePublishedEolImagesOptions options,
+        AttachPublishedLifecycleMetadataOptions options,
         CancellationToken cancellationToken)
     {
         if (options.IsDryRun)
@@ -81,7 +81,7 @@ public class AnnotateEolImagesCommand(
         }
     }
 
-    public async Task AnnotateAllAsync(AnnotateEolImagesOptions options, CancellationToken cancellationToken)
+    public async Task AnnotateAllAsync(AttachLifecycleMetadataOptions options, CancellationToken cancellationToken)
     {
         if (options.IsDryRun)
         {
@@ -162,7 +162,7 @@ public class AnnotateEolImagesCommand(
     /// Gets the registry digests of images that are no longer described by the new image info file.
     /// </summary>
     private async Task<IReadOnlyList<string>> GetUnsupportedImageDigestsAsync(
-        AnnotatePublishedEolImagesOptions options,
+        AttachPublishedLifecycleMetadataOptions options,
         CancellationToken cancellationToken)
     {
         string oldImageInfoPath = artifactService.ResolvePath(options.OldImageInfoPath);

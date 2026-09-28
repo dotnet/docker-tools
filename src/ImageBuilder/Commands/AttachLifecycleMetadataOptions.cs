@@ -10,9 +10,9 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 /// <summary>
-/// Options shared by all <see cref="AnnotateEolImagesCommand"/> subcommands.
+/// Options shared by all <see cref="AttachLifecycleMetadataCommand"/> subcommands.
 /// </summary>
-public class AnnotateEolImagesOptions : Options
+public class AttachLifecycleMetadataOptions : Options
 {
     public RegistryOptions RegistryOptions { get; set; } = new();
 
@@ -31,7 +31,7 @@ public class AnnotateEolImagesOptions : Options
     }
 }
 
-public class AnnotatePublishedEolImagesOptions : AnnotateEolImagesOptions
+public class AttachPublishedLifecycleMetadataOptions : AttachLifecycleMetadataOptions
 {
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;

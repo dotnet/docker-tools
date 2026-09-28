@@ -14,12 +14,13 @@ using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions>
+    public class AnnotateEolDigestsCommand(
+        ILogger<AnnotateEolDigestsCommand> logger,
+        ILifecycleMetadataService lifecycleMetadataService,
+        IRegistryCredentialsProvider registryCredentialsProvider,
+        IArtifactService artifactService)
+            : Command<AnnotateEolDigestsOptions>
     {
-        private readonly ILogger<AnnotateEolDigestsCommand> _logger;
-        private readonly ILifecycleMetadataService _lifecycleMetadataService;
-        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-        private readonly IArtifactService _artifactService;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _existingAnnotationImageDigests = [];
@@ -32,27 +33,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             WriteIndented = true
         };
 
-        public AnnotateEolDigestsCommand(
-            ILogger<AnnotateEolDigestsCommand> logger,
-            ILifecycleMetadataService lifecycleMetadataService,
-            IRegistryCredentialsProvider registryCredentialsProvider,
-            IArtifactService artifactService)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
-            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
-            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-        }
-
         protected override string Description => "Annotates EOL digests in Docker Registry";
 
         public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            string eolDigestsListPath = _artifactService.ResolvePath(Options.EolDigestsListPath);
+            string eolDigestsListPath = artifactService.ResolvePath(Options.EolDigestsListPath);
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(eolDigestsListPath);
             DateOnly? globalEolDate = eolAnnotations.EolDate;
 
-            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+            await registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async ct =>
                 {
@@ -87,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 annotationDigests += Environment.NewLine;
             }
 
-            _artifactService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
+            artifactService.WriteAllText(Options.AnnotationDigestsOutputPath, annotationDigests);
         }
 
         private void WriteNonEmptySummaryForAnnotationDigests(IEnumerable<string> annotationDigests, string message)
@@ -108,17 +97,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteNonEmptySummary(object value, string message)
         {
-            _logger.LogInformation(message);
-            _logger.LogInformation(string.Empty);
-            _logger.LogInformation(JsonSerializer.Serialize(value, s_jsonSerializerOptions));
-            _logger.LogInformation(string.Empty);
+            logger.LogInformation(message);
+            logger.LogInformation(string.Empty);
+            logger.LogInformation(JsonSerializer.Serialize(value, s_jsonSerializerOptions));
+            logger.LogInformation(string.Empty);
         }
 
         private async Task AnnotateDigestAsync(EolDigestData digestData, DateOnly? globalEolDate, CancellationToken cancellationToken)
         {
             if (Options.IsDryRun)
             {
-                _logger.LogInformation($"[DRY RUN] Set EOL annotation for digest '{digestData.Digest}'");
+                logger.LogInformation($"[DRY RUN] Set EOL annotation for digest '{digestData.Digest}'");
                 return;
             }
 
@@ -126,18 +115,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (eolDate is null)
             {
                 _failedAnnotationImageDigests.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
-                _logger.LogError($"EOL date is not specified for digest '{digestData.Digest}'.");
+                logger.LogError($"EOL date is not specified for digest '{digestData.Digest}'.");
                 return;
             }
 
-            LifecycleArtifact? existingArtifact = await _lifecycleMetadataService
+            LifecycleArtifact? existingArtifact = await lifecycleMetadataService
                 .GetLatestLifecycleArtifactAsync(digestData.Digest, includeInternal: false, cancellationToken);
 
             if (existingArtifact is null)
             {
-                _logger.LogInformation($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
+                logger.LogInformation($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
 
-                LifecycleArtifact? createdArtifact = await _lifecycleMetadataService
+                LifecycleArtifact? createdArtifact = await lifecycleMetadataService
                     .AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, isInternal: false, cancellationToken);
 
                 if (createdArtifact is not null)
@@ -155,12 +144,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 if (existingArtifact.EndOfLifeDate == eolDate)
                 {
-                    _logger.LogInformation($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
+                    logger.LogInformation($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
                     _skippedAnnotationImageDigests.Add(digestData);
                 }
                 else
                 {
-                    _logger.LogError($"Could not annotate digest '{digestData.Digest}' because it has an existing non-matching EOL date: {eolDate}.");
+                    logger.LogError($"Could not annotate digest '{digestData.Digest}' because it has an existing non-matching EOL date: {eolDate}.");
                     _existingAnnotationImageDigests.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
 
                     // Reference is a fully-qualified digest name. We want to remove the registry and repo prefix from

@@ -31,7 +31,7 @@ public class AttachLifecycleMetadataOptions : Options
     }
 }
 
-public class AttachPublishedLifecycleMetadataOptions : AttachLifecycleMetadataOptions
+public class UnsupportedLifecycleMetadataOptions : AttachLifecycleMetadataOptions
 {
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;

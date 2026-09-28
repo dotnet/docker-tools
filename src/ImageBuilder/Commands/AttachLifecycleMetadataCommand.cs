@@ -32,28 +32,26 @@ public class AttachLifecycleMetadataCommand(
 {
     public Command GetCliCommand()
     {
-        AttachPublishedLifecycleMetadataOptions publishedOptions = new();
+        UnsupportedLifecycleMetadataOptions publishedOptions = new();
         AttachLifecycleMetadataOptions allOptions = new();
 
-        return new Command(
-            name: this.GetCommandName(),
-            description: "Adds lifecycle artifacts to images")
+        return new Command(name: this.GetCommandName(), description: "Attaches lifecycle metadata artifacts to images")
         {
             CommandAction.Create(
                 name: "published",
-                description: "Annotates published images that are no longer in the image info file",
+                description: "Attaches EOL lifecycle metadata to images that were just replaced or removed and are thus no longer supported",
                 options: publishedOptions,
-                run: ct => AnnotatePublishedAsync(publishedOptions, ct)),
+                run: ct => AttachToUnsupportedAsync(publishedOptions, ct)),
             CommandAction.Create(
                 name: "all",
-                description: "Annotates every image in the registry with internal-only EOL annotations",
+                description: "Attaches EOL lifecycle metadata to every non-referrer artifact in the registry",
                 options: allOptions,
-                run: ct => AnnotateAllAsync(allOptions, ct)),
+                run: ct => AttachToAllAsync(allOptions.RegistryOptions.Registry, allOptions.IsDryRun, ct)),
         };
     }
 
-    public async Task AnnotatePublishedAsync(
-        AttachPublishedLifecycleMetadataOptions options,
+    public async Task AttachToUnsupportedAsync(
+        UnsupportedLifecycleMetadataOptions options,
         CancellationToken cancellationToken)
     {
         if (options.IsDryRun)
@@ -65,9 +63,30 @@ public class AttachLifecycleMetadataCommand(
             return;
         }
 
-        IReadOnlyList<string> eolDigests = await GetUnsupportedImageDigestsAsync(options, cancellationToken);
+        string oldImageInfoPath = artifactService.ResolvePath(options.OldImageInfoPath);
+        string newImageInfoPath = artifactService.ResolvePath(options.NewImageInfoPath);
+
+        if (!File.Exists(oldImageInfoPath) && !File.Exists(newImageInfoPath))
+        {
+            logger.LogError("Cannot attach lifecycle metadata because no image info files were provided.");
+            return;
+        }
+
+        ImageArtifactDetails oldImageInfo = ImageInfoHelper.DeserializeImageArtifactDetails(oldImageInfoPath);
+        ImageArtifactDetails newImageInfo = ImageInfoHelper.DeserializeImageArtifactDetails(newImageInfoPath);
+
+        IReadOnlyList<string> eolDigests =
+            await GetUnsupportedImageDigestsAsync(
+                oldImageInfo,
+                newImageInfo,
+                options.RegistryOptions,
+                cancellationToken);
+
         IReadOnlyList<string> createdAnnotationDigests =
-            await AnnotateAsync(eolDigests, isInternal: false, cancellationToken);
+            await AttachLifecycleMetadataAsync(
+                eolDigests,
+                isInternal: false,
+                cancellationToken);
 
         if (options.WaitForIngestion)
         {
@@ -81,28 +100,28 @@ public class AttachLifecycleMetadataCommand(
         }
     }
 
-    public async Task AnnotateAllAsync(AttachLifecycleMetadataOptions options, CancellationToken cancellationToken)
+    public async Task AttachToAllAsync(string registry, bool isDryRun, CancellationToken cancellationToken)
     {
-        if (options.IsDryRun)
+        if (isDryRun)
         {
             logger.LogInformation(
                 "(Dry run) Skipping EOL annotation of images in {Registry}.",
-                options.RegistryOptions.Registry);
+                registry);
 
             return;
         }
 
         IReadOnlyList<string> eolDigests =
-            await GetRegistryImageDigestsAsync(options.RegistryOptions.Registry, _ => true, cancellationToken);
+            await GetRegistryNonReferrerDigestsAsync(registry, _ => true, cancellationToken);
 
-        await AnnotateAsync(eolDigests, isInternal: true, cancellationToken);
+        await AttachLifecycleMetadataAsync(eolDigests, isInternal: true, cancellationToken);
     }
 
     /// <summary>
     /// Annotates each digest that doesn't already have a lifecycle artifact of the same kind, and returns the
     /// digests of the created annotations.
     /// </summary>
-    private async Task<IReadOnlyList<string>> AnnotateAsync(
+    private async Task<IReadOnlyList<string>> AttachLifecycleMetadataAsync(
         IReadOnlyList<string> eolDigests,
         bool isInternal,
         CancellationToken cancellationToken)
@@ -162,36 +181,26 @@ public class AttachLifecycleMetadataCommand(
     /// Gets the registry digests of images that are no longer described by the new image info file.
     /// </summary>
     private async Task<IReadOnlyList<string>> GetUnsupportedImageDigestsAsync(
-        AttachPublishedLifecycleMetadataOptions options,
+        ImageArtifactDetails oldImageInfo,
+        ImageArtifactDetails newImageInfo,
+        RegistryOptions registryOptions,
         CancellationToken cancellationToken)
     {
-        string oldImageInfoPath = artifactService.ResolvePath(options.OldImageInfoPath);
-        string newImageInfoPath = artifactService.ResolvePath(options.NewImageInfoPath);
-
-        if (!File.Exists(oldImageInfoPath) && !File.Exists(newImageInfoPath))
-        {
-            logger.LogInformation("No digests to annotate because no image info files were provided.");
-            return [];
-        }
-
-        ImageArtifactDetails oldImageInfo = ImageInfoHelper.DeserializeImageArtifactDetails(oldImageInfoPath);
-        ImageArtifactDetails newImageInfo = ImageInfoHelper.DeserializeImageArtifactDetails(newImageInfoPath);
-
         // Only query repos described by the image info files, since other repos in the registry may be owned by
         // other image info files. The old image info is included so that repos removed entirely are still in scope.
         HashSet<string> repoNames = newImageInfo.Repos
             .Select(repo => repo.Repo)
             .Union(oldImageInfo.Repos.Select(repo => repo.Repo))
-            .Select(name => options.RegistryOptions.RepoPrefix + name)
+            .Select(name => registryOptions.RepoPrefix + name)
             .ToHashSet();
 
-        IReadOnlyList<string> registryDigests = await GetRegistryImageDigestsAsync(
-            options.RegistryOptions.Registry,
+        IReadOnlyList<string> registryDigests = await GetRegistryNonReferrerDigestsAsync(
+            registryOptions.Registry,
             repoNames.Contains,
             cancellationToken);
 
         HashSet<string> supportedDigests = newImageInfo
-            .ApplyRegistryOverride(options.RegistryOptions)
+            .ApplyRegistryOverride(registryOptions)
             .GetAllDigests()
             .ToHashSet();
 
@@ -202,7 +211,7 @@ public class AttachLifecycleMetadataCommand(
     /// Gets the fully-qualified digests of all images and manifest lists in the matching registry repos,
     /// excluding referrer artifacts.
     /// </summary>
-    private async Task<IReadOnlyList<string>> GetRegistryImageDigestsAsync(
+    private async Task<IReadOnlyList<string>> GetRegistryNonReferrerDigestsAsync(
         string registry,
         Func<string, bool> repoFilter,
         CancellationToken cancellationToken)
@@ -245,7 +254,8 @@ public class AttachLifecycleMetadataCommand(
                             return;
                         }
 
-                        // Never annotate referrers such as existing annotations.
+                        // Do not attach lifecycle metadata to other lifecycle metadata, otherwise
+                        // we risk creating an unbounded number of artifacts.
                         if (!manifestResult.IsReferrer())
                         {
                             string imageName = DockerHelper.GetImageName(
@@ -264,6 +274,6 @@ public class AttachLifecycleMetadataCommand(
     private static DigestInfo ToDigestInfo(string digestReference)
     {
         ImageName name = ImageName.Parse(digestReference);
-        return new DigestInfo(name.Digest!, name.Repo, tags: []);
+        return new DigestInfo(name.Digest, name.Repo, tags: []);
     }
 }

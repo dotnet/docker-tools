@@ -191,7 +191,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -316,7 +316,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -444,7 +444,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryContentClientFactory,
                     // Already annotated, so it should be skipped.
                     annotatedDigests: [armDigest]);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -562,7 +562,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -655,7 +655,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -754,7 +754,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -855,7 +855,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -951,7 +951,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -1038,7 +1038,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.AnnotatePublishedAsync(
+            await command.AttachToUnsupportedAsync(
                 CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
@@ -1071,9 +1071,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSingleImageContentClientFactory(repo, "sha256:new"),
                 ingestionReporter: ingestionReporterMock.Object);
 
-            AttachPublishedLifecycleMetadataOptions options = CreatePublishedOptions(oldImageInfoPath, newImageInfoPath);
+            UnsupportedLifecycleMetadataOptions options = CreatePublishedOptions(oldImageInfoPath, newImageInfoPath);
             options.WaitForIngestion = true;
-            await command.AnnotatePublishedAsync(options, TestContext?.CancellationToken ?? default);
+            await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
 
             string newDigest = DockerHelper.GetImageName(AcrName, repo, digest: "sha256:new");
             _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
@@ -1115,12 +1115,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetLatestLifecycleArtifactAsync(existingDigest, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{existingDigest}-lifecycle"));
 
-            await command.AnnotateAllAsync(CreateAllOptions(), TestContext?.CancellationToken ?? default);
+            await command.AttachToAllAsync(AcrName, isDryRun: false, TestContext?.CancellationToken ?? default);
 
             string newDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "sha256:new");
             _annotatedDigests.ShouldBe([newDigest]);
             _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
                 newDigest, _globalDate, true, It.IsAny<CancellationToken>()));
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_All_DryRun_SkipsRegistryAccess()
+        {
+            Mock<IAcrClientFactory> registryClientFactory = new(MockBehavior.Strict);
+            Mock<IAcrContentClientFactory> registryContentClientFactory = new(MockBehavior.Strict);
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                registryClientFactory.Object, registryContentClientFactory.Object);
+
+            await command.AttachToAllAsync(AcrName, isDryRun: true, TestContext?.CancellationToken ?? default);
+
+            registryClientFactory.VerifyNoOtherCalls();
+            registryContentClientFactory.VerifyNoOtherCalls();
+            _lifecycleMetadataServiceMock.VerifyNoOtherCalls();
         }
 
         [TestMethod]
@@ -1133,7 +1148,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 annotationSucceeds: false);
 
             await Should.ThrowAsync<InvalidOperationException>(
-                () => command.AnnotateAllAsync(CreateAllOptions(), TestContext?.CancellationToken ?? default));
+                () => command.AttachToAllAsync(AcrName, isDryRun: false, TestContext?.CancellationToken ?? default));
         }
 
         private AttachLifecycleMetadataCommand InitializeCommand(
@@ -1169,7 +1184,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 artifactService: TestHelper.CreateArtifactService(Path.GetTempPath()));
         }
 
-        private static AttachPublishedLifecycleMetadataOptions CreatePublishedOptions(
+        private static UnsupportedLifecycleMetadataOptions CreatePublishedOptions(
             string oldImageInfoPath,
             string newImageInfoPath) =>
             new()
@@ -1178,9 +1193,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 NewImageInfoPath = newImageInfoPath,
                 RegistryOptions = new() { RepoPrefix = DefaultRepoPrefix, Registry = AcrName }
             };
-
-        private static AttachLifecycleMetadataOptions CreateAllOptions() =>
-            new() { RegistryOptions = new() { Registry = AcrName } };
 
         private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>
             CreateAcrContentClientFactory(AcrName,

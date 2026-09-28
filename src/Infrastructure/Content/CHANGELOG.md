@@ -4,6 +4,23 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
+## 2026-09-28: Combined EOL annotation command
+
+The `generateEolAnnotationDataForPublish` and `generateEolAnnotationDataForAllImages` commands
+are replaced by the `annotateEolImages published` and `annotateEolImages all` subcommands. Each
+finds unsupported images and annotates the ones that don't already have a lifecycle artifact.
+The publish job now runs a single "Annotate EOL Images" step instead of three.
+
+- `published` annotates images that are no longer in the new image info file, and waits for MAR
+  ingestion when `--wait-for-ingestion` is passed.
+- `all` annotates every image in a registry with internal-only annotations
+  (`vnd.microsoft.dotnet.imagebuilder.internal=true`), which are never copied when publishing.
+
+- The `generateEolAnnotationDataExtraOptions` variable was removed.
+- The publish artifact no longer contains `eol-annotation-data/` or `annotation-digests/`.
+
+---
+
 ## 2026-08-10: Pre-ImageBuilder build customization
 
 Build pipeline templates now accept `customPreImageBuilderBuildSteps`. These steps run after

@@ -4,26 +4,26 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     [TestClass]
-    public class GenerateEolAnnotationDataForPublishTests
+    public class AnnotateEolImagesCommandTests
     {
         #nullable enable annotations
         public TestContext? TestContext { get; set; }
@@ -34,13 +34,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private const string AcrName = "myacr.azurecr.io";
         private const string McrName = "mcr.microsoft.com";
         private readonly DateOnly _globalDate = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        // Additional test scenarios:
-        // *  exclusion of digests which are already annotated
-        // *
+        private readonly ConcurrentBag<string> _annotatedDigests = [];
+        private readonly Mock<ILifecycleMetadataService> _lifecycleMetadataServiceMock = new();
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_RepoRemoved()
+        public async Task AnnotateEolImages_RepoRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -140,8 +138,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
@@ -178,35 +174,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101")) { Tag = "1.0" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102")) { Tag = "1.0" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101")) { Tag = "tag" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")) { Tag = "tag" },
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_ImageRemoved()
+        public async Task AnnotateEolImages_ImageRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -283,8 +271,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
@@ -313,34 +299,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102")) { Tag = "2.0" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64")) { Tag = "2.0" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64")) { Tag = "2.0" },
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_ExcludeDigestsThatAreAlreadyAnnotated()
+        public async Task AnnotateEolImages_ExcludeDigestsThatAreAlreadyAnnotated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -417,8 +395,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
@@ -436,13 +412,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string armDigest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64");
 
-            // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
-            LifecycleArtifact lifecycleArtifact = LifecycleArtifactHelper.CreateLifecycleArtifact($"{armDigest}-lifecycle");
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
-            lifecycleMetadataServiceMock
-                .Setup(o => o.GetLatestLifecycleArtifactAsync(armDigest, false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(lifecycleArtifact);
-
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
                     CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
@@ -456,34 +425,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory,
-                    lifecycleMetadataService: lifecycleMetadataServiceMock.Object);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+                    // Already annotated, so it should be skipped.
+                    annotatedDigests: [armDigest]);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102")) { Tag = "2.0" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64")) { Tag = "2.0" },
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_DockerfileInSeveralImages_OnlyOneUpdated()
+        public async Task AnnotateEolImages_DockerfileInSeveralImages_OnlyOneUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -554,8 +516,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
@@ -585,33 +545,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102")),
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")),
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_ImageAndPlatformUpdated()
+        public async Task AnnotateEolImages_ImageAndPlatformUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -661,8 +613,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
@@ -688,33 +638,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101")),
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101")),
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_JustOnePlatformUpdated()
+        public async Task AnnotateEolImages_JustOnePlatformUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -769,8 +711,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
@@ -797,32 +737,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"))
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_DoNotReturnAnnotationDigest()
+        public async Task AnnotateEolImages_DoNotReturnAnnotationDigest()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -877,8 +809,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
@@ -908,32 +838,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"))
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_PlatformRemoved()
+        public async Task AnnotateEolImages_PlatformRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
@@ -989,8 +911,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
@@ -1014,32 +934,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64")) { Tag = "2.0" },
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
         [TestMethod]
-        public async Task GenerateEolAnnotationData_ManifestDeletedDuringEnumeration_Skipped()
+        public async Task AnnotateEolImages_ManifestDeletedDuringEnumeration_Skipped()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -1082,8 +994,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
             // Registry lists three manifests, but one will return 404 when fetched (simulating concurrent deletion)
             Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
@@ -1111,76 +1021,162 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [contentClientMock]);
 
-            GenerateEolAnnotationDataForPublishCommand command =
+            AnnotateEolImagesCommand command =
                 InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory);
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+            await command.AnnotatePublishedAsync(
+                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                TestContext?.CancellationToken ?? default);
 
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
+            string[] expectedDigests =
                 [
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101")) { Tag = "1.0" },
-                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101")) { Tag = "tag" },
-                ]
-            };
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+                ];
 
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
+            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
-        private static GenerateEolAnnotationDataForPublishCommand InitializeCommand(
-            string oldImageInfoPath,
-            string newImageInfoPath,
-            string newEolDigestsListPath,
+        [TestMethod]
+        public async Task AnnotateEolImages_Published_WaitsForCreatedAnnotations()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            // The repo is only in the old image info, so all of its images are unsupported.
+            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(
+                new ImageArtifactDetails { Repos = { new RepoData { Repo = "repo1" } } }));
+            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(new ImageArtifactDetails()));
+
+            string repo = $"{DefaultRepoPrefix}repo1";
+            Mock<IMarImageIngestionReporter> ingestionReporterMock = new();
+            AnnotateEolImagesCommand command = InitializeCommand(
+                CreateAcrClientFactory(AcrName, CreateAcrClientMock(
+                    [CreateContainerRepository(repo, manifestProperties: [CreateArtifactManifestProperties(digest: "sha256:new")])]).Object),
+                CreateSingleImageContentClientFactory(repo, "sha256:new"),
+                ingestionReporter: ingestionReporterMock.Object);
+
+            AnnotatePublishedEolImagesOptions options = CreatePublishedOptions(oldImageInfoPath, newImageInfoPath);
+            options.WaitForIngestion = true;
+            await command.AnnotatePublishedAsync(options, TestContext?.CancellationToken ?? default);
+
+            string newDigest = DockerHelper.GetImageName(AcrName, repo, digest: "sha256:new");
+            _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
+                newDigest, _globalDate, false, It.IsAny<CancellationToken>()));
+            ingestionReporterMock.Verify(r => r.ReportImageStatusesAsync(
+                It.IsAny<IServiceConnection>(),
+                It.Is<IEnumerable<DigestInfo>>(digests =>
+                    digests.Single().Digest == "sha256:new-lifecycle" && digests.Single().Repo == repo),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<TimeSpan>(),
+                null,
+                It.IsAny<CancellationToken>()));
+        }
+
+        [TestMethod]
+        public async Task AnnotateEolImages_All_AnnotatesInternalAndSkipsExistingInternal()
+        {
+            AnnotateEolImagesCommand command = InitializeCommand(
+                CreateAcrClientFactory(AcrName, CreateAcrClientMock(
+                    [
+                        CreateContainerRepository("repo1",
+                            manifestProperties: [
+                                CreateArtifactManifestProperties(digest: "sha256:new"),
+                                CreateArtifactManifestProperties(digest: "sha256:existing"),
+                            ])
+                    ]).Object),
+                CreateAcrContentClientFactory(AcrName,
+                    [
+                        CreateAcrContentClientMock("repo1",
+                            imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                            {
+                                { "sha256:new", new ManifestQueryResult(string.Empty, []) },
+                                { "sha256:existing", new ManifestQueryResult(string.Empty, []) },
+                            })
+                    ]));
+
+            string existingDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "sha256:existing");
+            _lifecycleMetadataServiceMock
+                .Setup(o => o.GetLatestLifecycleArtifactAsync(existingDigest, true, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{existingDigest}-lifecycle"));
+
+            await command.AnnotateAllAsync(CreateAllOptions(), TestContext?.CancellationToken ?? default);
+
+            string newDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "sha256:new");
+            _annotatedDigests.ShouldBe([newDigest]);
+            _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
+                newDigest, _globalDate, true, It.IsAny<CancellationToken>()));
+        }
+
+        [TestMethod]
+        public async Task AnnotateEolImages_AnnotationFails_Throws()
+        {
+            AnnotateEolImagesCommand command = InitializeCommand(
+                CreateAcrClientFactory(AcrName, CreateAcrClientMock(
+                    [CreateContainerRepository("repo1", manifestProperties: [CreateArtifactManifestProperties(digest: "sha256:a")])]).Object),
+                CreateSingleImageContentClientFactory("repo1", "sha256:a"),
+                annotationSucceeds: false);
+
+            await Should.ThrowAsync<InvalidOperationException>(
+                () => command.AnnotateAllAsync(CreateAllOptions(), TestContext?.CancellationToken ?? default));
+        }
+
+        private AnnotateEolImagesCommand InitializeCommand(
             IAcrClientFactory registryClientFactory,
             IAcrContentClientFactory registryContentClientFactory,
-            string repoPrefix = DefaultRepoPrefix,
-            ILifecycleMetadataService lifecycleMetadataService = null)
+            IEnumerable<string> annotatedDigests = null,
+            bool annotationSucceeds = true,
+            IMarImageIngestionReporter ingestionReporter = null)
         {
-            Mock<ILogger<GenerateEolAnnotationDataForPublishCommand>> loggerServiceMock = new();
-            lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
-            GenerateEolAnnotationDataForPublishCommand command = new(
-                logger: loggerServiceMock.Object,
-                acrClientFactory: registryClientFactory,
-                acrContentClientFactory: registryContentClientFactory,
-                lifecycleMetadataService: lifecycleMetadataService,
-                artifactService: TestHelper.CreateArtifactService(Path.GetDirectoryName(newEolDigestsListPath)));
-            command.Options.OldImageInfoPath = oldImageInfoPath;
-            command.Options.NewImageInfoPath = newImageInfoPath;
-            command.Options.EolDigestsListPath = Path.GetFileName(newEolDigestsListPath);
-            command.Options.RegistryOptions = new() { RepoPrefix = repoPrefix, Registry = AcrName };
-            return command;
-        }
-
-        private static ILifecycleMetadataService CreateLifecycleMetadataService(Dictionary<string, bool> digestAnnotatedMapping)
-        {
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
-            lifecycleMetadataServiceMock
-                .Setup(o => o.GetLatestLifecycleArtifactAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((LifecycleArtifact)null);
-
-            foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
+            foreach (string digest in annotatedDigests ?? [])
             {
-                if (digestAnnotated.Value)
-                {
-                    lifecycleMetadataServiceMock
-                        .Setup(o => o.GetLatestLifecycleArtifactAsync(digestAnnotated.Key, false, It.IsAny<CancellationToken>()))
-                        .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{digestAnnotated.Key}-lifecycle"));
-                }
+                _lifecycleMetadataServiceMock
+                    .Setup(o => o.GetLatestLifecycleArtifactAsync(digest, false, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle"));
             }
 
-            return lifecycleMetadataServiceMock.Object;
+            _lifecycleMetadataServiceMock
+                .Setup(o => o.AnnotateEolDigestAsync(
+                    It.IsAny<string>(), _globalDate, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((string digest, DateOnly _, bool _, CancellationToken _) =>
+                {
+                    _annotatedDigests.Add(digest);
+                    return annotationSucceeds ? LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle") : null;
+                });
+
+            return new AnnotateEolImagesCommand(
+                logger: Mock.Of<ILogger<AnnotateEolImagesCommand>>(),
+                acrClientFactory: registryClientFactory,
+                acrContentClientFactory: registryContentClientFactory,
+                lifecycleMetadataService: _lifecycleMetadataServiceMock.Object,
+                ingestionReporter: ingestionReporter ?? Mock.Of<IMarImageIngestionReporter>(),
+                // Image info paths are absolute, so the artifact root isn't used.
+                artifactService: TestHelper.CreateArtifactService(Path.GetTempPath()));
         }
 
-        private static string RepoTagIdentity(string repo, string tag) =>
-            $"{repo}:{tag}";
+        private static AnnotatePublishedEolImagesOptions CreatePublishedOptions(
+            string oldImageInfoPath,
+            string newImageInfoPath) =>
+            new()
+            {
+                OldImageInfoPath = oldImageInfoPath,
+                NewImageInfoPath = newImageInfoPath,
+                RegistryOptions = new() { RepoPrefix = DefaultRepoPrefix, Registry = AcrName }
+            };
+
+        private static AnnotateEolImagesOptions CreateAllOptions() =>
+            new() { RegistryOptions = new() { Registry = AcrName } };
+
+        private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>
+            CreateAcrContentClientFactory(AcrName,
+                [
+                    CreateAcrContentClientMock(repo,
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { digest, new ManifestQueryResult(string.Empty, []) },
+                        })
+                ]);
     }
 }

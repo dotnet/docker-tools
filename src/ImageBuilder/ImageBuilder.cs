@@ -120,6 +120,7 @@ public static class ImageBuilder
 
         // Commands
         builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
+        builder.Services.AddSingleton<ICommand, AnnotateEolImagesCommand>();
         builder.Services.AddSingleton<ICommand, BuildCommand>();
         builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
         builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();
@@ -127,8 +128,6 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, CreateManifestListCommand>();
         builder.Services.AddSingleton<ICommand, GenerateBuildMatrixCommand>();
         builder.Services.AddSingleton<ICommand, GenerateDockerfilesCommand>();
-        builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
-        builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForPublishCommand>();
         builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
         builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
         builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();

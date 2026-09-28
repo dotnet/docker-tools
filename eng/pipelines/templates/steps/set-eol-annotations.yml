@@ -6,16 +6,11 @@ parameters:
 steps:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
-      displayName: "Generate EOL Data for all images in ${{ parameters.acr.server }}"
+      displayName: "Annotate EOL Images (${{ parameters.acr.server }})"
       internalProjectName: internal
+      condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-
-        generateEolAnnotationDataForAllImages
+        annotateEolImages all
         '${{ parameters.acr.server }}'
         '${{ parameters.acr.repoPrefix }}'
-        '$(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json'
         $(dryRunArg)
-
-  - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
-    parameters:
-      acr: ${{ parameters.acr }}
-      dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json

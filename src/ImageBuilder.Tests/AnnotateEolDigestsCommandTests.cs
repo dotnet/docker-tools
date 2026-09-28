@@ -150,7 +150,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             AnnotateEolDigestsCommand command = new(
                 loggerServiceMock.Object,
                 lifecycleMetadataServiceMock.Object,
-                Mock.Of<IRegistryCredentialsProvider>(),
                 TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.AcrName = AcrName;

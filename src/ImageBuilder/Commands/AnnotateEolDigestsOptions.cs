@@ -10,8 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class AnnotateEolDigestsOptions : Options
 {
-    public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-
     public string EolDigestsListPath { get; set; } = string.Empty;
     public string AcrName { get; set; } = string.Empty;
     public string RepoPrefix { get; set; } = string.Empty;
@@ -37,16 +35,9 @@ public class AnnotateEolDigestsOptions : Options
         Description = "Artifact-relative output path for the list of annotation digests that were created"
     };
 
-    public override IEnumerable<Option> GetCliOptions() =>
-        [
-            ..base.GetCliOptions(),
-            ..CredentialsOptions.GetCliOptions(),
-        ];
-
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
-            ..CredentialsOptions.GetCliArguments(),
             EolDigestsListPathArgument,
             AcrNameArgument,
             RepoPrefixArgument,
@@ -56,7 +47,6 @@ public class AnnotateEolDigestsOptions : Options
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        CredentialsOptions.Bind(result);
         EolDigestsListPath = result.GetValue(EolDigestsListPathArgument) ?? string.Empty;
         AcrName = result.GetValue(AcrNameArgument) ?? string.Empty;
         RepoPrefix = result.GetValue(RepoPrefixArgument) ?? string.Empty;

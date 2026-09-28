@@ -25,7 +25,6 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
     private readonly IAcrContentClientFactory _acrContentClientFactory;
     private readonly IAcrClientFactory _acrClientFactory;
     private readonly ILifecycleMetadataService _lifecycleMetadataService;
-    private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
     protected IArtifactService ArtifactService { get; }
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
 
@@ -34,25 +33,19 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         IAcrContentClientFactory acrContentClientFactory,
         IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
-        IRegistryCredentialsProvider registryCredentialsProvider,
         IArtifactService artifactService)
     {
         _logger = logger;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;
-        _registryCredentialsProvider = registryCredentialsProvider;
         ArtifactService = artifactService;
     }
 
     public sealed override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        IEnumerable<EolDigestData> digestsToAnnotate = [];
-        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-            Options.IsDryRun,
-            async ct => digestsToAnnotate = await GetDigestsWithoutExistingAnnotationAsync(await GetDigestsToAnnotateAsync(ct), ct),
-            Options.CredentialsOptions,
-            registryName: Options.RegistryOptions.Registry,
+        IEnumerable<EolDigestData> digestsToAnnotate = await GetDigestsWithoutExistingAnnotationAsync(
+            await GetDigestsToAnnotateAsync(cancellationToken),
             cancellationToken);
 
         WriteDigestDataJson(digestsToAnnotate);

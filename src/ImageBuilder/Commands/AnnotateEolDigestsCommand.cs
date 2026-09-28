@@ -16,7 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class AnnotateEolDigestsCommand(
         ILogger<AnnotateEolDigestsCommand> logger,
         ILifecycleMetadataService lifecycleMetadataService,
-        IRegistryCredentialsProvider registryCredentialsProvider,
         IArtifactService artifactService)
             : Command<AnnotateEolDigestsOptions>
     {
@@ -40,16 +39,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(eolDigestsListPath);
             DateOnly? globalEolDate = eolAnnotations.EolDate;
 
-            await registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                Options.IsDryRun,
-                async ct =>
-                {
-                    await Parallel.ForEachAsync(eolAnnotations.EolDigests, ct,
-                        async (digestData, ct) => await AnnotateDigestAsync(digestData, globalEolDate, ct));
-                },
-                Options.CredentialsOptions,
-                registryName: Options.AcrName,
-                cancellationToken);
+            await Parallel.ForEachAsync(eolAnnotations.EolDigests, cancellationToken,
+                async (digestData, ct) => await AnnotateDigestAsync(digestData, globalEolDate, ct));
 
             if (!_skippedAnnotationImageDigests.IsEmpty)
             {

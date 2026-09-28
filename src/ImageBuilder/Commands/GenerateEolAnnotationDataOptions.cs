@@ -12,7 +12,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class GenerateEolAnnotationDataOptions : Options
 {
-    public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
     public RegistryOptions RegistryOptions { get; set; } = new();
     public ServiceConnection? AcrServiceConnection { get; set; }
     public string EolDigestsListPath { get; set; } = string.Empty;
@@ -31,14 +30,12 @@ public class GenerateEolAnnotationDataOptions : Options
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..CredentialsOptions.GetCliOptions(),
         AcrServiceConnectionOption,
     ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..CredentialsOptions.GetCliArguments(),
         ..RegistryBuilder.GetCliArguments(),
         EolDigestsListPathArgument,
     ];
@@ -46,7 +43,6 @@ public class GenerateEolAnnotationDataOptions : Options
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        CredentialsOptions.Bind(result);
         RegistryBuilder.Bind(result, RegistryOptions);
         AcrServiceConnection = result.GetValue(AcrServiceConnectionOption);
         EolDigestsListPath = result.GetValue(EolDigestsListPathArgument) ?? string.Empty;

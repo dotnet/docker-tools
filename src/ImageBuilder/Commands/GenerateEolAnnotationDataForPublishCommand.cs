@@ -22,14 +22,12 @@ public class GenerateEolAnnotationDataForPublishCommand :
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
-        IRegistryCredentialsProvider registryCredentialsProvider,
         IArtifactService artifactService)
         : base(
             logger,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,
-            registryCredentialsProvider,
             artifactService)
     {
         _logger = logger;

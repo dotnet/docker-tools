@@ -186,6 +186,110 @@ public class LifecycleMetadataServiceTests
 
     private CancellationToken CancellationToken => TestContext?.CancellationToken ?? default;
 
+    [TestMethod]
+    [DataRow("2026-01-01", LifecycleMetadataConflictAction.Error, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
+    [DataRow("2026-01-01", LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
+    [DataRow("2025-01-01", LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
+    [DataRow(null, LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
+    public async Task AttachLifecycleMetadataAsync_ExistingMetadata_ReturnsSkippedResult(
+        string? existingDate, LifecycleMetadataConflictAction onConflict, LifecycleMetadataAttachmentStatus expected)
+    {
+        ReferrerInfo referrer = CreateReferrer("existing", endOfLife: existingDate);
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock.Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ReturnsAsync([referrer]);
+        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
+
+        LifecycleMetadataAttachmentResult result = await service.AttachLifecycleMetadataAsync(
+            Digest, new DateOnly(2026, 1, 1), false, onConflict, CancellationToken);
+
+        result.Status.ShouldBe(expected);
+        result.Artifact.Referrer.ShouldBe(referrer);
+        orasServiceMock.Verify(o => o.AttachArtifactAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(),
+            It.IsAny<CancellationToken>()), Times.Never());
+    }
+
+    [TestMethod]
+    [DataRow("2025-01-01")]
+    [DataRow(null)]
+    public async Task AttachLifecycleMetadataAsync_ConflictingDate_Throws(string? existingDate)
+    {
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock.Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ReturnsAsync([CreateReferrer("existing", endOfLife: existingDate)]);
+        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
+
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
+            () => service.AttachLifecycleMetadataAsync(
+                Digest, new DateOnly(2026, 1, 1), false, LifecycleMetadataConflictAction.Error, CancellationToken));
+
+        exception.Message.ShouldContain(Digest);
+        exception.Message.ShouldContain("conflicts");
+        orasServiceMock.Verify(o => o.AttachArtifactAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(),
+            It.IsAny<CancellationToken>()), Times.Never());
+    }
+
+    [TestMethod]
+    [DataRow(false, false, LifecycleMetadataAttachmentStatus.Attached)]
+    [DataRow(false, true, LifecycleMetadataAttachmentStatus.Attached)]
+    [DataRow(true, false, LifecycleMetadataAttachmentStatus.Attached)]
+    [DataRow(true, true, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
+    public async Task AttachLifecycleMetadataAsync_RespectsInternalVisibility(
+        bool markAsInternal, bool existingInternal, LifecycleMetadataAttachmentStatus expected)
+    {
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock.Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ReturnsAsync(existingInternal
+                ? [CreateReferrer("internal", endOfLife: "2026-01-01", markAsInternal: true)]
+                : []);
+        orasServiceMock.Setup(o => o.AttachArtifactAsync(
+            Digest, OciArtifactType.Lifecycle, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("sha256:new");
+        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
+
+        LifecycleMetadataAttachmentResult result = await service.AttachLifecycleMetadataAsync(
+            Digest, new DateOnly(2026, 1, 1), markAsInternal, LifecycleMetadataConflictAction.Error, CancellationToken);
+
+        result.Status.ShouldBe(expected);
+        result.Artifact.Referrer.IsInternal.ShouldBe(markAsInternal);
+        orasServiceMock.Verify(o => o.AttachArtifactAsync(
+            Digest, OciArtifactType.Lifecycle, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            expected == LifecycleMetadataAttachmentStatus.Attached ? Times.Once() : Times.Never());
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadataAsync_AttachFails_Throws()
+    {
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock.Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ReturnsAsync([]);
+        orasServiceMock.Setup(o => o.AttachArtifactAsync(
+            Digest, OciArtifactType.Lifecycle, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(CreateRateLimitException());
+        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => service.AttachLifecycleMetadataAsync(
+            Digest, new DateOnly(2026, 1, 1), false, LifecycleMetadataConflictAction.Error, CancellationToken));
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadataAsync_LookupFails_DoesNotAttach()
+    {
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock.Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ThrowsAsync(CreateRateLimitException());
+        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
+
+        await Should.ThrowAsync<ResponseException>(() => service.AttachLifecycleMetadataAsync(
+            Digest, new DateOnly(2026, 1, 1), false, LifecycleMetadataConflictAction.Skip, CancellationToken));
+
+        orasServiceMock.Verify(o => o.AttachArtifactAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(),
+            It.IsAny<CancellationToken>()), Times.Never());
+    }
+
     private static ReferrerInfo CreateReferrer(
         string digest,
         string artifactType = OciArtifactType.Lifecycle,

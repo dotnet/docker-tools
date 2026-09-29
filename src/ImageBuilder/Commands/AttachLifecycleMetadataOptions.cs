@@ -12,17 +12,62 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// <summary>
 /// Options shared by all <see cref="AttachLifecycleMetadataCommand"/> subcommands.
 /// </summary>
-public class AttachLifecycleMetadataOptions : Options
+public class LifecycleMetadataOptions : Options
 {
-    public RegistryOptions RegistryOptions { get; set; } = new();
     public bool MarkAsInternal { get; set; }
+    public LifecycleMetadataConflictAction OnConflict { get; set; }
+    public bool WaitForIngestion { get; set; }
+    public MarIngestionOptions IngestionOptions { get; set; } = new();
+    public ServiceConnection? MarServiceConnection { get; set; }
 
-    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
+    private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
+    private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
+
+    private static readonly Option<bool> s_waitForIngestionOption = new("--wait-for-ingestion")
+    {
+        Description = "Wait for the created annotations to be ingested by MAR"
+    };
+
+    private static readonly Option<ServiceConnection?> s_marServiceConnectionOption =
+        new ServiceConnectionOptionsBuilder().GetCliOption("--mar-service-connection");
+
+    private static readonly Option<LifecycleMetadataConflictAction> s_onConflictOption = new("--on-conflict")
+    {
+        Description = "Action when existing lifecycle metadata has a different EOL date (error or skip)",
+        DefaultValueFactory = _ => LifecycleMetadataConflictAction.Error
+    };
 
     private static readonly Option<bool> s_markAsInternalOption = new("--mark-as-internal")
     {
         Description = "Mark lifecycle metadata as internal-only so it is never copied when publishing"
     };
+
+    public override IEnumerable<Option> GetCliOptions() =>
+    [
+        ..base.GetCliOptions(),
+        s_markAsInternalOption,
+        s_onConflictOption,
+        s_waitForIngestionOption,
+        ..IngestionOptions.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
+        s_marServiceConnectionOption,
+    ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        MarkAsInternal = result.GetValue(s_markAsInternalOption);
+        OnConflict = result.GetValue(s_onConflictOption);
+        WaitForIngestion = result.GetValue(s_waitForIngestionOption);
+        IngestionOptions.Bind(result);
+        MarServiceConnection = result.GetValue(s_marServiceConnectionOption);
+    }
+}
+
+public class RegistryLifecycleMetadataOptions : LifecycleMetadataOptions
+{
+    public RegistryOptions RegistryOptions { get; set; } = new();
+
+    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
@@ -30,30 +75,39 @@ public class AttachLifecycleMetadataOptions : Options
         .._registryOptionsBuilder.GetCliArguments(),
     ];
 
-    public override IEnumerable<Option> GetCliOptions() =>
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        _registryOptionsBuilder.Bind(result, RegistryOptions);
+    }
+}
+
+public class FileLifecycleMetadataOptions : LifecycleMetadataOptions
+{
+    public string EolDigestsListPath { get; set; } = string.Empty;
+
+    private static readonly Argument<string> s_eolDigestsListPathArgument = new(nameof(EolDigestsListPath))
+    {
+        Description = "JSON file containing fully-qualified image digests and their EOL dates"
+    };
+
+    public override IEnumerable<Argument> GetCliArguments() =>
     [
-        ..base.GetCliOptions(),
-        s_markAsInternalOption,
+        ..base.GetCliArguments(),
+        s_eolDigestsListPathArgument,
     ];
 
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        _registryOptionsBuilder.Bind(result, RegistryOptions);
-        MarkAsInternal = result.GetValue(s_markAsInternalOption);
+        EolDigestsListPath = result.GetValue(s_eolDigestsListPathArgument) ?? string.Empty;
     }
 }
 
-public class UnsupportedLifecycleMetadataOptions : AttachLifecycleMetadataOptions
+public class UnsupportedLifecycleMetadataOptions : RegistryLifecycleMetadataOptions
 {
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;
-    public bool WaitForIngestion { get; set; }
-    public MarIngestionOptions IngestionOptions { get; set; } = new();
-    public ServiceConnection? MarServiceConnection { get; set; }
-
-    private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
-    private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
     private static readonly Argument<string> s_oldImageInfoPathArgument = new(nameof(OldImageInfoPath))
     {
@@ -65,14 +119,6 @@ public class UnsupportedLifecycleMetadataOptions : AttachLifecycleMetadataOption
         Description = "Image info file describing the currently supported images"
     };
 
-    private static readonly Option<bool> s_waitForIngestionOption = new("--wait-for-ingestion")
-    {
-        Description = "Wait for the created annotations to be ingested by MAR"
-    };
-
-    private static readonly Option<ServiceConnection?> s_marServiceConnectionOption =
-        new ServiceConnectionOptionsBuilder().GetCliOption("--mar-service-connection");
-
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
@@ -80,21 +126,10 @@ public class UnsupportedLifecycleMetadataOptions : AttachLifecycleMetadataOption
         s_newImageInfoPathArgument,
     ];
 
-    public override IEnumerable<Option> GetCliOptions() =>
-    [
-        ..base.GetCliOptions(),
-        s_waitForIngestionOption,
-        ..IngestionOptions.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
-        s_marServiceConnectionOption,
-    ];
-
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
         OldImageInfoPath = result.GetValue(s_oldImageInfoPathArgument) ?? string.Empty;
         NewImageInfoPath = result.GetValue(s_newImageInfoPathArgument) ?? string.Empty;
-        WaitForIngestion = result.GetValue(s_waitForIngestionOption);
-        IngestionOptions.Bind(result);
-        MarServiceConnection = result.GetValue(s_marServiceConnectionOption);
     }
 }

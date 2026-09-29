@@ -13,6 +13,45 @@ namespace Microsoft.DotNet.ImageBuilder;
 public class LifecycleMetadataService(IOrasService orasService, ILogger<LifecycleMetadataService> logger)
     : ILifecycleMetadataService
 {
+    public async Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
+        string digest,
+        DateOnly date,
+        bool markAsInternal,
+        LifecycleMetadataConflictAction onConflict,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.IsDefined(onConflict))
+        {
+            throw new ArgumentOutOfRangeException(nameof(onConflict), onConflict, "Unknown lifecycle metadata conflict action.");
+        }
+
+        LifecycleArtifact? existingArtifact =
+            await GetLatestLifecycleArtifactAsync(digest, includeInternal: markAsInternal, cancellationToken);
+
+        if (existingArtifact is not null)
+        {
+            if (existingArtifact.EndOfLifeDate == date)
+            {
+                return new(LifecycleMetadataAttachmentStatus.AlreadyMatching, existingArtifact);
+            }
+
+            if (onConflict == LifecycleMetadataConflictAction.Skip)
+            {
+                return new(LifecycleMetadataAttachmentStatus.ConflictSkipped, existingArtifact);
+            }
+
+            throw new InvalidOperationException(
+                $"Cannot attach lifecycle metadata to '{digest}': existing artifact"
+                + $" '{existingArtifact.Referrer.Digest}' has EOL date '{existingArtifact.EndOfLifeDate}',"
+                + $" which conflicts with requested date '{date}'.");
+        }
+
+        LifecycleArtifact artifact = await AnnotateEolDigestAsync(digest, date, markAsInternal, cancellationToken)
+            ?? throw new InvalidOperationException($"Failed to attach lifecycle metadata to '{digest}'.");
+
+        return new(LifecycleMetadataAttachmentStatus.Attached, artifact);
+    }
+
     public async Task<LifecycleArtifact?> GetLatestLifecycleArtifactAsync(
         string digest,
         bool includeInternal,

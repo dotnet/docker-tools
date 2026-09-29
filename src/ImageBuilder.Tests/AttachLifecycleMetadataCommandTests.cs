@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,7 +48,165 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var cliCommand = command.GetCliCommand();
 
             cliCommand.Name.ShouldBe("attachLifecycleMetadata");
-            cliCommand.Subcommands.Select(subcommand => subcommand.Name).ShouldBe(["published", "all"]);
+            cliCommand.Subcommands.Select(subcommand => subcommand.Name).ShouldBe(["published", "all", "file"]);
+        }
+
+        [TestMethod]
+        [DataRow("file eol.json", "")]
+        [DataRow("file eol.json", "--on-conflict skip")]
+        [DataRow("all myacr.azurecr.io public/", "")]
+        [DataRow("all myacr.azurecr.io public/", "--on-conflict skip")]
+        [DataRow("published myacr.azurecr.io public/ old.json new.json", "")]
+        [DataRow("published myacr.azurecr.io public/ old.json new.json", "--on-conflict skip")]
+        public void AttachLifecycleMetadata_AllSubcommands_BindConflictPolicy(string arguments, string flag)
+        {
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>());
+            var parseResult = command.GetCliCommand().Parse($"{arguments} {flag}");
+            parseResult.Errors.ShouldBeEmpty();
+            parseResult.GetValue<LifecycleMetadataConflictAction>("--on-conflict").ShouldBe(flag.Length == 0
+                ? LifecycleMetadataConflictAction.Error
+                : LifecycleMetadataConflictAction.Skip);
+        }
+
+        [TestMethod]
+        [DataRow("", false, false)]
+        [DataRow("--mark-as-internal", true, false)]
+        [DataRow("--dry-run", false, true)]
+        public async Task AttachLifecycleMetadata_File_AttachesSpecifiedDates(
+            string flags, bool markAsInternal, bool dryRun)
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string path = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(path, """
+                {
+                  "eolDate": "2026-01-01",
+                  "eolDigests": [
+                    { "digest": "myacr.azurecr.io/repo@sha256:first" },
+                    { "digest": "myacr.azurecr.io/repo@sha256:second", "eolDate": "2026-02-01" }
+                  ]
+                }
+                """);
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>());
+            var parseResult = command.GetCliCommand().Parse($"file \"{path}\" --no-version-logging {flags}");
+            parseResult.Errors.ShouldBeEmpty();
+            (await parseResult.InvokeAsync(cancellationToken: TestContext?.CancellationToken ?? default)).ShouldBe(0);
+
+            _lifecycleMetadataServiceMock.Verify(o => o.AttachLifecycleMetadataAsync(
+                $"{AcrName}/repo@sha256:first", new DateOnly(2026, 1, 1), markAsInternal,
+                LifecycleMetadataConflictAction.Error,
+                It.IsAny<CancellationToken>()), dryRun ? Times.Never() : Times.Once());
+            _lifecycleMetadataServiceMock.Verify(o => o.AttachLifecycleMetadataAsync(
+                $"{AcrName}/repo@sha256:second", new DateOnly(2026, 2, 1), markAsInternal,
+                LifecycleMetadataConflictAction.Error,
+                It.IsAny<CancellationToken>()), dryRun ? Times.Never() : Times.Once());
+            _lifecycleMetadataServiceMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_File_Conflict_DoesNotWaitForIngestion()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string path = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(path, """
+                {
+                  "EolDate": "2026-01-01",
+                  "EolDigests": [
+                    { "Digest": "myacr.azurecr.io/repo@sha256:existing" }
+                  ]
+                }
+                """);
+            Mock<IMarImageIngestionReporter> ingestionReporterMock = new(MockBehavior.Strict);
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>(),
+                ingestionReporter: ingestionReporterMock.Object);
+            string existingDigest = $"{AcrName}/repo@sha256:existing";
+            FileLifecycleMetadataOptions options = new()
+            {
+                EolDigestsListPath = path,
+                WaitForIngestion = true
+            };
+            InvalidOperationException conflict = new("Conflicting EOL date.");
+            _lifecycleMetadataServiceMock.Setup(o => o.AttachLifecycleMetadataAsync(
+                existingDigest, new DateOnly(2026, 1, 1), false, options.OnConflict, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(conflict);
+
+            InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
+                () => command.AttachFromFileAsync(options, TestContext?.CancellationToken ?? default));
+
+            exception.ShouldBeSameAs(conflict);
+            ingestionReporterMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        [DataRow("append")]
+        [DataRow("unknown")]
+        public void AttachLifecycleMetadata_File_InvalidConflictAction_Rejected(string action)
+        {
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>());
+
+            var parseResult = command.GetCliCommand().Parse($"file eol.json --on-conflict {action}");
+
+            parseResult.Errors.ShouldNotBeEmpty();
+        }
+
+        [TestMethod]
+        [DataRow("""{"EolDigests":[{"Digest":"myacr.azurecr.io/repo@sha256:first"}]}""")]
+        [DataRow("""{"EolDate":"2026-01-01","EolDigests":[{"Digest":""}]}""")]
+        [DataRow("""{"EolDigests":[{"Digest":"myacr.azurecr.io/repo@sha256:first","EolDate":"2026-01-01"},{"Digest":"myacr.azurecr.io/repo@sha256:second"}]}""")]
+        public async Task AttachLifecycleMetadata_File_MissingDigestOrDate_Throws(string json)
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string path = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(path, json);
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>());
+
+            await Should.ThrowAsync<InvalidOperationException>(() => command.AttachFromFileAsync(
+                new() { EolDigestsListPath = path }, TestContext?.CancellationToken ?? default));
+
+            _lifecycleMetadataServiceMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_File_NullJson_Throws()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string path = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(path, "null");
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>());
+
+            await Should.ThrowAsync<JsonException>(() => command.AttachFromFileAsync(
+                new() { EolDigestsListPath = path }, TestContext?.CancellationToken ?? default));
+
+            _lifecycleMetadataServiceMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_File_IngestionFails_Throws()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string path = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(path, """
+                {"EolDate":"2026-01-01","EolDigests":[{"Digest":"myacr.azurecr.io/repo@sha256:first"}]}
+                """);
+            TimeoutException timeout = new("Annotation ingestion timed out.");
+            Mock<IMarImageIngestionReporter> ingestionReporterMock = new();
+            ingestionReporterMock.Setup(r => r.ReportImageStatusesAsync(
+                It.IsAny<IServiceConnection>(), It.IsAny<IEnumerable<DigestInfo>>(),
+                It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), null, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(timeout);
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(), Mock.Of<IAcrContentClientFactory>(),
+                ingestionReporter: ingestionReporterMock.Object);
+
+            TimeoutException exception = await Should.ThrowAsync<TimeoutException>(() => command.AttachFromFileAsync(
+                new() { EolDigestsListPath = path, WaitForIngestion = true }, TestContext?.CancellationToken ?? default));
+
+            exception.ShouldBeSameAs(timeout);
         }
 
         [TestMethod]
@@ -1052,10 +1211,95 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        [DataRow("", false)]
-        [DataRow("--mark-as-internal", true)]
-        [DataRow("--mark-as-internal false", false)]
-        public async Task AttachLifecycleMetadata_Published_WaitsForCreatedAnnotations(string internalOption, bool markAsInternal)
+        [DataRow("file", true, true, false, DisplayName = "File waits only for new artifacts")]
+        [DataRow("all", true, true, false, DisplayName = "Registry command wires ingestion options")]
+        [DataRow("file", false, true, false, DisplayName = "No wait when nothing was created")]
+        [DataRow("file", true, false, false, DisplayName = "No wait without opt-in")]
+        [DataRow("file", true, true, true, DisplayName = "No wait during dry run")]
+        public async Task AttachLifecycleMetadata_WaitsOnlyForNewArtifacts(
+            string subcommand, bool createNew, bool wait, bool dryRun)
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string path = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(path, """
+                {
+                  "EolDate": "2026-01-01",
+                  "EolDigests": [
+                    { "Digest": "myacr.azurecr.io/repo@sha256:new" },
+                    { "Digest": "myacr.azurecr.io/repo@sha256:matching" },
+                    { "Digest": "myacr.azurecr.io/repo@sha256:conflicting" }
+                  ]
+                }
+                """);
+            Mock<IMarImageIngestionReporter> ingestionReporterMock = new();
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                CreateAcrClientFactory(AcrName, CreateAcrClientMock(
+                    [CreateContainerRepository("repo", manifestProperties:
+                        [
+                            CreateArtifactManifestProperties(digest: "sha256:new"),
+                            CreateArtifactManifestProperties(digest: "sha256:matching"),
+                            CreateArtifactManifestProperties(digest: "sha256:conflicting")
+                        ])]).Object),
+                CreateAcrContentClientFactory(AcrName,
+                    [CreateAcrContentClientMock("repo",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            ["sha256:new"] = new(string.Empty, []),
+                            ["sha256:matching"] = new(string.Empty, []),
+                            ["sha256:conflicting"] = new(string.Empty, [])
+                        })]),
+                ingestionReporter: ingestionReporterMock.Object);
+
+            foreach ((string digest, LifecycleMetadataAttachmentStatus status) in new[]
+            {
+                ("new", createNew ? LifecycleMetadataAttachmentStatus.Attached : LifecycleMetadataAttachmentStatus.AlreadyMatching),
+                ("matching", LifecycleMetadataAttachmentStatus.AlreadyMatching),
+                ("conflicting", LifecycleMetadataAttachmentStatus.ConflictSkipped)
+            })
+            {
+                string reference = $"{AcrName}/repo@sha256:{digest}";
+                _lifecycleMetadataServiceMock.Setup(o => o.AttachLifecycleMetadataAsync(
+                    reference, It.IsAny<DateOnly>(), false, LifecycleMetadataConflictAction.Skip,
+                    It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new LifecycleMetadataAttachmentResult(
+                        status, LifecycleArtifactHelper.CreateLifecycleArtifact($"{reference}-lifecycle")));
+            }
+
+            string arguments = subcommand == "file" ? $"file \"{path}\"" : $"all {AcrName} public/";
+            var parseResult = command.GetCliCommand().Parse(
+                $"{arguments} --no-version-logging --on-conflict skip"
+                + $" --timeout 00:07:00 --requery-delay 00:00:03 --mar-service-connection tenant:client:connection"
+                + (wait ? " --wait-for-ingestion" : "")
+                + (dryRun ? " --dry-run" : ""));
+            parseResult.Errors.ShouldBeEmpty();
+
+            int exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext?.CancellationToken ?? default);
+
+            exitCode.ShouldBe(0);
+
+            ingestionReporterMock.Verify(r => r.ReportImageStatusesAsync(
+                It.Is<IServiceConnection>(connection =>
+                    connection.Id == "connection" && connection.TenantId == "tenant" && connection.ClientId == "client"),
+                It.Is<IEnumerable<DigestInfo>>(digests =>
+                    digests.Single().Digest == "sha256:new-lifecycle" && digests.Single().Repo == "repo"),
+                TimeSpan.FromMinutes(7),
+                TimeSpan.FromSeconds(3),
+                null,
+                It.IsAny<CancellationToken>()),
+                createNew && wait && !dryRun ? Times.Once() : Times.Never());
+            ingestionReporterMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        [DataRow("", false, LifecycleMetadataConflictAction.Error, LifecycleMetadataAttachmentStatus.Attached)]
+        [DataRow("--mark-as-internal", true, LifecycleMetadataConflictAction.Error, LifecycleMetadataAttachmentStatus.Attached)]
+        [DataRow("--mark-as-internal false", false, LifecycleMetadataConflictAction.Error, LifecycleMetadataAttachmentStatus.Attached)]
+        [DataRow("", false, LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.Attached)]
+        [DataRow("", false, LifecycleMetadataConflictAction.Error, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
+        [DataRow("", false, LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
+        public async Task AttachLifecycleMetadata_Published_WaitsForCreatedAnnotations(
+            string internalOption, bool markAsInternal, LifecycleMetadataConflictAction onConflict,
+            LifecycleMetadataAttachmentStatus status)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -1074,32 +1318,39 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSingleImageContentClientFactory(repo, "sha256:new"),
                 ingestionReporter: ingestionReporterMock.Object);
 
+            string newDigest = DockerHelper.GetImageName(AcrName, repo, digest: "sha256:new");
+            _lifecycleMetadataServiceMock.Setup(o => o.AttachLifecycleMetadataAsync(
+                newDigest, _globalDate, markAsInternal, onConflict, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new LifecycleMetadataAttachmentResult(
+                    status, LifecycleArtifactHelper.CreateLifecycleArtifact($"{newDigest}-lifecycle")));
+
             var parseResult = command.GetCliCommand().Parse(
                 $"published {AcrName} {DefaultRepoPrefix} \"{oldImageInfoPath}\" \"{newImageInfoPath}\""
-                + $" --wait-for-ingestion --no-version-logging {internalOption}");
+                + $" --wait-for-ingestion --no-version-logging {internalOption} --on-conflict {onConflict}");
             parseResult.Errors.ShouldBeEmpty();
             (await parseResult.InvokeAsync(cancellationToken: TestContext?.CancellationToken ?? default)).ShouldBe(0);
 
-            string newDigest = DockerHelper.GetImageName(AcrName, repo, digest: "sha256:new");
-            _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
-                newDigest, _globalDate, markAsInternal, It.IsAny<CancellationToken>()));
-            _lifecycleMetadataServiceMock.Verify(o => o.GetLatestLifecycleArtifactAsync(
-                newDigest, markAsInternal, It.IsAny<CancellationToken>()));
+            _lifecycleMetadataServiceMock.Verify(o => o.AttachLifecycleMetadataAsync(
+                newDigest, _globalDate, markAsInternal, onConflict, It.IsAny<CancellationToken>()));
             ingestionReporterMock.Verify(r => r.ReportImageStatusesAsync(
                 It.IsAny<IServiceConnection>(),
                 It.Is<IEnumerable<DigestInfo>>(digests =>
                     digests.Single().Digest == "sha256:new-lifecycle" && digests.Single().Repo == repo),
-                It.IsAny<TimeSpan>(),
-                It.IsAny<TimeSpan>(),
+                TimeSpan.FromMinutes(20),
+                TimeSpan.FromSeconds(10),
                 null,
-                It.IsAny<CancellationToken>()));
+                It.IsAny<CancellationToken>()),
+                status == LifecycleMetadataAttachmentStatus.Attached ? Times.Once() : Times.Never());
+            ingestionReporterMock.VerifyNoOtherCalls();
         }
 
         [TestMethod]
-        [DataRow("", false)]
-        [DataRow("--mark-as-internal", true)]
-        [DataRow("--mark-as-internal false", false)]
-        public async Task AttachLifecycleMetadata_All_UsesInternalOption(string internalOption, bool markAsInternal)
+        [DataRow("", false, LifecycleMetadataConflictAction.Error)]
+        [DataRow("--mark-as-internal", true, LifecycleMetadataConflictAction.Error)]
+        [DataRow("--mark-as-internal false", false, LifecycleMetadataConflictAction.Error)]
+        [DataRow("--mark-as-internal", true, LifecycleMetadataConflictAction.Skip)]
+        public async Task AttachLifecycleMetadata_All_UsesInternalOption(
+            string internalOption, bool markAsInternal, LifecycleMetadataConflictAction onConflict)
         {
             AttachLifecycleMetadataCommand command = InitializeCommand(
                 CreateAcrClientFactory(AcrName, CreateAcrClientMock(
@@ -1122,21 +1373,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string existingDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "sha256:existing");
             _lifecycleMetadataServiceMock
-                .Setup(o => o.GetLatestLifecycleArtifactAsync(existingDigest, true, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{existingDigest}-lifecycle"));
+                .Setup(o => o.AttachLifecycleMetadataAsync(
+                    existingDigest, _globalDate, true, onConflict, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new LifecycleMetadataAttachmentResult(
+                    onConflict == LifecycleMetadataConflictAction.Skip
+                        ? LifecycleMetadataAttachmentStatus.ConflictSkipped
+                        : LifecycleMetadataAttachmentStatus.AlreadyMatching,
+                    LifecycleArtifactHelper.CreateLifecycleArtifact($"{existingDigest}-lifecycle", _globalDate)));
 
             var parseResult = command.GetCliCommand().Parse(
-                $"all {AcrName} {DefaultRepoPrefix} --no-version-logging {internalOption}");
+                $"all {AcrName} {DefaultRepoPrefix} --no-version-logging {internalOption} --on-conflict {onConflict}");
             parseResult.Errors.ShouldBeEmpty();
             (await parseResult.InvokeAsync(cancellationToken: TestContext?.CancellationToken ?? default)).ShouldBe(0);
 
             string newDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "sha256:new");
             _annotatedDigests.ShouldBe(
                 markAsInternal ? [newDigest] : [newDigest, existingDigest], ignoreOrder: true);
-            _lifecycleMetadataServiceMock.Verify(o => o.AnnotateEolDigestAsync(
-                newDigest, _globalDate, markAsInternal, It.IsAny<CancellationToken>()));
-            _lifecycleMetadataServiceMock.Verify(o => o.GetLatestLifecycleArtifactAsync(
-                existingDigest, markAsInternal, It.IsAny<CancellationToken>()));
+            _lifecycleMetadataServiceMock.Verify(o => o.AttachLifecycleMetadataAsync(
+                newDigest, _globalDate, markAsInternal, onConflict, It.IsAny<CancellationToken>()));
+            _lifecycleMetadataServiceMock.Verify(o => o.AttachLifecycleMetadataAsync(
+                existingDigest, _globalDate, markAsInternal, onConflict, It.IsAny<CancellationToken>()));
         }
 
         [TestMethod]
@@ -1147,7 +1403,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             AttachLifecycleMetadataCommand command = InitializeCommand(
                 registryClientFactory.Object, registryContentClientFactory.Object);
 
-            AttachLifecycleMetadataOptions options = new()
+            RegistryLifecycleMetadataOptions options = new()
             {
                 RegistryOptions = new() { Registry = AcrName },
                 IsDryRun = true
@@ -1169,7 +1425,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSingleImageContentClientFactory("repo1", "sha256:a"),
                 annotationSucceeds: false);
 
-            AttachLifecycleMetadataOptions options = new()
+            RegistryLifecycleMetadataOptions options = new()
             {
                 RegistryOptions = new() { Registry = AcrName }
             };
@@ -1185,21 +1441,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             bool annotationSucceeds = true,
             IMarImageIngestionReporter ingestionReporter = null)
         {
+            _lifecycleMetadataServiceMock
+                .Setup(o => o.AttachLifecycleMetadataAsync(
+                    It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(),
+                    It.IsAny<LifecycleMetadataConflictAction>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((string digest, DateOnly date, bool _, LifecycleMetadataConflictAction _, CancellationToken _) =>
+                {
+                    if (!annotationSucceeds)
+                    {
+                        throw new InvalidOperationException($"Failed to attach lifecycle metadata to '{digest}'.");
+                    }
+
+                    _annotatedDigests.Add(digest);
+                    return new LifecycleMetadataAttachmentResult(
+                        LifecycleMetadataAttachmentStatus.Attached,
+                        LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", date));
+                });
+
             foreach (string digest in annotatedDigests ?? [])
             {
                 _lifecycleMetadataServiceMock
-                    .Setup(o => o.GetLatestLifecycleArtifactAsync(digest, false, It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle"));
+                    .Setup(o => o.AttachLifecycleMetadataAsync(
+                        digest, _globalDate, false, It.IsAny<LifecycleMetadataConflictAction>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new LifecycleMetadataAttachmentResult(
+                        LifecycleMetadataAttachmentStatus.AlreadyMatching,
+                        LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", _globalDate)));
             }
-
-            _lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigestAsync(
-                    It.IsAny<string>(), _globalDate, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((string digest, DateOnly _, bool _, CancellationToken _) =>
-                {
-                    _annotatedDigests.Add(digest);
-                    return annotationSucceeds ? LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle") : null;
-                });
 
             return new AttachLifecycleMetadataCommand(
                 logger: Mock.Of<ILogger<AttachLifecycleMetadataCommand>>(),

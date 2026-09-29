@@ -8,10 +8,12 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -19,7 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// <summary>
 /// Annotates unsupported images with EOL lifecycle artifacts. The <c>published</c> subcommand annotates published
 /// images that were replaced or removed. The <c>all</c> subcommand annotates every non-referrer artifact in a
-/// registry. Both support <c>--mark-as-internal</c> to keep lifecycle artifacts from being copied when publishing.
+/// registry. The <c>file</c> subcommand attaches metadata to explicit digests and dates from JSON.
+/// All support <c>--mark-as-internal</c> to keep lifecycle artifacts from being copied when publishing.
 /// </summary>
 public class AttachLifecycleMetadataCommand(
     ILogger<AttachLifecycleMetadataCommand> logger,
@@ -30,10 +33,16 @@ public class AttachLifecycleMetadataCommand(
     IArtifactService artifactService)
     : ICommand
 {
+    private static readonly JsonSerializerOptions s_jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public Command GetCliCommand()
     {
         UnsupportedLifecycleMetadataOptions publishedOptions = new();
-        AttachLifecycleMetadataOptions allOptions = new();
+        RegistryLifecycleMetadataOptions allOptions = new();
+        FileLifecycleMetadataOptions fileOptions = new();
 
         return new Command(name: this.GetCommandName(), description: "Attaches lifecycle metadata artifacts to images")
         {
@@ -47,6 +56,11 @@ public class AttachLifecycleMetadataCommand(
                 description: "Attaches EOL lifecycle metadata to every non-referrer artifact in the registry",
                 options: allOptions,
                 run: ct => AttachToAllAsync(allOptions, ct)),
+            CommandAction.Create(
+                name: "file",
+                description: "Attaches EOL lifecycle metadata to digests specified in a JSON file",
+                options: fileOptions,
+                run: ct => AttachFromFileAsync(fileOptions, ct)),
         };
     }
 
@@ -82,98 +96,17 @@ public class AttachLifecycleMetadataCommand(
                 options.RegistryOptions,
                 cancellationToken);
 
+        DateOnly eolDate = DateOnly.FromDateTime(DateTime.UtcNow);
         IReadOnlyList<string> createdAnnotationDigests =
             await AttachLifecycleMetadataAsync(
-                eolDigests,
+                eolDigests.Select(digest => new EolDigestData { Digest = digest, EolDate = eolDate }).ToArray(),
                 options.MarkAsInternal,
+                options.OnConflict,
                 cancellationToken);
 
-        if (options.WaitForIngestion)
-        {
-            await ingestionReporter.ReportImageStatusesAsync(
-                options.MarServiceConnection,
-                createdAnnotationDigests.Select(ToDigestInfo),
-                options.IngestionOptions.WaitTimeout,
-                options.IngestionOptions.RequeryDelay,
-                minimumQueueTime: null,
-                cancellationToken);
-        }
-    }
-
-    public async Task AttachToAllAsync(AttachLifecycleMetadataOptions options, CancellationToken cancellationToken)
-    {
-        string registry = options.RegistryOptions.Registry;
-
-        if (options.IsDryRun)
-        {
-            logger.LogInformation("(Dry run) Skipping EOL annotation of images in {Registry}.", registry);
-            return;
-        }
-
-        IReadOnlyList<string> eolDigests =
-            await GetRegistryNonReferrerDigestsAsync(registry, _ => true, cancellationToken);
-
-        await AttachLifecycleMetadataAsync(eolDigests, options.MarkAsInternal, cancellationToken);
-    }
-
-    /// <summary>
-    /// Annotates each digest that doesn't already have a lifecycle artifact of the same kind, and returns the
-    /// digests of the created annotations.
-    /// </summary>
-    private async Task<IReadOnlyList<string>> AttachLifecycleMetadataAsync(
-        IReadOnlyList<string> eolDigests,
-        bool markAsInternal,
-        CancellationToken cancellationToken)
-    {
-        DateOnly eolDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        ConcurrentBag<string> createdAnnotationDigests = [];
-        ConcurrentBag<string> failedDigests = [];
-
-        await Parallel.ForEachAsync(eolDigests, cancellationToken, async (digest, ct) =>
-        {
-            // Internal annotations only suppress vulnerability scanning, so any existing lifecycle artifact is
-            // enough. Public annotations must not be skipped because of an internal one.
-            LifecycleArtifact? existingArtifact = await lifecycleMetadataService
-                .GetLatestLifecycleArtifactAsync(digest, includeInternal: markAsInternal, ct);
-
-            if (existingArtifact is not null)
-            {
-                logger.LogDebug("Skipping '{Digest}' because it already has a lifecycle artifact.", digest);
-                return;
-            }
-
-            logger.LogInformation(
-                "Annotating EOL for digest '{Digest}', date '{EolDate}', internal '{MarkAsInternal}'",
-                digest,
-                eolDate,
-                markAsInternal);
-
-            LifecycleArtifact? createdArtifact = await lifecycleMetadataService
-                .AnnotateEolDigestAsync(digest, eolDate, markAsInternal, ct);
-
-            if (createdArtifact is null)
-            {
-                failedDigests.Add(digest);
-            }
-            else
-            {
-                createdAnnotationDigests.Add(createdArtifact.Referrer.Digest);
-            }
-        });
-
-        logger.LogInformation(
-            "Created {CreatedCount} EOL annotation(s) for {EolCount} unsupported image(s).",
-            createdAnnotationDigests.Count,
-            eolDigests.Count);
-
-        if (!failedDigests.IsEmpty)
-        {
-            throw new InvalidOperationException(
-                $"Failed to annotate {failedDigests.Count} digest(s):{Environment.NewLine}"
-                    + string.Join(Environment.NewLine, failedDigests.Order()));
-        }
-
-        return [.. createdAnnotationDigests];
+        await WaitForIngestionAsync(
+            createdAnnotationDigests, options.WaitForIngestion, options.MarServiceConnection,
+            options.IngestionOptions, cancellationToken);
     }
 
     /// <summary>
@@ -204,6 +137,35 @@ public class AttachLifecycleMetadataCommand(
             .ToHashSet();
 
         return registryDigests.Where(digest => !supportedDigests.Contains(digest)).ToList();
+    }
+
+    public async Task AttachToAllAsync(RegistryLifecycleMetadataOptions options, CancellationToken cancellationToken)
+    {
+        string registry = options.RegistryOptions.Registry;
+
+        if (options.IsDryRun)
+        {
+            logger.LogInformation("(Dry run) Skipping EOL annotation of images in {Registry}.", registry);
+            return;
+        }
+
+        IReadOnlyList<string> eolDigests =
+            await GetRegistryNonReferrerDigestsAsync(registry, _ => true, cancellationToken);
+
+        DateOnly eolDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        IReadOnlyList<string> createdAnnotationDigests = await AttachLifecycleMetadataAsync(
+            eolDigests.Select(digest => new EolDigestData { Digest = digest, EolDate = eolDate }).ToArray(),
+            options.MarkAsInternal,
+            options.OnConflict,
+            cancellationToken);
+
+        await WaitForIngestionAsync(
+            createdAnnotationDigests,
+            options.WaitForIngestion,
+            options.MarServiceConnection,
+            options.IngestionOptions,
+            cancellationToken);
     }
 
     /// <summary>
@@ -268,6 +230,146 @@ public class AttachLifecycleMetadataCommand(
             });
 
         return [.. digests];
+    }
+
+    public async Task AttachFromFileAsync(FileLifecycleMetadataOptions options, CancellationToken cancellationToken)
+    {
+        string path = artifactService.ResolvePath(options.EolDigestsListPath);
+        string jsonString = await File.ReadAllTextAsync(path, cancellationToken);
+
+        EolAnnotationsData data = JsonSerializer.Deserialize<EolAnnotationsData>(jsonString, s_jsonOptions)
+            ?? throw new JsonException($"Unable to deserialize EOL annotation data from '{path}'.");
+
+        List<EolDigestData> eolDigests = data.EolDigests
+            .Select(digestData =>
+            {
+                if (string.IsNullOrWhiteSpace(digestData.Digest))
+                {
+                    throw new InvalidOperationException($"An image digest is missing from '{path}'.");
+                }
+
+                return digestData with
+                {
+                    EolDate = digestData.EolDate
+                        ?? data.EolDate
+                        ?? throw new InvalidOperationException(
+                            $"EOL date is not specified for digest '{digestData.Digest}'."),
+                };
+            })
+            .ToList();
+
+        if (options.IsDryRun)
+        {
+            logger.LogInformation(
+                "(Dry run) Skipping lifecycle metadata attachment for {DigestCount} digest(s) from '{Path}'.",
+                eolDigests.Count,
+                path);
+
+            return;
+        }
+
+        IReadOnlyList<string> createdAnnotationDigests = await AttachLifecycleMetadataAsync(
+            eolDigests,
+            options.MarkAsInternal,
+            options.OnConflict,
+            cancellationToken);
+
+        await WaitForIngestionAsync(
+            createdAnnotationDigests,
+            options.WaitForIngestion,
+            options.MarServiceConnection,
+            options.IngestionOptions,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Attaches lifecycle metadata using the requested conflict policy and returns only newly created artifact digests.
+    /// </summary>
+    private async Task<IReadOnlyList<string>> AttachLifecycleMetadataAsync(
+        IReadOnlyList<EolDigestData> eolDigests,
+        bool markAsInternal,
+        LifecycleMetadataConflictAction onConflict,
+        CancellationToken cancellationToken)
+    {
+        ConcurrentBag<string> createdAnnotationDigests = [];
+
+        await Parallel.ForEachAsync(eolDigests, cancellationToken, async (digestData, ct) =>
+        {
+            LifecycleMetadataAttachmentResult result =
+                await lifecycleMetadataService.AttachLifecycleMetadataAsync(
+                    digestData.Digest,
+                    digestData.EolDate!.Value,
+                    markAsInternal,
+                    onConflict,
+                    ct);
+
+            LogAttachmentResult(digestData.Digest, digestData.EolDate.Value, result);
+
+            if (result.Status == LifecycleMetadataAttachmentStatus.Attached)
+            {
+                createdAnnotationDigests.Add(result.Artifact.Referrer.Digest);
+            }
+        });
+
+        logger.LogInformation(
+            "Created {CreatedCount} lifecycle artifact(s) for {EolCount} requested digest(s).",
+            createdAnnotationDigests.Count,
+            eolDigests.Count);
+
+        return [.. createdAnnotationDigests];
+    }
+
+    private void LogAttachmentResult(string digest, DateOnly eolDate, LifecycleMetadataAttachmentResult result)
+    {
+        switch (result.Status)
+        {
+            case LifecycleMetadataAttachmentStatus.Attached:
+                logger.LogInformation(
+                    "Attached lifecycle metadata to '{Digest}' with EOL date '{EolDate}'.",
+                    digest,
+                    eolDate);
+                break;
+
+            case LifecycleMetadataAttachmentStatus.AlreadyMatching:
+                logger.LogDebug(
+                    "Skipping '{Digest}' because its existing EOL date matches '{EolDate}'.",
+                    digest,
+                    eolDate);
+                break;
+
+            case LifecycleMetadataAttachmentStatus.ConflictSkipped:
+                logger.LogWarning(
+                    "Skipping '{Digest}' because its existing EOL date '{ExistingEolDate}' conflicts with requested"
+                        + " date '{EolDate}'.",
+                    digest,
+                    result.Artifact.EndOfLifeDate,
+                    eolDate);
+                break;
+
+            default:
+                throw new InvalidOperationException($"Unknown lifecycle metadata attachment status '{result.Status}'.");
+        }
+    }
+
+    private async Task WaitForIngestionAsync(
+        IReadOnlyList<string> createdAnnotationDigests,
+        bool waitForIngestion,
+        ServiceConnection? marServiceConnection,
+        MarIngestionOptions ingestionOptions,
+        CancellationToken cancellationToken)
+    {
+        if (!waitForIngestion || createdAnnotationDigests.Count == 0)
+        {
+            return;
+        }
+
+        await ingestionReporter.ReportImageStatusesAsync(
+            marServiceConnection,
+            createdAnnotationDigests.Select(ToDigestInfo),
+            ingestionOptions.WaitTimeout,
+            ingestionOptions.RequeryDelay,
+            minimumQueueTime: null,
+            cancellationToken);
     }
 
     private static DigestInfo ToDigestInfo(string digestReference)

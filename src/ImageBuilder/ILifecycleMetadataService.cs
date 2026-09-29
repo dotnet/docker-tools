@@ -11,6 +11,17 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ILifecycleMetadataService
 {
     /// <summary>
+    /// Attaches EOL metadata, skips matching dates, and handles conflicting dates using <paramref name="onConflict"/>.
+    /// Public requests ignore internal-only metadata. Throws on attachment failure or a conflict in error mode.
+    /// </summary>
+    Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
+        string digest,
+        DateOnly date,
+        bool markAsInternal,
+        LifecycleMetadataConflictAction onConflict,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Gets the most recently created lifecycle artifact that refers to the given digest.
     /// </summary>
     /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>

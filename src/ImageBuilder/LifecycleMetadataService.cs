@@ -27,12 +27,12 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
         {
             if (existingArtifact.EndOfLifeDate == date)
             {
-                return new(LifecycleMetadataAttachmentStatus.AlreadyMatching, existingArtifact);
+                return new LifecycleMetadataAttachmentResult.AlreadyMatching(existingArtifact);
             }
 
             if (!stopOnConflict)
             {
-                return new(LifecycleMetadataAttachmentStatus.ConflictSkipped, existingArtifact);
+                return new LifecycleMetadataAttachmentResult.ConflictSkipped(existingArtifact);
             }
 
             throw new InvalidOperationException(
@@ -44,7 +44,7 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
         LifecycleArtifact artifact = await AnnotateEolDigestAsync(digest, date, markAsInternal, cancellationToken)
             ?? throw new InvalidOperationException($"Failed to attach lifecycle metadata to '{digest}'.");
 
-        return new(LifecycleMetadataAttachmentStatus.Attached, artifact);
+        return new LifecycleMetadataAttachmentResult.Attached(artifact);
     }
 
     public async Task<LifecycleArtifact?> GetLatestLifecycleArtifactAsync(

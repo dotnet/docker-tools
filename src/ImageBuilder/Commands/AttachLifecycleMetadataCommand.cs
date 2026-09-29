@@ -305,9 +305,9 @@ public class AttachLifecycleMetadataCommand(
 
             LogAttachmentResult(digestData.Digest, digestData.EolDate.Value, result);
 
-            if (result.Status == LifecycleMetadataAttachmentStatus.Attached)
+            if (result is LifecycleMetadataAttachmentResult.Attached attached)
             {
-                createdAnnotationDigests.Add(result.Artifact.Referrer.Digest);
+                createdAnnotationDigests.Add(attached.Artifact.Referrer.Digest);
             }
         });
 
@@ -321,33 +321,34 @@ public class AttachLifecycleMetadataCommand(
 
     private void LogAttachmentResult(string digest, DateOnly eolDate, LifecycleMetadataAttachmentResult result)
     {
-        switch (result.Status)
+        switch (result)
         {
-            case LifecycleMetadataAttachmentStatus.Attached:
+            case LifecycleMetadataAttachmentResult.Attached:
                 logger.LogInformation(
                     "Attached lifecycle metadata to '{Digest}' with EOL date '{EolDate}'.",
                     digest,
                     eolDate);
                 break;
 
-            case LifecycleMetadataAttachmentStatus.AlreadyMatching:
+            case LifecycleMetadataAttachmentResult.AlreadyMatching:
                 logger.LogDebug(
                     "Skipping '{Digest}' because its existing EOL date matches '{EolDate}'.",
                     digest,
                     eolDate);
                 break;
 
-            case LifecycleMetadataAttachmentStatus.ConflictSkipped:
+            case LifecycleMetadataAttachmentResult.ConflictSkipped conflict:
                 logger.LogWarning(
                     "Skipping '{Digest}' because its existing EOL date '{ExistingEolDate}' conflicts with requested"
                         + " date '{EolDate}'.",
                     digest,
-                    result.Artifact.EndOfLifeDate,
+                    conflict.ExistingArtifact.EndOfLifeDate,
                     eolDate);
                 break;
 
             default:
-                throw new InvalidOperationException($"Unknown lifecycle metadata attachment status '{result.Status}'.");
+                throw new InvalidOperationException(
+                    $"Unknown lifecycle metadata attachment result '{result.GetType().Name}'.");
         }
     }
 

@@ -1058,8 +1058,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
 
                     _annotatedDigests.Add(digest);
-                    return new LifecycleMetadataAttachmentResult(
-                        LifecycleMetadataAttachmentStatus.Attached,
+                    return new LifecycleMetadataAttachmentResult.Attached(
                         LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", date));
                 });
 
@@ -1068,8 +1067,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 _lifecycleMetadataServiceMock
                     .Setup(o => o.AttachLifecycleMetadataAsync(
                         digest, _globalDate, false, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new LifecycleMetadataAttachmentResult(
-                        LifecycleMetadataAttachmentStatus.AlreadyMatching,
+                    .ReturnsAsync(new LifecycleMetadataAttachmentResult.AlreadyMatching(
                         LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", _globalDate)));
             }
 

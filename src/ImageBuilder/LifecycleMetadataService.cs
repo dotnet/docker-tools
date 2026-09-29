@@ -17,14 +17,9 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
         string digest,
         DateOnly date,
         bool markAsInternal,
-        LifecycleMetadataConflictAction onConflict,
+        bool stopOnConflict,
         CancellationToken cancellationToken)
     {
-        if (!Enum.IsDefined(onConflict))
-        {
-            throw new ArgumentOutOfRangeException(nameof(onConflict), onConflict, "Unknown lifecycle metadata conflict action.");
-        }
-
         LifecycleArtifact? existingArtifact =
             await GetLatestLifecycleArtifactAsync(digest, includeInternal: markAsInternal, cancellationToken);
 
@@ -35,7 +30,7 @@ public class LifecycleMetadataService(IOrasService orasService, ILogger<Lifecycl
                 return new(LifecycleMetadataAttachmentStatus.AlreadyMatching, existingArtifact);
             }
 
-            if (onConflict == LifecycleMetadataConflictAction.Skip)
+            if (!stopOnConflict)
             {
                 return new(LifecycleMetadataAttachmentStatus.ConflictSkipped, existingArtifact);
             }

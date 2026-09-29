@@ -101,7 +101,7 @@ public class AttachLifecycleMetadataCommand(
             await AttachLifecycleMetadataAsync(
                 eolDigests.Select(digest => new EolDigestData { Digest = digest, EolDate = eolDate }).ToArray(),
                 options.MarkAsInternal,
-                options.OnConflict,
+                options.StopOnConflict,
                 cancellationToken);
 
         await WaitForIngestionAsync(
@@ -157,7 +157,7 @@ public class AttachLifecycleMetadataCommand(
         IReadOnlyList<string> createdAnnotationDigests = await AttachLifecycleMetadataAsync(
             eolDigests.Select(digest => new EolDigestData { Digest = digest, EolDate = eolDate }).ToArray(),
             options.MarkAsInternal,
-            options.OnConflict,
+            options.StopOnConflict,
             cancellationToken);
 
         await WaitForIngestionAsync(
@@ -271,7 +271,7 @@ public class AttachLifecycleMetadataCommand(
         IReadOnlyList<string> createdAnnotationDigests = await AttachLifecycleMetadataAsync(
             eolDigests,
             options.MarkAsInternal,
-            options.OnConflict,
+            options.StopOnConflict,
             cancellationToken);
 
         await WaitForIngestionAsync(
@@ -288,7 +288,7 @@ public class AttachLifecycleMetadataCommand(
     private async Task<IReadOnlyList<string>> AttachLifecycleMetadataAsync(
         IReadOnlyList<EolDigestData> eolDigests,
         bool markAsInternal,
-        LifecycleMetadataConflictAction onConflict,
+        bool stopOnConflict,
         CancellationToken cancellationToken)
     {
         ConcurrentBag<string> createdAnnotationDigests = [];
@@ -300,7 +300,7 @@ public class AttachLifecycleMetadataCommand(
                     digestData.Digest,
                     digestData.EolDate!.Value,
                     markAsInternal,
-                    onConflict,
+                    stopOnConflict,
                     ct);
 
             LogAttachmentResult(digestData.Digest, digestData.EolDate.Value, result);

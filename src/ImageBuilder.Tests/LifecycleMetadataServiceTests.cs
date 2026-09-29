@@ -187,12 +187,12 @@ public class LifecycleMetadataServiceTests
     private CancellationToken CancellationToken => TestContext?.CancellationToken ?? default;
 
     [TestMethod]
-    [DataRow("2026-01-01", LifecycleMetadataConflictAction.Error, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
-    [DataRow("2026-01-01", LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
-    [DataRow("2025-01-01", LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
-    [DataRow(null, LifecycleMetadataConflictAction.Skip, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
+    [DataRow("2026-01-01", true, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
+    [DataRow("2026-01-01", false, LifecycleMetadataAttachmentStatus.AlreadyMatching)]
+    [DataRow("2025-01-01", false, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
+    [DataRow(null, false, LifecycleMetadataAttachmentStatus.ConflictSkipped)]
     public async Task AttachLifecycleMetadataAsync_ExistingMetadata_ReturnsSkippedResult(
-        string? existingDate, LifecycleMetadataConflictAction onConflict, LifecycleMetadataAttachmentStatus expected)
+        string? existingDate, bool stopOnConflict, LifecycleMetadataAttachmentStatus expected)
     {
         ReferrerInfo referrer = CreateReferrer("existing", endOfLife: existingDate);
         Mock<IOrasService> orasServiceMock = new();
@@ -201,7 +201,7 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         LifecycleMetadataAttachmentResult result = await service.AttachLifecycleMetadataAsync(
-            Digest, new DateOnly(2026, 1, 1), false, onConflict, CancellationToken);
+            Digest, new DateOnly(2026, 1, 1), markAsInternal: false, stopOnConflict, CancellationToken);
 
         result.Status.ShouldBe(expected);
         result.Artifact.Referrer.ShouldBe(referrer);
@@ -222,7 +222,7 @@ public class LifecycleMetadataServiceTests
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
             () => service.AttachLifecycleMetadataAsync(
-                Digest, new DateOnly(2026, 1, 1), false, LifecycleMetadataConflictAction.Error, CancellationToken));
+                Digest, new DateOnly(2026, 1, 1), markAsInternal: false, stopOnConflict: true, CancellationToken));
 
         exception.Message.ShouldContain(Digest);
         exception.Message.ShouldContain("conflicts");
@@ -250,7 +250,7 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         LifecycleMetadataAttachmentResult result = await service.AttachLifecycleMetadataAsync(
-            Digest, new DateOnly(2026, 1, 1), markAsInternal, LifecycleMetadataConflictAction.Error, CancellationToken);
+            Digest, new DateOnly(2026, 1, 1), markAsInternal, stopOnConflict: true, CancellationToken);
 
         result.Status.ShouldBe(expected);
         result.Artifact.Referrer.IsInternal.ShouldBe(markAsInternal);
@@ -271,7 +271,7 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         await Should.ThrowAsync<InvalidOperationException>(() => service.AttachLifecycleMetadataAsync(
-            Digest, new DateOnly(2026, 1, 1), false, LifecycleMetadataConflictAction.Error, CancellationToken));
+            Digest, new DateOnly(2026, 1, 1), markAsInternal: false, stopOnConflict: true, CancellationToken));
     }
 
     [TestMethod]
@@ -283,7 +283,7 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         await Should.ThrowAsync<ResponseException>(() => service.AttachLifecycleMetadataAsync(
-            Digest, new DateOnly(2026, 1, 1), false, LifecycleMetadataConflictAction.Skip, CancellationToken));
+            Digest, new DateOnly(2026, 1, 1), markAsInternal: false, stopOnConflict: false, CancellationToken));
 
         orasServiceMock.Verify(o => o.AttachArtifactAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(),

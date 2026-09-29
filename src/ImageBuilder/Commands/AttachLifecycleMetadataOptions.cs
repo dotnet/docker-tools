@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class LifecycleMetadataOptions : Options
 {
     public bool MarkAsInternal { get; set; }
-    public LifecycleMetadataConflictAction OnConflict { get; set; }
+    public bool StopOnConflict { get; set; }
     public bool WaitForIngestion { get; set; }
     public MarIngestionOptions IngestionOptions { get; set; } = new();
     public ServiceConnection? MarServiceConnection { get; set; }
@@ -31,10 +31,9 @@ public class LifecycleMetadataOptions : Options
     private static readonly Option<ServiceConnection?> s_marServiceConnectionOption =
         new ServiceConnectionOptionsBuilder().GetCliOption("--mar-service-connection");
 
-    private static readonly Option<LifecycleMetadataConflictAction> s_onConflictOption = new("--on-conflict")
+    private static readonly Option<bool> s_stopOnConflictOption = new("--stop-on-conflict")
     {
-        Description = "Action when existing lifecycle metadata has a different EOL date (error or skip)",
-        DefaultValueFactory = _ => LifecycleMetadataConflictAction.Error
+        Description = "Fail when existing lifecycle metadata has a different EOL date instead of skipping the image"
     };
 
     private static readonly Option<bool> s_markAsInternalOption = new("--mark-as-internal")
@@ -46,7 +45,7 @@ public class LifecycleMetadataOptions : Options
     [
         ..base.GetCliOptions(),
         s_markAsInternalOption,
-        s_onConflictOption,
+        s_stopOnConflictOption,
         s_waitForIngestionOption,
         ..IngestionOptions.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
         s_marServiceConnectionOption,
@@ -56,7 +55,7 @@ public class LifecycleMetadataOptions : Options
     {
         base.Bind(result);
         MarkAsInternal = result.GetValue(s_markAsInternalOption);
-        OnConflict = result.GetValue(s_onConflictOption);
+        StopOnConflict = result.GetValue(s_stopOnConflictOption);
         WaitForIngestion = result.GetValue(s_waitForIngestionOption);
         IngestionOptions.Bind(result);
         MarServiceConnection = result.GetValue(s_marServiceConnectionOption);

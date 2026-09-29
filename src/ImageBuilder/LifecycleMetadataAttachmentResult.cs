@@ -4,12 +4,6 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public enum LifecycleMetadataConflictAction
-{
-    Error,
-    Skip
-}
-
 public enum LifecycleMetadataAttachmentStatus
 {
     Attached,

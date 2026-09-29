@@ -193,7 +193,6 @@ jobs:
         '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
         'imageInfo/full-image-info-orig.json'
         'imageInfo/full-image-info-new.json'
-        --on-conflict skip
         $(eolAnnotationsWaitArg)
         $(dryRunArg)
 

@@ -14,5 +14,4 @@ steps:
         '${{ parameters.acr.server }}'
         '${{ parameters.acr.repoPrefix }}'
         --mark-as-internal
-        --on-conflict skip
         $(dryRunArg)

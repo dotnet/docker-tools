@@ -11,14 +11,15 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ILifecycleMetadataService
 {
     /// <summary>
-    /// Attaches EOL metadata, skips matching dates, and handles conflicting dates using <paramref name="onConflict"/>.
-    /// Public requests ignore internal-only metadata. Throws on attachment failure or a conflict in error mode.
+    /// Attaches EOL metadata and skips matching dates. Conflicting dates are skipped unless
+    /// <paramref name="stopOnConflict"/> is set. Public requests ignore internal-only metadata.
+    /// Throws on attachment failure or, when <paramref name="stopOnConflict"/> is set, on a conflict.
     /// </summary>
     Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
         string digest,
         DateOnly date,
         bool markAsInternal,
-        LifecycleMetadataConflictAction onConflict,
+        bool stopOnConflict,
         CancellationToken cancellationToken);
 
     /// <summary>

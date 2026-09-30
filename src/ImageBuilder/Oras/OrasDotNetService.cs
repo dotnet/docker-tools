@@ -185,10 +185,15 @@ public class OrasDotNetService(
         CancellationToken cancellationToken)
     {
         Repository repository = CreateRepository(reference);
-        Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
+        Reference parsedRef = Reference.Parse(reference);
+
+        // Fetching referrers only reads the subject's digest, so resolving a digest reference would be a wasted
+        // request.
+        Descriptor subjectDescriptor = reference.Contains('@')
+            ? new Descriptor { MediaType = string.Empty, Digest = parsedRef.Digest }
+            : await repository.ResolveAsync(reference, cancellationToken);
 
         List<ReferrerInfo> referrers = [];
-        Reference parsedRef = Reference.Parse(reference);
 
         await foreach (Descriptor referrer in repository.FetchReferrersAsync(subjectDescriptor, cancellationToken))
         {

@@ -1,0 +1,46 @@
+parameters:
+- name: publishConfig
+  type: object
+- name: internalProjectName
+  type: string
+# Path to the EOL annotation data file, relative to the repo root
+- name: dataFile
+  type: string
+# This parameter is passed by publish-config-prod.yml but not used here.
+- name: publicProjectName
+  type: string
+  default: ""
+
+stages:
+- stage: eolAnnotate
+  displayName: Annotate EOL images
+  jobs:
+  - job: AnnotateImages
+    displayName: Annotate EOL Images
+    steps:
+    - template: /eng/docker-tools/templates/steps/init-common.yml@self
+      parameters:
+        dockerClientOS: linux
+        publishConfig: ${{ parameters.publishConfig }}
+    - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+      parameters:
+        publishConfig: ${{ parameters.publishConfig }}
+        usesRegistries:
+        - ${{ parameters.publishConfig.PublishRegistry.server }}
+        serviceConnections:
+        - name: $(marStatus.serviceConnectionName)
+    - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
+      parameters:
+        displayName: Attach Lifecycle Metadata
+        serviceConnections:
+        - name: mar
+          id: $(marStatus.serviceConnection.id)
+          tenantId: $(marStatus.serviceConnection.tenantId)
+          clientId: $(marStatus.serviceConnection.clientId)
+        internalProjectName: ${{ parameters.internalProjectName }}
+        condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
+        args: >-
+          attachLifecycleMetadata file
+          '${{ parameters.dataFile }}'
+          $(eolAnnotationsWaitArg)
+          $(dryRunArg)

@@ -7,7 +7,7 @@ parameters:
   type: string
 
 variables:
-- template: templates/variables/image-builder.yml
+- template: /eng/pipelines/templates/variables/common.yml@self
 # Temporarily disabled due to https://github.com/dotnet/docker-tools/issues/2056.
 - name: publishEolAnnotations
   value: false
@@ -20,33 +20,8 @@ extends:
   template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
     stages:
-    - stage: eolAnnotate
-      displayName: Annotate EOL images
-      dependsOn: []
-      jobs:
-      - job: AnnotateImages
-        displayName: Annotate EOL Images
-        steps:
-        - template: /eng/docker-tools/templates/steps/init-common.yml@self
-          parameters:
-            dockerClientOS: linux
-        - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
-          parameters:
-            serviceConnections:
-            - name: $(publish.serviceConnectionName)
-            - name: $(marStatus.serviceConnectionName)
-        - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
-          parameters:
-            displayName: Attach Lifecycle Metadata
-            serviceConnections:
-            - name: mar
-              id: $(marStatus.serviceConnection.id)
-              tenantId: $(marStatus.serviceConnection.tenantId)
-              clientId: $(marStatus.serviceConnection.clientId)
-            internalProjectName: internal
-            condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
-            args: >-
-              attachLifecycleMetadata file
-              '/repo/${{ parameters.dataFile }}'
-              $(eolAnnotationsWaitArg)
-              $(dryRunArg)
+    - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
+      parameters:
+        stagesTemplate: /eng/pipelines/templates/stages/annotate-eol-digests.yml@self
+        stagesTemplateParameters:
+          dataFile: ${{ parameters.dataFile }}

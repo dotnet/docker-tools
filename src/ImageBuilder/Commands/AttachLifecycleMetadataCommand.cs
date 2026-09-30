@@ -19,10 +19,10 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 /// <summary>
-/// Annotates unsupported images with EOL lifecycle artifacts. The <c>published</c> subcommand annotates published
+/// Annotates unsupported images with EOL lifecycle artifacts. The <c>unsupported</c> subcommand annotates published
 /// images that were replaced or removed. The <c>all</c> subcommand annotates every non-referrer artifact in a
 /// registry. The <c>file</c> subcommand attaches metadata to explicit digests and dates from JSON.
-/// <c>published</c> and <c>all</c> skip images that already have lifecycle metadata with any EOL date, while
+/// <c>unsupported</c> and <c>all</c> skip images that already have lifecycle metadata with any EOL date, while
 /// <c>file</c> warns about (or, with <c>--stop-on-conflict</c>, fails on) existing metadata with a different date.
 /// All support <c>--mark-as-internal</c> to keep lifecycle artifacts from being copied when publishing.
 /// </summary>
@@ -42,17 +42,17 @@ public class AttachLifecycleMetadataCommand(
 
     public Command GetCliCommand()
     {
-        UnsupportedLifecycleMetadataOptions publishedOptions = new();
+        UnsupportedLifecycleMetadataOptions unsupportedOptions = new();
         RegistryLifecycleMetadataOptions allOptions = new();
         FileLifecycleMetadataOptions fileOptions = new();
 
         return new Command(name: this.GetCommandName(), description: "Attaches lifecycle metadata artifacts to images")
         {
             CommandAction.Create(
-                name: "published",
+                name: "unsupported",
                 description: "Attaches EOL lifecycle metadata to images that were just replaced or removed and are thus no longer supported",
-                options: publishedOptions,
-                run: ct => AttachToUnsupportedAsync(publishedOptions, ct)),
+                options: unsupportedOptions,
+                run: ct => AttachToUnsupportedAsync(unsupportedOptions, ct)),
             CommandAction.Create(
                 name: "all",
                 description: "Attaches EOL lifecycle metadata to every non-referrer artifact in the registry",

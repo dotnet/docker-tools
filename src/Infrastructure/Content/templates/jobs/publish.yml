@@ -188,7 +188,7 @@ jobs:
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-
-        attachLifecycleMetadata published
+        attachLifecycleMetadata unsupported
         '${{ parameters.publishConfig.PublishRegistry.server }}'
         '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
         'imageInfo/full-image-info-orig.json'

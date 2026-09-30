@@ -180,7 +180,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -305,7 +305,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -433,7 +433,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     // Already annotated, so it should be skipped.
                     annotatedDigests: [armDigest]);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -557,7 +557,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -650,7 +650,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -749,7 +749,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -849,7 +849,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -952,7 +952,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -1039,7 +1039,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     registryClientFactory,
                     registryContentClientFactory);
             await command.AttachToUnsupportedAsync(
-                CreatePublishedOptions(oldImageInfoPath, newImageInfoPath),
+                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
@@ -1115,7 +1115,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 artifactService: TestHelper.CreateArtifactService(artifactStagingDirectory ?? Path.GetTempPath()));
         }
 
-        private static UnsupportedLifecycleMetadataOptions CreatePublishedOptions(
+        private static UnsupportedLifecycleMetadataOptions CreateUnsupportedOptions(
             string oldImageInfoPath,
             string newImageInfoPath) =>
             new()

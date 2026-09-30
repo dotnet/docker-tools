@@ -1051,12 +1051,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }
 
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_File_ReadsPathOutsideArtifactStagingDirectory()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(dataPath, $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest}}" }] }""");
+
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(),
+                Mock.Of<IAcrContentClientFactory>(),
+                artifactStagingDirectory: Path.Combine(tempFolderContext.Path, "artifacts"));
+            await command.AttachFromFileAsync(
+                new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
+                TestContext?.CancellationToken ?? default);
+
+            _annotatedDigests.ShouldBe([digest]);
+        }
+
         private AttachLifecycleMetadataCommand InitializeCommand(
             IAcrClientFactory registryClientFactory,
             IAcrContentClientFactory registryContentClientFactory,
             IEnumerable<string> annotatedDigests = null,
             bool annotationSucceeds = true,
-            IMarImageIngestionReporter ingestionReporter = null)
+            IMarImageIngestionReporter ingestionReporter = null,
+            string artifactStagingDirectory = null)
         {
             _lifecycleMetadataServiceMock
                 .Setup(o => o.AttachLifecycleMetadataAsync(
@@ -1092,7 +1112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 lifecycleMetadataService: _lifecycleMetadataServiceMock.Object,
                 ingestionReporter: ingestionReporter ?? Mock.Of<IMarImageIngestionReporter>(),
                 // Image info paths are absolute, so the artifact root isn't used.
-                artifactService: TestHelper.CreateArtifactService(Path.GetTempPath()));
+                artifactService: TestHelper.CreateArtifactService(artifactStagingDirectory ?? Path.GetTempPath()));
         }
 
         private static UnsupportedLifecycleMetadataOptions CreatePublishedOptions(

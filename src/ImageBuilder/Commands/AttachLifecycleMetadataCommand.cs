@@ -243,7 +243,7 @@ public class AttachLifecycleMetadataCommand(
 
     public async Task AttachFromFileAsync(FileLifecycleMetadataOptions options, CancellationToken cancellationToken)
     {
-        string path = artifactService.ResolvePath(options.EolDigestsListPath);
+        string path = options.EolDigestsListPath;
         string jsonString = await File.ReadAllTextAsync(path, cancellationToken);
 
         EolAnnotationsData data = JsonSerializer.Deserialize<EolAnnotationsData>(jsonString, s_jsonOptions)

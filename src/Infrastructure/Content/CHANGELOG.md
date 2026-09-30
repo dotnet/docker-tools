@@ -4,33 +4,6 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
-## 2026-09-28: Combined EOL annotation command
-
-The `generateEolAnnotationDataForPublish` and `generateEolAnnotationDataForAllImages` commands
-are replaced by the `attachLifecycleMetadata published` and `attachLifecycleMetadata all` subcommands. Each
-finds unsupported images and annotates the ones that don't already have a lifecycle artifact.
-The publish job now runs a single "Attach Lifecycle Metadata" step instead of three.
-
-- `published` annotates images that are no longer in the new image info file, and waits for MAR
-  ingestion when `--wait-for-ingestion` is passed.
-- `all` annotates every non-referrer artifact in a registry.
-- Both subcommands create public lifecycle metadata by default. Pass `--mark-as-internal` to add
-  `vnd.microsoft.dotnet.imagebuilder.internal=true`, which prevents copying the artifact when publishing.
-  The cleanup pipeline uses `all --mark-as-internal` to keep its lifecycle metadata internal-only.
-- Images that already have lifecycle metadata are skipped, regardless of its EOL date.
-- A `file` subcommand attaches lifecycle metadata to digests and EOL dates listed in a JSON file.
-  It warns about images whose existing lifecycle metadata has a different EOL date. Pass
-  `--stop-on-conflict` to fail instead.
-
-- The `generateEolAnnotationDataExtraOptions` variable was removed.
-- The publish artifact no longer contains `eol-annotation-data/` or `annotation-digests/`.
-- The `annotateEolDigests` and `waitForMarAnnotationIngestion` commands and the
-  `templates/steps/annotate-eol-digests.yml` step template were removed. Use
-  `attachLifecycleMetadata file` instead, with `--wait-for-ingestion` to wait for MAR ingestion.
-  The MAR bulk-deletion file that `annotateEolDigests` wrote is no longer produced.
-
----
-
 ## 2026-08-10: Pre-ImageBuilder build customization
 
 Build pipeline templates now accept `customPreImageBuilderBuildSteps`. These steps run after

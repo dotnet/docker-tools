@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -49,6 +50,7 @@ public class OrasDotNetService(
 
     private const int PushSignatureMaxRetryAttempts = 2;
 
+    private readonly ConcurrentDictionary<string, byte> _repositoriesWithEmptyBlob = new();
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly Cache _orasCache = new(cache);
     private readonly IFileSystem _fileSystem = fileSystem;
@@ -133,6 +135,7 @@ public class OrasDotNetService(
 
         using MemoryStream payloadStream = new(payloadBytes);
         await repository.PushAsync(signatureLayerDescriptor, payloadStream, cancellationToken);
+        await EnsureEmptyBlobPushedAsync(repository, cancellationToken);
 
         Dictionary<string, string> annotations = new()
         {
@@ -143,6 +146,7 @@ public class OrasDotNetService(
         {
             ManifestAnnotations = annotations,
             Subject = subjectDescriptor,
+            Config = Descriptor.Empty,
             Layers = [signatureLayerDescriptor]
         };
 
@@ -223,11 +227,13 @@ public class OrasDotNetService(
         long startTime = Stopwatch.GetTimestamp();
         Repository repository = CreateRepository(reference);
         Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
+        await EnsureEmptyBlobPushedAsync(repository, cancellationToken);
 
         PackManifestOptions options = new()
         {
             ManifestAnnotations = annotations,
-            Subject = subjectDescriptor
+            Subject = subjectDescriptor,
+            Config = Descriptor.Empty
         };
 
         Descriptor artifactDescriptor =
@@ -244,6 +250,28 @@ public class OrasDotNetService(
             reference, artifactDescriptor.Digest, artifactType, annotations, elapsed);
 
         return artifactDescriptor.Digest;
+    }
+
+    /// <summary>
+    /// Pushes the OCI empty blob to the repository, normally once per service instance. Concurrent first calls may
+    /// both push it, which is harmless. Artifact manifests use it as their config, and ORAS would otherwise upload it
+    /// again for every manifest it packs.
+    /// </summary>
+    private async Task EnsureEmptyBlobPushedAsync(Repository repository, CancellationToken cancellationToken)
+    {
+        Reference repositoryRef = repository.Options.Reference;
+        string repositoryKey = $"{repositoryRef.Registry}/{repositoryRef.Repository}";
+
+        if (_repositoriesWithEmptyBlob.ContainsKey(repositoryKey))
+        {
+            return;
+        }
+
+        _logger.LogDebug("Pushing empty blob to {Repository}", repositoryKey);
+        using MemoryStream content = new("{}"u8.ToArray());
+        await repository.PushAsync(Descriptor.Empty, content, cancellationToken);
+
+        _repositoriesWithEmptyBlob.TryAdd(repositoryKey, 0);
     }
 
     /// <summary>

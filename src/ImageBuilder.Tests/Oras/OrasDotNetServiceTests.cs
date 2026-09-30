@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -149,6 +150,25 @@ public class OrasDotNetServiceTests
         handler.Requests.ShouldContain("HEAD /v2/repo/manifests/tag");
     }
 
+    [TestMethod]
+    public async Task AttachArtifactAsync_PushesEmptyBlobOncePerRepository()
+    {
+        RecordingHandler handler = new();
+        OrasDotNetService service = CreateService(httpClientFactory: CreateHttpClientFactory(handler));
+        string reference = $"registry.io/repo@{SubjectDigest}";
+
+        await service.AttachArtifactAsync(
+            reference, ReferrerArtifactType, new Dictionary<string, string> { ["a"] = "1" },
+            TestContext?.CancellationToken ?? default);
+
+        await service.AttachArtifactAsync(
+            reference, ReferrerArtifactType, new Dictionary<string, string> { ["a"] = "2" },
+            TestContext?.CancellationToken ?? default);
+
+        handler.Requests.Count(r => r.StartsWith("POST /v2/repo/blobs/uploads/")).ShouldBe(1);
+        handler.Requests.Count(r => r.StartsWith("PUT /v2/repo/manifests/")).ShouldBe(2);
+    }
+
     private const string SubjectDigest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
     private const string ReferrerArtifactType = "application/vnd.test";
 
@@ -179,12 +199,13 @@ public class OrasDotNetServiceTests
     }
 
     /// <summary>
-    /// Serves a subject manifest HEAD and a referrers index with one referrer, recording each request.
+    /// A minimal fake registry for a single "repo" repository, recording each request.
     /// </summary>
     private sealed class RecordingHandler : HttpMessageHandler
     {
         private const string ManifestMediaType = "application/vnd.oci.image.manifest.v1+json";
         private const string IndexMediaType = "application/vnd.oci.image.index.v1+json";
+        private const string UploadPath = "/v2/repo/blobs/uploads/session";
 
         public List<string> Requests { get; } = [];
 
@@ -194,14 +215,35 @@ public class OrasDotNetServiceTests
             string path = request.RequestUri!.AbsolutePath;
             Requests.Add($"{request.Method} {path}");
 
-            HttpResponseMessage response = new(HttpStatusCode.OK) { RequestMessage = request };
+            HttpResponseMessage response = new(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new ByteArrayContent([])
+            };
 
             if (request.Method == HttpMethod.Head && path.StartsWith("/v2/repo/manifests/"))
             {
-                response.Content = new ByteArrayContent([]);
                 response.Content.Headers.ContentType = new MediaTypeHeaderValue(ManifestMediaType);
                 response.Content.Headers.ContentLength = 123;
                 response.Headers.Add("Docker-Content-Digest", SubjectDigest);
+            }
+            else if (request.Method == HttpMethod.Post && path == "/v2/repo/blobs/uploads/")
+            {
+                response.StatusCode = HttpStatusCode.Accepted;
+                response.Headers.Location = new Uri(UploadPath, UriKind.Relative);
+            }
+            else if (request.Method == HttpMethod.Put && path == UploadPath)
+            {
+                response.StatusCode = HttpStatusCode.Created;
+            }
+            else if (request.Method == HttpMethod.Put && path.StartsWith("/v2/repo/manifests/"))
+            {
+                response.StatusCode = HttpStatusCode.Created;
+                response.Headers.Add("Docker-Content-Digest", path["/v2/repo/manifests/".Length..]);
+
+                // Tells ORAS the registry supports the referrers API, so it doesn't fall back to updating a
+                // referrers tag index.
+                response.Headers.Add("OCI-Subject", SubjectDigest);
             }
             else if (request.Method == HttpMethod.Get && path == $"/v2/repo/referrers/{SubjectDigest}")
             {

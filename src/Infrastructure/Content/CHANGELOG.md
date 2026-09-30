@@ -17,7 +17,9 @@ The publish job now runs a single "Attach Lifecycle Metadata" step instead of th
 - Both subcommands create public lifecycle metadata by default. Pass `--mark-as-internal` to add
   `vnd.microsoft.dotnet.imagebuilder.internal=true`, which prevents copying the artifact when publishing.
   The cleanup pipeline uses `all --mark-as-internal` to keep its lifecycle metadata internal-only.
-- Images whose existing lifecycle metadata has a different EOL date are skipped. Pass
+- Images that already have lifecycle metadata are skipped, regardless of its EOL date.
+- A `file` subcommand attaches lifecycle metadata to digests and EOL dates listed in a JSON file.
+  It warns about images whose existing lifecycle metadata has a different EOL date. Pass
   `--stop-on-conflict` to fail instead.
 
 - The `generateEolAnnotationDataExtraOptions` variable was removed.

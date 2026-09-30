@@ -22,6 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// Annotates unsupported images with EOL lifecycle artifacts. The <c>published</c> subcommand annotates published
 /// images that were replaced or removed. The <c>all</c> subcommand annotates every non-referrer artifact in a
 /// registry. The <c>file</c> subcommand attaches metadata to explicit digests and dates from JSON.
+/// <c>published</c> and <c>all</c> skip images that already have lifecycle metadata with any EOL date, while
+/// <c>file</c> warns about (or, with <c>--stop-on-conflict</c>, fails on) existing metadata with a different date.
 /// All support <c>--mark-as-internal</c> to keep lifecycle artifacts from being copied when publishing.
 /// </summary>
 public class AttachLifecycleMetadataCommand(
@@ -101,7 +103,7 @@ public class AttachLifecycleMetadataCommand(
             await AttachLifecycleMetadataAsync(
                 eolDigests.Select(digest => new EolDigestData { Digest = digest, EolDate = eolDate }).ToArray(),
                 options.MarkAsInternal,
-                options.StopOnConflict,
+                DateMismatchHandling.Ignore,
                 cancellationToken);
 
         await WaitForIngestionAsync(
@@ -157,7 +159,7 @@ public class AttachLifecycleMetadataCommand(
         IReadOnlyList<string> createdAnnotationDigests = await AttachLifecycleMetadataAsync(
             eolDigests.Select(digest => new EolDigestData { Digest = digest, EolDate = eolDate }).ToArray(),
             options.MarkAsInternal,
-            options.StopOnConflict,
+            DateMismatchHandling.Ignore,
             cancellationToken);
 
         await WaitForIngestionAsync(
@@ -271,7 +273,7 @@ public class AttachLifecycleMetadataCommand(
         IReadOnlyList<string> createdAnnotationDigests = await AttachLifecycleMetadataAsync(
             eolDigests,
             options.MarkAsInternal,
-            options.StopOnConflict,
+            options.StopOnConflict ? DateMismatchHandling.Fail : DateMismatchHandling.Warn,
             cancellationToken);
 
         await WaitForIngestionAsync(
@@ -283,12 +285,12 @@ public class AttachLifecycleMetadataCommand(
     }
 
     /// <summary>
-    /// Attaches lifecycle metadata using the requested conflict policy and returns only newly created artifact digests.
+    /// Attaches lifecycle metadata and returns only newly created artifact digests.
     /// </summary>
     private async Task<IReadOnlyList<string>> AttachLifecycleMetadataAsync(
         IReadOnlyList<EolDigestData> eolDigests,
         bool markAsInternal,
-        bool stopOnConflict,
+        DateMismatchHandling dateMismatchHandling,
         CancellationToken cancellationToken)
     {
         ConcurrentBag<string> createdAnnotationDigests = [];
@@ -300,10 +302,10 @@ public class AttachLifecycleMetadataCommand(
                     digestData.Digest,
                     digestData.EolDate!.Value,
                     markAsInternal,
-                    stopOnConflict,
+                    stopOnConflict: dateMismatchHandling == DateMismatchHandling.Fail,
                     ct);
 
-            LogAttachmentResult(digestData.Digest, digestData.EolDate.Value, result);
+            LogAttachmentResult(digestData.Digest, digestData.EolDate.Value, result, dateMismatchHandling);
 
             if (result is LifecycleMetadataAttachmentResult.Attached attached)
             {
@@ -319,7 +321,11 @@ public class AttachLifecycleMetadataCommand(
         return [.. createdAnnotationDigests];
     }
 
-    private void LogAttachmentResult(string digest, DateOnly eolDate, LifecycleMetadataAttachmentResult result)
+    private void LogAttachmentResult(
+        string digest,
+        DateOnly eolDate,
+        LifecycleMetadataAttachmentResult result,
+        DateMismatchHandling dateMismatchHandling)
     {
         switch (result)
         {
@@ -335,6 +341,14 @@ public class AttachLifecycleMetadataCommand(
                     "Skipping '{Digest}' because its existing EOL date matches '{EolDate}'.",
                     digest,
                     eolDate);
+                break;
+
+            case LifecycleMetadataAttachmentResult.ConflictSkipped conflict
+                when dateMismatchHandling == DateMismatchHandling.Ignore:
+                logger.LogDebug(
+                    "Skipping '{Digest}' because it already has lifecycle metadata with EOL date '{ExistingEolDate}'.",
+                    digest,
+                    conflict.ExistingArtifact.EndOfLifeDate);
                 break;
 
             case LifecycleMetadataAttachmentResult.ConflictSkipped conflict:
@@ -377,5 +391,15 @@ public class AttachLifecycleMetadataCommand(
     {
         ImageName name = ImageName.Parse(digestReference);
         return new DigestInfo(name.Digest, name.Repo, tags: []);
+    }
+
+    /// <summary>
+    /// How to handle an image whose existing lifecycle metadata has a different EOL date than requested.
+    /// </summary>
+    private enum DateMismatchHandling
+    {
+        Ignore,
+        Warn,
+        Fail,
     }
 }

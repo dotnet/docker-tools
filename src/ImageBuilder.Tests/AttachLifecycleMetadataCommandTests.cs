@@ -443,6 +443,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ];
 
             _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+
+            // An earlier EOL date on an already-annotated image must never fail the run.
+            _lifecycleMetadataServiceMock.Verify(
+                o => o.AttachLifecycleMetadataAsync(
+                    It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()),
+                Times.Never());
         }
 
         [TestMethod]
@@ -1064,11 +1070,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (string digest in annotatedDigests ?? [])
             {
+                // Model an image marked EOL by an earlier run, so its EOL date differs from today's.
                 _lifecycleMetadataServiceMock
                     .Setup(o => o.AttachLifecycleMetadataAsync(
                         digest, _globalDate, false, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new LifecycleMetadataAttachmentResult.AlreadyMatching(
-                        LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", _globalDate)));
+                    .ReturnsAsync(new LifecycleMetadataAttachmentResult.ConflictSkipped(
+                        LifecycleArtifactHelper.CreateLifecycleArtifact(
+                            $"{digest}-lifecycle", _globalDate.AddDays(-30))));
             }
 
             return new AttachLifecycleMetadataCommand(

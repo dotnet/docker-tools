@@ -15,7 +15,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class LifecycleMetadataOptions : Options
 {
     public bool MarkAsInternal { get; set; }
-    public bool StopOnConflict { get; set; }
     public bool WaitForIngestion { get; set; }
     public MarIngestionOptions IngestionOptions { get; set; } = new();
     public ServiceConnection? MarServiceConnection { get; set; }
@@ -31,11 +30,6 @@ public class LifecycleMetadataOptions : Options
     private static readonly Option<ServiceConnection?> s_marServiceConnectionOption =
         new ServiceConnectionOptionsBuilder().GetCliOption("--mar-service-connection");
 
-    private static readonly Option<bool> s_stopOnConflictOption = new("--stop-on-conflict")
-    {
-        Description = "Fail when existing lifecycle metadata has a different EOL date instead of skipping the image"
-    };
-
     private static readonly Option<bool> s_markAsInternalOption = new("--mark-as-internal")
     {
         Description = "Mark lifecycle metadata as internal-only so it is never copied when publishing"
@@ -45,7 +39,6 @@ public class LifecycleMetadataOptions : Options
     [
         ..base.GetCliOptions(),
         s_markAsInternalOption,
-        s_stopOnConflictOption,
         s_waitForIngestionOption,
         ..IngestionOptions.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
         s_marServiceConnectionOption,
@@ -55,7 +48,6 @@ public class LifecycleMetadataOptions : Options
     {
         base.Bind(result);
         MarkAsInternal = result.GetValue(s_markAsInternalOption);
-        StopOnConflict = result.GetValue(s_stopOnConflictOption);
         WaitForIngestion = result.GetValue(s_waitForIngestionOption);
         IngestionOptions.Bind(result);
         MarServiceConnection = result.GetValue(s_marServiceConnectionOption);
@@ -84,10 +76,16 @@ public class RegistryLifecycleMetadataOptions : LifecycleMetadataOptions
 public class FileLifecycleMetadataOptions : LifecycleMetadataOptions
 {
     public string EolDigestsListPath { get; set; } = string.Empty;
+    public bool StopOnConflict { get; set; }
 
     private static readonly Argument<string> s_eolDigestsListPathArgument = new(nameof(EolDigestsListPath))
     {
         Description = "JSON file containing fully-qualified image digests and their EOL dates"
+    };
+
+    private static readonly Option<bool> s_stopOnConflictOption = new("--stop-on-conflict")
+    {
+        Description = "Fail when existing lifecycle metadata has a different EOL date instead of skipping the image"
     };
 
     public override IEnumerable<Argument> GetCliArguments() =>
@@ -96,10 +94,17 @@ public class FileLifecycleMetadataOptions : LifecycleMetadataOptions
         s_eolDigestsListPathArgument,
     ];
 
+    public override IEnumerable<Option> GetCliOptions() =>
+    [
+        ..base.GetCliOptions(),
+        s_stopOnConflictOption,
+    ];
+
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
         EolDigestsListPath = result.GetValue(s_eolDigestsListPathArgument) ?? string.Empty;
+        StopOnConflict = result.GetValue(s_stopOnConflictOption);
     }
 }
 

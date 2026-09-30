@@ -9,11 +9,13 @@ parameters:
   displayName: Wait for MAR to ingest the lifecycle metadata
   type: boolean
   default: false
+- name: dryRun
+  displayName: Dry run
+  type: boolean
+  default: false
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
-- name: dryRunArg
-  value: ""
 
 extends:
   template: /eng/docker-tools/templates/1es-official.yml@self
@@ -25,3 +27,4 @@ extends:
         stagesTemplateParameters:
           dataFile: ${{ parameters.dataFile }}
           waitForIngestion: ${{ parameters.waitForIngestion }}
+          dryRun: ${{ parameters.dryRun }}

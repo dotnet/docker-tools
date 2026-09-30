@@ -8,6 +8,8 @@ parameters:
   type: string
 - name: waitForIngestion
   type: boolean
+- name: dryRun
+  type: boolean
 # This parameter is passed by publish-config-prod.yml but not used here.
 - name: publicProjectName
   type: string
@@ -44,4 +46,4 @@ stages:
           attachLifecycleMetadata file
           '${{ parameters.dataFile }}'
           ${{ iif(parameters.waitForIngestion, '--wait-for-ingestion', '') }}
-          $(dryRunArg)
+          ${{ iif(parameters.dryRun, '--dry-run', '') }}

@@ -13,6 +13,8 @@ variables:
   value: false
 - name: dryRunArg
   value: ""
+- name: eolAnnotationsWaitArg
+  value: $[ iif(eq(variables['waitForIngestionEnabled'], 'true'), '--wait-for-ingestion', '') ]
 
 extends:
   template: /eng/docker-tools/templates/1es-official.yml@self
@@ -33,6 +35,18 @@ extends:
             serviceConnections:
             - name: $(publish.serviceConnectionName)
             - name: $(marStatus.serviceConnectionName)
-        - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
+        - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
           parameters:
-            dataFile: /repo/${{ parameters.dataFile }}
+            displayName: Attach Lifecycle Metadata
+            serviceConnections:
+            - name: mar
+              id: $(marStatus.serviceConnection.id)
+              tenantId: $(marStatus.serviceConnection.tenantId)
+              clientId: $(marStatus.serviceConnection.clientId)
+            internalProjectName: internal
+            condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
+            args: >-
+              attachLifecycleMetadata file
+              '/repo/${{ parameters.dataFile }}'
+              $(eolAnnotationsWaitArg)
+              $(dryRunArg)

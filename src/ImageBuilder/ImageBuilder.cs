@@ -119,7 +119,6 @@ public static class ImageBuilder
         builder.Services.AddSingleton<IImageSigningService, ImageSigningService>();
 
         // Commands
-        builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
         builder.Services.AddSingleton<ICommand, AttachLifecycleMetadataCommand>();
         builder.Services.AddSingleton<ICommand, BuildCommand>();
         builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
@@ -144,7 +143,6 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
         builder.Services.AddSingleton<ICommand, UpdateCommand>();
         builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
-        builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();
 

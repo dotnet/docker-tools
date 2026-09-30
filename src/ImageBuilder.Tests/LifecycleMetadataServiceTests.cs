@@ -9,7 +9,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Oras;
-using Microsoft.Extensions.Logging;
 using Moq;
 using OrasProject.Oras.Registry.Remote.Exceptions;
 using Shouldly;
@@ -136,10 +135,12 @@ public class LifecycleMetadataServiceTests
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task AnnotateEolDigestAsync_AttachesLifecycleArtifact(bool markAsInternal)
+    public async Task AttachLifecycleMetadataAsync_NoExistingArtifact_AttachesLifecycleArtifact(bool markAsInternal)
     {
         IDictionary<string, string>? attachedAnnotations = null;
         Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock.Setup(o => o.GetReferrersAsync(Digest, It.IsAny<CancellationToken>(), false))
+            .ReturnsAsync([]);
         orasServiceMock
             .Setup(o => o.AttachArtifactAsync(
                 Digest, OciArtifactType.Lifecycle, It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
@@ -150,38 +151,21 @@ public class LifecycleMetadataServiceTests
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
         DateTimeOffset before = DateTimeOffset.UtcNow;
-        LifecycleArtifact? result = await service.AnnotateEolDigestAsync(
-            Digest, new DateOnly(2026, 5, 22), markAsInternal, CancellationToken);
+        LifecycleMetadataAttachmentResult result = await service.AttachLifecycleMetadataAsync(
+            Digest, new DateOnly(2026, 5, 22), markAsInternal, stopOnConflict: true, CancellationToken);
         DateTimeOffset after = DateTimeOffset.UtcNow;
 
-        result.ShouldNotBeNull();
-        result.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:lifecycle");
-        result.Referrer.ArtifactType.ShouldBe(OciArtifactType.Lifecycle);
-        result.Referrer.IsInternal.ShouldBe(markAsInternal);
-        DateTimeOffset? created = result.Referrer.Created;
+        LifecycleArtifact artifact = result.ShouldBeOfType<LifecycleMetadataAttachmentResult.Attached>().Artifact;
+        artifact.Referrer.Digest.ShouldBe($"{Registry}/{Repository}@sha256:lifecycle");
+        artifact.Referrer.ArtifactType.ShouldBe(OciArtifactType.Lifecycle);
+        artifact.Referrer.IsInternal.ShouldBe(markAsInternal);
+        DateTimeOffset? created = artifact.Referrer.Created;
         created.ShouldNotBeNull();
         created.Value.ShouldBeInRange(before, after);
-        result.EndOfLifeDate.ShouldBe(new DateOnly(2026, 5, 22));
+        artifact.EndOfLifeDate.ShouldBe(new DateOnly(2026, 5, 22));
 
         // The returned artifact must describe exactly what was pushed.
-        result.Referrer.Annotations.ShouldBe(attachedAnnotations);
-    }
-
-    [TestMethod]
-    public async Task AnnotateEolDigestAsync_AttachFails_ReturnsNull()
-    {
-        Mock<IOrasService> orasServiceMock = new();
-        orasServiceMock
-            .Setup(o => o.AttachArtifactAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(CreateRateLimitException());
-
-        LifecycleMetadataService service = CreateService(orasServiceMock.Object);
-
-        LifecycleArtifact? result = await service.AnnotateEolDigestAsync(
-            Digest, new DateOnly(2026, 5, 22), markAsInternal: false, CancellationToken);
-
-        result.ShouldBeNull();
+        artifact.Referrer.Annotations.ShouldBe(attachedAnnotations);
     }
 
     private CancellationToken CancellationToken => TestContext?.CancellationToken ?? default;
@@ -288,8 +272,12 @@ public class LifecycleMetadataServiceTests
             .ThrowsAsync(CreateRateLimitException());
         LifecycleMetadataService service = CreateService(orasServiceMock.Object);
 
-        await Should.ThrowAsync<InvalidOperationException>(() => service.AttachLifecycleMetadataAsync(
-            Digest, new DateOnly(2026, 1, 1), markAsInternal: false, stopOnConflict: true, CancellationToken));
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
+            () => service.AttachLifecycleMetadataAsync(
+                Digest, new DateOnly(2026, 1, 1), markAsInternal: false, stopOnConflict: true, CancellationToken));
+
+        exception.Message.ShouldContain(Digest);
+        exception.InnerException.ShouldBeOfType<ResponseException>();
     }
 
     [TestMethod]
@@ -347,8 +335,7 @@ public class LifecycleMetadataServiceTests
         return CreateService(orasServiceMock.Object);
     }
 
-    private static LifecycleMetadataService CreateService(IOrasService orasService) =>
-        new(orasService, Mock.Of<ILogger<LifecycleMetadataService>>());
+    private static LifecycleMetadataService CreateService(IOrasService orasService) => new(orasService);
 
     private static ResponseException CreateRateLimitException()
     {

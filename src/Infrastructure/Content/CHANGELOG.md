@@ -24,6 +24,10 @@ The publish job now runs a single "Attach Lifecycle Metadata" step instead of th
 
 - The `generateEolAnnotationDataExtraOptions` variable was removed.
 - The publish artifact no longer contains `eol-annotation-data/` or `annotation-digests/`.
+- The `annotateEolDigests` and `waitForMarAnnotationIngestion` commands and the
+  `templates/steps/annotate-eol-digests.yml` step template were removed. Use
+  `attachLifecycleMetadata file` instead, with `--wait-for-ingestion` to wait for MAR ingestion.
+  The MAR bulk-deletion file that `annotateEolDigests` wrote is no longer produced.
 
 ---
 

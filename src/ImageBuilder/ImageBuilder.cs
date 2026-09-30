@@ -119,7 +119,7 @@ public static class ImageBuilder
         builder.Services.AddSingleton<IImageSigningService, ImageSigningService>();
 
         // Commands
-        builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
+        builder.Services.AddSingleton<ICommand, AttachLifecycleMetadataCommand>();
         builder.Services.AddSingleton<ICommand, BuildCommand>();
         builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
         builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();
@@ -127,8 +127,6 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, CreateManifestListCommand>();
         builder.Services.AddSingleton<ICommand, GenerateBuildMatrixCommand>();
         builder.Services.AddSingleton<ICommand, GenerateDockerfilesCommand>();
-        builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
-        builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForPublishCommand>();
         builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
         builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
         builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();
@@ -145,7 +143,6 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
         builder.Services.AddSingleton<ICommand, UpdateCommand>();
         builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
-        builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();
 

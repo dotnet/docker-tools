@@ -22,7 +22,9 @@ only when they remove real complexity.
 ## Commands and inputs
 
 Expose ImageBuilder functionality through commands. Command classes have one
-`ExecuteAsync()` method.
+`ExecuteAsync()` method. A command with several distinct modes can instead implement
+`ICommand` directly and build subcommands with `CommandAction.Create`, sharing code as private
+methods (see `AttachLifecycleMetadataCommand`).
 
 - Use types in `Microsoft.DotNet.ImageBuilder.Configuration`, populated by
   `appsettings.json`, for strongly typed values that stay constant across invocations of the

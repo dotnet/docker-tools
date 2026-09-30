@@ -5,86 +5,108 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Oras;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public class LifecycleMetadataService : ILifecycleMetadataService
+public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMetadataService
 {
-    public const string EndOfLifeAnnotation = "vnd.microsoft.artifact.lifecycle.end-of-life.date";
-    public const string EolDateFormat = "yyyy-MM-dd";
-
-    private readonly IOrasService _orasService;
-    private readonly ILogger<LifecycleMetadataService> _logger;
-
-    public LifecycleMetadataService(IOrasService orasService, ILogger<LifecycleMetadataService> logger)
+    public async Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
+        string digest,
+        DateOnly date,
+        bool markAsInternal,
+        bool stopOnConflict,
+        CancellationToken cancellationToken)
     {
-        _orasService = orasService;
-        _logger = logger;
+        LifecycleArtifact? existingArtifact =
+            await GetLatestLifecycleArtifactAsync(digest, includeInternal: markAsInternal, cancellationToken);
+
+        if (existingArtifact is not null)
+        {
+            if (existingArtifact.EndOfLifeDate == date)
+            {
+                return new LifecycleMetadataAttachmentResult.AlreadyMatching(existingArtifact);
+            }
+
+            if (!stopOnConflict)
+            {
+                return new LifecycleMetadataAttachmentResult.ConflictSkipped(existingArtifact);
+            }
+
+            throw new InvalidOperationException(
+                $"Cannot attach lifecycle metadata to '{digest}': existing artifact"
+                + $" '{existingArtifact.Referrer.Digest}' has EOL date '{existingArtifact.EndOfLifeDate}',"
+                + $" which conflicts with requested date '{date}'.");
+        }
+
+        LifecycleArtifact artifact = await AttachLifecycleArtifactAsync(digest, date, markAsInternal, cancellationToken);
+        return new LifecycleMetadataAttachmentResult.Attached(artifact);
     }
 
-    public async Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken)
+    public async Task<LifecycleArtifact?> GetLatestLifecycleArtifactAsync(
+        string digest,
+        bool includeInternal,
+        CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(digest);
-
         IReadOnlyList<ReferrerInfo> referrers =
-            await _orasService.GetReferrersAsync(digest, cancellationToken, isDryRun: false);
+            await orasService.GetReferrersAsync(digest, cancellationToken, isDryRun: false);
 
-        ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
-            r => r.ArtifactType == OciArtifactType.Lifecycle);
+        ReferrerInfo? lifecycleReferrer = referrers
+            .Where(r => r.ArtifactType == OciArtifactType.Lifecycle && (includeInternal || !r.IsInternal))
+            .OrderByDescending(r => r.Created)
+            .FirstOrDefault();
 
         if (lifecycleReferrer is null)
         {
             return null;
         }
 
-        return new Manifest
-        {
-            ArtifactType = lifecycleReferrer.ArtifactType ?? string.Empty,
-            Reference = lifecycleReferrer.Digest,
-            Annotations = lifecycleReferrer.Annotations is not null
-                ? new Dictionary<string, string>(lifecycleReferrer.Annotations)
-                : []
-        };
+        return new LifecycleArtifact(lifecycleReferrer);
     }
 
-    public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken)
+    private async Task<LifecycleArtifact> AttachLifecycleArtifactAsync(
+        string digest,
+        DateOnly date,
+        bool markAsInternal,
+        CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(digest);
+        // Set the creation time explicitly so the returned artifact matches what was pushed.
+        Dictionary<string, string> annotations = new()
+        {
+            [LifecycleAnnotations.EndOfLife] = date.ToString(LifecycleAnnotations.EndOfLifeDateFormat),
+            [OciAnnotations.ImageCreated] = DateTimeOffset.UtcNow.ToString("o")
+        };
 
+        if (markAsInternal)
+        {
+            annotations[ImageBuilderAnnotations.Internal] = "true";
+        }
+
+        string artifactDigest;
         try
         {
-            Dictionary<string, string> annotations = new()
-            {
-                [EndOfLifeAnnotation] = date.ToString(EolDateFormat)
-            };
-
-            string artifactDigest = await _orasService.AttachArtifactAsync(
+            artifactDigest = await orasService.AttachArtifactAsync(
                 digest,
                 OciArtifactType.Lifecycle,
                 annotations,
                 cancellationToken);
-
-            // Construct the fully-qualified reference from the subject reference and the artifact digest.
-            string registry = digest[..digest.IndexOf('/')];
-            string repository = digest[(digest.IndexOf('/') + 1)..digest.IndexOf('@')];
-            string artifactReference = $"{registry}/{repository}@{artifactDigest}";
-
-            return new Manifest
-            {
-                ArtifactType = OciArtifactType.Lifecycle,
-                Reference = artifactReference,
-                Annotations = annotations
-            };
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
-            return null;
+            throw new InvalidOperationException($"Failed to attach lifecycle metadata to '{digest}'.", ex);
         }
+
+        // Construct the fully-qualified reference from the subject reference and the artifact digest.
+        string registry = digest[..digest.IndexOf('/')];
+        string repository = digest[(digest.IndexOf('/') + 1)..digest.IndexOf('@')];
+        string artifactReference = $"{registry}/{repository}@{artifactDigest}";
+
+        var referrerInfo = new ReferrerInfo(artifactReference, OciArtifactType.Lifecycle)
+        {
+            Annotations = annotations
+        };
+
+        return new LifecycleArtifact(referrerInfo);
     }
 }

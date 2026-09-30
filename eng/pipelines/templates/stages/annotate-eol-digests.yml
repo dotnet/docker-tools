@@ -6,6 +6,8 @@ parameters:
 # Path to the EOL annotation data file, relative to the repo root
 - name: dataFile
   type: string
+- name: waitForIngestion
+  type: boolean
 # This parameter is passed by publish-config-prod.yml but not used here.
 - name: publicProjectName
   type: string
@@ -41,5 +43,5 @@ stages:
         args: >-
           attachLifecycleMetadata file
           '${{ parameters.dataFile }}'
-          $(eolAnnotationsWaitArg)
+          ${{ iif(parameters.waitForIngestion, '--wait-for-ingestion', '') }}
           $(dryRunArg)

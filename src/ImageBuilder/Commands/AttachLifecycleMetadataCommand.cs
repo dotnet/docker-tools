@@ -128,17 +128,16 @@ public class AttachLifecycleMetadataCommand(
             .Select(name => registryOptions.RepoPrefix + name)
             .ToHashSet();
 
-        IReadOnlyList<string> registryDigests = await GetRegistryNonReferrerDigestsAsync(
-            registryOptions.Registry,
-            repoNames.Contains,
-            cancellationToken);
-
         HashSet<string> supportedDigests = newImageInfo
             .ApplyRegistryOverride(registryOptions)
             .GetAllDigests()
             .ToHashSet();
 
-        return registryDigests.Where(digest => !supportedDigests.Contains(digest)).ToList();
+        return await GetRegistryNonReferrerDigestsAsync(
+            registryOptions.Registry,
+            repoFilter: repoNames.Contains,
+            digestFilter: digest => !supportedDigests.Contains(digest),
+            cancellationToken);
     }
 
     public async Task AttachToAllAsync(RegistryLifecycleMetadataOptions options, CancellationToken cancellationToken)
@@ -152,7 +151,8 @@ public class AttachLifecycleMetadataCommand(
         }
 
         IReadOnlyList<string> eolDigests =
-            await GetRegistryNonReferrerDigestsAsync(registry, _ => true, cancellationToken);
+            await GetRegistryNonReferrerDigestsAsync(
+                registry, repoFilter: _ => true, digestFilter: _ => true, cancellationToken);
 
         DateOnly eolDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -172,11 +172,13 @@ public class AttachLifecycleMetadataCommand(
 
     /// <summary>
     /// Gets the fully-qualified digests of all images and manifest lists in the matching registry repos,
-    /// excluding referrer artifacts.
+    /// excluding referrer artifacts. <paramref name="digestFilter"/> runs before each manifest is fetched, so
+    /// excluded digests cost no registry requests.
     /// </summary>
     private async Task<IReadOnlyList<string>> GetRegistryNonReferrerDigestsAsync(
         string registry,
         Func<string, bool> repoFilter,
+        Func<string, bool> digestFilter,
         CancellationToken cancellationToken)
     {
         IAcrClient acrClient = acrClientFactory.Create(registry);
@@ -200,6 +202,16 @@ public class AttachLifecycleMetadataCommand(
                     outerCT,
                     async (manifestProps, innerCT) =>
                     {
+                        string imageName = DockerHelper.GetImageName(
+                            registry: registry,
+                            repo: repositoryName,
+                            digest: manifestProps.Digest);
+
+                        if (!digestFilter(imageName))
+                        {
+                            return;
+                        }
+
                         ManifestQueryResult manifestResult;
 
                         try
@@ -221,11 +233,6 @@ public class AttachLifecycleMetadataCommand(
                         // we risk creating an unbounded number of artifacts.
                         if (!manifestResult.IsReferrer())
                         {
-                            string imageName = DockerHelper.GetImageName(
-                                registry: registry,
-                                repo: repositoryName,
-                                digest: manifestProps.Digest);
-
                             digests.Add(imageName);
                         }
                     });

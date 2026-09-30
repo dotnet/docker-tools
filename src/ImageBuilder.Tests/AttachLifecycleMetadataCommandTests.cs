@@ -831,19 +831,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            // Define a subject field in this manifest to indicate it is a referrer, not an image manifest
-                            { "annotationdigest", new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) },
-                        })
-                ]);
+            Mock<IAcrContentClient> contentClientMock = CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                {
+                    { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                    { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                    { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                    { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                    // Define a subject field in this manifest to indicate it is a referrer, not an image manifest
+                    { "annotationdigest", new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) },
+                });
+            IAcrContentClientFactory registryContentClientFactory =
+                CreateAcrContentClientFactory(AcrName, [contentClientMock]);
 
             AttachLifecycleMetadataCommand command =
                 InitializeCommand(
@@ -859,6 +858,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ];
 
             _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+
+            // Supported images are filtered out before their manifests are fetched.
+            contentClientMock.Verify(
+                o => o.GetManifestAsync(
+                    It.IsIn("platformdigest101", "platformdigest102-updated", "imagedigest101"),
+                    It.IsAny<CancellationToken>()),
+                Times.Never());
         }
 
         [TestMethod]

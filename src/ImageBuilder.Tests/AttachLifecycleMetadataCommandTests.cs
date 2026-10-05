@@ -1072,6 +1072,101 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
+        public async Task AttachLifecycleMetadata_File_UsesGlobalAndDigestSpecificDates()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            DateOnly globalDate = new(2026, 1, 1);
+            DateOnly digestSpecificDate = new(2026, 2, 2);
+            string digest1 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+            string digest2 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo2", digest: "digest2");
+            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(
+                dataPath,
+                $$"""
+                {
+                  "eolDate": "{{globalDate:yyyy-MM-dd}}",
+                  "eolDigests": [
+                    { "digest": "{{digest1}}" },
+                    { "digest": "{{digest2}}", "eolDate": "{{digestSpecificDate:yyyy-MM-dd}}" }
+                  ]
+                }
+                """);
+
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(),
+                Mock.Of<IAcrContentClientFactory>());
+
+            await command.AttachFromFileAsync(
+                new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
+                TestContext?.CancellationToken ?? default);
+
+            _lifecycleMetadataServiceMock.Verify(
+                service => service.AttachLifecycleMetadataAsync(
+                    digest1, globalDate, false, false, It.IsAny<CancellationToken>()),
+                Times.Once);
+            _lifecycleMetadataServiceMock.Verify(
+                service => service.AttachLifecycleMetadataAsync(
+                    digest2, digestSpecificDate, false, false, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_File_WithoutDate_Throws()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(dataPath, $$"""{ "eolDigests": [{ "digest": "{{digest}}" }] }""");
+
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(),
+                Mock.Of<IAcrContentClientFactory>());
+
+            InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
+                () => command.AttachFromFileAsync(
+                    new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
+                    TestContext?.CancellationToken ?? default));
+
+            exception.Message.ShouldContain(digest);
+            _lifecycleMetadataServiceMock.Verify(
+                service => service.AttachLifecycleMetadataAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<DateOnly>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task AttachLifecycleMetadata_File_PassesStopOnConflict(bool stopOnConflict)
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(dataPath, $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest}}" }] }""");
+
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(),
+                Mock.Of<IAcrContentClientFactory>());
+
+            await command.AttachFromFileAsync(
+                new FileLifecycleMetadataOptions
+                {
+                    EolDigestsListPath = dataPath,
+                    StopOnConflict = stopOnConflict,
+                },
+                TestContext?.CancellationToken ?? default);
+
+            _lifecycleMetadataServiceMock.Verify(
+                service => service.AttachLifecycleMetadataAsync(
+                    digest, _globalDate, false, stopOnConflict, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [TestMethod]
         public async Task AttachLifecycleMetadata_WaitsForIngestionOfCreatedArtifacts()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

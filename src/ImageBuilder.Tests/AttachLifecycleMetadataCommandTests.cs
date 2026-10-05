@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
@@ -1068,6 +1069,60 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 TestContext?.CancellationToken ?? default);
 
             _annotatedDigests.ShouldBe([digest]);
+        }
+
+        [TestMethod]
+        public async Task AttachLifecycleMetadata_WaitsForIngestionOfCreatedArtifacts()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string digest1 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "sha256:digest1");
+            string digest2 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo2", digest: "sha256:digest2");
+            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+            File.WriteAllText(
+                dataPath,
+                $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest1}}" }, { "digest": "{{digest2}}" }] }""");
+
+            TimeSpan waitTimeout = TimeSpan.FromMinutes(5);
+            TimeSpan requeryDelay = TimeSpan.FromSeconds(1);
+            ServiceConnection marServiceConnection = new();
+            Mock<IMarImageIngestionReporter> ingestionReporter = new();
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                Mock.Of<IAcrClientFactory>(),
+                Mock.Of<IAcrContentClientFactory>(),
+                ingestionReporter: ingestionReporter.Object);
+
+            await command.AttachFromFileAsync(
+                new FileLifecycleMetadataOptions
+                {
+                    EolDigestsListPath = dataPath,
+                    WaitForIngestion = true,
+                    MarServiceConnection = marServiceConnection,
+                    IngestionOptions = new()
+                    {
+                        WaitTimeout = waitTimeout,
+                        RequeryDelay = requeryDelay,
+                    },
+                },
+                TestContext?.CancellationToken ?? default);
+
+            DigestInfo[] expectedDigests =
+            [
+                new("sha256:digest1-lifecycle", $"{DefaultRepoPrefix}repo1", tags: []),
+                new("sha256:digest2-lifecycle", $"{DefaultRepoPrefix}repo2", tags: []),
+            ];
+
+            ingestionReporter.Verify(
+                reporter => reporter.ReportImageStatusesAsync(
+                    marServiceConnection,
+                    It.Is<IEnumerable<DigestInfo>>(actualDigests =>
+                        actualDigests
+                            .OrderBy(digest => digest.Repo)
+                            .SequenceEqual(expectedDigests, DigestInfoEqualityComparer.Instance)),
+                    waitTimeout,
+                    requeryDelay,
+                    null,
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         private AttachLifecycleMetadataCommand InitializeCommand(

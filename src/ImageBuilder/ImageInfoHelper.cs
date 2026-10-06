@@ -25,8 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
             this ImageArtifactDetails imageInfo,
             RegistryOptions overrideOptions)
         {
-            if (string.IsNullOrEmpty(overrideOptions.Registry)
-                && string.IsNullOrEmpty(overrideOptions.RepoPrefix))
+            if (string.IsNullOrEmpty(overrideOptions.Registry) && string.IsNullOrEmpty(overrideOptions.RepoPrefix))
             {
                 return imageInfo;
             }
@@ -35,34 +34,20 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (ImageData imageData in repo.Images)
                 {
-                    if (imageData.Manifest is not null
-                        && !string.IsNullOrEmpty(imageData.Manifest.Digest))
+                    if (imageData.Manifest is not null && !string.IsNullOrEmpty(imageData.Manifest.Digest))
                     {
-                        imageData.Manifest.Digest =
-                            overrideOptions.ApplyOverrideToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
-                    }
-
-                    if (imageData.Manifest is not null)
-                    {
-                        for (int i = 0; i < imageData.Manifest.SyndicatedDigests.Count; i++)
-                        {
-                            string syndicatedDigest = imageData.Manifest.SyndicatedDigests[i];
-                            if (!string.IsNullOrEmpty(syndicatedDigest))
-                            {
-                                string syndicatedRepo =
-                                    DockerHelper.TrimRegistry(DockerHelper.GetRepo(syndicatedDigest));
-                                imageData.Manifest.SyndicatedDigests[i] =
-                                    overrideOptions.ApplyOverrideToDigest(syndicatedDigest, repoName: syndicatedRepo);
-                            }
-                        }
+                        imageData.Manifest.Digest = overrideOptions.ApplyOverrideToDigest(
+                            imageData.Manifest.Digest,
+                            repoName: repo.Repo);
                     }
 
                     foreach (PlatformData platformData in imageData.Platforms)
                     {
                         if (!string.IsNullOrEmpty(platformData.Digest))
                         {
-                            platformData.Digest =
-                                overrideOptions.ApplyOverrideToDigest(platformData.Digest, repoName: repo.Repo);
+                            platformData.Digest = overrideOptions.ApplyOverrideToDigest(
+                                platformData.Digest,
+                                repoName: repo.Repo);
                         }
                     }
                 }
@@ -90,12 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Include manifest list digest if it exists
             if (imageData.Manifest is not null)
             {
-                digests =
-                [
-                    ..digests,
-                    imageData.Manifest.Digest,
-                    ..imageData.Manifest.SyndicatedDigests,
-                ];
+                digests = [.. digests, imageData.Manifest.Digest];
             }
 
             return digests.ToList();

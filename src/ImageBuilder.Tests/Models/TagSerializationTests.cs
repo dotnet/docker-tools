@@ -40,25 +40,13 @@ public class TagSerializationTests
         {
             DocumentationGroup = "test-group",
             DocType = TagDocumentationType.Undocumented,
-            Syndication = new TagSyndication
-            {
-                Repo = "target-repo",
-                DestinationTags = ["tag1", "tag2"]
-            }
         };
 
         // Enums serialize as strings with StringEnumConverter.
         string json = """
             {
               "documentationGroup": "test-group",
-              "docType": "Undocumented",
-              "syndication": {
-                "repo": "target-repo",
-                "destinationTags": [
-                  "tag1",
-                  "tag2"
-                ]
-              }
+              "docType": "Undocumented"
             }
             """;
 
@@ -72,11 +60,6 @@ public class TagSerializationTests
         {
             DocumentationGroup = "test-group",
             DocType = TagDocumentationType.Undocumented,
-            Syndication = new TagSyndication
-            {
-                Repo = "target-repo",
-                DestinationTags = ["tag1", "tag2"]
-            }
         };
 
         AssertRoundTrip(tag, AssertTagsEqual);
@@ -86,16 +69,5 @@ public class TagSerializationTests
     {
         actual.DocumentationGroup.ShouldBe(expected.DocumentationGroup);
         actual.DocType.ShouldBe(expected.DocType);
-
-        if (expected.Syndication is null)
-        {
-            actual.Syndication.ShouldBeNull();
-        }
-        else
-        {
-            actual.Syndication.ShouldNotBeNull();
-            actual.Syndication.Repo.ShouldBe(expected.Syndication.Repo);
-            actual.Syndication.DestinationTags.ShouldBe(expected.Syndication.DestinationTags);
-        }
     }
 }

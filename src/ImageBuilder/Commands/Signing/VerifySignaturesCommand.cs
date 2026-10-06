@@ -172,11 +172,8 @@ public class VerifySignaturesCommand(
     }
 
     /// <summary>
-    /// Extracts all platform and primary or syndicated manifest list references from image-info.
+    /// Extracts all platform and manifest list references from image-info.
     /// </summary>
     private static List<string> GetAllImageReferences(ImageArtifactDetails imageArtifactDetails) =>
-        imageArtifactDetails
-            .GetAllDigests()
-            .Where(reference => !string.IsNullOrEmpty(reference))
-            .ToList();
+        imageArtifactDetails.GetAllDigests().Where(reference => !string.IsNullOrEmpty(reference)).ToList();
 }

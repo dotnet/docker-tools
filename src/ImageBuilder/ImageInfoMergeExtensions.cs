@@ -87,11 +87,6 @@ public static class ImageInfoMergeExtensions
     {
         target.Digest = source.Digest;
 
-        target.SyndicatedDigests = MergeNullableStringLists(
-            source.SyndicatedDigests,
-            target.SyndicatedDigests,
-            replace: options.IsPublish);
-
         target.Created = source.Created;
 
         target.SharedTags = MergeNullableStringLists(source.SharedTags, target.SharedTags, replace: options.IsPublish);

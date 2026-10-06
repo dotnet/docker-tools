@@ -4,9 +4,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Moq;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -168,7 +171,102 @@ $@"
             DockerfileHelper.CreateDockerfile(s_dockerfilePath, tempFolderContext);
 
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            Mock.Get(manifestOptions).SetupGet(options => options.Variables).Returns(new Dictionary<string, string>());
             return TestHelper.CreateManifestJsonService().Load(manifestOptions);
+        }
+
+        [TestMethod]
+        public void Load_ImageSyndication_SubstitutesVariables()
+        {
+            string manifest = $$"""
+                {
+                  // Manifest comments and trailing commas remain supported.
+                  "variables": { "destination": "syndicated-repo" },
+                  "repos": [{
+                    "name": "repo",
+                    "images": [{
+                      "syndication": "$(destination)",
+                      "platforms": [{
+                        "dockerfile": "{{s_dockerfilePath}}",
+                        "os": "linux",
+                        "osVersion": "trixie",
+                        "tags": { "tag": {}, }
+                      }]
+                    }]
+                  }]
+                }
+                """;
+
+            ImageInfo image = LoadManifestInfo(manifest).AllRepos.Single().AllImages.Single();
+            image.SyndicatedRepo.ShouldBe("syndicated-repo");
+        }
+
+        [TestMethod]
+        [DataRow("")]
+        [DataRow(" ")]
+        [DataRow("$(empty)")]
+        public void Load_ImageSyndication_RejectsEmptyRepository(string destination)
+        {
+            string manifest = $$"""
+                {
+                  "variables": { "empty": "" },
+                  "repos": [{
+                    "name": "repo",
+                    "images": [{
+                      "syndication": "{{destination}}",
+                      "platforms": [{
+                        "dockerfile": "{{s_dockerfilePath}}",
+                        "os": "linux",
+                        "osVersion": "trixie",
+                        "tags": { "tag": {} }
+                      }]
+                    }]
+                  }]
+                }
+                """;
+
+            Should.Throw<ValidationException>(() => LoadManifestInfo(manifest))
+                .Message.ShouldContain("syndication");
+        }
+
+        [TestMethod]
+        [DataRow(false, false, "syndication")]
+        [DataRow(true, false, "syndication")]
+        [DataRow(false, true, "Syndication")]
+        [DataRow(true, true, "Syndication")]
+        public void Load_RejectsLegacyTagSyndication(bool sharedTag, bool includedManifest, string memberName)
+        {
+            string legacyTagMetadata = $$$"""{"{{{memberName}}}": {"repo": "destination"}}""";
+            string sharedTagMetadata = sharedTag ? legacyTagMetadata : "{}";
+            string platformTagMetadata = sharedTag ? "{}" : legacyTagMetadata;
+            string manifest = $$"""
+                {
+                  "repos": [{
+                    "name": "repo",
+                    "images": [{
+                      "sharedTags": {
+                        "shared": {{sharedTagMetadata}}
+                      },
+                      "platforms": [{
+                        "dockerfile": "{{s_dockerfilePath}}",
+                        "os": "linux",
+                        "osVersion": "trixie",
+                        "tags": {
+                          "tag": {{platformTagMetadata}}
+                        }
+                      }]
+                    }]
+                  }]
+                }
+                """;
+
+            ValidationException exception = Should.Throw<ValidationException>(() =>
+                includedManifest
+                    ? LoadManifestInfo("""{"includes": ["legacy.json"]}""", "legacy.json", manifest)
+                    : LoadManifestInfo(manifest));
+            exception.Message.ShouldContain("Tag-level syndication");
+            exception.Message.ShouldContain("image's 'syndication'");
+            exception.Message.ShouldContain(includedManifest ? "legacy.json" : "manifest.json");
         }
 
         private static string CreateRepo(string repoName, string dockerfilePath, string tag = "testTag") =>

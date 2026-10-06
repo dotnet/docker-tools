@@ -657,7 +657,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies the command will replace any existing tags or syndicated digests of a merged image.
+        /// Verifies the command will replace any existing tags of a merged image.
         /// </summary>
         /// <remarks>
         /// See https://github.com/dotnet/docker-tools/pull/269
@@ -707,10 +707,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
                                 {
-                                    SyndicatedDigests =
+                                    SharedTags =
                                     [
-                                        "newdigest1",
-                                        "newdigest2"
+                                        "newshared1",
+                                        "newshared2"
                                     ]
                                 }
                             }
@@ -765,10 +765,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
                                 {
-                                    SyndicatedDigests =
+                                    SharedTags =
                                     [
-                                        "olddigest1",
-                                        "olddigest2"
+                                        "oldshared1",
+                                        "oldshared2"
                                     ]
                                 }
                             }
@@ -820,10 +820,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
                                 {
-                                    SyndicatedDigests =
+                                    SharedTags =
                                     [
-                                        "newdigest1",
-                                        "newdigest2"
+                                        "newshared1",
+                                        "newshared2"
                                     ]
                                 }
                             }

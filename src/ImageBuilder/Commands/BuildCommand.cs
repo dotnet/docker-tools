@@ -739,28 +739,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ?? Enumerable.Empty<PlatformData>();
 
         private IReadOnlyList<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
-            tagInfos
-                .SelectMany(GetStagingTagNames)
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-
-        private IEnumerable<string> GetStagingTagNames(TagInfo tagInfo)
-        {
-            yield return tagInfo.FullyQualifiedName;
-
-            if (tagInfo.SyndicatedRepo is null)
-            {
-                yield break;
-            }
-
-            foreach (string destinationTag in tagInfo.SyndicatedDestinationTags)
-            {
-                yield return DockerHelper.GetImageName(
-                    registry: Manifest.Registry,
-                    repo: Options.RepoPrefix + tagInfo.SyndicatedRepo,
-                    tag: destinationTag);
-            }
-        }
+            tagInfos.Select(tag => tag.FullyQualifiedName).Distinct(StringComparer.Ordinal).ToList();
 
         private void PushImages(CancellationToken cancellationToken)
         {

@@ -38,7 +38,8 @@ public class ImageSerializationTests
                 ["8.0"] = new Tag(),
                 ["latest"] = new Tag { DocType = TagDocumentationType.Undocumented }
             },
-            ProductVersion = "8.0.0"
+            ProductVersion = "8.0.0",
+            Syndication = "target-repo"
         };
 
         // Default Tag properties are omitted; only non-default values are serialized
@@ -51,7 +52,8 @@ public class ImageSerializationTests
                   "docType": "Undocumented"
                 }
               },
-              "productVersion": "8.0.0"
+              "productVersion": "8.0.0",
+              "syndication": "target-repo"
             }
             """;
 
@@ -65,7 +67,8 @@ public class ImageSerializationTests
         {
             Platforms = [],
             SharedTags = new Dictionary<string, Tag> { ["8.0"] = new Tag() },
-            ProductVersion = "8.0.0"
+            ProductVersion = "8.0.0",
+            Syndication = "target-repo"
         };
 
         AssertRoundTrip(image, AssertImagesEqual);
@@ -135,6 +138,7 @@ public class ImageSerializationTests
     {
         (actual.Platforms?.Length ?? 0).ShouldBe(expected.Platforms?.Length ?? 0);
         actual.ProductVersion.ShouldBe(expected.ProductVersion);
+        actual.Syndication.ShouldBe(expected.Syndication);
 
         if (expected.SharedTags is null)
         {

@@ -28,10 +28,6 @@ public class Tag
     [DefaultValue(TagDocumentationType.Documented)]
     public TagDocumentationType DocType { get; set; }
 
-    [Description(
-        "Description of where the tag should be syndicated to.")]
-    public TagSyndication Syndication { get; set; }
-
     public Tag()
     {
     }

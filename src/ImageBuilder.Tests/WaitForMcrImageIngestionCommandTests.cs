@@ -164,20 +164,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        [DataRow("manifestDigest1")] // Same as the primary digest
-        [DataRow("manifestDigest2")] // Different from the primary digest
-        public async Task SyndicatedTags(string syndicatedManifestDigest)
+        [DataRow("")]
+        [DataRow("publish/")]
+        public async Task SyndicatedTags(string repoPrefix)
         {
             DateTime baselineTime = DateTime.Now;
             const string registry = "mcr.microsoft.com";
             const string primaryManifestDigest = "manifestDigest1";
             string repo1ManifestDigest1 = $"{registry}/repo1@sha256:{primaryManifestDigest}";
-            string repo2ManifestDigest1 = $"{registry}/repo2@sha256:{syndicatedManifestDigest}";
             const string sharedTag1 = "sharedTag1";
             const string platformTag1 = "platformTag1";
             const string repo1 = "repo1";
             string repo1PlatformDigest1 = $"{registry}repo1@sha256:platformDigest1";
-            string repo2PlatformDigest1 = $"{registry}repo2@sha256:platformDigest1";
 
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
@@ -204,29 +202,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             {
                                 sharedTag1,
-                                new Tag
-                                {
-                                    Syndication = new TagSyndication
-                                    {
-                                        Repo = syndicatedRepo,
-                                        DestinationTags = new string[0]
-                                    }
-                                }
+                                new Tag()
                             }
                         }))
             );
             manifest.Registry = registry;
 
-            Platform platform = manifest.Repos.First().Images.First().Platforms.First();
-            platform.Tags[platformTag1].Syndication = new TagSyndication
-            {
-                Repo = syndicatedRepo,
-                DestinationTags = new string[]
-                {
-                    $"{platformTag1}a",
-                    $"{platformTag1}b"
-                }
-            };
+            manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
@@ -243,10 +225,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Manifest = new ManifestData
                                     {
                                         Digest = repo1ManifestDigest1,
-                                        SyndicatedDigests = new List<string>
-                                        {
-                                            repo2ManifestDigest1
-                                        },
                                         SharedTags = new List<string>
                                         {
                                             sharedTag1
@@ -272,6 +250,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.MinimumQueueTime = baselineTime;
+            command.Options.RepoPrefix = repoPrefix;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -282,10 +261,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             List<DigestInfo> expectedDigestInfos =
                 [
-                    new(DockerHelper.GetDigestSha(repo1ManifestDigest1), repo1, [ sharedTag1 ]),
-                    new(DockerHelper.GetDigestSha(repo2ManifestDigest1), syndicatedRepo, [ sharedTag1 ]),
-                    new(DockerHelper.GetDigestSha(repo1PlatformDigest1), repo1, [ platformTag1 ]),
-                    new(DockerHelper.GetDigestSha(repo1PlatformDigest1), syndicatedRepo, [ $"{platformTag1}a", $"{platformTag1}b" ]),
+                    new(DockerHelper.GetDigestSha(repo1ManifestDigest1), repoPrefix + repo1, [ sharedTag1 ]),
+                    new(DockerHelper.GetDigestSha(repo1ManifestDigest1), repoPrefix + syndicatedRepo, [ sharedTag1 ]),
+                    new(DockerHelper.GetDigestSha(repo1PlatformDigest1), repoPrefix + repo1, [ platformTag1 ]),
+                    new(DockerHelper.GetDigestSha(repo1PlatformDigest1), repoPrefix + syndicatedRepo, [ platformTag1 ]),
                 ];
 
             imageIngestionReporterMock

@@ -28,6 +28,11 @@ public class Image
     [Description("The full version of the product that the Docker image contains.")]
     public string ProductVersion { get; set; }
 
+    [Description(
+        "Name of an additional repo to publish this image to. All platform and shared tags "
+            + "are copied with the same names, including signatures and other referrers.")]
+    public string Syndication { get; set; }
+
     public Image()
     {
     }

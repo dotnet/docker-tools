@@ -3,16 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.CommandLine;
-using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public interface ICommand
     {
-        Options Options { get; }
-
-        Task ExecuteAsync(CancellationToken cancellationToken);
-
         Command GetCliCommand();
     }
 }

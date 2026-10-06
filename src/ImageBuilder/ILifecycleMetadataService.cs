@@ -5,26 +5,35 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface ILifecycleMetadataService
 {
     /// <summary>
-    /// Gets the lifecycle artifact that refers to the given digest.
+    /// Attaches EOL metadata and skips matching dates. Conflicting dates are skipped unless
+    /// <paramref name="stopOnConflict"/> is set. Public requests ignore internal-only metadata.
+    /// Throws on attachment failure or, when <paramref name="stopOnConflict"/> is set, on a conflict.
     /// </summary>
-    /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The lifecycle artifact manifest, or null if none exists.</returns>
-    Task<Manifest?> GetLifecycleArtifactAsync(string digest, CancellationToken cancellationToken);
+    Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
+        string digest,
+        DateOnly date,
+        bool markAsInternal,
+        bool stopOnConflict,
+        CancellationToken cancellationToken);
 
     /// <summary>
-    /// Annotates the given digest with an end-of-life date.
+    /// Gets the most recently created lifecycle artifact that refers to the given digest.
     /// </summary>
     /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
-    /// <param name="date">The end-of-life date to set.</param>
+    /// <param name="includeInternal">
+    /// Whether to consider internal-only lifecycle artifacts. When false, only public lifecycle
+    /// artifacts are considered.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The created lifecycle artifact manifest, or null on failure.</returns>
-    Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken);
+    /// <returns>The most recently created lifecycle artifact, or null if none exists.</returns>
+    Task<LifecycleArtifact?> GetLatestLifecycleArtifactAsync(
+        string digest,
+        bool includeInternal,
+        CancellationToken cancellationToken);
 }

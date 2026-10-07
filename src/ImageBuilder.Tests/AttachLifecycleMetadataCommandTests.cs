@@ -16,7 +16,9 @@ using Azure;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
@@ -40,6 +42,127 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private readonly Mock<ILifecycleMetadataService> _lifecycleMetadataServiceMock = new();
 
         [TestMethod]
+        [DataRow(true, "")]
+        [DataRow(true, DefaultRepoPrefix)]
+        [DataRow(false, "")]
+        [DataRow(false, DefaultRepoPrefix)]
+        public async Task AttachLifecycleMetadata_RepoMoved_RespectsSyndication(
+            bool syndicateToOldRepo,
+            string repoPrefix)
+        {
+            using TempFolderContext context = TestHelper.UseTempFolder();
+            const string oldRepo = "repo-a";
+            const string newRepo = "repo-b";
+            const string platformDigest = "sha256:platform";
+            const string manifestDigest = "sha256:manifest";
+            const string retiredDigest = "sha256:retired";
+            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", context);
+
+            Image image = ManifestHelper.CreateImage(
+                ["shared"],
+                ManifestHelper.CreatePlatform(dockerfile, ["platform"]));
+
+            image.Syndication = syndicateToOldRepo ? oldRepo : null;
+            Manifest manifest = ManifestHelper.CreateManifest(ManifestHelper.CreateRepo(newRepo, image));
+            manifest.Registry = McrName;
+            string manifestPath = Path.Combine(context.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            Mock.Get(manifestOptions).SetupGet(options => options.Variables).Returns(new Dictionary<string, string>());
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
+
+            string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
+            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(CreateImageInfo(oldRepo)));
+
+            ImageArtifactDetails newImageInfo = ImageInfoHelper.LoadFromContent(
+                JsonHelper.SerializeObject(CreateImageInfo(newRepo)),
+                manifestInfo);
+
+            newImageInfo.Repos[0].Images[0].ManifestImage.SyndicatedRepo.ShouldBe(image.Syndication);
+            string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
+            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(newImageInfo));
+
+            Mock<IAcrClient> registryClient = CreateAcrClientMock([
+                CreateContainerRepository(
+                    repoPrefix + oldRepo,
+                    manifestProperties:
+                    [
+                        CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
+                        CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
+                        CreateArtifactManifestProperties(digest: retiredDigest, tags: []),
+                    ]),
+                CreateContainerRepository(
+                    repoPrefix + newRepo,
+                    manifestProperties:
+                    [
+                        CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
+                        CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
+                    ]),
+            ]);
+
+            IAcrContentClientFactory contentClientFactory = CreateAcrContentClientFactory(
+                AcrName,
+                [
+                    CreateAcrContentClientMock(
+                        repoPrefix + oldRepo,
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            [platformDigest] = new ManifestQueryResult(platformDigest, []),
+                            [manifestDigest] = new ManifestQueryResult(manifestDigest, []),
+                            [retiredDigest] = new ManifestQueryResult(retiredDigest, []),
+                        }),
+                    CreateAcrContentClientMock(repoPrefix + newRepo),
+                ]);
+
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                CreateAcrClientFactory(AcrName, registryClient.Object),
+                contentClientFactory);
+
+            UnsupportedLifecycleMetadataOptions options = CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath);
+            options.RegistryOptions.RepoPrefix = repoPrefix;
+            await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
+
+            string[] expectedDigests = syndicateToOldRepo
+                ? [retiredDigest]
+                : [platformDigest, manifestDigest, retiredDigest];
+
+            _annotatedDigests.ShouldBe(
+                expectedDigests.Select(digest =>
+                    DockerHelper.GetImageName(AcrName, repoPrefix + oldRepo, digest: digest)),
+                ignoreOrder: true);
+
+            ImageArtifactDetails CreateImageInfo(string repo) =>
+                new()
+                {
+                    Repos =
+                    [
+                        new RepoData
+                        {
+                            Repo = repo,
+                            Images =
+                            [
+                                new ImageData
+                                {
+                                    Platforms =
+                                    [
+                                        Helpers.ImageInfoHelper.CreatePlatform(
+                                            dockerfile,
+                                            simpleTags: ["platform"],
+                                            digest: DockerHelper.GetImageName(McrName, repo, digest: platformDigest)),
+                                    ],
+                                    Manifest = new ManifestData
+                                    {
+                                        SharedTags = ["shared"],
+                                        Digest = DockerHelper.GetImageName(McrName, repo, digest: manifestDigest),
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                };
+        }
+
+        [TestMethod]
         public async Task AttachLifecycleMetadata_RepoRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -60,45 +183,41 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "tag"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
+                                    Helpers.ImageInfoHelper.CreatePlatform(
+                                        repo1Image1DockerfilePath,
+                                        simpleTags: ["tag"],
+                                        digest: DockerHelper.GetImageName(
+                                            McrName,
+                                            "repo1",
+                                            digest: "platformdigest101")),
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
                                 {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
+                                    SharedTags = ["1.0"],
+                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101"),
+                                },
                             },
                             new ImageData
                             {
                                 Platforms =
                                 {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "tag"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
+                                    Helpers.ImageInfoHelper.CreatePlatform(
+                                        repo1Image2DockerfilePath,
+                                        simpleTags: ["tag"],
+                                        digest: DockerHelper.GetImageName(
+                                            McrName,
+                                            "repo1",
+                                            digest: "platformdigest102")),
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
                                 {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
-                                }
-                            }
-                        }
+                                    SharedTags = ["1.0"],
+                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102"),
+                                },
+                            },
+                        },
                     },
                     new RepoData
                     {
@@ -109,26 +228,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo2Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "newtag"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo2", digest: "platformdigest201"))
+                                    Helpers.ImageInfoHelper.CreatePlatform(
+                                        repo2Image1DockerfilePath,
+                                        simpleTags: ["newtag"],
+                                        digest: DockerHelper.GetImageName(
+                                            McrName,
+                                            "repo2",
+                                            digest: "platformdigest201")),
                                 },
                                 ProductVersion = "2.0",
                                 Manifest = new ManifestData
                                 {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo2", digest: "imagedigest201")
-                                }
-                            }
-                        }
-                    }
-                }
+                                    SharedTags = ["2.0"],
+                                    Digest = DockerHelper.GetImageName(McrName, "repo2", digest: "imagedigest201"),
+                                },
+                            },
+                        },
+                    },
+                },
             };
 
             string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
@@ -140,57 +257,63 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["tag"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["1.0"])
-                        ]),
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo2",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest201", tags: ["newtag"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest201", tags: ["2.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock([
+                CreateContainerRepository(
+                    $"{DefaultRepoPrefix}repo1",
+                    manifestProperties:
+                    [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["tag"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["1.0"]),
+                    ]),
+                CreateContainerRepository(
+                    $"{DefaultRepoPrefix}repo2",
+                    manifestProperties:
+                    [
+                        CreateArtifactManifestProperties(digest: "platformdigest201", tags: ["newtag"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest201", tags: ["2.0"]),
+                    ]),
+            ]);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(AcrName, registryClientMock.Object);
+
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(
+                AcrName,
                 [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock(
+                        $"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
                             { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
                             { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
                         }),
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo2",
+                    CreateAcrContentClientMock(
+                        $"{DefaultRepoPrefix}repo2",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest201", new ManifestQueryResult(string.Empty, []) },
                             { "imagedigest201", new ManifestQueryResult(string.Empty, []) },
-                        })
+                        }),
                 ]);
 
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+
             await command.AttachToUnsupportedAsync(
                 CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
                 TestContext?.CancellationToken ?? default);
 
             string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
-                ];
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
+            ];
 
             _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
         }

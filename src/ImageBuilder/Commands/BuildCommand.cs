@@ -418,7 +418,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageData imageData =
                 new ImageData
                 {
-                    ProductVersion = image.ProductVersion
+                    ProductVersion = image.ProductVersion,
+                    SyndicatedRepo = image.SyndicatedRepo
                 };
 
             if (image.SharedTags.Any())

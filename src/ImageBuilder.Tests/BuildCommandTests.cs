@@ -44,6 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
             const string aspnetRepo = "aspnet";
+            const string syndicatedRepo = "syndicated-runtime-deps";
 
             string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
             string runtimeDigest = $"{runtimeRepo}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
@@ -198,6 +199,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             },
                             productVersion: ProductVersion))
                 );
+                manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -216,6 +218,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 new ImageData
                                 {
                                     ProductVersion = ProductVersion,
+                                    SyndicatedRepo = syndicatedRepo,
                                     Platforms =
                                     {
                                         new PlatformData

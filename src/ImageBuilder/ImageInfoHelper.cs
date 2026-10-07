@@ -81,6 +81,36 @@ namespace Microsoft.DotNet.ImageBuilder
             return digests.ToList();
         }
 
+        public static IEnumerable<string> GetPublishedDigests(
+            this ImageArtifactDetails imageInfo,
+            RegistryOptions registryOptions)
+        {
+            foreach (RepoData repo in imageInfo.Repos)
+            {
+                foreach (ImageData image in repo.Images)
+                {
+                    foreach (string digest in image.GetAllDigests().Where(digest => !string.IsNullOrEmpty(digest)))
+                    {
+                        yield return registryOptions.ApplyOverrideToDigest(digest, repo.Repo);
+
+                        if (image.SyndicatedRepo is not null)
+                        {
+                            yield return registryOptions.ApplyOverrideToDigest(digest, image.SyndicatedRepo);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<string> GetPublishedRepoNames(this ImageArtifactDetails imageInfo) =>
+            imageInfo.Repos
+                .Select(repo => repo.Repo)
+                .Concat(imageInfo.Repos
+                    .SelectMany(repo => repo.Images)
+                    .Select(image => image.SyndicatedRepo)
+                    .OfType<string>())
+                .Distinct();
+
         public static List<ImageDigestInfo> GetAllImageDigestInfos(this ImageArtifactDetails imageInfo)
         {
             return imageInfo.Repos
@@ -160,6 +190,7 @@ namespace Microsoft.DotNet.ImageBuilder
                                 if (imageData.ManifestImage is null)
                                 {
                                     imageData.ManifestImage = manifestImage;
+                                    imageData.SyndicatedRepo = manifestImage.SyndicatedRepo;
                                 }
 
                                 platformData.PlatformInfo = matchingManifestPlatform;

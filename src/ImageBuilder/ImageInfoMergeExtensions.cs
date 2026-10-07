@@ -45,6 +45,7 @@ public static class ImageInfoMergeExtensions
     private static void MergeInto(this ImageData source, ImageData target, ImageInfoMergeOptions options)
     {
         target.ProductVersion = source.ProductVersion;
+        target.SyndicatedRepo = source.SyndicatedRepo;
 
         if (source.Manifest is null)
         {

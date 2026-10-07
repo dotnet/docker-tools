@@ -37,9 +37,10 @@ Syndication has moved from tag-level to image-level. All platform tags, shared
 tags, signatures, and referrers are replicated 1:1 during publishing.
 
 `Build` and `Post_Build` stages no longer create syndicated tags or manifest
-lists. Image info no longer records separate `syndicatedDigests`, because they
-are identical to the primary digests. Custom destination tag names and
-selective platform syndication are no longer supported.
+lists. Image info records the destination as `syndicatedRepo` instead of
+recording separate `syndicatedDigests`, because syndicated images have the same
+digests as the primary images. Custom destination tag names and selective
+platform syndication are no longer supported.
 
 ---
 

@@ -91,6 +91,7 @@ public class ImageArtifactDetailsTests
                     [
                         new ImageData()
                         {
+                            SyndicatedRepo = "syndicated-repo",
                             Platforms =
                             [
                                 new PlatformData()
@@ -117,6 +118,7 @@ public class ImageArtifactDetailsTests
                   "repo": "testrepo",
                   "images": [
                     {
+                      "syndicatedRepo": "syndicated-repo",
                       "platforms": [
                         {
                           "dockerfile": "",

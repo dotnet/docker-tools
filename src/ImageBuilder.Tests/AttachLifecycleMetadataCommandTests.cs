@@ -72,13 +72,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
 
             string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(CreateImageInfo(oldRepo)));
+            File.WriteAllText(
+                oldImageInfoPath,
+                JsonHelper.SerializeObject(CreateImageInfo(dockerfile, oldRepo, platformDigest, manifestDigest)));
 
             ImageArtifactDetails newImageInfo = ImageInfoHelper.LoadFromContent(
-                JsonHelper.SerializeObject(CreateImageInfo(newRepo)),
+                JsonHelper.SerializeObject(CreateImageInfo(dockerfile, newRepo, platformDigest, manifestDigest)),
                 manifestInfo);
 
             newImageInfo.Repos[0].Images[0].ManifestImage.SyndicatedRepo.ShouldBe(image.Syndication);
+            newImageInfo.Repos[0].Images[0].SyndicatedRepo.ShouldBe(image.Syndication);
             string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(newImageInfo));
 
@@ -130,36 +133,65 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 expectedDigests.Select(digest =>
                     DockerHelper.GetImageName(AcrName, repoPrefix + oldRepo, digest: digest)),
                 ignoreOrder: true);
+        }
 
-            ImageArtifactDetails CreateImageInfo(string repo) =>
-                new()
-                {
-                    Repos =
+        [TestMethod]
+        [DataRow("")]
+        [DataRow(DefaultRepoPrefix)]
+        public async Task AttachLifecycleMetadata_SyndicationRemoved_AnnotatesOldRepo(string repoPrefix)
+        {
+            using TempFolderContext context = TestHelper.UseTempFolder();
+            const string primaryRepo = "repo-b";
+            const string syndicatedRepo = "repo-a";
+            const string platformDigest = "sha256:platform";
+            const string manifestDigest = "sha256:manifest";
+            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", context);
+
+            string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
+            File.WriteAllText(
+                oldImageInfoPath,
+                JsonHelper.SerializeObject(
+                    CreateImageInfo(dockerfile, primaryRepo, platformDigest, manifestDigest, syndicatedRepo)));
+
+            string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
+            File.WriteAllText(
+                newImageInfoPath,
+                JsonHelper.SerializeObject(CreateImageInfo(dockerfile, primaryRepo, platformDigest, manifestDigest)));
+
+            Mock<IAcrClient> registryClient = CreateAcrClientMock([
+                CreateContainerRepository(
+                    repoPrefix + syndicatedRepo,
+                    manifestProperties:
                     [
-                        new RepoData
+                        CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
+                        CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
+                    ]),
+            ]);
+
+            IAcrContentClientFactory contentClientFactory = CreateAcrContentClientFactory(
+                AcrName,
+                [
+                    CreateAcrContentClientMock(
+                        repoPrefix + syndicatedRepo,
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
-                            Repo = repo,
-                            Images =
-                            [
-                                new ImageData
-                                {
-                                    Platforms =
-                                    [
-                                        Helpers.ImageInfoHelper.CreatePlatform(
-                                            dockerfile,
-                                            simpleTags: ["platform"],
-                                            digest: DockerHelper.GetImageName(McrName, repo, digest: platformDigest)),
-                                    ],
-                                    Manifest = new ManifestData
-                                    {
-                                        SharedTags = ["shared"],
-                                        Digest = DockerHelper.GetImageName(McrName, repo, digest: manifestDigest),
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                };
+                            [platformDigest] = new ManifestQueryResult(platformDigest, []),
+                            [manifestDigest] = new ManifestQueryResult(manifestDigest, []),
+                        }),
+                ]);
+
+            AttachLifecycleMetadataCommand command = InitializeCommand(
+                CreateAcrClientFactory(AcrName, registryClient.Object),
+                contentClientFactory);
+
+            UnsupportedLifecycleMetadataOptions options = CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath);
+            options.RegistryOptions.RepoPrefix = repoPrefix;
+            await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
+
+            _annotatedDigests.ShouldBe(
+                new[] { platformDigest, manifestDigest }.Select(digest =>
+                    DockerHelper.GetImageName(AcrName, repoPrefix + syndicatedRepo, digest: digest)),
+                ignoreOrder: true);
         }
 
         [TestMethod]
@@ -1398,14 +1430,52 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 RegistryOptions = new() { RepoPrefix = DefaultRepoPrefix, Registry = AcrName }
             };
 
-        private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>
-            CreateAcrContentClientFactory(AcrName,
+        private static ImageArtifactDetails CreateImageInfo(
+            string dockerfile,
+            string repo,
+            string platformDigest,
+            string manifestDigest,
+            string syndicatedRepo = null) =>
+            new()
+            {
+                Repos =
                 [
-                    CreateAcrContentClientMock(repo,
+                    new RepoData
+                    {
+                        Repo = repo,
+                        Images =
+                        [
+                            new ImageData
+                            {
+                                SyndicatedRepo = syndicatedRepo,
+                                Platforms =
+                                [
+                                    Helpers.ImageInfoHelper.CreatePlatform(
+                                        dockerfile,
+                                        simpleTags: ["platform"],
+                                        digest: DockerHelper.GetImageName(McrName, repo, digest: platformDigest)),
+                                ],
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = ["shared"],
+                                    Digest = DockerHelper.GetImageName(McrName, repo, digest: manifestDigest),
+                                },
+                            },
+                        ],
+                    },
+                ],
+            };
+
+        private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>
+            CreateAcrContentClientFactory(
+                AcrName,
+                [
+                    CreateAcrContentClientMock(
+                        repo,
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { digest, new ManifestQueryResult(string.Empty, []) },
-                        })
+                        }),
                 ]);
     }
 }

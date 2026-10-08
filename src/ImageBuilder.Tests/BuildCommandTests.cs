@@ -44,6 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
             const string aspnetRepo = "aspnet";
+            const string syndicatedRepo = "syndicated-runtime-deps";
 
             string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
             string runtimeDigest = $"{runtimeRepo}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
@@ -198,6 +199,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             },
                             productVersion: ProductVersion))
                 );
+                manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -216,6 +218,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 new ImageData
                                 {
                                     ProductVersion = ProductVersion,
+                                    SyndicatedRepo = syndicatedRepo,
                                     Platforms =
                                     {
                                         new PlatformData
@@ -468,8 +471,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string tag = "tag";
             const string sharedTag = "shared";
             const string syndicatedRepo = "syndicated-runtime";
-            const string syndicatedTag = "syndicated-tag";
-            const string syndicatedSharedTag = "syndicated-shared";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
 
@@ -496,14 +497,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
-            // Configure both the platform and shared tags to be syndicated to custom names in a
-            // second repository.
             Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: "v7");
-            platform.Tags[tag].Syndication = new TagSyndication
-            {
-                Repo = syndicatedRepo,
-                DestinationTags = [syndicatedTag]
-            };
 
             Manifest manifest = CreateManifest(
                 CreateRepo(repoName,
@@ -516,25 +510,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             {
                                 sharedTag,
-                                new Tag
-                                {
-                                    Syndication = new TagSyndication
-                                    {
-                                        Repo = syndicatedRepo,
-                                        DestinationTags = [syndicatedSharedTag]
-                                    }
-                                }
+                                new Tag()
                             }
                         }))
             );
+            manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
             await command.ExecuteAsync(testContext.CancellationToken);
 
-            // A fresh build must assign every primary and syndicated platform and shared tag to
-            // the same local image.
             dockerServiceMock.Verify(
                 o => o.BuildImage(
                     dockerfileAbsolutePath,
@@ -543,9 +529,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[]
                     {
                         TagInfo.GetFullyQualifiedName(repoName, tag),
-                        TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedTag),
-                        TagInfo.GetFullyQualifiedName(repoName, sharedTag),
-                        TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedSharedTag)
+                        TagInfo.GetFullyQualifiedName(repoName, sharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<IReadOnlyDictionary<string, string>>(),
@@ -563,10 +547,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
 
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
-
-            dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(syndicatedRepo, syndicatedSharedTag), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+                o => o.PushImage(It.Is<string>(name => name.StartsWith(syndicatedRepo + ":")),
+                    It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+                Times.Never);
 
             dockerServiceMock.Verify(
                 o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false, It.IsAny<CancellationToken>()));
@@ -575,10 +558,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies that cached images are imported and tagged with syndicated platform and shared tags.
+        /// Verifies that cached syndicated images only receive primary tags during build.
         /// </summary>
         [TestMethod]
-        public async Task BuildCommand_PublishCachedImageWithSyndicatedTags()
+        public async Task BuildCommand_PublishCachedImageWithSyndication()
         {
             const string registry = "mcr.microsoft.com";
             const string registryOverride = "staging.azurecr.io";
@@ -587,8 +570,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string tag = "tag";
             const string sharedTag = "shared";
             const string syndicatedRepo = "syndicated-runtime";
-            const string syndicatedTag = "syndicated-tag";
-            const string syndicatedSharedTag = "syndicated-shared";
             const string digestSha = "sha256:digest";
             string sourceDigest = $"{registry}/{repoName}@{digestSha}";
             string stagingDigest = $"{registryOverride}/{repoPrefix}{repoName}@{digestSha}";
@@ -636,14 +617,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 "1.0/runtime/os", tempFolderContext, "scratch");
 
             Platform platform = CreatePlatform(dockerfile, [tag]);
-            platform.Tags[tag].Syndication = new TagSyndication
-            {
-                Repo = syndicatedRepo,
-                DestinationTags = [syndicatedTag]
-            };
-
-            // Configure both the platform and shared tags to be syndicated to custom names in a
-            // second repository.
             Manifest manifest = CreateManifest(
                 CreateRepo(
                     repoName,
@@ -653,17 +626,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             {
                                 sharedTag,
-                                new Tag
-                                {
-                                    Syndication = new TagSyndication
-                                    {
-                                        Repo = syndicatedRepo,
-                                        DestinationTags = [syndicatedSharedTag]
-                                    }
-                                }
+                                new Tag()
                             }
                         })));
 
+            manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
             manifest.Registry = registry;
             File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
 
@@ -673,9 +640,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string[] expectedTags =
             [
                 $"{repoPrefix}{repoName}:{tag}",
-                $"{repoPrefix}{syndicatedRepo}:{syndicatedTag}",
-                $"{repoPrefix}{repoName}:{sharedTag}",
-                $"{repoPrefix}{syndicatedRepo}:{syndicatedSharedTag}"
+                $"{repoPrefix}{repoName}:{sharedTag}"
             ];
 
             VerifyImportImage(
@@ -686,7 +651,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 registryOverride,
                 registry);
 
-            // The imported staging digest must also have every primary and syndicated alias
+            // The imported staging digest must also have every primary alias
             // available locally for any subsequent Dockerfiles that reference them.
             foreach (string expectedTag in expectedTags)
             {

@@ -95,9 +95,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
             if (repoData != null)
             {
-                PlatformData platformData = repoData.Images
-                    .SelectMany(image => image.Platforms)
+                PlatformData platformData = repoData
+                    .Images.SelectMany(image => image.Platforms)
                     .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
+
                 if (platformData != null)
                 {
                     foreach (string tag in platformData.SimpleTags)
@@ -106,19 +107,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         string sourceTag = GetSourceTag(destinationTag);
                         tags.Add((sourceTag, destinationTag));
 
-                        TagInfo tagInfo = platformData.PlatformInfo.Tags.FirstOrDefault(tagInfo => tagInfo.Name == tag);
-                        // There may not be a matching tag due to dynamic tag names. For now, we'll say that
-                        // syndication is not supported for dynamically named tags.
-                        // See https://github.com/dotnet/docker-tools/issues/686
-                        if (tagInfo?.SyndicatedRepo != null)
+                        if (platformData.ImageInfo?.SyndicatedRepo is string syndicatedRepo)
                         {
-                            foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
-                            {
-                                destinationTag = TagInfo.GetFullyQualifiedName(
-                                    $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
-                                    syndicatedDestinationTagName);
-                                tags.Add((sourceTag, destinationTag));
-                            }
+                            destinationTag = DockerHelper.GetImageName(
+                                Manifest.Registry,
+                                Options.RepoPrefix + syndicatedRepo,
+                                tag);
+
+                            tags.Add((sourceTag, destinationTag));
                         }
                     }
                 }
@@ -140,8 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                RepoData repoData = imageArtifactDetails.Repos
-                    .FirstOrDefault(repoData => repoData.Repo == repo.Name);
+                RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
 
                 if (repoData is null)
                 {
@@ -161,22 +156,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         string sourceTag = GetSourceTag(destinationTag);
                         yield return (sourceTag, destinationTag);
 
-                        // Copy syndicated manifest list tags
-                        if (imageData.ManifestImage is not null)
+                        if (imageData.ManifestImage?.SyndicatedRepo is string syndicatedRepo)
                         {
-                            TagInfo tagInfo = imageData.ManifestImage.SharedTags
-                                .FirstOrDefault(t => t.Name == sharedTag);
+                            destinationTag = DockerHelper.GetImageName(
+                                Manifest.Registry,
+                                Options.RepoPrefix + syndicatedRepo,
+                                sharedTag);
 
-                            if (tagInfo?.SyndicatedRepo is not null)
-                            {
-                                foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
-                                {
-                                    destinationTag = TagInfo.GetFullyQualifiedName(
-                                        $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
-                                        syndicatedDestinationTagName);
-                                    yield return (GetSourceTag(destinationTag), destinationTag);
-                                }
-                            }
+                            yield return (sourceTag, destinationTag);
                         }
                     }
                 }

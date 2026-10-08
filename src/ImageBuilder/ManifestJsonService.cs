@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
@@ -107,7 +108,9 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
     private Manifest LoadModel(string path, string manifestDirectory)
     {
         string manifestJson = _fileSystem.ReadAllText(path);
-        Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson)
+        ValidateTagSyndication(manifestJson, path);
+        Manifest model =
+            JsonConvert.DeserializeObject<Manifest>(manifestJson)
             ?? throw new InvalidOperationException($"Failed to deserialize manifest from '{path}'.");
 
         if (model.Includes is not null)
@@ -117,17 +120,21 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
             foreach (string? includePath in model.Includes)
             {
                 ModelExtensions.ValidateFileReference(includePath, manifestDirectory);
-                manifestJson = _fileSystem.ReadAllText(Path.Combine(manifestDirectory, includePath));
-                Manifest includeModel = JsonConvert.DeserializeObject<Manifest>(manifestJson)
+                string fullIncludePath = Path.Combine(manifestDirectory, includePath);
+                manifestJson = _fileSystem.ReadAllText(fullIncludePath);
+                ValidateTagSyndication(manifestJson, fullIncludePath);
+                Manifest includeModel =
+                    JsonConvert.DeserializeObject<Manifest>(manifestJson)
                     ?? throw new InvalidOperationException(
                         $"Failed to deserialize included manifest from '{includePath}'.");
+
                 foreach (KeyValuePair<string, string> kvp in includeModel.Variables)
                 {
                     if (model.Variables.ContainsKey(kvp.Key))
                     {
                         throw new InvalidOperationException(
                             $"The manifest contains multiple '{kvp.Key}' variables."
-                            + " Each variable name must be unique.");
+                                + " Each variable name must be unique.");
                     }
 
                     model.Variables.Add(kvp.Key, kvp.Value);
@@ -136,14 +143,56 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
                 model.Repos = [.. model.Repos, .. includeModel.Repos];
 
                 // Consolidate distinct repo instances that share the same name
-                model.Repos = model.Repos
-                    .GroupBy(repo => repo.Name)
-                    .Select(ConsolidateReposWithSameName)
-                    .ToArray();
+                model.Repos = model.Repos.GroupBy(repo => repo.Name).Select(ConsolidateReposWithSameName).ToArray();
             }
         }
 
         return model;
+    }
+
+    private static void ValidateTagSyndication(string manifestJson, string path)
+    {
+        using JsonDocument document = JsonDocument.Parse(
+            manifestJson,
+            new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
+
+        IEnumerable<JsonElement> images = GetArrayProperty(document.RootElement, "repos")
+            .SelectMany(repo => GetArrayProperty(repo, "images"));
+
+        foreach (JsonElement image in images)
+        {
+            IEnumerable<JsonElement> tagSets = GetArrayProperty(image, "platforms")
+                .Select(platform => GetProperty(platform, "tags"))
+                .Prepend(GetProperty(image, "sharedTags"))
+                .Where(tags => tags.ValueKind == JsonValueKind.Object);
+
+            foreach (JsonElement tags in tagSets)
+            {
+                foreach (JsonProperty tag in tags.EnumerateObject())
+                {
+                    if (GetProperty(tag.Value, "syndication").ValueKind != JsonValueKind.Undefined)
+                    {
+                        throw new ValidationException(
+                            $"Tag-level syndication on '{tag.Name}' in '{path}' is no longer supported. "
+                                + "Set the image's 'syndication' repository string instead.");
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<JsonElement> GetArrayProperty(JsonElement element, string name)
+        {
+            JsonElement property = GetProperty(element, name);
+            return property.ValueKind == JsonValueKind.Array ? property.EnumerateArray() : [];
+        }
+
+        static JsonElement GetProperty(JsonElement element, string name) =>
+            element.ValueKind == JsonValueKind.Object
+                ? element
+                    .EnumerateObject()
+                    .LastOrDefault(property => property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    .Value
+                : default;
     }
 
     /// <summary>
@@ -155,8 +204,10 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
     {
         // Validate that all repos which share the same name also don't have
         // non-empty, conflicting values for the other settings
-        IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo).GetProperties()
+        IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo)
+            .GetProperties()
             .Where(prop => prop.Name != nameof(Repo.Images) && prop.Name != nameof(Repo.Readmes));
+
         foreach (PropertyInfo property in propertiesToValidate)
         {
             List<string> distinctNonEmptyPropertyValues = grouping
@@ -171,8 +222,8 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
             {
                 throw new InvalidOperationException(
                     "The manifest contains multiple repos with the same name that also do not have the same "
-                    + $"value for the '{property.Name}' property. Distinct values: "
-                    + string.Join(", ", distinctNonEmptyPropertyValues));
+                        + $"value for the '{property.Name}' property. Distinct values: "
+                        + string.Join(", ", distinctNonEmptyPropertyValues));
             }
         }
 
@@ -189,7 +240,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
                 .Select(repo => repo.McrTagsMetadataTemplate)
                 .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
             Readmes = [.. grouping.SelectMany(repo => repo.Readmes)],
-            Images = [.. grouping.SelectMany(repo => repo.Images)]
+            Images = [.. grouping.SelectMany(repo => repo.Images)],
         };
     }
 }

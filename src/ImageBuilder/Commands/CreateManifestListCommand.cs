@@ -247,18 +247,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
         string prefix = Options.RepoPrefix ?? string.Empty;
         string destRepo = $"{prefix}{sourceRepo}";
 
-        IEnumerable<string> primaryTags = platform.Tags
-            .Select(tag => TagInfo.GetFullyQualifiedName(destRepo, tag.Name));
-
-        // For syndicated platform tags, also import to the syndicated repo paths so syndicated
-        // manifest lists can resolve their platform references.
-        IEnumerable<string> syndicatedTags = platform.Tags
-            .Where(tag => tag.SyndicatedRepo is not null)
-            .SelectMany(tag => tag.SyndicatedDestinationTags
-                .Select(destTag => TagInfo.GetFullyQualifiedName(
-                    $"{prefix}{tag.SyndicatedRepo}", destTag)));
-
-        return [.. primaryTags, .. syndicatedTags];
+        return platform.Tags.Select(tag => TagInfo.GetFullyQualifiedName(destRepo, tag.Name)).ToList();
     }
 
     private static void AddPlatformToImageInfo(PlatformImportData importedPlatform)
@@ -286,8 +275,8 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     {
         _logger.LogInformation("SETTING TAG INFO");
 
-        IEnumerable<ImageData> images = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images)
+        IEnumerable<ImageData> images = imageArtifactDetails
+            .Repos.SelectMany(repo => repo.Images)
             .Where(image => image.Manifest != null);
 
         foreach (ImageData image in images)
@@ -307,24 +296,6 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                     sharedTag.FullyQualifiedName,
                     Options.IsDryRun,
                     cancellationToken));
-
-            IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
-                .Where(tag => tag.SyndicatedRepo is not null)
-                .GroupBy(tag => tag.SyndicatedRepo)
-                .Select(group => (Repo: group.Key, Tag: group.First().SyndicatedDestinationTags.First()))
-                .OrderBy(obj => obj.Repo)
-                .ThenBy(obj => obj.Tag);
-
-            foreach ((string Repo, string Tag) syndicatedSharedTag in syndicatedRepresentativeSharedTags)
-            {
-                string digest = DockerHelper.GetDigestString(
-                    DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
-                    await _manifestService.Value.GetManifestDigestShaAsync(
-                        DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
-                        Options.IsDryRun,
-                        cancellationToken));
-                image.Manifest.SyndicatedDigests.Add(digest);
-            }
         }
 
         string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);

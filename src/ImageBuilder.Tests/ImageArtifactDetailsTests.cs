@@ -91,6 +91,7 @@ public class ImageArtifactDetailsTests
                     [
                         new ImageData()
                         {
+                            SyndicatedRepo = "syndicated-repo",
                             Platforms =
                             [
                                 new PlatformData()
@@ -117,6 +118,7 @@ public class ImageArtifactDetailsTests
                   "repo": "testrepo",
                   "images": [
                     {
+                      "syndicatedRepo": "syndicated-repo",
                       "platforms": [
                         {
                           "dockerfile": "",
@@ -153,6 +155,29 @@ public class ImageArtifactDetailsTests
 
         // Normalize line endings and compare
         actualJson.Replace("\r\n", "\n").ShouldBe(expectedJson.Replace("\r\n", "\n"));
+    }
+
+    [TestMethod]
+    public void CanReadLegacySyndicatedDigests()
+    {
+        const string json = """
+            {
+              "repos": [{
+                "repo": "repo",
+                "images": [{
+                  "manifest": {
+                    "digest": "repo@sha256:primary",
+                    "syndicatedDigests": ["syndicated@sha256:legacy"],
+                    "sharedTags": ["latest"]
+                  }
+                }]
+              }]
+            }
+            """;
+
+        ImageArtifactDetails imageInfo = ImageArtifactDetails.FromJson(json);
+        imageInfo.GetAllDigests().ShouldBe(["repo@sha256:primary"]);
+        JsonHelper.SerializeObject(imageInfo).ShouldNotContain("syndicatedDigests");
     }
 
     #region Test Data

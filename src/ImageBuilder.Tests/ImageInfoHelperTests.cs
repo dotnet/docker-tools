@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class ImageInfoHelperTests
     {
         [TestMethod]
-        public void ApplyRegistryOverride_OverridesSyndicatedManifestDigests()
+        public void ApplyRegistryOverride_OverridesManifestDigest()
         {
             ImageArtifactDetails imageArtifactDetails = new()
             {
@@ -40,11 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Manifest = new ManifestData
                                 {
-                                    Digest = "mcr.microsoft.com/runtime@sha256:primary",
-                                    SyndicatedDigests =
-                                    {
-                                        "mcr.microsoft.com/syndicated/runtime@sha256:syndicated"
-                                    }
+                                    Digest = "mcr.microsoft.com/runtime@sha256:primary"
                                 }
                             }
                         }
@@ -61,10 +57,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             imageArtifactDetails.Repos[0].Images[0].Manifest.Digest
                 .ShouldBe("build.azurecr.io/staging/runtime@sha256:primary");
-
-            imageArtifactDetails.Repos[0].Images[0].Manifest.SyndicatedDigests
-                .ShouldBe(["build.azurecr.io/staging/syndicated/runtime@sha256:syndicated"]);
-
         }
 
         [TestMethod]
@@ -779,11 +771,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
-                                    SyndicatedDigests =
-                                    {
-                                        "syndicated2",
-                                        "syndicated1"
-                                    },
                                     SharedTags =
                                     {
                                         "sharedtag1b",
@@ -838,10 +825,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
-                                    SyndicatedDigests =
-                                    {
-                                        "obsolete"
-                                    },
                                     SharedTags =
                                     {
                                         "sharedtag2",
@@ -887,11 +870,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
-                                    SyndicatedDigests =
-                                    {
-                                        "syndicated1",
-                                        "syndicated2"
-                                    },
                                     SharedTags =
                                     {
                                         "sharedtag1a",
@@ -1337,7 +1315,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 Manifest = new ManifestData
                                 {
                                     Digest = "source-manifest-digest",
-                                    SyndicatedDigests = ["syndicated2", "syndicated1"],
                                     Created = sourceCreated,
                                     SharedTags = ["shared2", "shared1"]
                                 },
@@ -1381,7 +1358,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 Manifest = new ManifestData
                                 {
                                     Digest = "target-manifest-digest",
-                                    SyndicatedDigests = ["syndicated3", "syndicated2"],
                                     Created = sourceCreated.AddDays(-1),
                                     SharedTags = ["shared3", "shared2"]
                                 },
@@ -1414,8 +1390,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             mergedImage.ProductVersion.ShouldBe("2.0");
             mergedImage.ManifestImage.ShouldBeSameAs(targetImageInfo);
             mergedImage.Manifest.Digest.ShouldBe("source-manifest-digest");
-            mergedImage.Manifest.SyndicatedDigests.ShouldBe(
-                ["syndicated1", "syndicated2", "syndicated3"]);
             mergedImage.Manifest.Created.ShouldBe(sourceCreated);
             mergedImage.Manifest.SharedTags.ShouldBe(["shared1", "shared2", "shared3"]);
 

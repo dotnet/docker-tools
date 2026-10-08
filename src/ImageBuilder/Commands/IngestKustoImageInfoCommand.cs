@@ -4,13 +4,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -72,46 +69,43 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         string sha = DockerHelper.GetDigestSha(platform.Digest);
                         imageInfo.AppendLine(FormatImageCsv(sha, platform, image, repo.Repo, timestamp));
 
-                        IEnumerable<TagInfo> tagInfos = (platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
-                            .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name))
-                            .ToList();
-
-                        IEnumerable<string> syndicatedRepos = tagInfos
-                            .Select(tag => tag.SyndicatedRepo)
-                            .Where(repo => repo != null)
-                            .Distinct();
-
-                        foreach (string syndicatedRepo in syndicatedRepos)
+                        string syndicatedRepo = platform.ImageInfo?.SyndicatedRepo;
+                        if (syndicatedRepo is not null)
                         {
-                            imageInfo.AppendLine(
-                                FormatImageCsv(sha, platform, image, syndicatedRepo, timestamp));
+                            imageInfo.AppendLine(FormatImageCsv(sha, platform, image, syndicatedRepo, timestamp));
                         }
 
-                        foreach (TagInfo tag in tagInfos)
+                        foreach (string tag in platform.SimpleTags)
                         {
-                            imageInfo.AppendLine(FormatImageCsv(tag.Name, platform, image, repo.Repo, timestamp));
+                            imageInfo.AppendLine(FormatImageCsv(tag, platform, image, repo.Repo, timestamp));
 
-                            if (tag.SyndicatedRepo != null)
+                            if (syndicatedRepo is not null)
                             {
-                                foreach (string destinationTag in tag.SyndicatedDestinationTags)
-                                {
-                                    imageInfo.AppendLine(
-                                       FormatImageCsv(destinationTag, platform, image, tag.SyndicatedRepo, timestamp));
-                                }
+                                imageInfo.AppendLine(FormatImageCsv(tag, platform, image, syndicatedRepo, timestamp));
                             }
                         }
 
                         for (int i = 0; i < platform.Layers.Count; i++)
                         {
-                            layerInfo.AppendLine(FormatLayerCsv(
-                                platform.Layers[i].Digest, platform.Layers[i].Size, platform.Layers.Count - i, sha, platform, image, repo.Repo, timestamp));
+                            layerInfo.AppendLine(
+                                FormatLayerCsv(
+                                    platform.Layers[i].Digest,
+                                    platform.Layers[i].Size,
+                                    platform.Layers.Count - i,
+                                    sha,
+                                    platform,
+                                    image,
+                                    repo.Repo,
+                                    timestamp));
                         }
                     }
                 }
             }
 
             // Kusto ingest API does not handle an empty line, therefore the last line must be trimmed.
-            return (imageInfo.ToString().TrimEndString(Environment.NewLine), layerInfo.ToString().TrimEndString(Environment.NewLine));
+            return (
+                imageInfo.ToString().TrimEndString(Environment.NewLine),
+                layerInfo.ToString().TrimEndString(Environment.NewLine));
         }
 
         private static string FormatImageCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>

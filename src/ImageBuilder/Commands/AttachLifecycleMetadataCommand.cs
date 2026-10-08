@@ -122,15 +122,13 @@ public class AttachLifecycleMetadataCommand(
     {
         // Only query repos described by the image info files, since other repos in the registry may be owned by
         // other image info files. The old image info is included so that repos removed entirely are still in scope.
-        HashSet<string> repoNames = newImageInfo.Repos
-            .Select(repo => repo.Repo)
-            .Union(oldImageInfo.Repos.Select(repo => repo.Repo))
+        HashSet<string> repoNames = newImageInfo.GetPublishedRepoNames()
+            .Union(oldImageInfo.GetPublishedRepoNames())
             .Select(name => registryOptions.RepoPrefix + name)
             .ToHashSet();
 
         HashSet<string> supportedDigests = newImageInfo
-            .ApplyRegistryOverride(registryOptions)
-            .GetAllDigests()
+            .GetPublishedDigests(registryOptions)
             .ToHashSet();
 
         return await GetRegistryNonReferrerDigestsAsync(

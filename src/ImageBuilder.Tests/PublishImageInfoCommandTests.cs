@@ -90,10 +90,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SyndicatedDigests = new List<string>
+                                        SharedTags = new List<string>
                                         {
-                                            "newdigest1",
-                                            "newdigest2"
+                                            "newshared1",
+                                            "newshared2"
                                         }
                                     }
                                 }

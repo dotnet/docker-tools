@@ -185,7 +185,6 @@ public class ImageSigningServiceTests
                             Manifest = new ManifestData
                             {
                                 Digest = "sha256:manifest123",
-                                SyndicatedDigests = ["sha256:syndicatedManifest123"],
                                 SharedTags = ["8.0", "latest"]
                             },
                             Platforms =
@@ -201,9 +200,9 @@ public class ImageSigningServiceTests
 
         var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
-        results.Count.ShouldBe(4);
+        results.Count.ShouldBe(3);
         results.Select(r => r.ImageName).ShouldBe(
-            ["sha256:abc123", "sha256:def456", "sha256:manifest123", "sha256:syndicatedManifest123"],
+            ["sha256:abc123", "sha256:def456", "sha256:manifest123"],
             ignoreOrder: true);
 
     }

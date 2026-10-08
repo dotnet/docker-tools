@@ -45,6 +45,7 @@ public static class ImageInfoMergeExtensions
     private static void MergeInto(this ImageData source, ImageData target, ImageInfoMergeOptions options)
     {
         target.ProductVersion = source.ProductVersion;
+        target.SyndicatedRepo = source.SyndicatedRepo;
 
         if (source.Manifest is null)
         {
@@ -86,11 +87,6 @@ public static class ImageInfoMergeExtensions
     private static void MergeInto(this ManifestData source, ManifestData target, ImageInfoMergeOptions options)
     {
         target.Digest = source.Digest;
-
-        target.SyndicatedDigests = MergeNullableStringLists(
-            source.SyndicatedDigests,
-            target.SyndicatedDigests,
-            replace: options.IsPublish);
 
         target.Created = source.Created;
 

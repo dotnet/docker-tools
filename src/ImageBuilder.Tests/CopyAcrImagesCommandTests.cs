@@ -341,7 +341,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that image tags can be syndicated to another repo.
         /// </summary>
         [TestMethod]
-        public async Task SyndicatedTags()
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task SyndicatedTags(bool isDryRun)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -353,7 +355,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILogger<CopyAcrImagesCommand>>(),
                 TestHelper.CreateArtifactService(tempFolderContext.Path));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRepoPrefix = "build/";
+            command.Options.RepoPrefix = "test/";
+            command.Options.IsDryRun = isDryRun;
             command.Options.SourceRegistry = SourceRegistry;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
@@ -365,27 +369,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Manifest manifest = ManifestHelper.CreateManifest(
                 ManifestHelper.CreateRepo("runtime",
                     ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2", "tag3" })))
+                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1-$(stamp)", "tag2", "tag3" })))
             );
             manifest.Registry = DestinationRegistry;
 
-            const string syndicatedRepo2 = "runtime2";
-            const string syndicatedRepo3 = "runtime3";
-
-            Platform platform = manifest.Repos.First().Images.First().Platforms.First();
-            platform.Tags["tag2"].Syndication = new TagSyndication
-            {
-                Repo = syndicatedRepo2,
-            };
-            platform.Tags["tag3"].Syndication = new TagSyndication
-            {
-                Repo = syndicatedRepo3,
-                DestinationTags = new string[]
-                {
-                    "tag3a",
-                    "tag3b"
-                }
-            };
+            const string syndicatedRepo = "runtime2";
+            manifest.Repos[0].Images[0].Syndication = "$(destination)";
+            AddVariable(manifest, "destination", syndicatedRepo);
+            AddVariable(manifest, "stamp", "now");
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -409,7 +400,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             PathHelper.NormalizePath(dockerfileRelativePath),
                                             simpleTags: new List<string>
                                             {
-                                                "tag1",
+                                                "tag1-built",
                                                 "tag2",
                                                 "tag3"
                                             })
@@ -428,12 +419,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             List<string> expectedTags = new List<string>
             {
-                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1",
+                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1-built",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag3",
-                $"{command.Options.RepoPrefix}{syndicatedRepo2}:tag2",
-                $"{command.Options.RepoPrefix}{syndicatedRepo3}:tag3a",
-                $"{command.Options.RepoPrefix}{syndicatedRepo3}:tag3b"
+                $"{command.Options.RepoPrefix}{syndicatedRepo}:tag1-built",
+                $"{command.Options.RepoPrefix}{syndicatedRepo}:tag2",
+                $"{command.Options.RepoPrefix}{syndicatedRepo}:tag3"
             };
 
             foreach (string expectedTag in expectedTags)
@@ -442,12 +433,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         o.ImportImageAsync(
                             new string[] { expectedTag },
                             manifest.Registry,
-                            It.IsAny<string>(),
+                            $"build/runtime:{expectedTag.Split(':')[1]}",
                             true,
                             It.IsAny<CancellationToken>(),
                             SourceRegistry,
                             null,
-                            false));
+                            isDryRun));
             }
 
             copyImageServiceMock.VerifyNoOtherCalls();
@@ -595,19 +586,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Dictionary<string, Tag>
                         {
                             {
-                                "shared1",
-                                new Tag
-                                {
-                                    Syndication = new TagSyndication
-                                    {
-                                        Repo = "runtime2",
-                                        DestinationTags = new string[] { "syn-shared1" }
-                                    }
-                                }
+                                "shared1-$(stamp)",
+                                new Tag()
                             }
                         }))
             );
             manifest.Registry = DestinationRegistry;
+            manifest.Repos[0].Images[0].Syndication = "runtime2";
+            AddVariable(manifest, "stamp", "now");
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest),
                 JsonConvert.SerializeObject(manifest));
@@ -631,7 +617,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 },
                                 Manifest = new ManifestData
                                 {
-                                    SharedTags = { "shared1" }
+                                    SharedTags = { "shared1-built" }
                                 }
                             }
                         }
@@ -659,21 +645,31 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             // Primary manifest list shared tag
             copyImageServiceMock.Verify(o =>
                 o.ImportImageAsync(
-                    new string[] { $"test/runtime:shared1" },
+                    new string[] { $"test/runtime:shared1-built" },
                     DestinationRegistry,
-                    "test/runtime:shared1",
+                    "test/runtime:shared1-built",
                     true,
                     It.IsAny<CancellationToken>(),
                     SourceRegistry,
                     null,
                     false));
 
-            // Syndicated manifest list shared tag - source should be from syndicated repo
             copyImageServiceMock.Verify(o =>
                 o.ImportImageAsync(
-                    new string[] { $"test/runtime2:syn-shared1" },
+                    new string[] { "test/runtime2:tag1" },
                     DestinationRegistry,
-                    "test/runtime2:syn-shared1",
+                    "test/runtime:tag1",
+                    true,
+                    It.IsAny<CancellationToken>(),
+                    SourceRegistry,
+                    null,
+                    false));
+
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime2:shared1-built" },
+                    DestinationRegistry,
+                    "test/runtime:shared1-built",
                     true,
                     It.IsAny<CancellationToken>(),
                     SourceRegistry,
@@ -681,6 +677,73 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     false));
 
             copyImageServiceMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        public async Task CopyAcrImagesCommand_OnlySyndicatesConfiguredImages()
+        {
+            using TempFolderContext context = TestHelper.UseTempFolder();
+
+            string dockerfile1 = DockerfileHelper.CreateDockerfile("image1", context);
+            string dockerfile2 = DockerfileHelper.CreateDockerfile("image2", context);
+            string dockerfile3 = DockerfileHelper.CreateDockerfile("image3", context);
+
+            Image syndicatedImage = CreateImage(
+                ["shared"],
+                ManifestHelper.CreatePlatform(dockerfile1, ["amd64"]),
+                ManifestHelper.CreatePlatform(dockerfile2, ["arm64"], architecture: Architecture.ARM64));
+            syndicatedImage.Syndication = "syndicated";
+
+            Manifest manifest = CreateManifest(CreateRepo(
+                "repo", syndicatedImage, CreateImage(ManifestHelper.CreatePlatform(dockerfile3, ["other"]))));
+            manifest.Registry = DestinationRegistry;
+
+            ImageArtifactDetails imageInfo = CreateImageArtifactDetails(CreateRepoData(
+                "repo",
+                CreateImageData(
+                    ["shared"],
+                    CreatePlatform(dockerfile1, simpleTags: ["amd64"]),
+                    CreatePlatform(dockerfile2, simpleTags: ["arm64"], architecture: "arm64")),
+                CreateImageData(CreatePlatform(dockerfile3, simpleTags: ["other"]))));
+
+            Mock<ICopyImageService> copyService = new();
+
+            CopyAcrImagesCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                copyService.Object,
+                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+                TestHelper.CreateArtifactService(context.Path));
+
+            command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
+            command.Options.ImageInfoPath = Path.Combine(context.Path, "image-info.json");
+            command.Options.SourceRegistry = SourceRegistry;
+            command.Options.SourceRepoPrefix = "build/";
+            command.Options.RepoPrefix = "publish/";
+
+            File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageInfo));
+
+            command.LoadManifest();
+
+            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+            foreach (string tag in new[] { "amd64", "arm64", "shared", "other" })
+            {
+                copyService.Verify(service => service.ImportImageAsync(
+                    new[] { $"publish/repo:{tag}" },
+                    DestinationRegistry, $"build/repo:{tag}", true,
+                    It.IsAny<CancellationToken>(), SourceRegistry, null, false));
+            }
+
+            foreach (string tag in new[] { "amd64", "arm64", "shared" })
+            {
+                copyService.Verify(service => service.ImportImageAsync(
+                    new[] { $"publish/syndicated:{tag}" },
+                    DestinationRegistry, $"build/repo:{tag}", true,
+                    It.IsAny<CancellationToken>(), SourceRegistry, null, false));
+            }
+
+            copyService.VerifyNoOtherCalls();
         }
 
         /// <summary>

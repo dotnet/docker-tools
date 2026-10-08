@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -68,28 +67,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
                 yield return new DigestInfo(digestSha, Options.RepoPrefix + repo.Repo, image.Manifest.SharedTags);
 
-                // Find all syndicated shared tags grouped by their syndicated repo
-                IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.ManifestImage.SharedTags
-                    .Where(tag => image.Manifest.SharedTags.Contains(tag.Name) && tag.SyndicatedRepo != null)
-                    .GroupBy(tag => tag.SyndicatedRepo);
-
-                foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
+                if (image.ManifestImage?.SyndicatedRepo is string syndicatedRepo)
                 {
-                    string syndicatedRepo = syndicatedTags.Key;
-                    string fullyQualifiedRepo = DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedRepo);
-
-                    string? syndicatedDigest = image.Manifest.SyndicatedDigests
-                        .FirstOrDefault(digest => digest.StartsWith($"{fullyQualifiedRepo}@"));
-
-                    if (syndicatedDigest is null)
-                    {
-                        throw new InvalidOperationException($"Unable to find syndicated digest for '{fullyQualifiedRepo}'");
-                    }
-
                     yield return new DigestInfo(
-                        DockerHelper.GetDigestSha(syndicatedDigest),
+                        digestSha,
                         Options.RepoPrefix + syndicatedRepo,
-                        syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
+                        image.Manifest.SharedTags);
                 }
             }
 
@@ -99,18 +82,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 yield return new DigestInfo(sha, Options.RepoPrefix + repo.Repo, platform.SimpleTags);
 
-                // Find all syndicated simple tags grouped by their syndicated repo
-                IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = (platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
-                    .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name) && tagInfo.SyndicatedRepo != null)
-                    .GroupBy(tagInfo => tagInfo.SyndicatedRepo);
-
-                foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
+                if (platform.ImageInfo?.SyndicatedRepo is string syndicatedRepo)
                 {
-                    string syndicatedRepo = syndicatedTags.Key;
-                    yield return new DigestInfo(
-                        sha,
-                        Options.RepoPrefix + syndicatedRepo,
-                        syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
+                    yield return new DigestInfo(sha, Options.RepoPrefix + syndicatedRepo, platform.SimpleTags);
                 }
             }
         }

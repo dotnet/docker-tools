@@ -134,10 +134,10 @@ public class CreateManifestListCommandTests
     }
 
     /// <summary>
-    /// Verifies that syndicated digests are recorded in ManifestData.SyndicatedDigests.
+    /// Verifies that syndication does not create extra staging manifest lists or digests.
     /// </summary>
     [TestMethod]
-    public async Task ExecuteAsync_RecordsSyndicatedDigests()
+    public async Task ExecuteAsync_SyndicationOnlyCreatesPrimaryManifestLists()
     {
         Mock<IManifestService> manifestServiceMock = new() { CallBase = true };
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
@@ -146,56 +146,26 @@ public class CreateManifestListCommandTests
             .Setup(o => o.GetManifestAsync(
                 It.Is<ImageName>(i => i.ToString().Contains("repo:sharedtag")), false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ManifestQueryResult("primary-digest", new JsonObject()));
-        manifestServiceMock
-            .Setup(o => o.GetManifestAsync(
-                It.Is<ImageName>(i => i.ToString().Contains("syndicated-repo:syn-sharedtag")), false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult("syndicated-digest", new JsonObject()));
 
         DateTime createdDate = DateTime.UtcNow;
         IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == createdDate);
 
+        Mock<IDockerService> dockerServiceMock = new();
         CreateManifestListCommand command = CreateCommand(
-            manifestServiceFactory, new Mock<IDockerService>(), dateTimeService);
+            manifestServiceFactory, dockerServiceMock, dateTimeService);
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
         string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
 
-        Platform platform;
         Manifest manifest = CreateManifest(
             CreateRepo("repo",
                 CreateImage(
-                    [platform = CreatePlatform(dockerfile, Array.Empty<string>())],
-                    new Dictionary<string, Tag>
-                    {
-                        {
-                            "sharedtag",
-                            new Tag
-                            {
-                                Syndication = new TagSyndication
-                                {
-                                    Repo = "syndicated-repo",
-                                    DestinationTags = ["syn-sharedtag"]
-                                }
-                            }
-                        }
-                    })));
+                    ["sharedtag"],
+                    CreatePlatform(dockerfile, ["tag1"]))));
 
         manifest.Registry = "mcr.microsoft.com";
-        platform.Tags = new Dictionary<string, Tag>
-        {
-            {
-                "tag1",
-                new Tag
-                {
-                    Syndication = new TagSyndication
-                    {
-                        Repo = "syndicated-repo",
-                        DestinationTags = ["syn-tag1"]
-                    }
-                }
-            }
-        };
+        manifest.Repos[0].Images[0].Syndication = "syndicated-repo";
 
         ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
             CreateRepoData("repo",
@@ -213,8 +183,14 @@ public class CreateManifestListCommandTests
         ManifestData manifestData = result.Repos[0].Images[0].Manifest;
         manifestData.ShouldNotBeNull();
         manifestData.Digest.ShouldBe("mcr.microsoft.com/repo@primary-digest");
-        manifestData.SyndicatedDigests.Count.ShouldBe(1);
-        manifestData.SyndicatedDigests[0].ShouldBe("mcr.microsoft.com/syndicated-repo@syndicated-digest");
+        dockerServiceMock.Verify(o => o.CreateManifestList(
+            "mcr.microsoft.com/repo:sharedtag", new[] { "mcr.microsoft.com/repo:tag1" },
+            false, It.IsAny<CancellationToken>()), Times.Once);
+        dockerServiceMock.Verify(o => o.PushManifestList(
+            "mcr.microsoft.com/repo:sharedtag", false, It.IsAny<CancellationToken>()), Times.Once);
+        dockerServiceMock.VerifyNoOtherCalls();
+        manifestServiceMock.Verify(o => o.GetManifestAsync(
+            It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     /// <summary>

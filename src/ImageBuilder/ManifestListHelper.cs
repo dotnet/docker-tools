@@ -118,32 +118,10 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        // Manifest lists for normal (non-syndicated) shared tags
-        IEnumerable<ManifestListInfo> primaryManifestLists = GetManifestListsForTags(
-            repo, image, imageArtifactDetails,
-            image.SharedTags.Select(tag => tag.Name),
-            tag => DockerHelper.GetImageName(manifest.Registry, repoPrefix + repo.Name, tag),
-            platform => platform.Tags.First());
-
-        // Manifest lists for syndicated repos
-        IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
-            .Where(tag => tag.SyndicatedRepo != null)
-            .GroupBy(tag => tag.SyndicatedRepo);
-
-        IEnumerable<ManifestListInfo> syndicatedManifestLists = syndicatedTagGroups
-            .SelectMany(syndicatedTags =>
-            {
-                string syndicatedRepo = syndicatedTags.Key;
-                IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
-
-                return GetManifestListsForTags(
-                    repo, image, imageArtifactDetails,
-                    destinationTags,
-                    tag => DockerHelper.GetImageName(manifest.Registry, repoPrefix + syndicatedRepo, tag),
-                    platform => platform.Tags.FirstOrDefault(tag => tag.SyndicatedRepo == syndicatedRepo));
-            });
-
-        return primaryManifestLists.Concat(syndicatedManifestLists);
+        string qualifiedRepo = DockerHelper.GetImageName(manifest.Registry, repoPrefix + repo.Name);
+        return image.SharedTags
+            .Select(tag => BuildManifestListInfo(repo, image, imageArtifactDetails, tag.Name, qualifiedRepo))
+            .OfType<ManifestListInfo>();
     }
 
     private static IEnumerable<ManifestListPlatformValidationIssue> GetManifestListPlatformValidationIssuesForImage(
@@ -153,56 +131,10 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<ManifestListPlatformValidationIssue> primaryManifestListIssues = GetManifestListPlatformValidationIssuesForTags(
-            repo, image, imageArtifactDetails,
-            image.SharedTags.Select(tag => tag.Name),
-            tag => DockerHelper.GetImageName(manifest.Registry, repoPrefix + repo.Name, tag),
-            platform => platform.Tags.First());
-
-        IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
-            .Where(tag => tag.SyndicatedRepo != null)
-            .GroupBy(tag => tag.SyndicatedRepo);
-
-        IEnumerable<ManifestListPlatformValidationIssue> syndicatedManifestListIssues = syndicatedTagGroups
-            .SelectMany(syndicatedTags =>
-            {
-                string syndicatedRepo = syndicatedTags.Key;
-                IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
-
-                return GetManifestListPlatformValidationIssuesForTags(
-                    repo, image, imageArtifactDetails,
-                    destinationTags,
-                    tag => DockerHelper.GetImageName(manifest.Registry, repoPrefix + syndicatedRepo, tag),
-                    platform => platform.Tags.FirstOrDefault(tag => tag.SyndicatedRepo == syndicatedRepo));
-            });
-
-        return primaryManifestListIssues.Concat(syndicatedManifestListIssues);
-    }
-
-    private static IEnumerable<ManifestListInfo> GetManifestListsForTags(
-        RepoInfo repo,
-        ImageInfo image,
-        ImageArtifactDetails imageArtifactDetails,
-        IEnumerable<string> tags,
-        Func<string, string> getImageName,
-        Func<PlatformInfo, TagInfo?> getTagRepresentative)
-    {
-        return tags
-            .Select(tag => BuildManifestListInfo(repo, image, imageArtifactDetails, tag, getImageName, getTagRepresentative))
-            .OfType<ManifestListInfo>();
-    }
-
-    private static IEnumerable<ManifestListPlatformValidationIssue> GetManifestListPlatformValidationIssuesForTags(
-        RepoInfo repo,
-        ImageInfo image,
-        ImageArtifactDetails imageArtifactDetails,
-        IEnumerable<string> tags,
-        Func<string, string> getImageName,
-        Func<PlatformInfo, TagInfo?> getTagRepresentative)
-    {
-        return tags
-            .Select(tag => BuildManifestListPlatformValidationIssue(
-                repo, image, imageArtifactDetails, tag, getImageName, getTagRepresentative))
+        string qualifiedRepo = DockerHelper.GetImageName(manifest.Registry, repoPrefix + repo.Name);
+        return image.SharedTags
+            .Select(tag =>
+                BuildManifestListPlatformValidationIssue(repo, image, imageArtifactDetails, tag.Name, qualifiedRepo))
             .OfType<ManifestListPlatformValidationIssue>();
     }
 
@@ -211,10 +143,9 @@ public static class ManifestListHelper
         ImageInfo image,
         ImageArtifactDetails imageArtifactDetails,
         string tag,
-        Func<string, string> getImageName,
-        Func<PlatformInfo, TagInfo?> getTagRepresentative)
+        string qualifiedRepo)
     {
-        string manifestListTag = getImageName(tag);
+        string manifestListTag = TagInfo.GetFullyQualifiedName(qualifiedRepo, tag);
         List<string> platformTags = [];
 
         foreach (PlatformInfo platform in image.AllPlatforms)
@@ -228,15 +159,12 @@ public static class ManifestListHelper
                 continue;
             }
 
-            // A platform with its own tags whose representative resolves to null does not participate in this manifest
-            // list (for example, it isn't syndicated to the repo for the current pass), so it is skipped. However, a
-            // tagless platform must be referenceable via a sibling. Failing to find one indicates a manifest problem.
             // TODO: support platforms without tags (https://github.com/dotnet/docker-tools/issues/1499).
-            if (TryGetPlatformTagRepresentative(repo, image, platform, getTagRepresentative, out TagInfo? imageTag))
+            if (TryGetPlatformTagRepresentative(repo, image, platform, out TagInfo? imageTag))
             {
-                platformTags.Add(getImageName(imageTag.Name));
+                platformTags.Add(TagInfo.GetFullyQualifiedName(qualifiedRepo, imageTag.Name));
             }
-            else if (!platform.Tags.Any())
+            else
             {
                 throw new InvalidOperationException(
                     $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
@@ -256,10 +184,9 @@ public static class ManifestListHelper
         ImageInfo manifestImage,
         ImageArtifactDetails imageArtifactDetails,
         string tag,
-        Func<string, string> getImageName,
-        Func<PlatformInfo, TagInfo?> getTagRepresentative)
+        string qualifiedRepo)
     {
-        string manifestListTag = getImageName(tag);
+        string manifestListTag = TagInfo.GetFullyQualifiedName(qualifiedRepo, tag);
         List<string> missingPlatforms = [];
         bool hasExpectedPlatform = false;
 
@@ -267,7 +194,7 @@ public static class ManifestListHelper
         // that platform. If not, there's a problem.
         foreach (PlatformInfo platform in manifestImage.AllPlatforms)
         {
-            if (!TryGetPlatformTagRepresentative(repo, manifestImage, platform, getTagRepresentative, out _))
+            if (!TryGetPlatformTagRepresentative(repo, manifestImage, platform, out _))
                 continue;
 
             hasExpectedPlatform = true;
@@ -294,21 +221,16 @@ public static class ManifestListHelper
         RepoInfo repo,
         ImageInfo image,
         PlatformInfo platform,
-        Func<PlatformInfo, TagInfo?> getTagRepresentative,
         [NotNullWhen(true)] out TagInfo? representativeTag)
     {
         if (platform.Tags.Any())
         {
-            representativeTag = getTagRepresentative(platform);
-            return representativeTag is not null;
+            representativeTag = platform.Tags.First();
+            return true;
         }
 
         // Tagless platforms included by shared tags need a matching concrete tag to reference in
-        // the manifest list, borrowed from a sibling platform (same Dockerfile/OS/arch). The
-        // representative selector can return null even when a sibling has tags - for example, in a
-        // syndicated pass where the sibling has tags but none syndicated to the target repo - so we
-        // must keep searching for a sibling that yields a usable representative instead of
-        // committing to the first sibling that merely has tags.
+        // the manifest list, borrowed from a sibling platform (same Dockerfile/OS/arch).
         representativeTag = repo.AllImages
             .SelectMany(candidateImage =>
                 candidateImage.AllPlatforms
@@ -321,8 +243,8 @@ public static class ManifestListHelper
                     image2: candidate.Image,
                     platform2: candidate.Platform)
                 && candidate.Platform.Tags.Any())
-            .Select(candidate => getTagRepresentative(candidate.Platform))
-            .FirstOrDefault(tag => tag is not null);
+            .Select(candidate => candidate.Platform.Tags.First())
+            .FirstOrDefault();
 
         return representativeTag is not null;
     }

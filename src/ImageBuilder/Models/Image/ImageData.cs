@@ -20,6 +20,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public ManifestData Manifest { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string SyndicatedRepo { get; set; }
+
         public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
 
         /// <summary>

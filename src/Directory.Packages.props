@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <MicrosoftExtensionsVersion>10.0.11</MicrosoftExtensionsVersion>
-    <SystemPackagesVersion>10.0.11</SystemPackagesVersion>
+    <MicrosoftExtensionsVersion>10.0.12</MicrosoftExtensionsVersion>
+    <SystemPackagesVersion>10.0.12</SystemPackagesVersion>
   </PropertyGroup>
 
   <ItemGroup>

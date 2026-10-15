@@ -40,5 +40,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             architecture.GetNupkgName().ShouldBe(expectedNupkgName);
         }
+
+        [TestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("   ")]
+        public void Validate_RejectsBlankRepoName(string name)
+        {
+            Manifest manifest = new()
+            {
+                Repos = new[]
+                {
+                    new Repo { Name = name }
+                }
+            };
+            ValidationException exception = Should.Throw<ValidationException>(
+                () => manifest.Validate("."));
+            exception.Message.ShouldBe("Each repository must specify a non-empty 'name'.");
+
+        }
     }
 }

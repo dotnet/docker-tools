@@ -54,6 +54,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static void Validate(this Manifest manifest, string manifestDirectory)
         {
+            ArgumentNullException.ThrowIfNull(manifest);
+
             if (manifest.Repos == null || !manifest.Repos.Any())
             {
                 throw new ValidationException($"The manifest must contain at least one repo.");
@@ -61,6 +63,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             foreach (Repo repo in manifest.Repos)
             {
+                if (repo == null)
+                {
+                    throw new ValidationException("The manifest's 'repos' array must not contain null entries.");
+                }
                 ValidateRepo(repo, manifestDirectory);
             }
 
@@ -106,6 +112,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static void ValidateRepo(Repo repo, string manifestDirectory)
         {
+            if (string.IsNullOrWhiteSpace(repo.Name))
+            {
+                throw new ValidationException("Each repository must specify a non-empty 'name'.");
+            }
+
             ValidateUniqueTags(repo);
             ValidateFileReference(repo.McrTagsMetadataTemplate, manifestDirectory);
 

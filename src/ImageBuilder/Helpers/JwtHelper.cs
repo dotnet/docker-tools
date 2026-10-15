@@ -4,7 +4,6 @@
 
 using System;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 

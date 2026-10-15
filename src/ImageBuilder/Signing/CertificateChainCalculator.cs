@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Formats.Cbor;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 

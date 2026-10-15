@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.DockerTools.Infrastructure;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 

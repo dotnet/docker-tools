@@ -7,16 +7,14 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using System.Threading;
 using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
-using Options = Microsoft.Extensions.Options.Options;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
+using Options = Microsoft.Extensions.Options.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 

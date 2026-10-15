@@ -14,10 +14,9 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
 using Shouldly;
-
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 

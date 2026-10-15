@@ -4,15 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
-using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 

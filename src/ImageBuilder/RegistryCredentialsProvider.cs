@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
-using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;

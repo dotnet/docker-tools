@@ -10,14 +10,12 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
-using Microsoft.Extensions.Logging;
 using OrasProject.Oras.Oci;
 using Shouldly;
 

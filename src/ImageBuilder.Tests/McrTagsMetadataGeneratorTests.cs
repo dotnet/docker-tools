@@ -8,18 +8,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using FluentAssertions;
 using Microsoft.DotNet.ImageBuilder.Mcr;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;

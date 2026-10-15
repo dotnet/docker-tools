@@ -5,10 +5,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;

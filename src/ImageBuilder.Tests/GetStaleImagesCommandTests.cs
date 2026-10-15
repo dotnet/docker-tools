@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Nodes;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -18,16 +18,15 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.VersionTools.Automation;
-using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
-using WebApi = Microsoft.TeamFoundation.Build.WebApi;
+using Newtonsoft.Json.Linq;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 

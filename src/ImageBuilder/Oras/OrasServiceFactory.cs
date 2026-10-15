@@ -4,7 +4,6 @@
 
 using System.Net.Http;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder.Oras;
 

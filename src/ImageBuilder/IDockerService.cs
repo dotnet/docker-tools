@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder;

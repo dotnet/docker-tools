@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
-using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 using Shouldly;
+using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 

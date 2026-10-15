@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 

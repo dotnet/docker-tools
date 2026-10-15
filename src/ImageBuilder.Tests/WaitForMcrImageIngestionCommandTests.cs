@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;

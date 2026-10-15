@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;

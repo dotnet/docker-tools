@@ -35,8 +35,10 @@ insert_final_newline = false
 [*.{cs,vb}]
 
 # Organize usings
-dotnet_separate_import_directive_groups = true
+dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = true
+# Remove unnecessary using directives
+dotnet_diagnostic.IDE0005.severity = warning
 file_header_template = unset
 
 # this. and Me. preferences
@@ -147,7 +149,7 @@ csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 
 # 'using' directive preferences
-csharp_using_directive_placement = outside_namespace:silent
+csharp_using_directive_placement = outside_namespace:warning
 
 #### C# Formatting Rules ####
 

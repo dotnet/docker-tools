@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -14,7 +13,6 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
-using Microsoft.Extensions.Logging;
 using Polly;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 

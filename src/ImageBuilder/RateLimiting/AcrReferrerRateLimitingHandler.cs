@@ -4,7 +4,6 @@
 
 using System;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 

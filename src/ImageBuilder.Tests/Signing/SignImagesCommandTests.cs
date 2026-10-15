@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -12,7 +11,6 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;

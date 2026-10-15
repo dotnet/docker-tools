@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
-using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;

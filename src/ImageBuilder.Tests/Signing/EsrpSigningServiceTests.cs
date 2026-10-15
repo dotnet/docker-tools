@@ -10,7 +10,6 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;

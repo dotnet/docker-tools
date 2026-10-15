@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Formats.Cbor;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -15,9 +14,8 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
-using Microsoft.Extensions.Logging;
-using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 using Shouldly;
+using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 

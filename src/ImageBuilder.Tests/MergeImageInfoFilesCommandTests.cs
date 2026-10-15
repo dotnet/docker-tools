@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Moq;
 using Newtonsoft.Json;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;

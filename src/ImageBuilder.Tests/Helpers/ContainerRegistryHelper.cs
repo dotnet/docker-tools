@@ -5,10 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using Azure;
 using Azure.Containers.ContainerRegistry;
-using Azure.Core;
 using Moq;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;

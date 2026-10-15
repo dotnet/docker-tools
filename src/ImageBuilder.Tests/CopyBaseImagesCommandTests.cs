@@ -7,13 +7,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 

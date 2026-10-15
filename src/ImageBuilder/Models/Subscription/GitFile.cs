@@ -5,20 +5,19 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription;
+
+public class GitFile : IGitHubFileRef
 {
-    public class GitFile : IGitHubFileRef
-    {
-        [JsonProperty(Required = Required.Always)]
-        public string Owner { get; set; }
+    [JsonProperty(Required = Required.Always)]
+    public string Owner { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public string Repo { get; set; }
+    [JsonProperty(Required = Required.Always)]
+    public string Repo { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public string Branch { get; set; }
+    [JsonProperty(Required = Required.Always)]
+    public string Branch { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public string Path { get; set; }
-    }
+    [JsonProperty(Required = Required.Always)]
+    public string Path { get; set; }
 }

@@ -5,11 +5,10 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class BuildLegInfo
 {
-    public class BuildLegInfo
-    {
-        public string Name { get; set; }
-        public List<(string Name, string Value)> Variables { get; } = new List<(string, string)>();
-    }
+    public string Name { get; set; }
+    public List<(string Name, string Value)> Variables { get; } = new List<(string, string)>();
 }

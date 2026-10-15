@@ -5,11 +5,10 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+
+public class ImageResult
 {
-    public class ImageResult
-    {
-        public string Digest { get; set; }
-        public List<ImageStatus> Value { get; set; } = new List<ImageStatus>();
-    }
+    public string Digest { get; set; }
+    public List<ImageStatus> Value { get; set; } = new List<ImageStatus>();
 }

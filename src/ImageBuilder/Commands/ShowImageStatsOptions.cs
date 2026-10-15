@@ -6,28 +6,27 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class ShowImageStatsOptions : ManifestOptions, IFilterableOptions
 {
-    public class ShowImageStatsOptions : ManifestOptions, IFilterableOptions
+    public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
+
+    public override IEnumerable<Option> GetCliOptions() =>
+    [
+        ..base.GetCliOptions(),
+        ..FilterOptions.GetCliOptions(),
+    ];
+
+    public override IEnumerable<Argument> GetCliArguments() =>
+    [
+        ..base.GetCliArguments(),
+        ..FilterOptions.GetCliArguments(),
+    ];
+
+    public override void Bind(ParseResult result)
     {
-        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
-
-        public override IEnumerable<Option> GetCliOptions() =>
-        [
-            ..base.GetCliOptions(),
-            ..FilterOptions.GetCliOptions(),
-        ];
-
-        public override IEnumerable<Argument> GetCliArguments() =>
-        [
-            ..base.GetCliArguments(),
-            ..FilterOptions.GetCliArguments(),
-        ];
-
-        public override void Bind(ParseResult result)
-        {
-            base.Bind(result);
-            FilterOptions.Bind(result);
-        }
+        base.Bind(result);
+        FilterOptions.Bind(result);
     }
 }

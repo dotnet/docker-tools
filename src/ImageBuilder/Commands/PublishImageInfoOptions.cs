@@ -7,36 +7,35 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class PublishImageInfoOptions : ImageInfoOptions, IGitOptionsHost
 {
-    public class PublishImageInfoOptions : ImageInfoOptions, IGitOptionsHost
+    public GitOptions GitOptions { get; set; } = new GitOptions();
+
+    private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
+
+    public override IEnumerable<Option> GetCliOptions() =>
+    [
+        ..base.GetCliOptions(),
+        ..GitBuilder.GetCliOptions(),
+    ];
+
+    public override IEnumerable<Argument> GetCliArguments() =>
+    [
+        ..base.GetCliArguments(),
+        ..GitBuilder.GetCliArguments(),
+    ];
+
+    public override IEnumerable<Action<CommandResult>> GetValidators() =>
+    [
+        ..base.GetValidators(),
+        ..GitBuilder.GetValidators(),
+    ];
+
+    public override void Bind(ParseResult result)
     {
-        public GitOptions GitOptions { get; set; } = new GitOptions();
-
-        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
-
-        public override IEnumerable<Option> GetCliOptions() =>
-        [
-            ..base.GetCliOptions(),
-            ..GitBuilder.GetCliOptions(),
-        ];
-
-        public override IEnumerable<Argument> GetCliArguments() =>
-        [
-            ..base.GetCliArguments(),
-            ..GitBuilder.GetCliArguments(),
-        ];
-
-        public override IEnumerable<Action<CommandResult>> GetValidators() =>
-        [
-            ..base.GetValidators(),
-            ..GitBuilder.GetValidators(),
-        ];
-
-        public override void Bind(ParseResult result)
-        {
-            base.Bind(result);
-            GitBuilder.Bind(result, GitOptions);
-        }
+        base.Bind(result);
+        GitBuilder.Bind(result, GitOptions);
     }
 }

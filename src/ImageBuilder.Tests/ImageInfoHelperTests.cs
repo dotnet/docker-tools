@@ -19,630 +19,785 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class ImageInfoHelperTests
 {
-    [TestClass]
-    public class ImageInfoHelperTests
+    [TestMethod]
+    public void ApplyRegistryOverride_OverridesManifestDigest()
     {
-        [TestMethod]
-        public void ApplyRegistryOverride_OverridesManifestDigest()
+        ImageArtifactDetails imageArtifactDetails = new()
         {
-            ImageArtifactDetails imageArtifactDetails = new()
+            Repos =
             {
-                Repos =
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "runtime",
+                    Images =
                     {
-                        Repo = "runtime",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            Manifest = new ManifestData
                             {
-                                Manifest = new ManifestData
+                                Digest = "mcr.microsoft.com/runtime@sha256:primary"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        RegistryOptions registryOverride = new()
+        {
+            Registry = "build.azurecr.io",
+            RepoPrefix = "staging"
+        };
+
+        imageArtifactDetails.ApplyRegistryOverride(registryOverride);
+
+        imageArtifactDetails.Repos[0].Images[0].Manifest.Digest
+            .ShouldBe("build.azurecr.io/staging/runtime@sha256:primary");
+    }
+
+    [TestMethod]
+    public void LoadFromContent()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "runtime",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
                                 {
-                                    Digest = "mcr.microsoft.com/runtime@sha256:primary"
+                                    Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    SimpleTags = new List<string> { "linux" }
+                                },
+                                new PlatformData
+                                {
+                                    Dockerfile = "1.0/runtime/windows/Dockerfile",
+                                    OsType = "Windows",
+                                    OsVersion = "nanoserver-2004",
+                                    Architecture = "amd64",
+                                    SimpleTags = new List<string> { "windows" }
+                                }
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = new List<string>
+                                {
+                                    "shared"
                                 }
                             }
                         }
                     }
                 }
-            };
-            RegistryOptions registryOverride = new()
-            {
-                Registry = "build.azurecr.io",
-                RepoPrefix = "staging"
-            };
+            }
+        };
 
-            imageArtifactDetails.ApplyRegistryOverride(registryOverride);
+        using TempFolderContext tempFolderContext = new TempFolderContext();
 
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest
-                .ShouldBe("build.azurecr.io/staging/runtime@sha256:primary");
-        }
-
-        [TestMethod]
-        public void LoadFromContent()
-        {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    new Platform[]
                     {
-                        Repo = "runtime",
-                        Images =
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/linux", tempFolderContext),
+                            new string[] { "linux" },
+                            OS.Linux,
+                            "noble"),
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/windows", tempFolderContext),
+                            new string[] { "windows" },
+                            OS.Windows,
+                            "nanoserver-2004")
+                    },
+                    new Dictionary<string, Tag>
+                    {
+                        { "shared", new Tag() }
+                    }))
+        );
+
+        string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+        ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
+        string expected = JsonHelper.SerializeObject(imageArtifactDetails);
+
+        ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
+
+        JsonHelper.SerializeObject(result).ShouldBe(expected);
+        RepoData repo = result.Repos.First();
+        ImageData image = repo.Images.First();
+        RepoInfo expectedRepo = manifestInfo.AllRepos.First();
+        ImageInfo expectedImage = expectedRepo.AllImages.First();
+        image.ManifestImage.ShouldBeSameAs(expectedImage);
+        image.ManifestRepo.ShouldBeSameAs(expectedRepo);
+
+        image.Platforms.First().ImageInfo.ShouldBeSameAs(expectedImage);
+        image.Platforms.First().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.First());
+        image.Platforms.Last().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.Last());
+    }
+
+    [TestMethod]
+    public void LoadFromContent_ImagesDifferByPatchVersion()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "runtime",
+                    Images =
+                    {
+                        new ImageData
                         {
-                            new ImageData
+                            ProductVersion = "1.0.0",
+                            Platforms =
                             {
-                                Platforms =
+                                new PlatformData
                                 {
-                                    new PlatformData
+                                    Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    SimpleTags = new List<string> { "linux" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        using TempFolderContext tempFolderContext = new TempFolderContext();
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    new Platform[]
+                    {
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/linux", tempFolderContext),
+                            new string[] { "linux" },
+                            OS.Linux,
+                            "noble")
+                    },
+                    productVersion: "1.0.1"))
+        );
+
+        string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+        ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
+        string expected = JsonHelper.SerializeObject(imageArtifactDetails);
+
+        ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
+
+        JsonHelper.SerializeObject(result).ShouldBe(expected);
+        RepoData repo = result.Repos.First();
+        ImageData image = repo.Images.First();
+        RepoInfo expectedRepo = manifestInfo.AllRepos.First();
+        ImageInfo expectedImage = expectedRepo.AllImages.First();
+        image.ManifestImage.ShouldBeSameAs(expectedImage);
+        image.ManifestRepo.ShouldBeSameAs(expectedRepo);
+
+        image.Platforms.First().ImageInfo.ShouldBeSameAs(expectedImage);
+        image.Platforms.First().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.First());
+        image.Platforms.Last().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.Last());
+    }
+
+    [TestMethod]
+    public void LoadFromContent_DuplicatedPlatforms()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "runtime",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    SimpleTags = new List<string> { "linux" }
+                                }
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    SimpleTags = new List<string>()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        using TempFolderContext tempFolderContext = new TempFolderContext();
+
+        string dockerfile = CreateDockerfile("1.0/runtime/linux", tempFolderContext);
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    new Platform[]
+                    {
+                        CreatePlatform(
+                            dockerfile,
+                            new string[] { "linux" },
+                            OS.Linux,
+                            "noble")
+                    }),
+                CreateImage(
+                    new Platform[]
+                    {
+                        CreatePlatform(
+                            dockerfile,
+                            new string[0],
+                            OS.Linux,
+                            "noble")
+                    }))
+        );
+
+        string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+        ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
+        string expected = JsonHelper.SerializeObject(imageArtifactDetails);
+
+        ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
+
+        result.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(manifestInfo.AllRepos.First().AllImages.First());
+        result.Repos[0].Images[1].ManifestImage.ShouldBeSameAs(manifestInfo.AllRepos.First().AllImages.ElementAt(1));
+    }
+
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_ImageDigest()
+    {
+        ImageInfo imageInfo1 = CreateImageInfo();
+
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    Digest = "digest",
+                                    ImageInfo = imageInfo1
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    ImageInfo = imageInfo1
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        imageArtifactDetails.MergeInto(targetImageArtifactDetails);
+        CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+    }
+
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_EmptyTarget()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                },
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails();
+        imageArtifactDetails.MergeInto(targetImageArtifactDetails);
+
+        CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+    }
+
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_ExistingTarget()
+    {
+        PlatformData repo2Image1;
+        PlatformData repo2Image2;
+        PlatformData repo2Image3;
+        PlatformData repo3Image1;
+
+        DateTime oldCreatedDate = DateTime.Now.Subtract(TimeSpan.FromDays(1));
+        DateTime newCreatedDate = DateTime.Now;
+
+        ImageInfo imageInfo1 = CreateImageInfo();
+        ImageInfo imageInfo2 = CreateImageInfo();
+
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                {
+                                    repo2Image1 = new PlatformData
                                     {
-                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        SimpleTags = new List<string> { "linux" }
-                                    },
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "1.0/runtime/windows/Dockerfile",
-                                        OsType = "Windows",
-                                        OsVersion = "nanoserver-2004",
-                                        Architecture = "amd64",
-                                        SimpleTags = new List<string> { "windows" }
+                                        Dockerfile = "image1",
+                                        BaseImageDigest = "base1digest-NEW",
+                                        Created = newCreatedDate,
+                                        ImageInfo = imageInfo1
                                     }
                                 },
-                                Manifest = new ManifestData
                                 {
-                                    SharedTags = new List<string>
+                                    repo2Image3  = new PlatformData
                                     {
-                                        "shared"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            using TempFolderContext tempFolderContext = new TempFolderContext();
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime",
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(
-                                CreateDockerfile("1.0/runtime/linux", tempFolderContext),
-                                new string[] { "linux" },
-                                OS.Linux,
-                                "noble"),
-                            CreatePlatform(
-                                CreateDockerfile("1.0/runtime/windows", tempFolderContext),
-                                new string[] { "windows" },
-                                OS.Windows,
-                                "nanoserver-2004")
-                        },
-                        new Dictionary<string, Tag>
-                        {
-                            { "shared", new Tag() }
-                        }))
-            );
-
-            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
-
-            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
-            string expected = JsonHelper.SerializeObject(imageArtifactDetails);
-
-            ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
-
-            JsonHelper.SerializeObject(result).ShouldBe(expected);
-            RepoData repo = result.Repos.First();
-            ImageData image = repo.Images.First();
-            RepoInfo expectedRepo = manifestInfo.AllRepos.First();
-            ImageInfo expectedImage = expectedRepo.AllImages.First();
-            image.ManifestImage.ShouldBeSameAs(expectedImage);
-            image.ManifestRepo.ShouldBeSameAs(expectedRepo);
-
-            image.Platforms.First().ImageInfo.ShouldBeSameAs(expectedImage);
-            image.Platforms.First().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.First());
-            image.Platforms.Last().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.Last());
-        }
-
-        [TestMethod]
-        public void LoadFromContent_ImagesDifferByPatchVersion()
-        {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "runtime",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "1.0.0",
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        SimpleTags = new List<string> { "linux" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            using TempFolderContext tempFolderContext = new TempFolderContext();
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime",
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(
-                                CreateDockerfile("1.0/runtime/linux", tempFolderContext),
-                                new string[] { "linux" },
-                                OS.Linux,
-                                "noble")
-                        },
-                        productVersion: "1.0.1"))
-            );
-
-            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
-
-            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
-            string expected = JsonHelper.SerializeObject(imageArtifactDetails);
-
-            ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
-
-            JsonHelper.SerializeObject(result).ShouldBe(expected);
-            RepoData repo = result.Repos.First();
-            ImageData image = repo.Images.First();
-            RepoInfo expectedRepo = manifestInfo.AllRepos.First();
-            ImageInfo expectedImage = expectedRepo.AllImages.First();
-            image.ManifestImage.ShouldBeSameAs(expectedImage);
-            image.ManifestRepo.ShouldBeSameAs(expectedRepo);
-
-            image.Platforms.First().ImageInfo.ShouldBeSameAs(expectedImage);
-            image.Platforms.First().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.First());
-            image.Platforms.Last().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.Last());
-        }
-
-        [TestMethod]
-        public void LoadFromContent_DuplicatedPlatforms()
-        {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "runtime",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        SimpleTags = new List<string> { "linux" }
+                                        Dockerfile = "image3",
+                                        ImageInfo = imageInfo1
                                     }
                                 }
                             },
-                            new ImageData
+                            ProductVersion = "1.0"
+                        }
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo3",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo2,
+                            Platforms =
                             {
-                                Platforms =
                                 {
-                                    new PlatformData
+                                    repo3Image1 = new PlatformData
                                     {
-                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        SimpleTags = new List<string>()
+                                        Dockerfile = "image1",
+                                        ImageInfo = imageInfo2
                                     }
                                 }
-                            }
+                            },
+                            ProductVersion = "1.0"
                         }
                     }
+                },
+                new RepoData
+                {
+                    Repo = "repo4",
                 }
-            };
+            }
+        };
 
-            using TempFolderContext tempFolderContext = new TempFolderContext();
-
-            string dockerfile = CreateDockerfile("1.0/runtime/linux", tempFolderContext);
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime",
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(
-                                dockerfile,
-                                new string[] { "linux" },
-                                OS.Linux,
-                                "noble")
-                        }),
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(
-                                dockerfile,
-                                new string[0],
-                                OS.Linux,
-                                "noble")
-                        }))
-            );
-
-            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
-
-            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
-            string expected = JsonHelper.SerializeObject(imageArtifactDetails);
-
-            ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
-
-            result.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(manifestInfo.AllRepos.First().AllImages.First());
-            result.Repos[0].Images[1].ManifestImage.ShouldBeSameAs(manifestInfo.AllRepos.First().AllImages.ElementAt(1));
-        }
-
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_ImageDigest()
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
         {
-            ImageInfo imageInfo1 = CreateImageInfo();
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            Repos =
             {
-                Repos =
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1"
+                },
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images =
                     {
-                        Repo = "repo",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            ManifestImage = imageInfo1,
+                            Platforms =
                             {
-                                ManifestImage = imageInfo1,
-                                Platforms =
+                                new PlatformData
                                 {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        Digest = "digest",
-                                        ImageInfo = imageInfo1
-                                    }
+                                    Dockerfile = "image1",
+                                    BaseImageDigest = "base1digest",
+                                    Created = oldCreatedDate,
+                                    ImageInfo = imageInfo1
                                 },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Platforms =
                                 {
-                                    new PlatformData
+                                    repo2Image2 = new PlatformData
                                     {
-                                        Dockerfile = "image1",
+                                        Dockerfile = "image2",
+                                        BaseImageDigest = "base2digest",
                                         ImageInfo = imageInfo1
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
-            CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
-        }
-
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_EmptyTarget()
-        {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo2",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1"
                                     }
                                 }
-                            }
+                            },
+                            ProductVersion = "1.0"
                         }
                     }
+                },
+                new RepoData
+                {
+                    Repo = "repo3"
                 }
-            };
+            }
+        };
 
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails();
-            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
+        imageArtifactDetails.MergeInto(targetImageArtifactDetails);
 
-            CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
-        }
-
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_ExistingTarget()
+        ImageArtifactDetails expected = new ImageArtifactDetails
         {
-            PlatformData repo2Image1;
-            PlatformData repo2Image2;
-            PlatformData repo2Image3;
-            PlatformData repo3Image1;
-
-            DateTime oldCreatedDate = DateTime.Now.Subtract(TimeSpan.FromDays(1));
-            DateTime newCreatedDate = DateTime.Now;
-
-            ImageInfo imageInfo1 = CreateImageInfo();
-            ImageInfo imageInfo2 = CreateImageInfo();
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            Repos =
             {
-                Repos =
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1"
+                },
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images =
                     {
-                        Repo = "repo2",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms =
                             {
-                                ManifestImage = imageInfo1,
-                                Platforms =
-                                {
-                                    {
-                                        repo2Image1 = new PlatformData
-                                        {
-                                            Dockerfile = "image1",
-                                            BaseImageDigest = "base1digest-NEW",
-                                            Created = newCreatedDate,
-                                            ImageInfo = imageInfo1
-                                        }
-                                    },
-                                    {
-                                        repo2Image3  = new PlatformData
-                                        {
-                                            Dockerfile = "image3",
-                                            ImageInfo = imageInfo1
-                                        }
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
+                                repo2Image1,
+                                repo2Image2,
+                                repo2Image3
+                            },
+                            ProductVersion = "1.0"
                         }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo3",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo2,
-                                Platforms =
-                                {
-                                    {
-                                        repo3Image1 = new PlatformData
-                                        {
-                                            Dockerfile = "image1",
-                                            ImageInfo = imageInfo2
-                                        }
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo4",
                     }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
+                },
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo3",
+                    Images =
                     {
-                        Repo = "repo1"
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo2",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms =
                             {
-                                ManifestImage = imageInfo1,
-                                Platforms =
+                                repo3Image1
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo4",
+                }
+            }
+        };
+
+        CompareImageArtifactDetails(expected, targetImageArtifactDetails);
+    }
+
+    /// <summary>
+    /// Verifies that tags are merged between the source and destination.
+    /// </summary>
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_MergeTags()
+    {
+        PlatformData srcImage1;
+        PlatformData targetImage2;
+
+        ImageInfo imageInfo1 = CreateImageInfo();
+
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
                                 {
-                                    new PlatformData
+                                    srcImage1 = new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        BaseImageDigest = "base1digest",
-                                        Created = oldCreatedDate,
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag3"
+                                        },
                                         ImageInfo = imageInfo1
-                                    },
-                                    {
-                                        repo2Image2 = new PlatformData
-                                        {
-                                            Dockerfile = "image2",
-                                            BaseImageDigest = "base2digest",
-                                            ImageInfo = imageInfo1
-                                        }
                                     }
-                                },
-                                ProductVersion = "1.0"
-                            }
+                                }
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                {
+                                    "shared1",
+                                    "shared2"
+                                }
+                            },
+                            ProductVersion = "1.0"
                         }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo3"
                     }
                 }
-            };
+            }
+        };
 
-            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
-
-            ImageArtifactDetails expected = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1"
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo2",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    repo2Image1,
-                                    repo2Image2,
-                                    repo2Image3
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo3",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    repo3Image1
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo4",
-                    }
-                }
-            };
-
-            CompareImageArtifactDetails(expected, targetImageArtifactDetails);
-        }
-
-        /// <summary>
-        /// Verifies that tags are merged between the source and destination.
-        /// </summary>
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_MergeTags()
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
         {
-            PlatformData srcImage1;
-            PlatformData targetImage2;
-
-            ImageInfo imageInfo1 = CreateImageInfo();
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            Repos =
             {
-                Repos =
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1",
+                    Images =
                     {
-                        Repo = "repo1",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            ManifestImage = imageInfo1,
+                            Platforms =
                             {
-                                ManifestImage = imageInfo1,
-                                Platforms =
+                                new PlatformData
                                 {
+                                    Dockerfile = "image1",
+                                    SimpleTags =
                                     {
-                                        srcImage1 = new PlatformData
+                                        "tag1",
+                                        "tag2",
+                                        "tag4"
+                                    },
+                                    ImageInfo = imageInfo1
+                                },
+                                {
+                                    targetImage2 = new PlatformData
+                                    {
+                                        Dockerfile = "image2",
+                                        SimpleTags =
                                         {
-                                            Dockerfile = "image1",
-                                            SimpleTags =
-                                            {
-                                                "tag1",
-                                                "tag3"
-                                            },
-                                            ImageInfo = imageInfo1
-                                        }
+                                            "a"
+                                        },
+                                        ImageInfo = imageInfo1
                                     }
-                                },
-                                Manifest = new ManifestData
+                                }
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
                                 {
-                                    SharedTags =
-                                    {
-                                        "shared1",
-                                        "shared2"
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
+                                    "shared2",
+                                    "shared3"
+                                }
+                            },
+                            ProductVersion = "1.0"
                         }
                     }
                 }
-            };
+            }
+        };
 
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        imageArtifactDetails.MergeInto(targetImageArtifactDetails);
+
+        ImageArtifactDetails expected = new ImageArtifactDetails
+        {
+            Repos =
             {
-                Repos =
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1",
+                    Images =
                     {
-                        Repo = "repo1",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms =
                             {
-                                ManifestImage = imageInfo1,
-                                Platforms =
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    SimpleTags =
+                                    {
+                                        "tag1",
+                                        "tag2",
+                                        "tag3",
+                                        "tag4"
+                                    }
+                                },
+                                targetImage2
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                {
+                                    "shared1",
+                                    "shared2",
+                                    "shared3"
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        CompareImageArtifactDetails(expected, targetImageArtifactDetails);
+    }
+
+    /// <summary>
+    /// Verifies that tags are removed from existing images in the target
+    /// if the same tag doesn't exist in the source. This handles cases where
+    /// a shared tag has been moved from one image to another.
+    /// </summary>
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_RemoveTag()
+    {
+        PlatformData srcPlatform1;
+        PlatformData targetPlatform2;
+
+        ImageInfo imageInfo1 = CreateImageInfo();
+
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                {
+                                    srcPlatform1 = new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        SimpleTags =
+                                        {
+                                            "tag3",
+                                            "tag1"
+                                        },
+                                        ImageInfo = imageInfo1
+                                    }
+                                }
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                {
+                                    "sharedtag1b",
+                                    "sharedtag1a",
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
                                 {
                                     new PlatformData
                                     {
@@ -654,792 +809,636 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             "tag4"
                                         },
                                         ImageInfo = imageInfo1
-                                    },
-                                    {
-                                        targetImage2 = new PlatformData
-                                        {
-                                            Dockerfile = "image2",
-                                            SimpleTags =
-                                            {
-                                                "a"
-                                            },
-                                            ImageInfo = imageInfo1
-                                        }
                                     }
                                 },
-                                Manifest = new ManifestData
                                 {
-                                    SharedTags =
+                                    targetPlatform2 = new PlatformData
                                     {
-                                        "shared2",
-                                        "shared3"
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
-
-            ImageArtifactDetails expected = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
+                                        Dockerfile = "image2",
                                         SimpleTags =
                                         {
-                                            "tag1",
-                                            "tag2",
-                                            "tag3",
-                                            "tag4"
-                                        }
-                                    },
-                                    targetImage2
-                                },
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    {
-                                        "shared1",
-                                        "shared2",
-                                        "shared3"
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            CompareImageArtifactDetails(expected, targetImageArtifactDetails);
-        }
-
-        /// <summary>
-        /// Verifies that tags are removed from existing images in the target
-        /// if the same tag doesn't exist in the source. This handles cases where
-        /// a shared tag has been moved from one image to another.
-        /// </summary>
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_RemoveTag()
-        {
-            PlatformData srcPlatform1;
-            PlatformData targetPlatform2;
-
-            ImageInfo imageInfo1 = CreateImageInfo();
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Platforms =
-                                {
-                                    {
-                                        srcPlatform1 = new PlatformData
-                                        {
-                                            Dockerfile = "image1",
-                                            SimpleTags =
-                                            {
-                                                "tag3",
-                                                "tag1"
-                                            },
-                                            ImageInfo = imageInfo1
-                                        }
-                                    }
-                                },
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    {
-                                        "sharedtag1b",
-                                        "sharedtag1a",
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Platforms =
-                                {
-                                    {
-                                        new PlatformData
-                                        {
-                                            Dockerfile = "image1",
-                                            SimpleTags =
-                                            {
-                                                "tag1",
-                                                "tag2",
-                                                "tag4"
-                                            },
-                                            ImageInfo = imageInfo1
-                                        }
-                                    },
-                                    {
-                                        targetPlatform2 = new PlatformData
-                                        {
-                                            Dockerfile = "image2",
-                                            SimpleTags =
-                                            {
-                                                "a"
-                                            },
-                                            ImageInfo = imageInfo1
-                                        }
-                                    }
-                                },
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    {
-                                        "sharedtag2",
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageInfoMergeOptions options = new ImageInfoMergeOptions
-            {
-                IsPublish = true
-            };
-
-            imageArtifactDetails.MergeInto(targetImageArtifactDetails, options);
-
-            ImageArtifactDetails expected = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
-                                        {
-                                            "tag1",
-                                            "tag3"
-                                        }
-                                    },
-                                    targetPlatform2
-                                },
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    {
-                                        "sharedtag1a",
-                                        "sharedtag1b",
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            CompareImageArtifactDetails(expected, targetImageArtifactDetails);
-        }
-
-        [TestMethod]
-        public void Merge_DuplicatedPlatforms()
-        {
-            ImageInfo imageInfo1 = CreateImageInfo();
-            ImageInfo imageInfo2 = CreateImageInfo();
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo2,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        SimpleTags = new List<string>
-                                        {
-                                            "tag1"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1"
+                                            "a"
+                                        },
+                                        ImageInfo = imageInfo1
                                     }
                                 }
                             },
-                            new ImageData
+                            Manifest = new ManifestData
                             {
-                                Platforms =
+                                SharedTags =
                                 {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        SimpleTags = new List<string>
-                                        {
-                                            "tag1"
-                                        }
-                                    }
+                                    "sharedtag2",
                                 }
                             },
+                            ProductVersion = "1.0"
                         }
                     }
                 }
-            };
-
-            imageArtifactDetails.MergeInto(targetImageArtifactDetails);
-            CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
-
-            targetImageArtifactDetails.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(imageInfo1);
-            targetImageArtifactDetails.Repos[0].Images[1].ManifestImage.ShouldBeSameAs(imageInfo2);
-        }
-
-        [TestMethod]
-        public void Merge_SharedDockerfile_DistinctPlatform()
-        {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "1.0",
-                                ManifestImage = CreateImageInfo(),
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        Dockerfile = "1.0/runtime/os/Dockerfile",
-                                        SimpleTags = new List<string>
-                                        {
-                                            "tag1"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "2.0",
-                                ManifestImage = CreateImageInfo(),
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        Dockerfile = "1.0/runtime/os/Dockerfile",
-                                        SimpleTags = new List<string>
-                                        {
-                                            "tag2"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "1.0",
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        Dockerfile = "1.0/runtime/os/Dockerfile",
-                                        SimpleTags = new List<string>
-                                        {
-                                            "tag1"
-                                        }
-                                    }
-                                }
-                            },
-                            new ImageData
-                            {
-                                ProductVersion = "2.0",
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        OsType = "Linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        Dockerfile = "1.0/runtime/os/Dockerfile",
-                                        SimpleTags = new List<string>
-                                        {
-                                            "tag2"
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
-                }
-            };
-
-            using TempFolderContext tempFolderContext = new TempFolderContext();
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("repo",
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag1" })
-                        },
-                        productVersion: "1.0"),
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag2" })
-                        },
-                        productVersion: "2.0")));
-
-            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
-
-            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
-
-            ImageArtifactDetails source = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(imageArtifactDetails), manifestInfo);
-            ImageArtifactDetails target = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(targetImageArtifactDetails), manifestInfo);
-
-            source.MergeInto(target);
-            CompareImageArtifactDetails(expectedImageArtifactDetails, target);
-        }
-
-        /// <summary>
-        /// Tests the scenario where a source image defines a manifest that the target doesn't have.
-        /// </summary>
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_NewManifest()
-        {
-            ImageInfo imageInfo1 = CreateImageInfo();
-
-            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = new List<string>
-                                    {
-                                        "shared"
-                                    }
-                                },
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        Digest = "digest",
-                                        ImageInfo = imageInfo1
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        ImageInfo = imageInfo1
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            srcImageArtifactDetails.MergeInto(targetImageArtifactDetails);
-            CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
-        }
-
-        /// <summary>
-        /// Tests the scenario where a target image defines a manifest that the source doesn't have.
-        /// </summary>
-        [TestMethod]
-        public void ImageInfoHelper_MergeRepos_RemovedManifest()
-        {
-            ImageInfo imageInfo1 = CreateImageInfo();
-
-            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        Digest = "digest",
-                                        ImageInfo = imageInfo1
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ManifestImage = imageInfo1,
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = new List<string>
-                                    {
-                                        "shared"
-                                    }
-                                },
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "image1",
-                                        ImageInfo = imageInfo1
-                                    }
-                                },
-                                ProductVersion = "1.0"
-                            }
-                        }
-                    }
-                }
-            };
-
-            srcImageArtifactDetails.MergeInto(targetImageArtifactDetails);
-            CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
-        }
-
-        [TestMethod]
-        public void MergeInto_ExistingPlatform_UsesExplicitPropertyRules()
-        {
-            DateTime sourceCreated = DateTime.UtcNow;
-            ImageInfo sourceImageInfo = CreateImageInfo();
-            ImageInfo targetImageInfo = CreateImageInfo();
-            List<Layer> sourceLayers =
-            [
-                new("layer2", 2),
-                new("layer1", 1)
-            ];
-
-            ImageArtifactDetails source = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "2.0",
-                                ManifestImage = sourceImageInfo,
-                                Manifest = new ManifestData
-                                {
-                                    Digest = "source-manifest-digest",
-                                    Created = sourceCreated,
-                                    SharedTags = ["shared2", "shared1"]
-                                },
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "Dockerfile",
-                                        SimpleTags = ["tag2", "tag1"],
-                                        Digest = "source-digest",
-                                        BaseImageDigest = "source-base-digest",
-                                        OsType = "linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        Created = sourceCreated,
-                                        CommitUrl = "source-commit",
-                                        Layers = sourceLayers,
-                                        IsUnchanged = true,
-                                        ImageInfo = sourceImageInfo
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails target = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "1.0",
-                                ManifestImage = targetImageInfo,
-                                Manifest = new ManifestData
-                                {
-                                    Digest = "target-manifest-digest",
-                                    Created = sourceCreated.AddDays(-1),
-                                    SharedTags = ["shared3", "shared2"]
-                                },
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = "Dockerfile",
-                                        SimpleTags = ["tag3", "tag2"],
-                                        Digest = "target-digest",
-                                        BaseImageDigest = "target-base-digest",
-                                        OsType = "linux",
-                                        OsVersion = "noble",
-                                        Architecture = "amd64",
-                                        Created = sourceCreated.AddDays(-1),
-                                        CommitUrl = "target-commit",
-                                        Layers = [new Layer("old-layer", 3)],
-                                        ImageInfo = targetImageInfo
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            source.MergeInto(target);
-
-            ImageData mergedImage = target.Repos.Single().Images.Single();
-            mergedImage.ProductVersion.ShouldBe("2.0");
-            mergedImage.ManifestImage.ShouldBeSameAs(targetImageInfo);
-            mergedImage.Manifest.Digest.ShouldBe("source-manifest-digest");
-            mergedImage.Manifest.Created.ShouldBe(sourceCreated);
-            mergedImage.Manifest.SharedTags.ShouldBe(["shared1", "shared2", "shared3"]);
-
-            PlatformData mergedPlatform = mergedImage.Platforms.Single();
-            mergedPlatform.SimpleTags.ShouldBe(["tag1", "tag2", "tag3"]);
-            mergedPlatform.Digest.ShouldBe("source-digest");
-            mergedPlatform.BaseImageDigest.ShouldBe("source-base-digest");
-            mergedPlatform.Created.ShouldBe(sourceCreated);
-            mergedPlatform.CommitUrl.ShouldBe("source-commit");
-            mergedPlatform.Layers.ShouldBeSameAs(sourceLayers);
-            mergedPlatform.Layers.ShouldBe([new Layer("layer2", 2), new Layer("layer1", 1)]);
-            mergedPlatform.IsUnchanged.ShouldBeTrue();
-            mergedPlatform.ImageInfo.ShouldBeSameAs(targetImageInfo);
-        }
-
-        private static ImageInfo CreateImageInfo() =>
-            ImageInfo.Create(
-                new Image
-                {
-                    Platforms = Array.Empty<Platform>(),
-                    ProductVersion = "1.0"
-                },
-                "fullrepo",
-                "repo",
-                new ManifestFilter(Enumerable.Empty<string>()),
-                new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
-                "base");
-
-        private class FakeManifestOptions : IManifestOptionsInfo
-        {
-            public FakeManifestOptions(string manifestPath)
-            {
-                Manifest = manifestPath;
             }
+        };
 
-            public string Manifest { get; }
+        ImageInfoMergeOptions options = new ImageInfoMergeOptions
+        {
+            IsPublish = true
+        };
 
-            public string RegistryOverride => null;
+        imageArtifactDetails.MergeInto(targetImageArtifactDetails, options);
 
-            public string RepoPrefix => null;
+        ImageArtifactDetails expected = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    SimpleTags =
+                                    {
+                                        "tag1",
+                                        "tag3"
+                                    }
+                                },
+                                targetPlatform2
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                {
+                                    "sharedtag1a",
+                                    "sharedtag1b",
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
 
-            public IDictionary<string, string> Variables { get; } = new Dictionary<string, string>();
+        CompareImageArtifactDetails(expected, targetImageArtifactDetails);
+    }
 
-            public bool IsDryRun => false;
+    [TestMethod]
+    public void Merge_DuplicatedPlatforms()
+    {
+        ImageInfo imageInfo1 = CreateImageInfo();
+        ImageInfo imageInfo2 = CreateImageInfo();
 
-            public bool IsVerbose => false;
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
 
-            public ManifestFilter GetManifestFilter() => new ManifestFilter(Enumerable.Empty<string>());
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo2,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    SimpleTags = new List<string>
+                                    {
+                                        "tag1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
 
-            public string GetOption(string name) => throw new NotImplementedException();
+        ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1"
+                                }
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    SimpleTags = new List<string>
+                                    {
+                                        "tag1"
+                                    }
+                                }
+                            }
+                        },
+                    }
+                }
+            }
+        };
+
+        imageArtifactDetails.MergeInto(targetImageArtifactDetails);
+        CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
+
+        targetImageArtifactDetails.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(imageInfo1);
+        targetImageArtifactDetails.Repos[0].Images[1].ManifestImage.ShouldBeSameAs(imageInfo2);
+    }
+
+    [TestMethod]
+    public void Merge_SharedDockerfile_DistinctPlatform()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = "1.0",
+                            ManifestImage = CreateImageInfo(),
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Dockerfile = "1.0/runtime/os/Dockerfile",
+                                    SimpleTags = new List<string>
+                                    {
+                                        "tag1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = "2.0",
+                            ManifestImage = CreateImageInfo(),
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Dockerfile = "1.0/runtime/os/Dockerfile",
+                                    SimpleTags = new List<string>
+                                    {
+                                        "tag2"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = "1.0",
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Dockerfile = "1.0/runtime/os/Dockerfile",
+                                    SimpleTags = new List<string>
+                                    {
+                                        "tag1"
+                                    }
+                                }
+                            }
+                        },
+                        new ImageData
+                        {
+                            ProductVersion = "2.0",
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Dockerfile = "1.0/runtime/os/Dockerfile",
+                                    SimpleTags = new List<string>
+                                    {
+                                        "tag2"
+                                    }
+                                }
+                            }
+                        },
+                    }
+                }
+            }
+        };
+
+        using TempFolderContext tempFolderContext = new TempFolderContext();
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(
+                    new Platform[]
+                    {
+                        CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag1" })
+                    },
+                    productVersion: "1.0"),
+                CreateImage(
+                    new Platform[]
+                    {
+                        CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag2" })
+                    },
+                    productVersion: "2.0")));
+
+        string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+        ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
+
+        ImageArtifactDetails source = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(imageArtifactDetails), manifestInfo);
+        ImageArtifactDetails target = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(targetImageArtifactDetails), manifestInfo);
+
+        source.MergeInto(target);
+        CompareImageArtifactDetails(expectedImageArtifactDetails, target);
+    }
+
+    /// <summary>
+    /// Tests the scenario where a source image defines a manifest that the target doesn't have.
+    /// </summary>
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_NewManifest()
+    {
+        ImageInfo imageInfo1 = CreateImageInfo();
+
+        ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = new List<string>
+                                {
+                                    "shared"
+                                }
+                            },
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    Digest = "digest",
+                                    ImageInfo = imageInfo1
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    ImageInfo = imageInfo1
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        srcImageArtifactDetails.MergeInto(targetImageArtifactDetails);
+        CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+    }
+
+    /// <summary>
+    /// Tests the scenario where a target image defines a manifest that the source doesn't have.
+    /// </summary>
+    [TestMethod]
+    public void ImageInfoHelper_MergeRepos_RemovedManifest()
+    {
+        ImageInfo imageInfo1 = CreateImageInfo();
+
+        ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    Digest = "digest",
+                                    ImageInfo = imageInfo1
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ManifestImage = imageInfo1,
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = new List<string>
+                                {
+                                    "shared"
+                                }
+                            },
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "image1",
+                                    ImageInfo = imageInfo1
+                                }
+                            },
+                            ProductVersion = "1.0"
+                        }
+                    }
+                }
+            }
+        };
+
+        srcImageArtifactDetails.MergeInto(targetImageArtifactDetails);
+        CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+    }
+
+    [TestMethod]
+    public void MergeInto_ExistingPlatform_UsesExplicitPropertyRules()
+    {
+        DateTime sourceCreated = DateTime.UtcNow;
+        ImageInfo sourceImageInfo = CreateImageInfo();
+        ImageInfo targetImageInfo = CreateImageInfo();
+        List<Layer> sourceLayers =
+        [
+            new("layer2", 2),
+            new("layer1", 1)
+        ];
+
+        ImageArtifactDetails source = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = "2.0",
+                            ManifestImage = sourceImageInfo,
+                            Manifest = new ManifestData
+                            {
+                                Digest = "source-manifest-digest",
+                                Created = sourceCreated,
+                                SharedTags = ["shared2", "shared1"]
+                            },
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "Dockerfile",
+                                    SimpleTags = ["tag2", "tag1"],
+                                    Digest = "source-digest",
+                                    BaseImageDigest = "source-base-digest",
+                                    OsType = "linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Created = sourceCreated,
+                                    CommitUrl = "source-commit",
+                                    Layers = sourceLayers,
+                                    IsUnchanged = true,
+                                    ImageInfo = sourceImageInfo
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        ImageArtifactDetails target = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = "1.0",
+                            ManifestImage = targetImageInfo,
+                            Manifest = new ManifestData
+                            {
+                                Digest = "target-manifest-digest",
+                                Created = sourceCreated.AddDays(-1),
+                                SharedTags = ["shared3", "shared2"]
+                            },
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = "Dockerfile",
+                                    SimpleTags = ["tag3", "tag2"],
+                                    Digest = "target-digest",
+                                    BaseImageDigest = "target-base-digest",
+                                    OsType = "linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Created = sourceCreated.AddDays(-1),
+                                    CommitUrl = "target-commit",
+                                    Layers = [new Layer("old-layer", 3)],
+                                    ImageInfo = targetImageInfo
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        source.MergeInto(target);
+
+        ImageData mergedImage = target.Repos.Single().Images.Single();
+        mergedImage.ProductVersion.ShouldBe("2.0");
+        mergedImage.ManifestImage.ShouldBeSameAs(targetImageInfo);
+        mergedImage.Manifest.Digest.ShouldBe("source-manifest-digest");
+        mergedImage.Manifest.Created.ShouldBe(sourceCreated);
+        mergedImage.Manifest.SharedTags.ShouldBe(["shared1", "shared2", "shared3"]);
+
+        PlatformData mergedPlatform = mergedImage.Platforms.Single();
+        mergedPlatform.SimpleTags.ShouldBe(["tag1", "tag2", "tag3"]);
+        mergedPlatform.Digest.ShouldBe("source-digest");
+        mergedPlatform.BaseImageDigest.ShouldBe("source-base-digest");
+        mergedPlatform.Created.ShouldBe(sourceCreated);
+        mergedPlatform.CommitUrl.ShouldBe("source-commit");
+        mergedPlatform.Layers.ShouldBeSameAs(sourceLayers);
+        mergedPlatform.Layers.ShouldBe([new Layer("layer2", 2), new Layer("layer1", 1)]);
+        mergedPlatform.IsUnchanged.ShouldBeTrue();
+        mergedPlatform.ImageInfo.ShouldBeSameAs(targetImageInfo);
+    }
+
+    private static ImageInfo CreateImageInfo() =>
+        ImageInfo.Create(
+            new Image
+            {
+                Platforms = Array.Empty<Platform>(),
+                ProductVersion = "1.0"
+            },
+            "fullrepo",
+            "repo",
+            new ManifestFilter(Enumerable.Empty<string>()),
+            new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
+            "base");
+
+    private class FakeManifestOptions : IManifestOptionsInfo
+    {
+        public FakeManifestOptions(string manifestPath)
+        {
+            Manifest = manifestPath;
         }
+
+        public string Manifest { get; }
+
+        public string RegistryOverride => null;
+
+        public string RepoPrefix => null;
+
+        public IDictionary<string, string> Variables { get; } = new Dictionary<string, string>();
+
+        public bool IsDryRun => false;
+
+        public bool IsVerbose => false;
+
+        public ManifestFilter GetManifestFilter() => new ManifestFilter(Enumerable.Empty<string>());
+
+        public string GetOption(string name) => throw new NotImplementedException();
     }
 }

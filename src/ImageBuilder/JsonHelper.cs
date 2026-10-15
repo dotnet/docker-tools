@@ -9,64 +9,63 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.DotNet.ImageBuilder
-{
-    public static class JsonHelper
-    {
-        public static JsonSerializerSettings JsonSerializerSettings => new()
-        {
-            ContractResolver = new CustomContractResolver(),
-            Formatting = Formatting.Indented,
-            NullValueHandling = NullValueHandling.Ignore,
-            DefaultValueHandling = DefaultValueHandling.Ignore
-        };
+namespace Microsoft.DotNet.ImageBuilder;
 
-        public static string SerializeObject(object? value)
+public static class JsonHelper
+{
+    public static JsonSerializerSettings JsonSerializerSettings => new()
+    {
+        ContractResolver = new CustomContractResolver(),
+        Formatting = Formatting.Indented,
+        NullValueHandling = NullValueHandling.Ignore,
+        DefaultValueHandling = DefaultValueHandling.Ignore
+    };
+
+    public static string SerializeObject(object? value)
+    {
+        return JsonConvert.SerializeObject(value, JsonSerializerSettings);
+    }
+
+    private class CustomContractResolver : DefaultContractResolver
+    {
+        public CustomContractResolver()
         {
-            return JsonConvert.SerializeObject(value, JsonSerializerSettings);
+            NamingStrategy = new CamelCaseNamingStrategy();
         }
 
-        private class CustomContractResolver : DefaultContractResolver
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            public CustomContractResolver()
+            JsonProperty property = base.CreateProperty(member, memberSerialization);
+
+            // Required properties should always be serialized (even if default/empty)
+            // Let JSON.NET's Required validation handle null checking
+            if (property.Required == Required.Always)
             {
-                NamingStrategy = new CamelCaseNamingStrategy();
+                property.NullValueHandling = NullValueHandling.Include;
+                property.DefaultValueHandling = DefaultValueHandling.Include;
             }
-
-            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+            else
             {
-                JsonProperty property = base.CreateProperty(member, memberSerialization);
-
-                // Required properties should always be serialized (even if default/empty)
-                // Let JSON.NET's Required validation handle null checking
-                if (property.Required == Required.Always)
+                // Skip empty lists for non-required properties
+                Predicate<object>? originalShouldSerialize = property.ShouldSerialize;
+                property.ShouldSerialize = targetObj =>
                 {
-                    property.NullValueHandling = NullValueHandling.Include;
-                    property.DefaultValueHandling = DefaultValueHandling.Include;
-                }
-                else
-                {
-                    // Skip empty lists for non-required properties
-                    Predicate<object>? originalShouldSerialize = property.ShouldSerialize;
-                    property.ShouldSerialize = targetObj =>
+                    if (originalShouldSerialize is not null && !originalShouldSerialize(targetObj))
                     {
-                        if (originalShouldSerialize is not null && !originalShouldSerialize(targetObj))
-                        {
-                            return false;
-                        }
+                        return false;
+                    }
 
-                        return !IsEmptyList(property, targetObj);
-                    };
-                }
-
-                return property;
+                    return !IsEmptyList(property, targetObj);
+                };
             }
 
-            private static bool IsEmptyList(JsonProperty property, object targetObj)
-            {
-                var propertyValue = property.ValueProvider?.GetValue(targetObj);
-                return propertyValue is IList list && list.Count == 0;
-            }
+            return property;
+        }
+
+        private static bool IsEmptyList(JsonProperty property, object targetObj)
+        {
+            var propertyValue = property.ValueProvider?.GetValue(targetObj);
+            return propertyValue is IList list && list.Count == 0;
         }
     }
 }

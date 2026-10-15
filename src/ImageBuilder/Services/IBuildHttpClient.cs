@@ -9,18 +9,17 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Services.WebApi;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public interface IBuildHttpClient : IDisposable
 {
-    public interface IBuildHttpClient : IDisposable
-    {
-        Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken);
-        
-        Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId, CancellationToken cancellationToken);
+    Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken);
+    
+    Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId, CancellationToken cancellationToken);
 
-        Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, CancellationToken cancellationToken, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);
+    Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, CancellationToken cancellationToken, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);
 
-        Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId, CancellationToken cancellationToken);
+    Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId, CancellationToken cancellationToken);
 
-        Task<WebApi.Build> QueueBuildAsync(WebApi.Build build, CancellationToken cancellationToken);
-    }
+    Task<WebApi.Build> QueueBuildAsync(WebApi.Build build, CancellationToken cancellationToken);
 }

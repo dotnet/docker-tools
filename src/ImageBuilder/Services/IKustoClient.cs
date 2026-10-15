@@ -4,16 +4,15 @@
 
 using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public interface IKustoClient
 {
-    public interface IKustoClient
-    {
-        Task IngestFromCsvAsync(
-            string csv,
-            string cluster,
-            string database,
-            string table,
-            IServiceConnection serviceConnection,
-            CancellationToken cancellationToken);
-    }
+    Task IngestFromCsvAsync(
+        string csv,
+        string cluster,
+        string database,
+        string table,
+        IServiceConnection serviceConnection,
+        CancellationToken cancellationToken);
 }

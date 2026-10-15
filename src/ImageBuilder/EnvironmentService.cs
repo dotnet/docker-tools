@@ -4,24 +4,23 @@
 
 using System;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+internal class EnvironmentService : IEnvironmentService
 {
-    internal class EnvironmentService : IEnvironmentService
+    public void Exit(int exitCode)
     {
-        public void Exit(int exitCode)
-        {
-            Environment.Exit(exitCode);
-        }
+        Environment.Exit(exitCode);
+    }
 
-        public int ExitCode
-        {
-            get => Environment.ExitCode;
-            set => Environment.ExitCode = value;
-        }
+    public int ExitCode
+    {
+        get => Environment.ExitCode;
+        set => Environment.ExitCode = value;
+    }
 
-        public string? GetEnvironmentVariable(string variable)
-        {
-            return Environment.GetEnvironmentVariable(variable);
-        }
+    public string? GetEnvironmentVariable(string variable)
+    {
+        return Environment.GetEnvironmentVariable(variable);
     }
 }

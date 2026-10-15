@@ -6,13 +6,12 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+
+public class CommitStatus
 {
-    public class CommitStatus
-    {
-        [JsonProperty(PropertyName = "Id")]
-        public string OnboardingRequestId { get; set; }
-        public DateTime QueueTime { get; set; }
-        public StageStatus OverallStatus { get; set; }
-    }
+    [JsonProperty(PropertyName = "Id")]
+    public string OnboardingRequestId { get; set; }
+    public DateTime QueueTime { get; set; }
+    public StageStatus OverallStatus { get; set; }
 }

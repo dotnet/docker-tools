@@ -5,14 +5,13 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
-{
-    public class PipelineTrigger
-    {
-        [JsonProperty(Required = Required.Always)]
-        public int Id { get; set; }
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription;
 
-        [JsonProperty(Required = Required.Always)]
-        public string PathVariable { get; set; }
-    }
+public class PipelineTrigger
+{
+    [JsonProperty(Required = Required.Always)]
+    public int Id { get; set; }
+
+    [JsonProperty(Required = Required.Always)]
+    public string PathVariable { get; set; }
 }

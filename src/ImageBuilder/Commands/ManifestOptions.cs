@@ -9,94 +9,93 @@ using System.CommandLine.Parsing;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public abstract class ManifestOptions : Options, IManifestOptionsInfo
 {
-    public abstract class ManifestOptions : Options, IManifestOptionsInfo
+    public const string RegistryOverrideName = "registry-override";
+
+    public string Manifest { get; set; } = string.Empty;
+    public string? RegistryOverride { get; set; }
+    public IEnumerable<string> Repos { get; set; } = Enumerable.Empty<string>();
+    public string? RepoPrefix { get; set; }
+    public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
+
+    private static readonly Option<string> ManifestOption = new("--manifest")
     {
-        public const string RegistryOverrideName = "registry-override";
+        Description = "Path to json file which describes the repo",
+        DefaultValueFactory = _ => "manifest.json"
+    };
 
-        public string Manifest { get; set; } = string.Empty;
-        public string? RegistryOverride { get; set; }
-        public IEnumerable<string> Repos { get; set; } = Enumerable.Empty<string>();
-        public string? RepoPrefix { get; set; }
-        public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
+    private static readonly Option<string?> RegistryOverrideOption = new($"--{RegistryOverrideName}")
+    {
+        Description = "Alternative registry which overrides the manifest"
+    };
 
-        private static readonly Option<string> ManifestOption = new("--manifest")
+    private static readonly Option<string[]> ReposOption = new("--repo")
+    {
+        Description = "Repos to operate on (Default is all)",
+        DefaultValueFactory = _ => Array.Empty<string>(),
+        AllowMultipleArgumentsPerToken = false
+    };
+
+    private static readonly Option<string?> RepoPrefixOption = new("--repo-prefix")
+    {
+        Description = "Prefix to add to the repo names specified in the manifest"
+    };
+
+    private static readonly Option<Dictionary<string, string>> VariablesOption =
+        CliHelper.CreateDictionaryOption("--var",
+            "Named variables to substitute into the manifest (<name>=<value>)");
+
+    public override IEnumerable<Option> GetCliOptions() =>
+        [..base.GetCliOptions(), ManifestOption, RegistryOverrideOption, ReposOption, RepoPrefixOption, VariablesOption];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        Manifest = result.GetValue(ManifestOption) ?? string.Empty;
+        RegistryOverride = result.GetValue(RegistryOverrideOption);
+        Repos = result.GetValue(ReposOption) ?? [];
+        RepoPrefix = result.GetValue(RepoPrefixOption);
+        Variables = result.GetValue(VariablesOption) ?? new Dictionary<string, string>();
+    }
+
+    public virtual ManifestFilter GetManifestFilter()
+    {
+        ManifestFilter filter = new(Repos);
+
+        if (this is IFilterableOptions options)
         {
-            Description = "Path to json file which describes the repo",
-            DefaultValueFactory = _ => "manifest.json"
-        };
-
-        private static readonly Option<string?> RegistryOverrideOption = new($"--{RegistryOverrideName}")
-        {
-            Description = "Alternative registry which overrides the manifest"
-        };
-
-        private static readonly Option<string[]> ReposOption = new("--repo")
-        {
-            Description = "Repos to operate on (Default is all)",
-            DefaultValueFactory = _ => Array.Empty<string>(),
-            AllowMultipleArgumentsPerToken = false
-        };
-
-        private static readonly Option<string?> RepoPrefixOption = new("--repo-prefix")
-        {
-            Description = "Prefix to add to the repo names specified in the manifest"
-        };
-
-        private static readonly Option<Dictionary<string, string>> VariablesOption =
-            CliHelper.CreateDictionaryOption("--var",
-                "Named variables to substitute into the manifest (<name>=<value>)");
-
-        public override IEnumerable<Option> GetCliOptions() =>
-            [..base.GetCliOptions(), ManifestOption, RegistryOverrideOption, ReposOption, RepoPrefixOption, VariablesOption];
-
-        public override void Bind(ParseResult result)
-        {
-            base.Bind(result);
-            Manifest = result.GetValue(ManifestOption) ?? string.Empty;
-            RegistryOverride = result.GetValue(RegistryOverrideOption);
-            Repos = result.GetValue(ReposOption) ?? [];
-            RepoPrefix = result.GetValue(RepoPrefixOption);
-            Variables = result.GetValue(VariablesOption) ?? new Dictionary<string, string>();
+            filter = SetPlatformFilters(filter, options.FilterOptions.Platform);
+            filter = SetDockerfileFilters(filter, options.FilterOptions.Dockerfile);
         }
 
-        public virtual ManifestFilter GetManifestFilter()
+        if (this is IPlatformFilterableOptions platformFilterOptions)
         {
-            ManifestFilter filter = new(Repos);
-
-            if (this is IFilterableOptions options)
-            {
-                filter = SetPlatformFilters(filter, options.FilterOptions.Platform);
-                filter = SetDockerfileFilters(filter, options.FilterOptions.Dockerfile);
-            }
-
-            if (this is IPlatformFilterableOptions platformFilterOptions)
-            {
-                filter = SetPlatformFilters(filter, platformFilterOptions.Platform);
-            }
-
-            if (this is IDockerfileFilterableOptions dockerfileFilterOptions)
-            {
-                filter = SetDockerfileFilters(filter, dockerfileFilterOptions.Dockerfile);
-            }
-
-            return filter;
+            filter = SetPlatformFilters(filter, platformFilterOptions.Platform);
         }
 
-        private static ManifestFilter SetDockerfileFilters(ManifestFilter filter, DockerfileFilterOptions options)
+        if (this is IDockerfileFilterableOptions dockerfileFilterOptions)
         {
-            filter.IncludePaths = options.Paths;
-            filter.IncludeProductVersions = options.ProductVersions;
-            return filter;
+            filter = SetDockerfileFilters(filter, dockerfileFilterOptions.Dockerfile);
         }
 
-        private static ManifestFilter SetPlatformFilters(ManifestFilter filter, PlatformFilterOptions options)
-        {
-            filter.IncludeArchitecture = options.Architecture;
-            filter.IncludeOsType = options.OsType;
-            filter.IncludeOsVersions = options.OsVersions;
-            return filter;
-        }
+        return filter;
+    }
+
+    private static ManifestFilter SetDockerfileFilters(ManifestFilter filter, DockerfileFilterOptions options)
+    {
+        filter.IncludePaths = options.Paths;
+        filter.IncludeProductVersions = options.ProductVersions;
+        return filter;
+    }
+
+    private static ManifestFilter SetPlatformFilters(ManifestFilter filter, PlatformFilterOptions options)
+    {
+        filter.IncludeArchitecture = options.Architecture;
+        filter.IncludeOsType = options.OsType;
+        filter.IncludeOsVersions = options.OsVersions;
+        return filter;
     }
 }

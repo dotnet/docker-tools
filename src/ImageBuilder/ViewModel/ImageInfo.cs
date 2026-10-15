@@ -6,82 +6,81 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
+namespace Microsoft.DotNet.ImageBuilder.ViewModel;
+
+public class ImageInfo
 {
-    public class ImageInfo
+    /// <summary>
+    /// All of the platforms that are defined in the manifest for this image.
+    /// </summary>
+    public IEnumerable<PlatformInfo> AllPlatforms { get; set; }
+
+    /// <summary>
+    /// The subet of image platforms after applying the command line filter options.
+    /// </summary>
+    public IEnumerable<PlatformInfo> FilteredPlatforms { get; private set; }
+
+    public Image Model { get; private set; }
+    public IEnumerable<TagInfo> SharedTags { get; private set; }
+    public string? ProductVersion { get; private set; }
+    public string? SyndicatedRepo { get; private set; }
+
+    private ImageInfo(
+        Image model,
+        string? productVersion,
+        IEnumerable<TagInfo> sharedTags,
+        IEnumerable<PlatformInfo> allPlatforms,
+        IEnumerable<PlatformInfo> filteredPlatforms)
     {
-        /// <summary>
-        /// All of the platforms that are defined in the manifest for this image.
-        /// </summary>
-        public IEnumerable<PlatformInfo> AllPlatforms { get; set; }
+        Model = model;
+        ProductVersion = productVersion;
+        SharedTags = sharedTags;
+        AllPlatforms = allPlatforms;
+        FilteredPlatforms = filteredPlatforms;
+    }
 
-        /// <summary>
-        /// The subet of image platforms after applying the command line filter options.
-        /// </summary>
-        public IEnumerable<PlatformInfo> FilteredPlatforms { get; private set; }
-
-        public Image Model { get; private set; }
-        public IEnumerable<TagInfo> SharedTags { get; private set; }
-        public string? ProductVersion { get; private set; }
-        public string? SyndicatedRepo { get; private set; }
-
-        private ImageInfo(
-            Image model,
-            string? productVersion,
-            IEnumerable<TagInfo> sharedTags,
-            IEnumerable<PlatformInfo> allPlatforms,
-            IEnumerable<PlatformInfo> filteredPlatforms)
+    public static ImageInfo Create(
+        Image model,
+        string fullRepoModelName,
+        string repoName,
+        ManifestFilter manifestFilter,
+        VariableHelper variableHelper,
+        string baseDirectory)
+    {
+        IEnumerable<TagInfo> sharedTags;
+        if (model.SharedTags == null)
         {
-            Model = model;
-            ProductVersion = productVersion;
-            SharedTags = sharedTags;
-            AllPlatforms = allPlatforms;
-            FilteredPlatforms = filteredPlatforms;
+            sharedTags = Enumerable.Empty<TagInfo>();
         }
-
-        public static ImageInfo Create(
-            Image model,
-            string fullRepoModelName,
-            string repoName,
-            ManifestFilter manifestFilter,
-            VariableHelper variableHelper,
-            string baseDirectory)
+        else
         {
-            IEnumerable<TagInfo> sharedTags;
-            if (model.SharedTags == null)
-            {
-                sharedTags = Enumerable.Empty<TagInfo>();
-            }
-            else
-            {
-                sharedTags = model.SharedTags
-                    .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper))
-                    .ToArray();
-            }
-
-            IEnumerable<PlatformInfo> allPlatforms = model
-                .Platforms.Select(platform =>
-                    PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))
+            sharedTags = model.SharedTags
+                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper))
                 .ToArray();
-
-            string? productVersion = variableHelper.SubstituteValues(model.ProductVersion);
-            string? syndicatedRepo = variableHelper.SubstituteValues(model.Syndication);
-            if (syndicatedRepo is not null && string.IsNullOrWhiteSpace(syndicatedRepo))
-            {
-                throw new ValidationException("Image syndication must specify a non-empty repository name.");
-            }
-
-            IEnumerable<Platform> filteredPlatformModels = manifestFilter.FilterPlatforms(
-                model.Platforms,
-                productVersion);
-
-            IEnumerable<PlatformInfo> filteredPlatforms = allPlatforms.Where(platform =>
-                filteredPlatformModels.Contains(platform.Model));
-
-            return new ImageInfo(model, productVersion, sharedTags, allPlatforms, filteredPlatforms)
-            {
-                SyndicatedRepo = syndicatedRepo,
-            };
         }
+
+        IEnumerable<PlatformInfo> allPlatforms = model
+            .Platforms.Select(platform =>
+                PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))
+            .ToArray();
+
+        string? productVersion = variableHelper.SubstituteValues(model.ProductVersion);
+        string? syndicatedRepo = variableHelper.SubstituteValues(model.Syndication);
+        if (syndicatedRepo is not null && string.IsNullOrWhiteSpace(syndicatedRepo))
+        {
+            throw new ValidationException("Image syndication must specify a non-empty repository name.");
+        }
+
+        IEnumerable<Platform> filteredPlatformModels = manifestFilter.FilterPlatforms(
+            model.Platforms,
+            productVersion);
+
+        IEnumerable<PlatformInfo> filteredPlatforms = allPlatforms.Where(platform =>
+            filteredPlatformModels.Contains(platform.Model));
+
+        return new ImageInfo(model, productVersion, sharedTags, allPlatforms, filteredPlatforms)
+        {
+            SyndicatedRepo = syndicatedRepo,
+        };
     }
 }

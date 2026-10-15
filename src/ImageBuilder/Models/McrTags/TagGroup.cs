@@ -6,21 +6,20 @@
 using System.Collections.Generic;
 using YamlDotNet.Serialization;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrTags
+namespace Microsoft.DotNet.ImageBuilder.Models.McrTags;
+
+public class TagGroup
 {
-    public class TagGroup
-    {
-        public List<string> Tags { get; set; }
+    public List<string> Tags { get; set; }
 
-        public string Architecture { get; set; }
+    public string Architecture { get; set; }
 
-        [YamlMember(Alias = "os")]
-        public string OS { get; set; }
+    [YamlMember(Alias = "os")]
+    public string OS { get; set; }
 
-        public string OsVersion { get; set; }
+    public string OsVersion { get; set; }
 
-        public string Dockerfile { get; set; }
+    public string Dockerfile { get; set; }
 
-        public string CustomSubTableTitle { get; set; }
-    }
+    public string CustomSubTableTitle { get; set; }
 }

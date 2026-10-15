@@ -5,23 +5,22 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription;
+
+public class Subscription
 {
-    public class Subscription
-    {
-        [JsonProperty(Required = Required.Always)]
-        public SubscriptionManifest Manifest { get; set; }
+    [JsonProperty(Required = Required.Always)]
+    public SubscriptionManifest Manifest { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public GitFile ImageInfo { get; set; }
+    [JsonProperty(Required = Required.Always)]
+    public GitFile ImageInfo { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public PipelineTrigger PipelineTrigger { get; set; }
+    [JsonProperty(Required = Required.Always)]
+    public PipelineTrigger PipelineTrigger { get; set; }
 
-        public string OsType { get; set; }
+    public string OsType { get; set; }
 
-        public string Id => $"{Manifest.Owner}/{Manifest.Repo}/{Manifest.Branch}/{Manifest.Path}";
+    public string Id => $"{Manifest.Owner}/{Manifest.Repo}/{Manifest.Branch}/{Manifest.Path}";
 
-        public override string ToString() => Id;
-    }
+    public override string ToString() => Id;
 }

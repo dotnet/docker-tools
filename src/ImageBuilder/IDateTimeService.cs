@@ -3,10 +3,9 @@
 
 using System;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IDateTimeService
 {
-    public interface IDateTimeService
-    {
-        DateTime UtcNow { get; }
-    }
+    DateTime UtcNow { get; }
 }

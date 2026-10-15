@@ -5,13 +5,12 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+
+public class CommitResult
 {
-    public class CommitResult
-    {
-        public string CommitDigest { get; set; }
-        public string Branch { get; set; }
-        public List<string> ContentFiles { get; set; } = new List<string>();
-        public List<CommitStatus> Value { get; set; } = new List<CommitStatus>();
-    }
+    public string CommitDigest { get; set; }
+    public string Branch { get; set; }
+    public List<string> ContentFiles { get; set; } = new List<string>();
+    public List<CommitStatus> Value { get; set; } = new List<CommitStatus>();
 }

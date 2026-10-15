@@ -4,14 +4,13 @@
 
 using LibGit2Sharp;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IGitService
 {
-    public interface IGitService
-    {
-        string GetCommitSha(string filePath, bool useFullHash = false);
+    string GetCommitSha(string filePath, bool useFullHash = false);
 
-        IRepository CloneRepository(string sourceUrl, string workdirPath, CloneOptions options);
+    IRepository CloneRepository(string sourceUrl, string workdirPath, CloneOptions options);
 
-        void Stage(IRepository repository, string path);
-    }
+    void Stage(IRepository repository, string path);
 }

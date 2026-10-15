@@ -18,415 +18,414 @@ using Moq;
 using Options = Microsoft.Extensions.Options.Options;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class CleanAcrImagesCommandTest
 {
-    [TestClass]
-    public class CleanAcrImagesCommandTest
+    #nullable enable annotations
+    public TestContext? TestContext { get; set; }
+
+    #nullable disable annotations
+
+    private const string AcrName = "myacr.azurecr.io";
+
+    [TestMethod]
+    public async Task StagingRepos()
     {
-        #nullable enable annotations
-        public TestContext? TestContext { get; set; }
+        const string stagingRepo1Name = "build-staging/repo1";
+        const string stagingRepo2Name = "build-staging/repo2";
+        const string repo1Digest1 = "sha256:repo1digest1";
+        const string repo2Digest1 = "sha256:repo2digest1";
 
-        #nullable disable annotations
+        ContainerRepository nonPublicRepo1 = CreateContainerRepository(
+            stagingRepo1Name,
+            CreateContainerRepositoryProperties(lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(14))),
+            [
+                CreateArtifactManifestProperties(repositoryName: stagingRepo1Name, digest: repo1Digest1)
+            ]);
 
-        private const string AcrName = "myacr.azurecr.io";
+        ContainerRepository nonPublicRepo2 = CreateContainerRepository(
+            stagingRepo2Name,
+            CreateContainerRepositoryProperties(lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(16))),
+            [
+                CreateArtifactManifestProperties(repositoryName: stagingRepo2Name, digest: repo2Digest1)
+            ]);
 
-        [TestMethod]
-        public async Task StagingRepos()
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([nonPublicRepo1, nonPublicRepo2]);
+        acrClientMock
+            .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+
+        CleanAcrImagesCommand command = new(
+            acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "build-staging/*";
+        command.Options.Action = CleanAcrImagesAction.Delete;
+        command.Options.Age = 15;
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo1Name, It.IsAny<CancellationToken>()), Times.Never);
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo2Name, It.IsAny<CancellationToken>()));
+    }
+
+    [TestMethod]
+    public async Task PublicNightlyRepos()
+    {
+        const string publicRepo1Name = "public/dotnet/core-nightly/repo1";
+        const string publicRepo2Name = "public/dotnet/core/repo2";
+        const string publicRepo3Name = "public/dotnet/core-nightly/repo3";
+        const string publicRepo4Name = "public/dotnet/nightly/repo4";
+
+        const string repo1Digest1 = "sha256:repo1digest1";
+        const string repo1Digest2 = "sha256:repo1digest2";
+        const string repo3Digest1 = "sha256:repo3digest1";
+        const string repo3Digest2 = "sha256:repo3digest2";
+        const string repo4Digest1 = "sha256:repo4digest1";
+
+        ContainerRepository publicRepo1 = CreateContainerRepository(
+            publicRepo1Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1))),
+                CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)), tags: ["tag"])
+            ]);
+
+        ContainerRepository publicRepo2 = CreateContainerRepository(publicRepo2Name, new ContainerRepositoryProperties(), []);
+
+        ContainerRepository publicRepo3 = CreateContainerRepository(
+            publicRepo3Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: publicRepo3Name, digest: repo3Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(29))),
+                CreateArtifactManifestProperties(repositoryName: publicRepo3Name, digest: repo3Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)))
+            ]);
+
+        ContainerRepository publicRepo4 = CreateContainerRepository(
+            publicRepo4Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: publicRepo4Name, digest: repo4Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)))
+            ]);
+
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([publicRepo1, publicRepo2, publicRepo3, publicRepo4]);
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+
+        Mock<IAcrContentClient> repo1ContentClient = CreateAcrContentClientMock(publicRepo1Name);
+        Mock<IAcrContentClient> repo2ContentClient = CreateAcrContentClientMock(publicRepo2Name);
+        Mock<IAcrContentClient> repo3ContentClient = CreateAcrContentClientMock(publicRepo3Name);
+        Mock<IAcrContentClient> repo4ContentClient = CreateAcrContentClientMock(publicRepo4Name);
+
+        IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
+            AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
+
+        CleanAcrImagesCommand command = new(
+            acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "public/dotnet/*nightly/*";
+        command.Options.Action = CleanAcrImagesAction.PruneDangling;
+        command.Options.Age = 30;
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()), Times.Never);
+        repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+        repo2ContentClient.Verify(o => o.DeleteManifestAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest1, It.IsAny<CancellationToken>()), Times.Never);
+        repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest2, It.IsAny<CancellationToken>()));
+        repo4ContentClient.Verify(o => o.DeleteManifestAsync(repo4Digest1, It.IsAny<CancellationToken>()));
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(publicRepo4Name, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Validates that an empty test repo will be deleted.
+    /// </summary>
+    [TestMethod]
+    public async Task DeleteEmptyTestRepo()
+    {
+        const string repo1Name = "test/repo1";
+        const string repo2Name = "test/repo2";
+
+        const string repo1Digest1 = "sha256:repo1digest1";
+
+        ContainerRepository repo1 = CreateContainerRepository(
+            repo1Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)))
+            ]);
+
+        ContainerRepository repo2 = CreateContainerRepository(repo2Name, CreateContainerRepositoryProperties(), []);
+
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
+        acrClientMock
+            .Setup(o => o.DeleteRepositoryAsync(repo2Name, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+
+        CleanAcrImagesCommand command = new(
+            acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "test/*";
+        command.Options.Action = CleanAcrImagesAction.PruneAll;
+        command.Options.Age = 7;
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name, It.IsAny<CancellationToken>()), Times.Never);
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo2Name, It.IsAny<CancellationToken>()));
+    }
+
+    /// <summary>
+    /// Validates that every expired image in a repository is deleted.
+    /// </summary>
+    [TestMethod]
+    public async Task DeleteAllExpiredImages()
+    {
+        const string repo1Name = "test/repo1";
+
+        const string repo1Digest1 = "sha256:repo1digest1";
+        const string repo1Digest2 = "sha256:repo1digest2";
+
+        ContainerRepository repo1 = CreateContainerRepository(
+            repo1Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8))),
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)))
+            ]);
+
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+        Mock<IAcrContentClient> acrContentClientMock = CreateAcrContentClientMock(repo1Name);
+
+        CleanAcrImagesCommand command = new CleanAcrImagesCommand(
+            acrClientFactory,
+            CreateAcrContentClientFactory(AcrName, [acrContentClientMock]),
+            Mock.Of<ILogger<CleanAcrImagesCommand>>(),
+            Mock.Of<ILifecycleMetadataService>(),
+            Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "test/*";
+        command.Options.Action = CleanAcrImagesAction.PruneAll;
+        command.Options.Age = 7;
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+        acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()));
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [TestMethod]
+    public async Task TestRepos()
+    {
+        const string repo1Name = "test/repo1";
+        const string repo2Name = "test/repo2";
+
+        const string repo1Digest1 = "sha256:repo1digest1";
+        const string repo1Digest2 = "sha256:repo1digest2";
+        const string repo2Digest1 = "sha256:repo2digest1";
+        const string repo2Digest2 = "sha256:repo2digest2";
+
+        ContainerRepository repo1 = CreateContainerRepository(
+            repo1Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8))),
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(6)))
+            ]);
+
+        ContainerRepository repo2 = CreateContainerRepository(
+            repo2Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: repo2Name, digest: repo2Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1))),
+                CreateArtifactManifestProperties(repositoryName: repo2Name, digest: repo2Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)))
+            ]);
+
+
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
+
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+
+        Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name);
+        Mock<IAcrContentClient> repo2ContentClientMock = CreateAcrContentClientMock(repo2Name);
+
+        IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
+
+        CleanAcrImagesCommand command = new CleanAcrImagesCommand(
+            acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "test/*";
+        command.Options.Action = CleanAcrImagesAction.PruneAll;
+        command.Options.Age = 7;
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+        repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest1, It.IsAny<CancellationToken>()), Times.Never);
+        repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest2, It.IsAny<CancellationToken>()));
+    }
+
+    /// <summary>
+    /// Validates that images with EOL date older than specified age are deleted.
+    /// </summary>
+    [TestMethod]
+    public async Task DeleteEolImages()
+    {
+        const string repo1Name = "test/repo1";
+
+        const string repo1Digest1 = "sha256:digest1";
+        const string repo1Digest2 = "sha256:digest2";
+        const string repo1Digest3 = "sha256:digest3";
+        const string missingDigest = "sha256:missing";
+        const string referrerDigest = "sha256:referrer";
+
+        const int age = 30;
+
+        ContainerRepository repo1 = CreateContainerRepository(
+            repo1Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8)), tags: ["latest"], registryLoginServer: AcrName),
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)), tags: ["latest"], registryLoginServer: AcrName),
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName),
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: missingDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName),
+                CreateArtifactManifestProperties(repositoryName: repo1Name, digest: referrerDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
+            ]);
+
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
+
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+
+        Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name,
+            imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
+                        { repo1Digest2, new ManifestQueryResult(string.Empty, []) },
+                        { repo1Digest3, new ManifestQueryResult(string.Empty, []) },
+                        { referrerDigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
+                    });
+        repo1ContentClientMock
+            .Setup(o => o.GetManifestAsync(missingDigest, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new RequestFailedException(404, "Manifest not found"));
+
+        IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock]);
+
+        Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock =
+            CreateLifecycleMetadataServiceMock(age, repo1Name);
+
+        CleanAcrImagesCommand command = new CleanAcrImagesCommand(
+            acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "test/*";
+        command.Options.Action = CleanAcrImagesAction.PruneEol;
+        command.Options.Age = age;
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3, It.IsAny<CancellationToken>()), Times.Never);
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(missingDigest, It.IsAny<CancellationToken>()), Times.Never);
+        repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(referrerDigest, It.IsAny<CancellationToken>()), Times.Never);
+        lifecycleMetadataServiceMock.Verify(
+            o => o.GetLatestLifecycleArtifactAsync(
+                $"{AcrName}/{repo1Name}@{missingDigest}",
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [TestMethod]
+    public async Task ExcludedImages()
+    {
+        const string publicRepo1Name = "public/dotnet/nightly/repo1";
+        const string publicRepo2Name = "public/dotnet/nightly/repo2";
+
+        const string repo1Digest1 = "sha256:repo1digest1";
+        const string repo1Digest2 = "sha256:repo1digest2";
+        const string repo2Digest3 = "sha256:repo1digest3";
+
+        ContainerRepository publicRepo1 = CreateContainerRepository(
+            publicRepo1Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60))),
+                CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag"])
+            ]);
+
+        ContainerRepository publicRepo2 = CreateContainerRepository(
+            publicRepo2Name,
+            CreateContainerRepositoryProperties(),
+            [
+                CreateArtifactManifestProperties(repositoryName: publicRepo2Name, digest: repo2Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag2"]),
+            ]);
+
+        Mock<IAcrClient> acrClientMock = CreateAcrClientMock([publicRepo1, publicRepo2]);
+
+        IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
+
+        Mock<IAcrContentClient> repo1ContentClient = CreateAcrContentClientMock(publicRepo1Name);
+        Mock<IAcrContentClient> repo2ContentClient = CreateAcrContentClientMock(publicRepo2Name);
+
+        IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
+            AcrName, [repo1ContentClient, repo2ContentClient]);
+
+        CleanAcrImagesCommand command = new(
+            acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
+        command.Options.RegistryName = AcrName;
+        command.Options.RepoName = "public/dotnet/nightly/*";
+        command.Options.Action = CleanAcrImagesAction.PruneAll;
+        command.Options.Age = 30;
+        command.Options.ImagesToExclude =
+            [
+                $"{publicRepo1Name}@{repo1Digest2}",
+                $"{publicRepo2Name}:tag2"
+            ];
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
+        repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
+        repo1ContentClient.Verify(o => o.RepositoryName);
+        repo1ContentClient.VerifyNoOtherCalls();
+
+        repo2ContentClient.Verify(o => o.DeleteManifestAsync(repo2Digest3, It.IsAny<CancellationToken>()), Times.Never);
+        repo2ContentClient.Verify(o => o.RepositoryName);
+        repo2ContentClient.VerifyNoOtherCalls();
+
+        acrClientMock.Verify(o => o.DeleteRepositoryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)
+    {
+        DateOnly dateToday = DateOnly.FromDateTime(DateTime.Now);
+        Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
+        SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest1", true, dateToday.AddDays(-age - 1));
+        SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest2", false, dateToday);
+        SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest3", true, dateToday.AddDays(-age + 1));
+        return lifecycleMetadataServiceMock;
+    }
+
+    private static void SetupIsDigestAnnotatedForEolMethod(Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock, string repoName, string digest, bool digestAlreadyAnnotated, DateOnly eolDate)
+    {
+        string reference = $"{AcrName}/{repoName}@{digest}";
+
+        LifecycleArtifact existingArtifact = null;
+        if (digestAlreadyAnnotated)
         {
-            const string stagingRepo1Name = "build-staging/repo1";
-            const string stagingRepo2Name = "build-staging/repo2";
-            const string repo1Digest1 = "sha256:repo1digest1";
-            const string repo2Digest1 = "sha256:repo2digest1";
-
-            ContainerRepository nonPublicRepo1 = CreateContainerRepository(
-                stagingRepo1Name,
-                CreateContainerRepositoryProperties(lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(14))),
-                [
-                    CreateArtifactManifestProperties(repositoryName: stagingRepo1Name, digest: repo1Digest1)
-                ]);
-
-            ContainerRepository nonPublicRepo2 = CreateContainerRepository(
-                stagingRepo2Name,
-                CreateContainerRepositoryProperties(lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(16))),
-                [
-                    CreateArtifactManifestProperties(repositoryName: stagingRepo2Name, digest: repo2Digest1)
-                ]);
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([nonPublicRepo1, nonPublicRepo2]);
-            acrClientMock
-                .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-
-            CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "build-staging/*";
-            command.Options.Action = CleanAcrImagesAction.Delete;
-            command.Options.Age = 15;
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo1Name, It.IsAny<CancellationToken>()), Times.Never);
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo2Name, It.IsAny<CancellationToken>()));
+            existingArtifact = LifecycleArtifactHelper.CreateLifecycleArtifact(reference, eolDate);
         }
 
-        [TestMethod]
-        public async Task PublicNightlyRepos()
-        {
-            const string publicRepo1Name = "public/dotnet/core-nightly/repo1";
-            const string publicRepo2Name = "public/dotnet/core/repo2";
-            const string publicRepo3Name = "public/dotnet/core-nightly/repo3";
-            const string publicRepo4Name = "public/dotnet/nightly/repo4";
-
-            const string repo1Digest1 = "sha256:repo1digest1";
-            const string repo1Digest2 = "sha256:repo1digest2";
-            const string repo3Digest1 = "sha256:repo3digest1";
-            const string repo3Digest2 = "sha256:repo3digest2";
-            const string repo4Digest1 = "sha256:repo4digest1";
-
-            ContainerRepository publicRepo1 = CreateContainerRepository(
-                publicRepo1Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1))),
-                    CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)), tags: ["tag"])
-                ]);
-
-            ContainerRepository publicRepo2 = CreateContainerRepository(publicRepo2Name, new ContainerRepositoryProperties(), []);
-
-            ContainerRepository publicRepo3 = CreateContainerRepository(
-                publicRepo3Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: publicRepo3Name, digest: repo3Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(29))),
-                    CreateArtifactManifestProperties(repositoryName: publicRepo3Name, digest: repo3Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)))
-                ]);
-
-            ContainerRepository publicRepo4 = CreateContainerRepository(
-                publicRepo4Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: publicRepo4Name, digest: repo4Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)))
-                ]);
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([publicRepo1, publicRepo2, publicRepo3, publicRepo4]);
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-
-            Mock<IAcrContentClient> repo1ContentClient = CreateAcrContentClientMock(publicRepo1Name);
-            Mock<IAcrContentClient> repo2ContentClient = CreateAcrContentClientMock(publicRepo2Name);
-            Mock<IAcrContentClient> repo3ContentClient = CreateAcrContentClientMock(publicRepo3Name);
-            Mock<IAcrContentClient> repo4ContentClient = CreateAcrContentClientMock(publicRepo4Name);
-
-            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
-                AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
-
-            CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "public/dotnet/*nightly/*";
-            command.Options.Action = CleanAcrImagesAction.PruneDangling;
-            command.Options.Age = 30;
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()), Times.Never);
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
-            repo2ContentClient.Verify(o => o.DeleteManifestAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-            repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest1, It.IsAny<CancellationToken>()), Times.Never);
-            repo3ContentClient.Verify(o => o.DeleteManifestAsync(repo3Digest2, It.IsAny<CancellationToken>()));
-            repo4ContentClient.Verify(o => o.DeleteManifestAsync(repo4Digest1, It.IsAny<CancellationToken>()));
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(publicRepo4Name, It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        /// <summary>
-        /// Validates that an empty test repo will be deleted.
-        /// </summary>
-        [TestMethod]
-        public async Task DeleteEmptyTestRepo()
-        {
-            const string repo1Name = "test/repo1";
-            const string repo2Name = "test/repo2";
-
-            const string repo1Digest1 = "sha256:repo1digest1";
-
-            ContainerRepository repo1 = CreateContainerRepository(
-                repo1Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)))
-                ]);
-
-            ContainerRepository repo2 = CreateContainerRepository(repo2Name, CreateContainerRepositoryProperties(), []);
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
-            acrClientMock
-                .Setup(o => o.DeleteRepositoryAsync(repo2Name, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-
-            CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "test/*";
-            command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.Age = 7;
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name, It.IsAny<CancellationToken>()), Times.Never);
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo2Name, It.IsAny<CancellationToken>()));
-        }
-
-        /// <summary>
-        /// Validates that every expired image in a repository is deleted.
-        /// </summary>
-        [TestMethod]
-        public async Task DeleteAllExpiredImages()
-        {
-            const string repo1Name = "test/repo1";
-
-            const string repo1Digest1 = "sha256:repo1digest1";
-            const string repo1Digest2 = "sha256:repo1digest2";
-
-            ContainerRepository repo1 = CreateContainerRepository(
-                repo1Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8))),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)))
-                ]);
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-            Mock<IAcrContentClient> acrContentClientMock = CreateAcrContentClientMock(repo1Name);
-
-            CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory,
-                CreateAcrContentClientFactory(AcrName, [acrContentClientMock]),
-                Mock.Of<ILogger<CleanAcrImagesCommand>>(),
-                Mock.Of<ILifecycleMetadataService>(),
-                Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "test/*";
-            command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.Age = 7;
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
-            acrContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()));
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name, It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        [TestMethod]
-        public async Task TestRepos()
-        {
-            const string repo1Name = "test/repo1";
-            const string repo2Name = "test/repo2";
-
-            const string repo1Digest1 = "sha256:repo1digest1";
-            const string repo1Digest2 = "sha256:repo1digest2";
-            const string repo2Digest1 = "sha256:repo2digest1";
-            const string repo2Digest2 = "sha256:repo2digest2";
-
-            ContainerRepository repo1 = CreateContainerRepository(
-                repo1Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8))),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(6)))
-                ]);
-
-            ContainerRepository repo2 = CreateContainerRepository(
-                repo2Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: repo2Name, digest: repo2Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1))),
-                    CreateArtifactManifestProperties(repositoryName: repo2Name, digest: repo2Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)))
-                ]);
-
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
-
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-
-            Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name);
-            Mock<IAcrContentClient> repo2ContentClientMock = CreateAcrContentClientMock(repo2Name);
-
-            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
-
-            CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "test/*";
-            command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.Age = 7;
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
-            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest1, It.IsAny<CancellationToken>()), Times.Never);
-            repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest2, It.IsAny<CancellationToken>()));
-        }
-
-        /// <summary>
-        /// Validates that images with EOL date older than specified age are deleted.
-        /// </summary>
-        [TestMethod]
-        public async Task DeleteEolImages()
-        {
-            const string repo1Name = "test/repo1";
-
-            const string repo1Digest1 = "sha256:digest1";
-            const string repo1Digest2 = "sha256:digest2";
-            const string repo1Digest3 = "sha256:digest3";
-            const string missingDigest = "sha256:missing";
-            const string referrerDigest = "sha256:referrer";
-
-            const int age = 30;
-
-            ContainerRepository repo1 = CreateContainerRepository(
-                repo1Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8)), tags: ["latest"], registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)), tags: ["latest"], registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: missingDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: referrerDigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
-                ]);
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
-
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-
-            Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name,
-                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
-                            { repo1Digest2, new ManifestQueryResult(string.Empty, []) },
-                            { repo1Digest3, new ManifestQueryResult(string.Empty, []) },
-                            { referrerDigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
-                        });
-            repo1ContentClientMock
-                .Setup(o => o.GetManifestAsync(missingDigest, It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new RequestFailedException(404, "Manifest not found"));
-
-            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock]);
-
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock =
-                CreateLifecycleMetadataServiceMock(age, repo1Name);
-
-            CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "test/*";
-            command.Options.Action = CleanAcrImagesAction.PruneEol;
-            command.Options.Age = age;
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3, It.IsAny<CancellationToken>()), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(missingDigest, It.IsAny<CancellationToken>()), Times.Never);
-            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(referrerDigest, It.IsAny<CancellationToken>()), Times.Never);
-            lifecycleMetadataServiceMock.Verify(
-                o => o.GetLatestLifecycleArtifactAsync(
-                    $"{AcrName}/{repo1Name}@{missingDigest}",
-                    It.IsAny<bool>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [TestMethod]
-        public async Task ExcludedImages()
-        {
-            const string publicRepo1Name = "public/dotnet/nightly/repo1";
-            const string publicRepo2Name = "public/dotnet/nightly/repo2";
-
-            const string repo1Digest1 = "sha256:repo1digest1";
-            const string repo1Digest2 = "sha256:repo1digest2";
-            const string repo2Digest3 = "sha256:repo1digest3";
-
-            ContainerRepository publicRepo1 = CreateContainerRepository(
-                publicRepo1Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60))),
-                    CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag"])
-                ]);
-
-            ContainerRepository publicRepo2 = CreateContainerRepository(
-                publicRepo2Name,
-                CreateContainerRepositoryProperties(),
-                [
-                    CreateArtifactManifestProperties(repositoryName: publicRepo2Name, digest: repo2Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag2"]),
-                ]);
-
-            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([publicRepo1, publicRepo2]);
-
-            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
-
-            Mock<IAcrContentClient> repo1ContentClient = CreateAcrContentClientMock(publicRepo1Name);
-            Mock<IAcrContentClient> repo2ContentClient = CreateAcrContentClientMock(publicRepo2Name);
-
-            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
-                AcrName, [repo1ContentClient, repo2ContentClient]);
-
-            CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Options.Create(new PublishConfiguration()));
-            command.Options.RegistryName = AcrName;
-            command.Options.RepoName = "public/dotnet/nightly/*";
-            command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.Age = 30;
-            command.Options.ImagesToExclude =
-                [
-                    $"{publicRepo1Name}@{repo1Digest2}",
-                    $"{publicRepo2Name}:tag2"
-                ];
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1, It.IsAny<CancellationToken>()));
-            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2, It.IsAny<CancellationToken>()), Times.Never);
-            repo1ContentClient.Verify(o => o.RepositoryName);
-            repo1ContentClient.VerifyNoOtherCalls();
-
-            repo2ContentClient.Verify(o => o.DeleteManifestAsync(repo2Digest3, It.IsAny<CancellationToken>()), Times.Never);
-            repo2ContentClient.Verify(o => o.RepositoryName);
-            repo2ContentClient.VerifyNoOtherCalls();
-
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)
-        {
-            DateOnly dateToday = DateOnly.FromDateTime(DateTime.Now);
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
-            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest1", true, dateToday.AddDays(-age - 1));
-            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest2", false, dateToday);
-            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest3", true, dateToday.AddDays(-age + 1));
-            return lifecycleMetadataServiceMock;
-        }
-
-        private static void SetupIsDigestAnnotatedForEolMethod(Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock, string repoName, string digest, bool digestAlreadyAnnotated, DateOnly eolDate)
-        {
-            string reference = $"{AcrName}/{repoName}@{digest}";
-
-            LifecycleArtifact existingArtifact = null;
-            if (digestAlreadyAnnotated)
-            {
-                existingArtifact = LifecycleArtifactHelper.CreateLifecycleArtifact(reference, eolDate);
-            }
-
-            lifecycleMetadataServiceMock
-                .Setup(o => o.GetLatestLifecycleArtifactAsync(reference, false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(existingArtifact);
-        }
+        lifecycleMetadataServiceMock
+            .Setup(o => o.GetLatestLifecycleArtifactAsync(reference, false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingArtifact);
     }
 }

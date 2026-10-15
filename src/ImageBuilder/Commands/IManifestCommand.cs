@@ -4,12 +4,11 @@
 
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
-{
-    public interface IManifestCommand : ICommand
-    {
-        ManifestInfo Manifest { get; }
+namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-        void LoadManifest();
-    }
+public interface IManifestCommand : ICommand
+{
+    ManifestInfo Manifest { get; }
+
+    void LoadManifest();
 }

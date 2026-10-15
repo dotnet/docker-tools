@@ -5,19 +5,18 @@
 using System;
 using System.Linq;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class EnumHelper
 {
-    public static class EnumHelper
+    public static string GetHelpTextOptions<T>(T defaultValue)
+        where T : Enum
     {
-        public static string GetHelpTextOptions<T>(T defaultValue)
-            where T : Enum
-        {
-            string nonDefaultValueOptions = string.Join(", ",
-                Enum.GetValues(typeof(T))
-                    .Cast<T>()
-                    .Where(enumVal => !enumVal.Equals(defaultValue))
-                    .Select(enumVal => enumVal.ToString().ToCamelCase()));
-            return $"Options: {defaultValue.ToString().ToCamelCase()} (default), {nonDefaultValueOptions}";
-        }
+        string nonDefaultValueOptions = string.Join(", ",
+            Enum.GetValues(typeof(T))
+                .Cast<T>()
+                .Where(enumVal => !enumVal.Equals(defaultValue))
+                .Select(enumVal => enumVal.ToString().ToCamelCase()));
+        return $"Options: {defaultValue.ToString().ToCamelCase()} (default), {nonDefaultValueOptions}";
     }
 }

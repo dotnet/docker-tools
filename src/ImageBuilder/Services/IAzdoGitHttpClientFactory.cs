@@ -4,10 +4,9 @@
 using System;
 using Microsoft.VisualStudio.Services.Common;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public interface IAzdoGitHttpClientFactory
 {
-    public interface IAzdoGitHttpClientFactory
-    {
-        IAzdoGitHttpClient GetClient(Uri baseUrl, VssCredentials credentials);
-    }
+    IAzdoGitHttpClient GetClient(Uri baseUrl, VssCredentials credentials);
 }

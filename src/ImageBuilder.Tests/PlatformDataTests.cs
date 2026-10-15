@@ -10,41 +10,40 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
 using Shouldly;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class PlatformDataTests
 {
-    [TestClass]
-    public class PlatformDataTests
+    [TestMethod]
+    [DataRow("5.0.0-preview.3", "5.0")]
+    [DataRow("5.0", "5.0")]
+    [DataRow("5.0.1", "5.0")]
+    public void GetIdentifier(string productVersion, string expectedVersion)
     {
-        [TestMethod]
-        [DataRow("5.0.0-preview.3", "5.0")]
-        [DataRow("5.0", "5.0")]
-        [DataRow("5.0.1", "5.0")]
-        public void GetIdentifier(string productVersion, string expectedVersion)
+        PlatformData platform = new PlatformData
         {
-            PlatformData platform = new PlatformData
-            {
-                ImageInfo = CreateImage(productVersion),
-                Architecture = "amd64",
-                OsType = "linux",
-                OsVersion = "noble",
-                Dockerfile = "path"
-            };
+            ImageInfo = CreateImage(productVersion),
+            Architecture = "amd64",
+            OsType = "linux",
+            OsVersion = "noble",
+            Dockerfile = "path"
+        };
 
-            string identifier = platform.GetIdentifier();
-            identifier.ShouldBe($"path-amd64-linux-noble-{expectedVersion}");
-        }
-
-        private static ImageInfo CreateImage(string productVersion) =>
-            ImageInfo.Create(
-                new Image
-                {
-                    Platforms = Array.Empty<Platform>(),
-                    ProductVersion = productVersion
-                },
-                "fullrepo",
-                "repo",
-                new ManifestFilter(Enumerable.Empty<string>()),
-                new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
-                "base");
+        string identifier = platform.GetIdentifier();
+        identifier.ShouldBe($"path-amd64-linux-noble-{expectedVersion}");
     }
+
+    private static ImageInfo CreateImage(string productVersion) =>
+        ImageInfo.Create(
+            new Image
+            {
+                Platforms = Array.Empty<Platform>(),
+                ProductVersion = productVersion
+            },
+            "fullrepo",
+            "repo",
+            new ManifestFilter(Enumerable.Empty<string>()),
+            new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
+            "base");
 }

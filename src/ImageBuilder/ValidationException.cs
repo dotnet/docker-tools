@@ -4,12 +4,11 @@
 
 using System;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public class ValidationException : Exception
 {
-    public class ValidationException : Exception
+    public ValidationException(string message) : base(message)
     {
-        public ValidationException(string message) : base(message)
-        {
-        }
     }
 }

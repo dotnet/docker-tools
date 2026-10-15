@@ -14,23 +14,389 @@ using Moq;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.MarStatusHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class WaitForMcrDocIngestionCommandTests
 {
-    [TestClass]
-    public class WaitForMcrDocIngestionCommandTests
+    #nullable enable annotations
+    public TestContext? TestContext { get; set; }
+
+    #nullable disable annotations
+
+    [TestMethod]
+    public async Task SuccessfulPublish()
     {
-        #nullable enable annotations
-        public TestContext? TestContext { get; set; }
+        const string commitDigest = "commit digest";
 
-        #nullable disable annotations
-
-        [TestMethod]
-        public async Task SuccessfulPublish()
+        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
         {
-            const string commitDigest = "commit digest";
-
-            IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+            new CommitResult
             {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.NotStarted
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.Processing
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.Processing
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.Succeeded
+                    }
+                }
+            }
+        }.GetEnumerator();
+
+        Mock<IMcrStatusClient> statusClientMock = new();
+        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        statusClientMock
+            .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                if (commitResultEnumerator.MoveNext())
+                {
+                    return commitResultEnumerator.Current;
+                }
+
+                return null;
+            });
+
+        Mock<IEnvironmentService> environmentServiceMock = new();
+
+        WaitForMcrDocIngestionCommand command = new(
+            Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
+            statusClientFactoryMock.Object,
+            environmentServiceMock.Object);
+
+        command.Options.CommitDigest = commitDigest;
+        command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
+    }
+
+    [TestMethod]
+    public async Task PublishFailure()
+    {
+        const string commitDigest = "commit digest";
+        const string onboardingRequestId = "onboardingRequestId";
+
+        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        {
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.NotStarted
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.Processing
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OverallStatus = StageStatus.Processing
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OnboardingRequestId = onboardingRequestId,
+                        OverallStatus = StageStatus.Failed
+                    }
+                }
+            }
+        }.GetEnumerator();
+
+        Mock<IMcrStatusClient> statusClientMock = new();
+        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        statusClientMock
+            .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                if (commitResultEnumerator.MoveNext())
+                {
+                    return commitResultEnumerator.Current;
+                }
+
+                return null;
+            });
+
+        statusClientMock
+            .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CommitResultDetailed());
+
+        Mock<IEnvironmentService> environmentServiceMock = new();
+        Exception exitException = new();
+        environmentServiceMock
+            .Setup(o => o.Exit(1))
+            .Throws(exitException);
+
+        WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+            Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
+            statusClientFactoryMock.Object,
+            environmentServiceMock.Object);
+
+        command.Options.CommitDigest = commitDigest;
+        command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
+
+        Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
+
+        actualException.ShouldBeSameAs(exitException);
+        statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
+        statusClientMock.Verify(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests the scenario where a given digest has been queued for onboarding multiple times.
+    /// </summary>
+    [TestMethod]
+    public async Task OnboardingRequestsWithDuplicateDigest_Success()
+    {
+        const string commitDigest = "commit digest";
+        const string onboardingRequestId = "onboard";
+
+        DateTime baselineTime = DateTime.Now;
+
+        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        {
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        QueueTime = baselineTime,
+                        OverallStatus = StageStatus.Processing
+                    },
+                    new CommitStatus
+                    {
+                        QueueTime = baselineTime.AddMinutes(1),
+                        OverallStatus = StageStatus.Processing
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        QueueTime = baselineTime,
+                        OverallStatus = StageStatus.Processing
+                    },
+                    new CommitStatus
+                    {
+                        OnboardingRequestId = onboardingRequestId,
+                        QueueTime = baselineTime.AddMinutes(1),
+                        OverallStatus = StageStatus.Failed
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        QueueTime = baselineTime,
+                        OverallStatus = StageStatus.Succeeded
+                    },
+                    new CommitStatus
+                    {
+                        OnboardingRequestId = onboardingRequestId,
+                        QueueTime = baselineTime.AddMinutes(1),
+                        OverallStatus = StageStatus.Failed
+                    }
+                }
+            }
+        }.GetEnumerator();
+
+        Mock<IMcrStatusClient> statusClientMock = new();
+        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        statusClientMock
+            .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                if (commitResultEnumerator.MoveNext())
+                {
+                    return commitResultEnumerator.Current;
+                }
+
+                return null;
+            });
+
+        statusClientMock
+            .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CommitResultDetailed());
+
+        Mock<IEnvironmentService> environmentServiceMock = new();
+
+        WaitForMcrDocIngestionCommand command = new(
+            Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
+            statusClientFactoryMock.Object,
+            environmentServiceMock.Object);
+
+        command.Options.CommitDigest = commitDigest;
+        command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(3));
+    }
+
+    /// <summary>
+    /// Tests the scenario where a given digest has been queued for onboarding multiple times.
+    /// </summary>
+    [TestMethod]
+    public async Task OnboardingRequestsWithDuplicateDigest_Failed()
+    {
+        const string commitDigest = "commit digest";
+        const string onboardingRequestId1 = "onboard1";
+        const string onboardingRequestId2 = "onboard1";
+
+        DateTime baselineTime = DateTime.Now;
+
+        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        {
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        QueueTime = baselineTime,
+                        OverallStatus = StageStatus.Processing
+                    },
+                    new CommitStatus
+                    {
+                        QueueTime = baselineTime.AddMinutes(1),
+                        OverallStatus = StageStatus.Processing
+                    }
+                }
+            },
+            new CommitResult
+            {
+                Value = new List<CommitStatus>
+                {
+                    new CommitStatus
+                    {
+                        OnboardingRequestId = onboardingRequestId1,
+                        QueueTime = baselineTime,
+                        OverallStatus = StageStatus.Failed
+                    },
+                    new CommitStatus
+                    {
+                        OnboardingRequestId = onboardingRequestId2,
+                        QueueTime = baselineTime.AddMinutes(1),
+                        OverallStatus = StageStatus.Failed
+                    }
+                }
+            }
+        }.GetEnumerator();
+
+        Mock<IMcrStatusClient> statusClientMock = new();
+        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        statusClientMock
+            .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                if (commitResultEnumerator.MoveNext())
+                {
+                    return commitResultEnumerator.Current;
+                }
+
+                return null;
+            });
+
+        statusClientMock
+            .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CommitResultDetailed());
+        statusClientMock
+            .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CommitResultDetailed());
+
+        Mock<IEnvironmentService> environmentServiceMock = new();
+        Exception exitException = new();
+        environmentServiceMock
+            .Setup(o => o.Exit(1))
+            .Throws(exitException);
+
+        WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+            Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
+            statusClientFactoryMock.Object,
+            environmentServiceMock.Object);
+
+        command.Options.CommitDigest = commitDigest;
+        command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
+
+        Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
+
+        actualException.ShouldBeSameAs(exitException);
+        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
+        statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    /// <summary>
+    /// Tests that the command times out if the publishing takes too long.
+    /// </summary>
+    [TestMethod]
+    public async Task WaitTimeout()
+    {
+        const string commitDigest = "commit digest";
+
+        Mock<IMcrStatusClient> statusClientMock = new();
+        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        statusClientMock
+            .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
                 new CommitResult
                 {
                     Value = new List<CommitStatus>
@@ -40,386 +406,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             OverallStatus = StageStatus.NotStarted
                         }
                     }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OverallStatus = StageStatus.Processing
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OverallStatus = StageStatus.Processing
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OverallStatus = StageStatus.Succeeded
-                        }
-                    }
-                }
-            }.GetEnumerator();
-
-            Mock<IMcrStatusClient> statusClientMock = new();
-            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
-            statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
-                {
-                    if (commitResultEnumerator.MoveNext())
-                    {
-                        return commitResultEnumerator.Current;
-                    }
-
-                    return null;
                 });
 
-            Mock<IEnvironmentService> environmentServiceMock = new();
+        Mock<IEnvironmentService> environmentServiceMock = new();
 
-            WaitForMcrDocIngestionCommand command = new(
-                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
-                statusClientFactoryMock.Object,
-                environmentServiceMock.Object);
+        WaitForMcrDocIngestionCommand command = new(
+            Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
+            statusClientFactoryMock.Object,
+            environmentServiceMock.Object);
 
-            command.Options.CommitDigest = commitDigest;
-            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
+        command.Options.CommitDigest = commitDigest;
+        command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
 
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
-        }
-
-        [TestMethod]
-        public async Task PublishFailure()
-        {
-            const string commitDigest = "commit digest";
-            const string onboardingRequestId = "onboardingRequestId";
-
-            IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
-            {
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OverallStatus = StageStatus.NotStarted
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OverallStatus = StageStatus.Processing
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OverallStatus = StageStatus.Processing
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OnboardingRequestId = onboardingRequestId,
-                            OverallStatus = StageStatus.Failed
-                        }
-                    }
-                }
-            }.GetEnumerator();
-
-            Mock<IMcrStatusClient> statusClientMock = new();
-            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
-            statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
-                {
-                    if (commitResultEnumerator.MoveNext())
-                    {
-                        return commitResultEnumerator.Current;
-                    }
-
-                    return null;
-                });
-
-            statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CommitResultDetailed());
-
-            Mock<IEnvironmentService> environmentServiceMock = new();
-            Exception exitException = new();
-            environmentServiceMock
-                .Setup(o => o.Exit(1))
-                .Throws(exitException);
-
-            WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
-                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
-                statusClientFactoryMock.Object,
-                environmentServiceMock.Object);
-
-            command.Options.CommitDigest = commitDigest;
-            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
-
-            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-
-            actualException.ShouldBeSameAs(exitException);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
-            statusClientMock.Verify(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        /// <summary>
-        /// Tests the scenario where a given digest has been queued for onboarding multiple times.
-        /// </summary>
-        [TestMethod]
-        public async Task OnboardingRequestsWithDuplicateDigest_Success()
-        {
-            const string commitDigest = "commit digest";
-            const string onboardingRequestId = "onboard";
-
-            DateTime baselineTime = DateTime.Now;
-
-            IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
-            {
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            QueueTime = baselineTime,
-                            OverallStatus = StageStatus.Processing
-                        },
-                        new CommitStatus
-                        {
-                            QueueTime = baselineTime.AddMinutes(1),
-                            OverallStatus = StageStatus.Processing
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            QueueTime = baselineTime,
-                            OverallStatus = StageStatus.Processing
-                        },
-                        new CommitStatus
-                        {
-                            OnboardingRequestId = onboardingRequestId,
-                            QueueTime = baselineTime.AddMinutes(1),
-                            OverallStatus = StageStatus.Failed
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            QueueTime = baselineTime,
-                            OverallStatus = StageStatus.Succeeded
-                        },
-                        new CommitStatus
-                        {
-                            OnboardingRequestId = onboardingRequestId,
-                            QueueTime = baselineTime.AddMinutes(1),
-                            OverallStatus = StageStatus.Failed
-                        }
-                    }
-                }
-            }.GetEnumerator();
-
-            Mock<IMcrStatusClient> statusClientMock = new();
-            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
-            statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
-                {
-                    if (commitResultEnumerator.MoveNext())
-                    {
-                        return commitResultEnumerator.Current;
-                    }
-
-                    return null;
-                });
-
-            statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CommitResultDetailed());
-
-            Mock<IEnvironmentService> environmentServiceMock = new();
-
-            WaitForMcrDocIngestionCommand command = new(
-                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
-                statusClientFactoryMock.Object,
-                environmentServiceMock.Object);
-
-            command.Options.CommitDigest = commitDigest;
-            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(3));
-        }
-
-        /// <summary>
-        /// Tests the scenario where a given digest has been queued for onboarding multiple times.
-        /// </summary>
-        [TestMethod]
-        public async Task OnboardingRequestsWithDuplicateDigest_Failed()
-        {
-            const string commitDigest = "commit digest";
-            const string onboardingRequestId1 = "onboard1";
-            const string onboardingRequestId2 = "onboard1";
-
-            DateTime baselineTime = DateTime.Now;
-
-            IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
-            {
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            QueueTime = baselineTime,
-                            OverallStatus = StageStatus.Processing
-                        },
-                        new CommitStatus
-                        {
-                            QueueTime = baselineTime.AddMinutes(1),
-                            OverallStatus = StageStatus.Processing
-                        }
-                    }
-                },
-                new CommitResult
-                {
-                    Value = new List<CommitStatus>
-                    {
-                        new CommitStatus
-                        {
-                            OnboardingRequestId = onboardingRequestId1,
-                            QueueTime = baselineTime,
-                            OverallStatus = StageStatus.Failed
-                        },
-                        new CommitStatus
-                        {
-                            OnboardingRequestId = onboardingRequestId2,
-                            QueueTime = baselineTime.AddMinutes(1),
-                            OverallStatus = StageStatus.Failed
-                        }
-                    }
-                }
-            }.GetEnumerator();
-
-            Mock<IMcrStatusClient> statusClientMock = new();
-            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
-            statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
-                {
-                    if (commitResultEnumerator.MoveNext())
-                    {
-                        return commitResultEnumerator.Current;
-                    }
-
-                    return null;
-                });
-
-            statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId1, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CommitResultDetailed());
-            statusClientMock
-                .Setup(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId2, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CommitResultDetailed());
-
-            Mock<IEnvironmentService> environmentServiceMock = new();
-            Exception exitException = new();
-            environmentServiceMock
-                .Setup(o => o.Exit(1))
-                .Throws(exitException);
-
-            WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
-                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
-                statusClientFactoryMock.Object,
-                environmentServiceMock.Object);
-
-            command.Options.CommitDigest = commitDigest;
-            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
-
-            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-
-            actualException.ShouldBeSameAs(exitException);
-            environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
-            statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(2));
-        }
-
-        /// <summary>
-        /// Tests that the command times out if the publishing takes too long.
-        /// </summary>
-        [TestMethod]
-        public async Task WaitTimeout()
-        {
-            const string commitDigest = "commit digest";
-
-            Mock<IMcrStatusClient> statusClientMock = new();
-            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
-            statusClientMock
-                .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(
-                    new CommitResult
-                    {
-                        Value = new List<CommitStatus>
-                        {
-                            new CommitStatus
-                            {
-                                OverallStatus = StageStatus.NotStarted
-                            }
-                        }
-                    });
-
-            Mock<IEnvironmentService> environmentServiceMock = new();
-
-            WaitForMcrDocIngestionCommand command = new(
-                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
-                statusClientFactoryMock.Object,
-                environmentServiceMock.Object);
-
-            command.Options.CommitDigest = commitDigest;
-            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
-
-            environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            await Should.ThrowAsync<TimeoutException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-        }
+        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        await Should.ThrowAsync<TimeoutException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
     }
 }

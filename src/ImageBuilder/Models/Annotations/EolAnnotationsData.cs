@@ -5,22 +5,21 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
+namespace Microsoft.DotNet.ImageBuilder.Models.Annotations;
+
+public class EolAnnotationsData
 {
-    public class EolAnnotationsData
+    public EolAnnotationsData()
     {
-        public EolAnnotationsData()
-        {
-        }
-
-        public EolAnnotationsData(List<EolDigestData> eolDigests, DateOnly? eolDate = null)
-        {
-            EolDate = eolDate;
-            EolDigests = eolDigests;
-        }
-
-        public DateOnly? EolDate { get; set; }
-
-        public List<EolDigestData> EolDigests { get; set; } = [];
     }
+
+    public EolAnnotationsData(List<EolDigestData> eolDigests, DateOnly? eolDate = null)
+    {
+        EolDate = eolDate;
+        EolDigests = eolDigests;
+    }
+
+    public DateOnly? EolDate { get; set; }
+
+    public List<EolDigestData> EolDigests { get; set; } = [];
 }

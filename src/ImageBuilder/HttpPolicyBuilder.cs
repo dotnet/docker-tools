@@ -10,58 +10,57 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Polly;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public class HttpPolicyBuilder
 {
-    public class HttpPolicyBuilder
+    private readonly List<AsyncPolicy<HttpResponseMessage>> _policies = new List<AsyncPolicy<HttpResponseMessage>>();
+
+    public static HttpPolicyBuilder Create()
     {
-        private readonly List<AsyncPolicy<HttpResponseMessage>> _policies = new List<AsyncPolicy<HttpResponseMessage>>();
+        return new HttpPolicyBuilder();
+    }
 
-        public static HttpPolicyBuilder Create()
-        {
-            return new HttpPolicyBuilder();
-        }
-
-        public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILogger logger)
-        {
-            _policies.Add(Policy
-                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
-                .RetryAsync(1, async (result, retryCount, context) =>
-                {
-                    logger.LogInformation(
-                        $"Unauthorized status code returned for '{result.Result.RequestMessage?.RequestUri}'. Refreshing access token and retrying.");
-                    await refreshAccessToken();
-                }));
-            return this;
-        }
-
-        public HttpPolicyBuilder WithNotFoundRetryPolicy(TimeSpan timeout, TimeSpan retryFrequency, ILogger logger)
-        {
-            IEnumerable<TimeSpan> sleepDurations = Enumerable
-                .Repeat(retryFrequency.TotalSeconds, (int)(timeout.TotalSeconds / retryFrequency.TotalSeconds))
-                .Select(val => TimeSpan.FromSeconds(val));
-            _policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
-                .WaitAndRetryAsync(sleepDurations, (result, duration) =>
-                {
-                    logger.LogInformation(
-                        $"NotFound status code returned for '{result.Result.RequestMessage?.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
-                }));
-            return this;
-        }
-
-        public AsyncPolicy<HttpResponseMessage>? Build()
-        {
-            if (!_policies.Any())
+    public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILogger logger)
+    {
+        _policies.Add(Policy
+            .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
+            .RetryAsync(1, async (result, retryCount, context) =>
             {
-                return null;
-            }
+                logger.LogInformation(
+                    $"Unauthorized status code returned for '{result.Result.RequestMessage?.RequestUri}'. Refreshing access token and retrying.");
+                await refreshAccessToken();
+            }));
+        return this;
+    }
 
-            AsyncPolicy<HttpResponseMessage> policy = _policies[0];
-            for (int i = 1; i < _policies.Count; i++)
+    public HttpPolicyBuilder WithNotFoundRetryPolicy(TimeSpan timeout, TimeSpan retryFrequency, ILogger logger)
+    {
+        IEnumerable<TimeSpan> sleepDurations = Enumerable
+            .Repeat(retryFrequency.TotalSeconds, (int)(timeout.TotalSeconds / retryFrequency.TotalSeconds))
+            .Select(val => TimeSpan.FromSeconds(val));
+        _policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
+            .WaitAndRetryAsync(sleepDurations, (result, duration) =>
             {
-                policy = policy.WrapAsync(_policies[i]);
-            }
+                logger.LogInformation(
+                    $"NotFound status code returned for '{result.Result.RequestMessage?.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
+            }));
+        return this;
+    }
 
-            return policy;
+    public AsyncPolicy<HttpResponseMessage>? Build()
+    {
+        if (!_policies.Any())
+        {
+            return null;
         }
+
+        AsyncPolicy<HttpResponseMessage> policy = _policies[0];
+        for (int i = 1; i < _policies.Count; i++)
+        {
+            policy = policy.WrapAsync(_policies[i]);
+        }
+
+        return policy;
     }
 }

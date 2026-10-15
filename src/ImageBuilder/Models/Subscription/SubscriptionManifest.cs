@@ -3,10 +3,9 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription;
+
+public class SubscriptionManifest : GitFile
 {
-    public class SubscriptionManifest : GitFile
-    {
-        public Dictionary<string, string> Variables { get; set; } = new();
-    }
+    public Dictionary<string, string> Variables { get; set; } = new();
 }

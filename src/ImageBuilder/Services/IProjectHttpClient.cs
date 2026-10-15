@@ -6,10 +6,9 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.TeamFoundation.Core.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public interface IProjectHttpClient : IDisposable
 {
-    public interface IProjectHttpClient : IDisposable
-    {
-        Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken);
-    }
+    Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken);
 }

@@ -5,10 +5,9 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrTags
+namespace Microsoft.DotNet.ImageBuilder.Models.McrTags;
+
+public class TagsMetadata
 {
-    public class TagsMetadata
-    {
-        public List<Repo> Repos { get; set; }
-    }
+    public List<Repo> Repos { get; set; }
 }

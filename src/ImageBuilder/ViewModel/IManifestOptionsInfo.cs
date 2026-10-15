@@ -5,15 +5,14 @@
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
-{
-    public interface IManifestOptionsInfo : IOptions
-    {
-        string Manifest { get; }
-        string? RegistryOverride { get; }
-        string? RepoPrefix { get; }
-        IDictionary<string, string> Variables { get; }
+namespace Microsoft.DotNet.ImageBuilder.ViewModel;
 
-        ManifestFilter GetManifestFilter();
-    }
+public interface IManifestOptionsInfo : IOptions
+{
+    string Manifest { get; }
+    string? RegistryOverride { get; }
+    string? RepoPrefix { get; }
+    IDictionary<string, string> Variables { get; }
+
+    ManifestFilter GetManifestFilter();
 }

@@ -4,10 +4,9 @@
 
 using System.CommandLine;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public interface ICommand
 {
-    public interface ICommand
-    {
-        Command GetCliCommand();
-    }
+    Command GetCliCommand();
 }

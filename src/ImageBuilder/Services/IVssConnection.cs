@@ -4,12 +4,11 @@
 
 using System;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
-{
-    public interface IVssConnection : IDisposable
-    {
-        IProjectHttpClient GetProjectHttpClient();
+namespace Microsoft.DotNet.ImageBuilder.Services;
 
-        IBuildHttpClient GetBuildHttpClient();
-    }
+public interface IVssConnection : IDisposable
+{
+    IProjectHttpClient GetProjectHttpClient();
+
+    IBuildHttpClient GetBuildHttpClient();
 }

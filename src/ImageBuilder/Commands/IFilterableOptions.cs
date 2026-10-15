@@ -2,20 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public interface IFilterableOptions
 {
-    public interface IFilterableOptions
-    {
-        ManifestFilterOptions FilterOptions { get; }
-    }
+    ManifestFilterOptions FilterOptions { get; }
+}
 
-    public interface IPlatformFilterableOptions
-    {
-        PlatformFilterOptions Platform { get; }
-    }
+public interface IPlatformFilterableOptions
+{
+    PlatformFilterOptions Platform { get; }
+}
 
-    public interface IDockerfileFilterableOptions
-    {
-        DockerfileFilterOptions Dockerfile { get; }
-    }
+public interface IDockerfileFilterableOptions
+{
+    DockerfileFilterOptions Dockerfile { get; }
 }

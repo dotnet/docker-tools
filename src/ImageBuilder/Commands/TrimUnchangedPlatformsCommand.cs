@@ -10,78 +10,77 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
 {
-    public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
+    private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
+    private readonly IArtifactService _artifactService;
+
+    public TrimUnchangedPlatformsCommand(
+        ILogger<TrimUnchangedPlatformsCommand> logger,
+        IArtifactService artifactService)
     {
-        private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
-        private readonly IArtifactService _artifactService;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+    }
 
-        public TrimUnchangedPlatformsCommand(
-            ILogger<TrimUnchangedPlatformsCommand> logger,
-            IArtifactService artifactService)
+    protected override string Description => "Trims platforms marked as unchanged from the image info file";
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
+        string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+
+        if (!File.Exists(imageInfoPath))
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
+                "Image info file not found. Skipping trimming unchanged platforms."));
+            return;
         }
 
-        protected override string Description => "Trims platforms marked as unchanged from the image info file";
+        string imageInfoContents = await File.ReadAllTextAsync(imageInfoPath, cancellationToken);
+        ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
+        RemoveUnchangedPlatforms(imageArtifactDetails);
+        imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
 
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
+        if (!Options.IsDryRun)
         {
-            _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
-            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
-
-            if (!File.Exists(imageInfoPath))
-            {
-                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                    "Image info file not found. Skipping trimming unchanged platforms."));
-                return;
-            }
-
-            string imageInfoContents = await File.ReadAllTextAsync(imageInfoPath, cancellationToken);
-            ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
-            RemoveUnchangedPlatforms(imageArtifactDetails);
-            imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
-
-            if (!Options.IsDryRun)
-            {
-                await File.WriteAllTextAsync(imageInfoPath, imageInfoContents, cancellationToken);
-            }
+            await File.WriteAllTextAsync(imageInfoPath, imageInfoContents, cancellationToken);
         }
+    }
 
-        private void RemoveUnchangedPlatforms(ImageArtifactDetails imageArtifactDetails)
+    private void RemoveUnchangedPlatforms(ImageArtifactDetails imageArtifactDetails)
+    {
+        for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
         {
-            for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
+            RepoData repo = imageArtifactDetails.Repos[repoIndex];
+            for (int imageIndex = repo.Images.Count - 1; imageIndex >= 0; imageIndex--)
             {
-                RepoData repo = imageArtifactDetails.Repos[repoIndex];
-                for (int imageIndex = repo.Images.Count - 1; imageIndex >= 0; imageIndex--)
+                ImageData image = repo.Images[imageIndex];
+                for (int i = image.Platforms.Count - 1; i >= 0; i--)
                 {
-                    ImageData image = repo.Images[imageIndex];
-                    for (int i = image.Platforms.Count - 1; i >= 0; i--)
+                    PlatformData platform = image.Platforms[i];
+                    if (platform.IsUnchanged)
                     {
-                        PlatformData platform = image.Platforms[i];
-                        if (platform.IsUnchanged)
-                        {
-                            // Exclude the ProductVersion from the identifier because it requires the ImageInfo to be set on the platform.
-                            // But it's not set because we haven't used ImageInfoHelper to load it, we've just deserialized it directly.
-                            // Using ImageInfoHelper requires having the manifest but that seems unnecessary since it's not needed for the logic
-                            // of this command other than this simple logging statement.
-                            _logger.LogInformation($"Removing unchanged platform '{platform.GetIdentifier(excludeProductVersion: true)}'");
-                            image.Platforms.Remove(platform);
-                        }
-                    }
-
-                    if (!image.Platforms.Any())
-                    {
-                        repo.Images.Remove(image);
+                        // Exclude the ProductVersion from the identifier because it requires the ImageInfo to be set on the platform.
+                        // But it's not set because we haven't used ImageInfoHelper to load it, we've just deserialized it directly.
+                        // Using ImageInfoHelper requires having the manifest but that seems unnecessary since it's not needed for the logic
+                        // of this command other than this simple logging statement.
+                        _logger.LogInformation($"Removing unchanged platform '{platform.GetIdentifier(excludeProductVersion: true)}'");
+                        image.Platforms.Remove(platform);
                     }
                 }
 
-                if (!repo.Images.Any())
+                if (!image.Platforms.Any())
                 {
-                    imageArtifactDetails.Repos.Remove(repo);
+                    repo.Images.Remove(image);
                 }
+            }
+
+            if (!repo.Images.Any())
+            {
+                imageArtifactDetails.Repos.Remove(repo);
             }
         }
     }

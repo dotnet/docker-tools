@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IManifestServiceFactory
 {
-    public interface IManifestServiceFactory
-    {
-        IManifestService Create(IRegistryCredentialsHost? credsHost = null);
-    }
+    IManifestService Create(IRegistryCredentialsHost? credsHost = null);
 }

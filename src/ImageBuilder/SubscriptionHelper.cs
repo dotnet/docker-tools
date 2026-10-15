@@ -11,87 +11,86 @@ using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class SubscriptionHelper
 {
-    public static class SubscriptionHelper
+    public static IEnumerable<(Subscription Subscription, ManifestInfo Manifest)> GetSubscriptionManifests(
+        string subscriptionsPath, ManifestFilterOptions filterOptions,
+        IGitService gitService, IManifestJsonService manifestJsonService, Action<ManifestOptions>? configureOptions = null)
     {
-        public static IEnumerable<(Subscription Subscription, ManifestInfo Manifest)> GetSubscriptionManifests(
-            string subscriptionsPath, ManifestFilterOptions filterOptions,
-            IGitService gitService, IManifestJsonService manifestJsonService, Action<ManifestOptions>? configureOptions = null)
+        string subscriptionsJson = File.ReadAllText(subscriptionsPath);
+        Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
+        if (subscriptions is null)
         {
-            string subscriptionsJson = File.ReadAllText(subscriptionsPath);
-            Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
-            if (subscriptions is null)
-            {
-                throw new JsonException($"Unable to correctly deserialize path '{subscriptionsJson}'.");
-            }
-
-            List<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests = new
-                List<(Subscription Subscription, ManifestInfo Manifest)>();
-            foreach (Subscription subscription in subscriptions)
-            {
-                ManifestInfo? manifest = GetSubscriptionManifest(
-                    subscription, filterOptions, gitService, manifestJsonService, configureOptions);
-                if (manifest is not null)
-                {
-                    subscriptionManifests.Add((subscription, manifest));
-                }
-            }
-
-            return subscriptionManifests;
+            throw new JsonException($"Unable to correctly deserialize path '{subscriptionsJson}'.");
         }
 
-        private static ManifestInfo? GetSubscriptionManifest(Subscription subscription,
-            ManifestFilterOptions filterOptions, IGitService gitService, IManifestJsonService manifestJsonService,
-            Action<ManifestOptions>? configureOptions)
+        List<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests = new
+            List<(Subscription Subscription, ManifestInfo Manifest)>();
+        foreach (Subscription subscription in subscriptions)
         {
-            // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
-            // then there are no images that need to be inspected.
-            string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(filterOptions.Platform.OsType);
-            if (!string.IsNullOrEmpty(subscription.OsType) &&
-                !Regex.IsMatch(subscription.OsType, osTypeRegexPattern, RegexOptions.IgnoreCase))
+            ManifestInfo? manifest = GetSubscriptionManifest(
+                subscription, filterOptions, gitService, manifestJsonService, configureOptions);
+            if (manifest is not null)
             {
-                return null;
-            }
-
-            string uniqueName = $"{subscription.Manifest.Owner}-{subscription.Manifest.Repo}-{subscription.Manifest.Branch}";
-            string repoPath = Path.Combine(Path.GetTempPath(), uniqueName);
-
-            using IRepository repo = gitService.CloneRepository(
-                $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}.git",
-                repoPath,
-                new CloneOptions
-                {
-                    BranchName = subscription.Manifest.Branch
-                });
-
-            try
-            {
-                TempManifestOptions manifestOptions = new(filterOptions)
-                {
-                    Manifest = Path.Combine(repoPath, subscription.Manifest.Path),
-                    Variables = subscription.Manifest.Variables
-                };
-
-                configureOptions?.Invoke(manifestOptions);
-
-                return manifestJsonService.Load(manifestOptions);
-            }
-            finally
-            {
-                repo.Dispose();
-                FileHelper.ForceDeleteDirectory(repoPath);
+                subscriptionManifests.Add((subscription, manifest));
             }
         }
 
-        private class TempManifestOptions : ManifestOptions, IFilterableOptions
-        {
-            public TempManifestOptions(ManifestFilterOptions filterOptions)
-            {
-                FilterOptions = filterOptions;
-            }
+        return subscriptionManifests;
+    }
 
-            public ManifestFilterOptions FilterOptions { get; }
+    private static ManifestInfo? GetSubscriptionManifest(Subscription subscription,
+        ManifestFilterOptions filterOptions, IGitService gitService, IManifestJsonService manifestJsonService,
+        Action<ManifestOptions>? configureOptions)
+    {
+        // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
+        // then there are no images that need to be inspected.
+        string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(filterOptions.Platform.OsType);
+        if (!string.IsNullOrEmpty(subscription.OsType) &&
+            !Regex.IsMatch(subscription.OsType, osTypeRegexPattern, RegexOptions.IgnoreCase))
+        {
+            return null;
         }
+
+        string uniqueName = $"{subscription.Manifest.Owner}-{subscription.Manifest.Repo}-{subscription.Manifest.Branch}";
+        string repoPath = Path.Combine(Path.GetTempPath(), uniqueName);
+
+        using IRepository repo = gitService.CloneRepository(
+            $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}.git",
+            repoPath,
+            new CloneOptions
+            {
+                BranchName = subscription.Manifest.Branch
+            });
+
+        try
+        {
+            TempManifestOptions manifestOptions = new(filterOptions)
+            {
+                Manifest = Path.Combine(repoPath, subscription.Manifest.Path),
+                Variables = subscription.Manifest.Variables
+            };
+
+            configureOptions?.Invoke(manifestOptions);
+
+            return manifestJsonService.Load(manifestOptions);
+        }
+        finally
+        {
+            repo.Dispose();
+            FileHelper.ForceDeleteDirectory(repoPath);
+        }
+    }
+
+    private class TempManifestOptions : ManifestOptions, IFilterableOptions
+    {
+        public TempManifestOptions(ManifestFilterOptions filterOptions)
+        {
+            FilterOptions = filterOptions;
+        }
+
+        public ManifestFilterOptions FilterOptions { get; }
     }
 }

@@ -5,41 +5,40 @@
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
+namespace Microsoft.DotNet.ImageBuilder.ViewModel;
+
+public class TagInfo
 {
-    public class TagInfo
+    private string BuildContextPath { get; set; }
+    public string FullyQualifiedName { get; private set; }
+    public Tag Model { get; private set; }
+    public string Name { get; private set; }
+
+    private TagInfo()
     {
-        private string BuildContextPath { get; set; }
-        public string FullyQualifiedName { get; private set; }
-        public Tag Model { get; private set; }
-        public string Name { get; private set; }
+    }
 
-        private TagInfo()
+    public static TagInfo Create(
+        string name,
+        Tag model,
+        string repoName,
+        VariableHelper variableHelper,
+        string buildContextPath = null)
+    {
+        var tagInfo = new TagInfo()
         {
-        }
+            Model = model,
+            BuildContextPath = buildContextPath,
+            Name = variableHelper.SubstituteValues(name),
+        };
 
-        public static TagInfo Create(
-            string name,
-            Tag model,
-            string repoName,
-            VariableHelper variableHelper,
-            string buildContextPath = null)
-        {
-            var tagInfo = new TagInfo()
-            {
-                Model = model,
-                BuildContextPath = buildContextPath,
-                Name = variableHelper.SubstituteValues(name),
-            };
+        tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
 
-            tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
+        return tagInfo;
+    }
 
-            return tagInfo;
-        }
-
-        public static string GetFullyQualifiedName(string repoName, string tagName)
-        {
-            return $"{repoName}:{tagName}";
-        }
+    public static string GetFullyQualifiedName(string repoName, string tagName)
+    {
+        return $"{repoName}:{tagName}";
     }
 }

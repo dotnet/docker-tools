@@ -11,37 +11,36 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Shouldly;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class ShowManifestSchemaCommandTests
 {
-    [TestClass]
-    public class ShowManifestSchemaCommandTests
+    public TestContext? TestContext { get; set; }
+
+    /// <summary>
+    /// Simple verification that the output of the command can be deserialized as JSON.
+    /// </summary>
+    [TestMethod]
+    public async Task ShowManifestSchemaCommand_Execute()
     {
-        public TestContext? TestContext { get; set; }
+        Mock<ILogger<ShowManifestSchemaCommand>> loggerServiceMock = new Mock<ILogger<ShowManifestSchemaCommand>>();
 
-        /// <summary>
-        /// Simple verification that the output of the command can be deserialized as JSON.
-        /// </summary>
-        [TestMethod]
-        public async Task ShowManifestSchemaCommand_Execute()
+        ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(loggerServiceMock.Object);
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        bool hasSchemaJsonLog = loggerServiceMock.Invocations.Any(invocation =>
         {
-            Mock<ILogger<ShowManifestSchemaCommand>> loggerServiceMock = new Mock<ILogger<ShowManifestSchemaCommand>>();
-
-            ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(loggerServiceMock.Object);
-
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            bool hasSchemaJsonLog = loggerServiceMock.Invocations.Any(invocation =>
+            if (invocation.Method.Name != nameof(ILogger.Log))
             {
-                if (invocation.Method.Name != nameof(ILogger.Log))
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                string? message = invocation.Arguments[2]?.ToString();
-                return message is not null && JsonConvert.DeserializeObject<JObject>(message) != null;
-            });
+            string? message = invocation.Arguments[2]?.ToString();
+            return message is not null && JsonConvert.DeserializeObject<JObject>(message) != null;
+        });
 
-            hasSchemaJsonLog.ShouldBeTrue();
-        }
+        hasSchemaJsonLog.ShouldBeTrue();
     }
 }

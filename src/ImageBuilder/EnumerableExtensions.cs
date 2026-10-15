@@ -6,42 +6,41 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class EnumerableExtensions
 {
-    public static class EnumerableExtensions
+    /// <summary>
+    /// Returns a value indicating whether the two enumerables are equivalent (order does not matter).
+    /// </summary>
+    public static bool AreEquivalent<T>(this IEnumerable<T> source, IEnumerable<T> items)
     {
-        /// <summary>
-        /// Returns a value indicating whether the two enumerables are equivalent (order does not matter).
-        /// </summary>
-        public static bool AreEquivalent<T>(this IEnumerable<T> source, IEnumerable<T> items)
+        if (source.Count() != items.Count())
         {
-            if (source.Count() != items.Count())
+            return false;
+        }
+
+        IList<T> sourceList = source
+            .OrderBy(item => item)
+            .ToList();
+        IList<T> itemsList = items
+            .OrderBy(item => item)
+            .ToList();
+
+        for (int i = 0; i < sourceList.Count; i++)
+        {
+            if (!Equals(sourceList[i], itemsList[i]))
             {
                 return false;
             }
-
-            IList<T> sourceList = source
-                .OrderBy(item => item)
-                .ToList();
-            IList<T> itemsList = items
-                .OrderBy(item => item)
-                .ToList();
-
-            for (int i = 0; i < sourceList.Count; i++)
-            {
-                if (!Equals(sourceList[i], itemsList[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
-        public static bool IsSubsetOf<T>(this IEnumerable<T> source, IEnumerable<T> items) =>
-            !source.Except(items).Any();
-
-        public static IEnumerable<T> AppendIf<T>(this IEnumerable<T> source, T item, Func<bool> condition) =>
-            condition() ? source.Append(item) : source;
+        return true;
     }
+
+    public static bool IsSubsetOf<T>(this IEnumerable<T> source, IEnumerable<T> items) =>
+        !source.Except(items).Any();
+
+    public static IEnumerable<T> AppendIf<T>(this IEnumerable<T> source, T item, Func<bool> condition) =>
+        condition() ? source.Append(item) : source;
 }

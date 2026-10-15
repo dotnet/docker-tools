@@ -6,32 +6,31 @@
 using System;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public abstract class ManifestCommand<TOptions> : Command<TOptions>, IManifestCommand
+    where TOptions : ManifestOptions, new()
 {
-    public abstract class ManifestCommand<TOptions> : Command<TOptions>, IManifestCommand
-        where TOptions : ManifestOptions, new()
+    private readonly IManifestJsonService _manifestJsonService;
+
+    protected ManifestCommand(IManifestJsonService manifestJsonService)
     {
-        private readonly IManifestJsonService _manifestJsonService;
+        _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
+    }
 
-        protected ManifestCommand(IManifestJsonService manifestJsonService)
+    public ManifestInfo Manifest { get; private set; }
+
+    public virtual void LoadManifest()
+    {
+        if (Manifest is null)
         {
-            _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
+            Manifest = _manifestJsonService.Load(Options);
         }
+    }
 
-        public ManifestInfo Manifest { get; private set; }
-
-        public virtual void LoadManifest()
-        {
-            if (Manifest is null)
-            {
-                Manifest = _manifestJsonService.Load(Options);
-            }
-        }
-
-        protected override void Initialize(TOptions options)
-        {
-            base.Initialize(options);
-            LoadManifest();
-        }
+    protected override void Initialize(TOptions options)
+    {
+        base.Initialize(options);
+        LoadManifest();
     }
 }

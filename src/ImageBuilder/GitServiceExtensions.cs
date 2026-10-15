@@ -5,21 +5,20 @@
 
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder
-{
-    public static class GitServiceExtensions
-    {
-        public static string GetDockerfileCommitUrl(
-            this IGitService gitService,
-            PlatformInfo platform,
-            string sourceRepoUrl,
-            string sourceBranch = null)
-        {
-            string branchOrShaPathSegment = sourceBranch ??
-                gitService.GetCommitSha(platform.DockerfilePath, useFullHash: true);
+namespace Microsoft.DotNet.ImageBuilder;
 
-            string dockerfileRelativePath = PathHelper.NormalizePath(platform.DockerfilePathRelativeToManifest);
-            return $"{sourceRepoUrl}/blob/{branchOrShaPathSegment}/{dockerfileRelativePath}";
-        }
+public static class GitServiceExtensions
+{
+    public static string GetDockerfileCommitUrl(
+        this IGitService gitService,
+        PlatformInfo platform,
+        string sourceRepoUrl,
+        string sourceBranch = null)
+    {
+        string branchOrShaPathSegment = sourceBranch ??
+            gitService.GetCommitSha(platform.DockerfilePath, useFullHash: true);
+
+        string dockerfileRelativePath = PathHelper.NormalizePath(platform.DockerfilePathRelativeToManifest);
+        return $"{sourceRepoUrl}/blob/{branchOrShaPathSegment}/{dockerfileRelativePath}";
     }
 }

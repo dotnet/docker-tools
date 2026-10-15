@@ -12,249 +12,248 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class TrimUnchangedPlatformsCommandTests
 {
-    [TestClass]
-    public class TrimUnchangedPlatformsCommandTests
+    public TestContext? TestContext { get; set; }
+
+    [TestMethod]
+    public async Task NoPlatforms()
     {
-        public TestContext? TestContext { get; set; }
+        await RunTestAsync(new ImageArtifactDetails(), new ImageArtifactDetails());
+    }
 
-        [TestMethod]
-        public async Task NoPlatforms()
+    [TestMethod]
+    public async Task MixOfCachedPlatforms()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            await RunTestAsync(new ImageArtifactDetails(), new ImageArtifactDetails());
-        }
-
-        [TestMethod]
-        public async Task MixOfCachedPlatforms()
-        {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            Repos = new List<RepoData>
             {
-                Repos = new List<RepoData>
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1",
+                    Images = new List<ImageData>
                     {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                    new PlatformData { IsUnchanged = true },
-                                }
-                            },
-                            new ImageData
+                                new PlatformData(),
+                                new PlatformData { IsUnchanged = true },
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData { IsUnchanged = true },
-                                }
-                            },
-                            new ImageData
+                                new PlatformData { IsUnchanged = true },
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                    new PlatformData(),
-                                }
+                                new PlatformData(),
+                                new PlatformData(),
                             }
                         }
-                    },
-                    new RepoData
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images = new List<ImageData>
                     {
-                        Repo = "repo2",
-                        Images = new List<ImageData>
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData { IsUnchanged = true },
-                                }
-                            },
-                            new ImageData
+                                new PlatformData { IsUnchanged = true },
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData { IsUnchanged = true },
-                                }
+                                new PlatformData { IsUnchanged = true },
                             }
                         }
-                    },
-                    new RepoData
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo3",
+                    Images = new List<ImageData>
                     {
-                        Repo = "repo3",
-                        Images = new List<ImageData>
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData()
-                                }
+                                new PlatformData()
                             }
                         }
                     }
                 }
-            };
+            }
+        };
 
-            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos = new List<RepoData>
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                    new PlatformData(),
-                                }
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo3",
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData()
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);
-        }
-
-        [TestMethod]
-        public async Task NoCachedPlatforms()
+        ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
         {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            Repos = new List<RepoData>
             {
-                Repos = new List<RepoData>
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1",
+                    Images = new List<ImageData>
                     {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                }
-                            },
-                            new ImageData
+                                new PlatformData(),
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                    new PlatformData(),
-                                }
+                                new PlatformData(),
+                                new PlatformData(),
                             }
                         }
-                    },
-                    new RepoData
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo3",
+                    Images = new List<ImageData>
                     {
-                        Repo = "repo2",
-                        Images = new List<ImageData>
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms = new List<PlatformData>
                             {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData()
-                                }
+                                new PlatformData()
                             }
                         }
                     }
                 }
-            };
+            }
+        };
 
-            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos = new List<RepoData>
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData(),
-                                    new PlatformData(),
-                                }
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo2",
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData()
-                                }
-                            }
-                        }
-                    }
-                }
-            };
+        await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);
+    }
 
-            await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);
-        }
-
-        private async Task RunTestAsync(ImageArtifactDetails input, ImageArtifactDetails expectedOutput)
+    [TestMethod]
+    public async Task NoCachedPlatforms()
+    {
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            using TempFolderContext tempFolderContext = new TempFolderContext();
+            Repos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images = new List<ImageData>
+                    {
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
+                            {
+                                new PlatformData(),
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
+                            {
+                                new PlatformData(),
+                                new PlatformData(),
+                            }
+                        }
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images = new List<ImageData>
+                    {
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
+                            {
+                                new PlatformData()
+                            }
+                        }
+                    }
+                }
+            }
+        };
 
-            TrimUnchangedPlatformsCommand command = new(
-                Mock.Of<ILogger<TrimUnchangedPlatformsCommand>>(),
-                TestHelper.CreateArtifactService(tempFolderContext.Path));
-            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
+        ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images = new List<ImageData>
+                    {
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
+                            {
+                                new PlatformData(),
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
+                            {
+                                new PlatformData(),
+                                new PlatformData(),
+                            }
+                        }
+                    }
+                },
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images = new List<ImageData>
+                    {
+                        new ImageData
+                        {
+                            Platforms = new List<PlatformData>
+                            {
+                                new PlatformData()
+                            }
+                        }
+                    }
+                }
+            }
+        };
 
-            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(input));
+        await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);
+    }
 
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+    private async Task RunTestAsync(ImageArtifactDetails input, ImageArtifactDetails expectedOutput)
+    {
+        using TempFolderContext tempFolderContext = new TempFolderContext();
 
-            string expectedContents = JsonHelper.SerializeObject(expectedOutput);
-            string actualContents = File.ReadAllText(command.Options.ImageInfoPath);
+        TrimUnchangedPlatformsCommand command = new(
+            Mock.Of<ILogger<TrimUnchangedPlatformsCommand>>(),
+            TestHelper.CreateArtifactService(tempFolderContext.Path));
+        command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
 
-            actualContents.ShouldBe(expectedContents);
-        }
+        File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(input));
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        string expectedContents = JsonHelper.SerializeObject(expectedOutput);
+        string actualContents = File.ReadAllText(command.Options.ImageInfoPath);
+
+        actualContents.ShouldBe(expectedContents);
     }
 }

@@ -6,15 +6,14 @@
 using System.Collections.Generic;
 using YamlDotNet.Serialization;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrTags
+namespace Microsoft.DotNet.ImageBuilder.Models.McrTags;
+
+public class Repo
 {
-    public class Repo
-    {
-        [YamlMember(Alias = "repoName")]
-        public string Name { get; set; }
+    [YamlMember(Alias = "repoName")]
+    public string Name { get; set; }
 
-        public bool CustomTablePivots { get; set; }
+    public bool CustomTablePivots { get; set; }
 
-        public List<TagGroup> TagGroups { get; set; }
-    }
+    public List<TagGroup> TagGroups { get; set; }
 }

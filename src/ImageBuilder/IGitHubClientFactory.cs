@@ -6,10 +6,9 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IGitHubClientFactory
 {
-    public interface IGitHubClientFactory
-    {
-        Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken);
-    }
+    Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken);
 }

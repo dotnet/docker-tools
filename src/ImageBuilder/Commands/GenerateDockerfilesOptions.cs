@@ -6,28 +6,27 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class GenerateDockerfilesOptions : GenerateArtifactsOptions, IDockerfileFilterableOptions
 {
-    public class GenerateDockerfilesOptions : GenerateArtifactsOptions, IDockerfileFilterableOptions
+    public DockerfileFilterOptions Dockerfile { get; set; } = new DockerfileFilterOptions();
+
+    public override IEnumerable<Option> GetCliOptions() =>
+    [
+        ..base.GetCliOptions(),
+        ..Dockerfile.GetCliOptions(),
+    ];
+
+    public override IEnumerable<Argument> GetCliArguments() =>
+    [
+        ..base.GetCliArguments(),
+        ..Dockerfile.GetCliArguments(),
+    ];
+
+    public override void Bind(ParseResult result)
     {
-        public DockerfileFilterOptions Dockerfile { get; set; } = new DockerfileFilterOptions();
-
-        public override IEnumerable<Option> GetCliOptions() =>
-        [
-            ..base.GetCliOptions(),
-            ..Dockerfile.GetCliOptions(),
-        ];
-
-        public override IEnumerable<Argument> GetCliArguments() =>
-        [
-            ..base.GetCliArguments(),
-            ..Dockerfile.GetCliArguments(),
-        ];
-
-        public override void Bind(ParseResult result)
-        {
-            base.Bind(result);
-            Dockerfile.Bind(result);
-        }
+        base.Bind(result);
+        Dockerfile.Bind(result);
     }
 }

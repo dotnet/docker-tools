@@ -8,23 +8,22 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Image
+namespace Microsoft.DotNet.ImageBuilder.Models.Image;
+
+public class RepoData : IComparable<RepoData>
 {
-    public class RepoData : IComparable<RepoData>
+    [JsonProperty(Required = Required.Always)]
+    public string Repo { get; set; }
+
+    public List<ImageData> Images { get; set; } = new List<ImageData>();
+
+    public int CompareTo([AllowNull] RepoData other)
     {
-        [JsonProperty(Required = Required.Always)]
-        public string Repo { get; set; }
-
-        public List<ImageData> Images { get; set; } = new List<ImageData>();
-
-        public int CompareTo([AllowNull] RepoData other)
+        if (other is null)
         {
-            if (other is null)
-            {
-                return 1;
-            }
-
-            return Repo.CompareTo(other.Repo);
+            return 1;
         }
+
+        return Repo.CompareTo(other.Repo);
     }
 }

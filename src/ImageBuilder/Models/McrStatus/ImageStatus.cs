@@ -5,17 +5,16 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+
+public class ImageStatus
 {
-    public class ImageStatus
-    {
-        [JsonProperty(PropertyName = "Id")]
-        public string OnboardingRequestId { get; set; } = string.Empty;
-        public string SourceRepository { get; set; } = string.Empty;
-        public string TargetRepository { get; set; } = string.Empty;
-        public DateTime QueueTime { get; set; }
-        public string? Tag { get; set; }
-        public StageStatus OverallStatus { get; set; }
-        public string? FailureReason { get; set; }
-    }
+    [JsonProperty(PropertyName = "Id")]
+    public string OnboardingRequestId { get; set; } = string.Empty;
+    public string SourceRepository { get; set; } = string.Empty;
+    public string TargetRepository { get; set; } = string.Empty;
+    public DateTime QueueTime { get; set; }
+    public string? Tag { get; set; }
+    public StageStatus OverallStatus { get; set; }
+    public string? FailureReason { get; set; }
 }

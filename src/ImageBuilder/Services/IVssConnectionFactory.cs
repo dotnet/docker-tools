@@ -5,10 +5,9 @@
 using System;
 using Microsoft.VisualStudio.Services.Common;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public interface IVssConnectionFactory
 {
-    public interface IVssConnectionFactory
-    {
-        IVssConnection Create(Uri baseUrl, VssCredentials credentials);
-    }
+    IVssConnection Create(Uri baseUrl, VssCredentials credentials);
 }

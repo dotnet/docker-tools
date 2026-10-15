@@ -6,13 +6,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
-{
-    public class BuildMatrixInfo
-    {
-        public string Name { get; set; }
-        public List<BuildLegInfo> Legs { get; } = new List<BuildLegInfo>();
+namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-        public IEnumerable<BuildLegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
-    }
+public class BuildMatrixInfo
+{
+    public string Name { get; set; }
+    public List<BuildLegInfo> Legs { get; } = new List<BuildLegInfo>();
+
+    public IEnumerable<BuildLegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
 }

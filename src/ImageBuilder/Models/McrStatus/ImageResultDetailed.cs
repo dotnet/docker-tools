@@ -6,18 +6,17 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+
+public class ImageResultDetailed
 {
-    public class ImageResultDetailed
-    {
-        [JsonProperty(PropertyName = "Id")]
-        public string OnboardingRequestId { get; set; }
-        public string SourceRepository { get; set; }
-        public string TargetRepository { get; set; }
-        public DateTime QueueTime { get; set; }
-        public string Tag { get; set; }
-        public StageStatus OverallStatus { get; set; }
-        public ImageSubstatus Substatus { get; set; } = new ImageSubstatus();
-        public string CommitDigest { get; set; }
-    }
+    [JsonProperty(PropertyName = "Id")]
+    public string OnboardingRequestId { get; set; }
+    public string SourceRepository { get; set; }
+    public string TargetRepository { get; set; }
+    public DateTime QueueTime { get; set; }
+    public string Tag { get; set; }
+    public StageStatus OverallStatus { get; set; }
+    public ImageSubstatus Substatus { get; set; } = new ImageSubstatus();
+    public string CommitDigest { get; set; }
 }

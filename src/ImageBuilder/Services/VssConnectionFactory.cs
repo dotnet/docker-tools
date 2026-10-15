@@ -11,34 +11,61 @@ using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+internal class VssConnectionFactory : IVssConnectionFactory
 {
-    internal class VssConnectionFactory : IVssConnectionFactory
+    private readonly ILogger<VssConnectionFactory> _logger;
+    private readonly ILoggerFactory _loggerFactory;
+
+    public VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILoggerFactory loggerFactory)
     {
-        private readonly ILogger<VssConnectionFactory> _logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+    }
+
+    public IVssConnection Create(Uri baseUrl, VssCredentials credentials)
+    {
+        return new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
+    }
+
+    private class VssConnectionWrapper : IVssConnection
+    {
+        private readonly ILogger<VssConnectionWrapper> _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly VssConnection _inner;
 
-        public VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILoggerFactory loggerFactory)
+        public VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = _loggerFactory.CreateLogger<VssConnectionWrapper>();
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
 
-        public IVssConnection Create(Uri baseUrl, VssCredentials credentials)
+        public void Dispose()
         {
-            return new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
+            _inner.Dispose();
         }
 
-        private class VssConnectionWrapper : IVssConnection
+        public IProjectHttpClient GetProjectHttpClient()
         {
-            private readonly ILogger<VssConnectionWrapper> _logger;
-            private readonly ILoggerFactory _loggerFactory;
-            private readonly VssConnection _inner;
+            return new ProjectHttpClientWrapper(_loggerFactory, _inner.GetClient<ProjectHttpClient>());
+        }
 
-            public VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner)
+        public IBuildHttpClient GetBuildHttpClient()
+        {
+            return new BuildHttpClientWrapper(_loggerFactory, _inner.GetClient<WebApi.BuildHttpClient>());
+        }
+
+        private class ProjectHttpClientWrapper : IProjectHttpClient
+        {
+            private readonly ILogger<ProjectHttpClientWrapper> _logger;
+            private readonly ProjectHttpClient _inner;
+
+            public ProjectHttpClientWrapper(ILoggerFactory loggerFactory, ProjectHttpClient inner)
             {
-                _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-                _logger = _loggerFactory.CreateLogger<VssConnectionWrapper>();
+                ArgumentNullException.ThrowIfNull(loggerFactory);
+                _logger = loggerFactory.CreateLogger<ProjectHttpClientWrapper>();
                 _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             }
 
@@ -47,72 +74,44 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 _inner.Dispose();
             }
 
-            public IProjectHttpClient GetProjectHttpClient()
+            public Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken) =>
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
+                    .ExecuteAsync(_ => _inner.GetProject(projectId), cancellationToken);
+        }
+
+        private class BuildHttpClientWrapper : IBuildHttpClient
+        {
+            private readonly ILogger<BuildHttpClientWrapper> _logger;
+            private readonly WebApi.BuildHttpClient _inner;
+
+            public BuildHttpClientWrapper(ILoggerFactory loggerFactory, WebApi.BuildHttpClient inner)
             {
-                return new ProjectHttpClientWrapper(_loggerFactory, _inner.GetClient<ProjectHttpClient>());
+                ArgumentNullException.ThrowIfNull(loggerFactory);
+                _logger = loggerFactory.CreateLogger<BuildHttpClientWrapper>();
+                _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             }
 
-            public IBuildHttpClient GetBuildHttpClient()
+            public void Dispose()
             {
-                return new BuildHttpClientWrapper(_loggerFactory, _inner.GetClient<WebApi.BuildHttpClient>());
+                _inner.Dispose();
             }
 
-            private class ProjectHttpClientWrapper : IProjectHttpClient
-            {
-                private readonly ILogger<ProjectHttpClientWrapper> _logger;
-                private readonly ProjectHttpClient _inner;
+            public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken) =>
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
+                    .ExecuteAsync(ct => _inner.AddBuildTagAsync(project, buildId, tag, cancellationToken: ct), cancellationToken);
 
-                public ProjectHttpClientWrapper(ILoggerFactory loggerFactory, ProjectHttpClient inner)
-                {
-                    ArgumentNullException.ThrowIfNull(loggerFactory);
-                    _logger = loggerFactory.CreateLogger<ProjectHttpClientWrapper>();
-                    _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-                }
+            public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId, CancellationToken cancellationToken) =>
+                _inner.GetBuildAsync(projectId, buildId, cancellationToken: cancellationToken);
 
-                public void Dispose()
-                {
-                    _inner.Dispose();
-                }
+            public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, CancellationToken cancellationToken, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
+                    .ExecuteAsync(ct => _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter, cancellationToken: ct), cancellationToken);
 
-                public Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken) =>
-                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                        .ExecuteAsync(_ => _inner.GetProject(projectId), cancellationToken);
-            }
+            public Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId, CancellationToken cancellationToken) =>
+                _inner.GetBuildTimelineAsync(projectId, buildId, cancellationToken: cancellationToken);
 
-            private class BuildHttpClientWrapper : IBuildHttpClient
-            {
-                private readonly ILogger<BuildHttpClientWrapper> _logger;
-                private readonly WebApi.BuildHttpClient _inner;
-
-                public BuildHttpClientWrapper(ILoggerFactory loggerFactory, WebApi.BuildHttpClient inner)
-                {
-                    ArgumentNullException.ThrowIfNull(loggerFactory);
-                    _logger = loggerFactory.CreateLogger<BuildHttpClientWrapper>();
-                    _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-                }
-
-                public void Dispose()
-                {
-                    _inner.Dispose();
-                }
-
-                public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken) =>
-                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                        .ExecuteAsync(ct => _inner.AddBuildTagAsync(project, buildId, tag, cancellationToken: ct), cancellationToken);
-
-                public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId, CancellationToken cancellationToken) =>
-                    _inner.GetBuildAsync(projectId, buildId, cancellationToken: cancellationToken);
-
-                public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, CancellationToken cancellationToken, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
-                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                        .ExecuteAsync(ct => _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter, cancellationToken: ct), cancellationToken);
-
-                public Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId, CancellationToken cancellationToken) =>
-                    _inner.GetBuildTimelineAsync(projectId, buildId, cancellationToken: cancellationToken);
-
-                public Task<WebApi.Build> QueueBuildAsync(WebApi.Build build, CancellationToken cancellationToken) =>
-                    _inner.QueueBuildAsync(build, cancellationToken: cancellationToken);
-            }
+            public Task<WebApi.Build> QueueBuildAsync(WebApi.Build build, CancellationToken cancellationToken) =>
+                _inner.QueueBuildAsync(build, cancellationToken: cancellationToken);
         }
     }
 }

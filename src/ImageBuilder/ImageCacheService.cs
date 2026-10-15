@@ -114,35 +114,35 @@ public class ImageCacheService : IImageCacheService
             }
         }
 
-        // If this Dockerfile has been built and published before
-        if (srcPlatformData != null)
+        if (srcPlatformData is null)
         {
-            bool isCachedImage = await CheckForCachedImageFromImageInfoAsync(
-                platformData.PlatformInfo,
-                srcPlatformData,
-                imageDigestCache,
-                imageNameResolver,
-                sourceRepoUrl,
-                isLocalBaseImageExpected,
-                isDryRun,
-                cancellationToken);
-
-            if (isCachedImage)
-            {
-                isNewCacheHit = true;
-                cacheState = ImageCacheState.Cached;
-                if (!CachedPlatformHasAllTagsPublished(srcPlatformData))
-                {
-                    cacheState = ImageCacheState.CachedWithMissingTags;
-                }
-                lock (_cachedPlatformsLock)
-                {
-                    _cachedPlatforms[cacheKey] = srcPlatformData;
-                }
-            }
+            return CreateCacheMissResult(null, CacheMissReason.NoPreviousImageInfo);
         }
 
-        return new ImageCacheResult(cacheState, isNewCacheHit, srcPlatformData);
+        ImageCacheResult result = await CheckForCachedImageFromImageInfoAsync(
+            platformData.PlatformInfo,
+            srcPlatformData,
+            imageDigestCache,
+            imageNameResolver,
+            sourceRepoUrl,
+            isLocalBaseImageExpected,
+            isDryRun,
+            cancellationToken);
+
+        if (result.State == ImageCacheState.NotCached)
+        {
+            return result;
+        }
+
+        cacheState = CachedPlatformHasAllTagsPublished(srcPlatformData)
+            ? ImageCacheState.Cached
+            : ImageCacheState.CachedWithMissingTags;
+        lock (_cachedPlatformsLock)
+        {
+            _cachedPlatforms[cacheKey] = srcPlatformData;
+        }
+
+        return result with { State = cacheState };
     }
 
     /// <summary>
@@ -157,7 +157,7 @@ public class ImageCacheService : IImageCacheService
     /// Determines whether a previously published image can be reused by comparing the base image
     /// digest and Dockerfile commit against the current state.
     /// </summary>
-    private async Task<bool> CheckForCachedImageFromImageInfoAsync(
+    private async Task<ImageCacheResult> CheckForCachedImageFromImageInfoAsync(
         PlatformInfo platform,
         PlatformData srcPlatformData,
         ImageDigestCache imageDigestCache,
@@ -169,32 +169,40 @@ public class ImageCacheService : IImageCacheService
     {
         _logger.LogInformation("Checking for cached image for '{DockerfilePath}'", platform.DockerfilePathRelativeToManifest);
 
-        // If the previously published image was based on an image that is still the latest version AND
-        // the Dockerfile hasn't changed since it was last published
-        if (await IsBaseImageDigestUpToDateAsync(
-                platform,
-                srcPlatformData,
-                imageDigestCache,
-                imageNameResolver,
-                isLocalBaseImageExpected,
-                isDryRun,
-                cancellationToken) &&
-            IsDockerfileUpToDate(platform, srcPlatformData, sourceRepoUrl))
+        CacheMissReason baseImageMissReason = await GetBaseImageMissReasonAsync(
+            platform,
+            srcPlatformData,
+            imageDigestCache,
+            imageNameResolver,
+            isLocalBaseImageExpected,
+            isDryRun,
+            cancellationToken);
+
+        if (baseImageMissReason != CacheMissReason.None)
         {
-            return true;
+            return CreateCacheMissResult(srcPlatformData, baseImageMissReason);
         }
 
-        _logger.LogInformation("CACHE MISS");
-        _logger.LogInformation(string.Empty);
+        if (!IsDockerfileUpToDate(platform, srcPlatformData, sourceRepoUrl))
+        {
+            return CreateCacheMissResult(srcPlatformData, CacheMissReason.DockerfileChanged);
+        }
 
-        return false;
+        return new ImageCacheResult(ImageCacheState.Cached, IsNewCacheHit: true, Platform: srcPlatformData);
+    }
+
+    private ImageCacheResult CreateCacheMissResult(PlatformData? platform, CacheMissReason reason)
+    {
+        _logger.LogInformation("CACHE MISSED: {MissReason}", reason);
+        _logger.LogInformation(string.Empty);
+        return new ImageCacheResult(ImageCacheState.NotCached, IsNewCacheHit: false, Platform: platform, MissReason: reason);
     }
 
     /// <summary>
     /// Checks whether the base image digest recorded in image-info matches the current digest
     /// available from the registry.
     /// </summary>
-    private async Task<bool> IsBaseImageDigestUpToDateAsync(
+    private async Task<CacheMissReason> GetBaseImageMissReasonAsync(
         PlatformInfo platform,
         PlatformData srcPlatformData,
         ImageDigestCache imageDigestCache,
@@ -208,7 +216,7 @@ public class ImageCacheService : IImageCacheService
         if (platform.FinalStageFromImage is null)
         {
             _logger.LogInformation("Image does not have a base image. By default, it is considered up-to-date.");
-            return true;
+            return CacheMissReason.None;
         }
 
         string queryImage = imageNameResolver.GetFinalStageImageNameForDigestQuery(platform);
@@ -249,7 +257,21 @@ public class ImageCacheService : IImageCacheService
         _logger.LogInformation("Image info's base image digest SHA: {ImageInfoSha}", imageInfoSha);
         _logger.LogInformation("Latest base image digest SHA: {CurrentSha}", currentSha);
         _logger.LogInformation("Base image digests match: {BaseImageDigestMatches}", baseImageDigestMatches);
-        return baseImageDigestMatches;
+        if (baseImageDigestMatches)
+        {
+            return CacheMissReason.None;
+        }
+
+        if (currentSha is null)
+        {
+            return isLocalImageExpected
+                ? CacheMissReason.LocalImageDigestUnavailable
+                : CacheMissReason.RegistryImageUnavailable;
+        }
+
+        return srcPlatformData.BaseImageDigest is null
+            ? CacheMissReason.NoPreviousBaseImageDigest
+            : CacheMissReason.BaseImageDigestChanged;
     }
 
     /// <summary>
@@ -307,6 +329,19 @@ public enum ImageCacheState
     /// </summary>
     CachedWithMissingTags = Cached | 2
 }
+/// <summary>
+/// Explains why a previously built image cannot be reused.
+/// </summary>
+public enum CacheMissReason
+{
+    None,
+    NoPreviousImageInfo,
+    DockerfileChanged,
+    BaseImageDigestChanged,
+    RegistryImageUnavailable,
+    LocalImageDigestUnavailable,
+    NoPreviousBaseImageDigest
+}
 
 /// <summary>
 /// The result of checking whether an image is cached.
@@ -314,4 +349,9 @@ public enum ImageCacheState
 /// <param name="State">The cache state of the image.</param>
 /// <param name="IsNewCacheHit">Whether this is a newly discovered cache hit (not previously known in this session).</param>
 /// <param name="Platform">The source platform data associated with the cached image, if available.</param>
-public record ImageCacheResult(ImageCacheState State, bool IsNewCacheHit, PlatformData? Platform);
+/// <param name="MissReason">Why the image cannot be reused; None for cache hits.</param>
+public record ImageCacheResult(
+    ImageCacheState State,
+    bool IsNewCacheHit,
+    PlatformData? Platform,
+    CacheMissReason MissReason = CacheMissReason.None);

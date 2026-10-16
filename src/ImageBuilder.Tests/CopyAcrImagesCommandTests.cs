@@ -31,39 +31,38 @@ public class CopyAcrImagesCommandTests
     [TestMethod]
     public async Task CopyAcrImagesCommand_CustomDockerfileName()
     {
-        using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        Mock<ICopyImageService> copyImageServiceMock = new();
+
+        CopyAcrImagesCommand command = new(
+            TestHelper.CreateManifestJsonService(),
+            copyImageServiceMock.Object,
+            Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+            TestHelper.CreateArtifactService(tempFolderContext.Path));
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+        command.Options.SourceRegistry = SourceRegistry;
+        command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+
+        const string runtimeRelativeDir = "1.0/runtime/os";
+        Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+        string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+        Manifest manifest = ManifestHelper.CreateManifest(
+            ManifestHelper.CreateRepo("runtime",
+                ManifestHelper.CreateImage(
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
+        );
+        manifest.Registry = DestinationRegistry;
+
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+        RepoData runtimeRepo;
+
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            Mock<ICopyImageService> copyImageServiceMock = new();
-
-            CopyAcrImagesCommand command = new(
-                TestHelper.CreateManifestJsonService(),
-                copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
-                TestHelper.CreateArtifactService(tempFolderContext.Path));
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
-            command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-
-            const string runtimeRelativeDir = "1.0/runtime/os";
-            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo("runtime",
-                    ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
-            );
-            manifest.Registry = DestinationRegistry;
-
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            RepoData runtimeRepo;
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
+            Repos =
                 {
                     {
                         runtimeRepo = new RepoData
@@ -88,33 +87,32 @@ public class CopyAcrImagesCommandTests
                         }
                     }
                 }
-            };
+        };
 
-            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+        File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
-                .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
-                .ToList();
+        IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
+            .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
+            .ToList();
 
-            foreach (string expectedTag in expectedTags)
-            {
-                copyImageServiceMock.Verify(o =>
-                    o.ImportImageAsync(
-                        new string[] { expectedTag },
-                        manifest.Registry,
-                        expectedTag,
-                        true,
-                        It.IsAny<CancellationToken>(),
-                        SourceRegistry,
-                        null,
-                        false));
-            }
-
-            copyImageServiceMock.VerifyNoOtherCalls();
+        foreach (string expectedTag in expectedTags)
+        {
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { expectedTag },
+                    manifest.Registry,
+                    expectedTag,
+                    true,
+                    It.IsAny<CancellationToken>(),
+                    SourceRegistry,
+                    null,
+                    false));
         }
+
+        copyImageServiceMock.VerifyNoOtherCalls();
     }
 
     /// <summary>
@@ -123,40 +121,39 @@ public class CopyAcrImagesCommandTests
     [TestMethod]
     public async Task CopyAcrImagesCommand_SharedDockerfile()
     {
-        using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        Mock<ICopyImageService> copyImageServiceMock = new Mock<ICopyImageService>();
+
+        CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+            TestHelper.CreateManifestJsonService(),
+            copyImageServiceMock.Object,
+            Mock.Of<ILogger<CopyAcrImagesCommand>>(),
+            TestHelper.CreateArtifactService(tempFolderContext.Path));
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+        command.Options.SourceRegistry = SourceRegistry;
+        command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+
+        const string runtimeRelativeDir = "1.0/runtime/os";
+        Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+        string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+        Manifest manifest = ManifestHelper.CreateManifest(
+            ManifestHelper.CreateRepo("runtime",
+                ManifestHelper.CreateImage(
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
+        );
+        manifest.Registry = DestinationRegistry;
+
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+        RepoData runtimeRepo;
+
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            Mock<ICopyImageService> copyImageServiceMock = new Mock<ICopyImageService>();
-
-            CopyAcrImagesCommand command = new CopyAcrImagesCommand(
-                TestHelper.CreateManifestJsonService(),
-                copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyAcrImagesCommand>>(),
-                TestHelper.CreateArtifactService(tempFolderContext.Path));
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
-            command.Options.SourceRegistry = SourceRegistry;
-            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-
-            const string runtimeRelativeDir = "1.0/runtime/os";
-            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo("runtime",
-                    ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
-            );
-            manifest.Registry = DestinationRegistry;
-
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            RepoData runtimeRepo;
-
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
+            Repos =
                 {
                     {
                         runtimeRepo = new RepoData
@@ -189,36 +186,35 @@ public class CopyAcrImagesCommandTests
                         }
                     }
                 }
-            };
+        };
 
-            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+        File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            List<string> expectedTags = new List<string>
+        List<string> expectedTags = new List<string>
             {
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1a",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1b",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2a"
             };
 
-            foreach (string expectedTag in expectedTags)
-            {
-                copyImageServiceMock.Verify(o =>
-                    o.ImportImageAsync(
-                        new string[] { expectedTag },
-                        manifest.Registry,
-                        expectedTag,
-                        true,
-                        It.IsAny<CancellationToken>(),
-                        SourceRegistry,
-                        null,
-                        false));
-            }
-
-            copyImageServiceMock.VerifyNoOtherCalls();
+        foreach (string expectedTag in expectedTags)
+        {
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { expectedTag },
+                    manifest.Registry,
+                    expectedTag,
+                    true,
+                    It.IsAny<CancellationToken>(),
+                    SourceRegistry,
+                    null,
+                    false));
         }
+
+        copyImageServiceMock.VerifyNoOtherCalls();
     }
 
     /// <summary>

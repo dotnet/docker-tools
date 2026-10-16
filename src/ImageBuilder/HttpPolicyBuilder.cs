@@ -38,7 +38,7 @@ public class HttpPolicyBuilder
     {
         IEnumerable<TimeSpan> sleepDurations = Enumerable
             .Repeat(retryFrequency.TotalSeconds, (int)(timeout.TotalSeconds / retryFrequency.TotalSeconds))
-            .Select(val => TimeSpan.FromSeconds(val));
+            .Select(TimeSpan.FromSeconds);
         _policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
             .WaitAndRetryAsync(sleepDurations, (result, duration) =>
             {

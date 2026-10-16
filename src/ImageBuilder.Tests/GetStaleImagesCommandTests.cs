@@ -106,14 +106,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Only one of the images has a changed digest
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        // Only one of the images has a changed digest
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -121,10 +120,9 @@ public class GetStaleImagesCommandTests
                         dockerfile1Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -197,15 +195,14 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // The base image of the final stage has changed for only one of the images.
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        // The base image of the final stage has changed for only one of the images.
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -213,10 +210,9 @@ public class GetStaleImagesCommandTests
                         dockerfile1Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -263,14 +259,13 @@ public class GetStaleImagesCommandTests
         // This should cause the subscription to be processed.
         const string commandOsType = "windows";
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -279,10 +274,9 @@ public class GetStaleImagesCommandTests
                         dockerfile3Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -329,18 +323,16 @@ public class GetStaleImagesCommandTests
         // This should cause the subscription to be ignored.
         const string commandOsType = "linux";
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
             {
             };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -381,15 +373,14 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Since neither of the images existed in the image info data, both should be queued.
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        // Since neither of the images existed in the image info data, both should be queued.
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -398,10 +389,9 @@ public class GetStaleImagesCommandTests
                         dockerfile2Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -558,14 +548,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -580,10 +569,9 @@ public class GetStaleImagesCommandTests
                         dockerfile2Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -652,15 +640,14 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Both of the images has a changed digest
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        // Both of the images has a changed digest
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -669,13 +656,12 @@ public class GetStaleImagesCommandTests
                         dockerfile2Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
+        fixture.Verify(expectedPathsBySubscription);
 
-            fixture.ManifestServiceMock
-                .Verify(o => o.GetManifestAsync(baseImage, false, It.IsAny<CancellationToken>()), Times.Once);
-        }
+        fixture.ManifestServiceMock
+            .Verify(o => o.GetManifestAsync(baseImage, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     /// <summary>
@@ -736,17 +722,15 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // No paths are expected
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>();
+        // No paths are expected
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>();
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -804,15 +788,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture = new(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // No paths are expected
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new();
+        // No paths are expected
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new();
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -935,14 +917,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -953,10 +934,9 @@ public class GetStaleImagesCommandTests
                         sdkDockerfilePath,
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1083,14 +1063,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new()
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new()
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -1105,10 +1084,9 @@ public class GetStaleImagesCommandTests
                         JammyChiseledRuntimeDepsDockerfilePath,
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1181,14 +1159,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -1200,10 +1177,9 @@ public class GetStaleImagesCommandTests
                         otherDockerfilePath
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1270,15 +1246,14 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Only one of the images has a changed digest
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        // Only one of the images has a changed digest
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -1286,10 +1261,9 @@ public class GetStaleImagesCommandTests
                         dockerfile1Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1347,14 +1321,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -1362,10 +1335,9 @@ public class GetStaleImagesCommandTests
                         dockerfile1Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1429,17 +1401,15 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture =
-            new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture =
+            new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // No paths are expected
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>();
+        // No paths are expected
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>();
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1505,14 +1475,13 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Only one of the images has a changed digest
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        // Only one of the images has a changed digest
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptionInfos[0].Subscription,
                     new List<string>
@@ -1520,10 +1489,9 @@ public class GetStaleImagesCommandTests
                         dockerfile1Path
                     }
                 }
-            };
+        };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1590,20 +1558,19 @@ public class GetStaleImagesCommandTests
             }
         };
 
-        using (TestFixture fixture = new(subscriptionInfos, dockerfileInfos))
-        {
-            fixture.ImageDigests.Add($"{CustomRegistry}/base1", "alternate-base1digest");
-            fixture.ImageDigests.Add($"{CustomRegistry}/base2", "alternate-base2digest");
+        using TestFixture fixture = new(subscriptionInfos, dockerfileInfos);
+        fixture.ImageDigests.Add($"{CustomRegistry}/base1", "alternate-base1digest");
+        fixture.ImageDigests.Add($"{CustomRegistry}/base2", "alternate-base2digest");
 
-            // Override the image tags to target a custom registry
-            fixture.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
-            fixture.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry.io/$1";
+        // Override the image tags to target a custom registry
+        fixture.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
+        fixture.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry.io/$1";
 
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Only one of the images has a changed digest
-            // It should be comparing against the digest of the image from the override.
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
+        // Only one of the images has a changed digest
+        // It should be comparing against the digest of the image from the override.
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
             {
                 {
                     subscriptionInfos[0].Subscription,
@@ -1614,8 +1581,7 @@ public class GetStaleImagesCommandTests
                 }
             };
 
-            fixture.Verify(expectedPathsBySubscription);
-        }
+        fixture.Verify(expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -1987,28 +1953,16 @@ public class GetStaleImagesCommandTests
         }
     }
 
-    private class DockerfileInfo
+    private class DockerfileInfo(string dockerfilePath, params GetStaleImagesCommandTests.FromImageInfo[] fromImages)
     {
-        public DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
-        {
-            DockerfilePath = dockerfilePath;
-            FromImages = fromImages;
-        }
-
-        public string DockerfilePath { get; }
-        public FromImageInfo[] FromImages { get; }
+        public string DockerfilePath { get; } = dockerfilePath;
+        public FromImageInfo[] FromImages { get; } = fromImages;
     }
 
-    private class FromImageInfo
+    private class FromImageInfo(string name, string digest)
     {
-        public FromImageInfo (string name, string digest)
-        {
-            Name = name;
-            Digest = digest;
-        }
-
-        public string Digest { get; }
-        public string Name { get; }
+        public string Digest { get; } = digest;
+        public string Name { get; } = name;
     }
 
     private class PagedList<T> : List<T>, IPagedList<T>
@@ -2020,17 +1974,10 @@ public class GetStaleImagesCommandTests
         }
     }
 
-    private class SubscriptionInfo
+    private class SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
     {
-        public SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
-        {
-            Subscription = subscription;
-            Manifest = manifest;
-            ImageInfo = imageInfo;
-        }
-
-        public Subscription Subscription { get; }
-        public Manifest Manifest { get; }
-        public ImageArtifactDetails ImageInfo { get; }
+        public Subscription Subscription { get; } = subscription;
+        public Manifest Manifest { get; } = manifest;
+        public ImageArtifactDetails ImageInfo { get; } = imageInfo;
     }
 }

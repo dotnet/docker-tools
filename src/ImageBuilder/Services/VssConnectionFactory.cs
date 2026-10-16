@@ -13,16 +13,10 @@ using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services;
 
-internal class VssConnectionFactory : IVssConnectionFactory
+internal class VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILoggerFactory loggerFactory) : IVssConnectionFactory
 {
-    private readonly ILogger<VssConnectionFactory> _logger;
-    private readonly ILoggerFactory _loggerFactory;
-
-    public VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILoggerFactory loggerFactory)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-    }
+    private readonly ILogger<VssConnectionFactory> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
     public IVssConnection Create(Uri baseUrl, VssCredentials credentials)
     {

@@ -11,22 +11,15 @@ using Microsoft.DotNet.ImageBuilder.Services;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions>
+public class IngestKustoImageInfoCommand(
+    IManifestJsonService manifestJsonService,
+    ILogger<IngestKustoImageInfoCommand> logger,
+    IKustoClient kustoClient,
+    IArtifactService artifactService) : ManifestCommand<IngestKustoImageInfoOptions>(manifestJsonService)
 {
-    private readonly IKustoClient _kustoClient;
-    private readonly ILogger<IngestKustoImageInfoCommand> _logger;
-    private readonly IArtifactService _artifactService;
-
-    public IngestKustoImageInfoCommand(
-        IManifestJsonService manifestJsonService,
-        ILogger<IngestKustoImageInfoCommand> logger,
-        IKustoClient kustoClient,
-        IArtifactService artifactService) : base(manifestJsonService)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
-        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-    }
+    private readonly IKustoClient _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
+    private readonly ILogger<IngestKustoImageInfoCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
 
     protected override string Description => "Ingests image info data into Kusto";
 

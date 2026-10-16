@@ -77,8 +77,10 @@ public class SignImagesCommand(
 
         logger.LogInformation("Successfully signed {Count} image(s).", results.Count);
         foreach (ImageSigningResult result in results)
+        {
             logger.LogInformation(
                 "{ImageName}: signature digest {SignatureDigest}",
                 result.ImageName, result.SignatureDigest);
+        }
     }
 }

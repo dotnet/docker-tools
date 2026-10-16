@@ -8,15 +8,10 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public abstract class ManifestCommand<TOptions> : Command<TOptions>, IManifestCommand
+public abstract class ManifestCommand<TOptions>(IManifestJsonService manifestJsonService) : Command<TOptions>, IManifestCommand
     where TOptions : ManifestOptions, new()
 {
-    private readonly IManifestJsonService _manifestJsonService;
-
-    protected ManifestCommand(IManifestJsonService manifestJsonService)
-    {
-        _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
-    }
+    private readonly IManifestJsonService _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
 
     public ManifestInfo Manifest { get; private set; }
 

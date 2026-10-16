@@ -12,18 +12,12 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
+public class TrimUnchangedPlatformsCommand(
+    ILogger<TrimUnchangedPlatformsCommand> logger,
+    IArtifactService artifactService) : Command<TrimUnchangedPlatformsOptions>
 {
-    private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
-    private readonly IArtifactService _artifactService;
-
-    public TrimUnchangedPlatformsCommand(
-        ILogger<TrimUnchangedPlatformsCommand> logger,
-        IArtifactService artifactService)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-    }
+    private readonly ILogger<TrimUnchangedPlatformsCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
 
     protected override string Description => "Trims platforms marked as unchanged from the image info file";
 

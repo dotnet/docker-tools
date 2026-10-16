@@ -44,32 +44,31 @@ public class PublishImageInfoCommandTests : IDisposable
     [TestMethod]
     public async Task PublishImageInfoCommand_HappyPath()
     {
-        using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
-        {
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string repo2Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
-            Manifest manifest = CreateManifest(
-                CreateRepo("repo1",
-                    CreateImage(
-                        new Platform[]
-                        {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string repo2Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo1",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(repo1Image1DockerfilePath, new string[] { "tag1" })
-                        },
-                        productVersion: "1.0")),
-                CreateRepo("repo2",
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0")),
+            CreateRepo("repo2",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(repo2Image2DockerfilePath, new string[] { "tag1" })
-                        },
-                        productVersion: "2.0"))
-            );
+                    },
+                    productVersion: "2.0"))
+        );
 
-            RepoData repo2;
+        RepoData repo2;
 
-            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
+        ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
                 {
                     new RepoData
                     {
@@ -120,61 +119,60 @@ public class PublishImageInfoCommandTests : IDisposable
                         }
                     }
                 }
-            };
+        };
 
-            string file = Path.Combine(tempFolderContext.Path, "image-info.json");
-            File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
+        string file = Path.Combine(tempFolderContext.Path, "image-info.json");
+        File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
 
-            GitOptions gitOptions = new GitOptions
+        GitOptions gitOptions = new GitOptions
+        {
+            GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "token"),
+            Repo = "PublishImageInfoCommand_ReplaceContent",
+            Branch = "testBranch",
+            Path = "imageinfo.json",
+            Email = "test@contoso.com",
+            Username = "test"
+        };
+
+        AzdoOptions azdoOptions = new AzdoOptions
+        {
+            AccessToken = "azdo-token",
+            AzdoBranch = "testBranch",
+            AzdoRepo = "testRepo",
+            Organization = "azdo-org",
+            Project = "azdo-project",
+            AzdoPath = "imageinfo.json"
+        };
+
+        Mock<IRepository> repositoryMock = GetRepositoryMock();
+        Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path);
+
+        string actualImageArtifactDetailsContents = null;
+        gitServiceMock
+            .Setup(o => o.Stage(It.IsAny<IRepository>(), It.IsAny<string>()))
+            .Callback((IRepository repo, string path) =>
             {
-                GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "token"),
-                Repo = "PublishImageInfoCommand_ReplaceContent",
-                Branch = "testBranch",
-                Path = "imageinfo.json",
-                Email = "test@contoso.com",
-                Username = "test"
-            };
+                actualImageArtifactDetailsContents = File.ReadAllText(path);
+            });
 
-            AzdoOptions azdoOptions = new AzdoOptions
-            {
-                AccessToken = "azdo-token",
-                AzdoBranch = "testBranch",
-                AzdoRepo = "testRepo",
-                Organization = "azdo-org",
-                Project = "azdo-project",
-                AzdoPath = "imageinfo.json"
-            };
+        PublishImageInfoCommand command = new(
+            TestHelper.CreateManifestJsonService(),
+            gitServiceMock.Object,
+            Mock.Of<IOctokitClientFactory>(),
+            Mock.Of<ILogger<PublishImageInfoCommand>>(),
+            TestHelper.CreateArtifactService(tempFolderContext.Path));
+        command.Options.ImageInfoPath = file;
+        command.Options.GitOptions = gitOptions;
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
-            Mock<IRepository> repositoryMock = GetRepositoryMock();
-            Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path);
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
-            string actualImageArtifactDetailsContents = null;
-            gitServiceMock
-                .Setup(o => o.Stage(It.IsAny<IRepository>(), It.IsAny<string>()))
-                .Callback((IRepository repo, string path) =>
-                {
-                    actualImageArtifactDetailsContents = File.ReadAllText(path);
-                });
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            PublishImageInfoCommand command = new(
-                TestHelper.CreateManifestJsonService(),
-                gitServiceMock.Object,
-                Mock.Of<IOctokitClientFactory>(),
-                Mock.Of<ILogger<PublishImageInfoCommand>>(),
-                TestHelper.CreateArtifactService(tempFolderContext.Path));
-            command.Options.ImageInfoPath = file;
-            command.Options.GitOptions = gitOptions;
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        actualImageArtifactDetailsContents.Trim().ShouldBe(JsonHelper.SerializeObject(srcImageArtifactDetails));
 
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            actualImageArtifactDetailsContents.Trim().ShouldBe(JsonHelper.SerializeObject(srcImageArtifactDetails));
-
-            VerifyMocks(repositoryMock);
-        }
+        VerifyMocks(repositoryMock);
     }
     private static void VerifyMocks(Mock<IRepository> repositoryMock)
     {

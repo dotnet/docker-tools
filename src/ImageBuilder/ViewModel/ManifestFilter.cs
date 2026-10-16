@@ -9,19 +9,14 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel;
 
-public class ManifestFilter
+public class ManifestFilter(IEnumerable<string> repos)
 {
     public string? IncludeArchitecture { get; set; }
     public string? IncludeOsType { get; set; }
-    public IEnumerable<string> IncludeRepos { get; set; }
+    public IEnumerable<string> IncludeRepos { get; set; } = repos;
     public IEnumerable<string>? IncludeOsVersions { get; set; }
     public IEnumerable<string>? IncludePaths { get; set; }
     public IEnumerable<string>? IncludeProductVersions { get; set; }
-
-    public ManifestFilter(IEnumerable<string> repos)
-    {
-        IncludeRepos = repos;
-    }
 
     public static string GetFilterRegexPattern(params string[] patterns)
     {

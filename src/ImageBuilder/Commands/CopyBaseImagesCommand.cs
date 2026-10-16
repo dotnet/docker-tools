@@ -67,7 +67,7 @@ public class CopyBaseImagesCommand(
         }
 
         IEnumerable<Task> copyImageTasks = manifests
-            .SelectMany(manifest => GetFromImages(manifest))
+            .SelectMany(GetFromImages)
             .Distinct()
             .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName, cancellationToken));
 

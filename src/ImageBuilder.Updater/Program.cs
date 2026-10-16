@@ -166,18 +166,26 @@ static async Task<string> RunProcessAsync(
         cancellationToken);
 
     if (writeOutput && !string.IsNullOrWhiteSpace(result.StandardOutput))
+    {
         Console.WriteLine(result.StandardOutput.TrimEnd());
+    }
 
     if (writeOutput && !string.IsNullOrWhiteSpace(result.StandardError))
+    {
         Console.Error.WriteLine(result.StandardError.TrimEnd());
+    }
 
     if (result.ExitCode != 0)
+    {
         throw new InvalidOperationException($"Process '{fileName}' exited with code {result.ExitCode}.");
+    }
 
     string output = result.StandardOutput.Trim();
 
     if (!writeOutput && string.IsNullOrWhiteSpace(output))
+    {
         throw new InvalidOperationException($"Process '{fileName}' did not produce the expected output.");
+    }
 
     return output;
 }

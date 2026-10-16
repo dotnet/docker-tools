@@ -11,22 +11,15 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions>
+public class WaitForMcrImageIngestionCommand(
+    IManifestJsonService manifestJsonService,
+    ILogger<WaitForMcrImageIngestionCommand> logger,
+    IMarImageIngestionReporter imageIngestionReporter,
+    IArtifactService artifactService) : ManifestCommand<WaitForMcrImageIngestionOptions>(manifestJsonService)
 {
-    private readonly ILogger<WaitForMcrImageIngestionCommand> _logger;
-    private readonly IMarImageIngestionReporter _imageIngestionReporter;
-    private readonly IArtifactService _artifactService;
-
-    public WaitForMcrImageIngestionCommand(
-        IManifestJsonService manifestJsonService,
-        ILogger<WaitForMcrImageIngestionCommand> logger,
-        IMarImageIngestionReporter imageIngestionReporter,
-        IArtifactService artifactService) : base(manifestJsonService)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));
-        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-    }
+    private readonly ILogger<WaitForMcrImageIngestionCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IMarImageIngestionReporter _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
 
     protected override string Description => "Waits for images to complete ingestion into MCR";
 

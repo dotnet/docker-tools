@@ -21,21 +21,14 @@ public interface IMarImageIngestionReporter
         DateTime? minimumQueueTime,
         CancellationToken cancellationToken);
 }
-public class MarImageIngestionReporter : IMarImageIngestionReporter
+public class MarImageIngestionReporter(
+    ILoggerFactory loggerFactory,
+    IMcrStatusClientFactory mcrStatusClientFactory,
+    IEnvironmentService environmentService) : IMarImageIngestionReporter
 {
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
-    private readonly IEnvironmentService _environmentService;
-
-    public MarImageIngestionReporter(
-        ILoggerFactory loggerFactory,
-        IMcrStatusClientFactory mcrStatusClientFactory,
-        IEnvironmentService environmentService)
-    {
-        _loggerFactory = loggerFactory;
-        _mcrStatusClientFactory = mcrStatusClientFactory;
-        _environmentService = environmentService;
-    }
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
+    private readonly IMcrStatusClientFactory _mcrStatusClientFactory = mcrStatusClientFactory;
+    private readonly IEnvironmentService _environmentService = environmentService;
 
     public Task ReportImageStatusesAsync(
         IServiceConnection? serviceConnection,
@@ -60,25 +53,15 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         return reporter.ReportImageStatusesAsync(digestInfos, cancellationToken);
     }
 
-    private class ReporterImpl
+    private class ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
+        TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
     {
-        private readonly ILogger<ReporterImpl> _logger;
-        private readonly IMcrStatusClient _statusClient;
-        private readonly IEnvironmentService _environmentService;
-        private readonly TimeSpan _timeout;
-        private readonly TimeSpan _requeryDelay;
-        private readonly DateTime? _minimumQueueTime;
-
-        public ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
-            TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
-        {
-            _logger = loggerFactory.CreateLogger<ReporterImpl>();
-            _statusClient = statusClient;
-            _environmentService = environmentService;
-            _timeout = timeout;
-            _requeryDelay = requeryDelay;
-            _minimumQueueTime = minimumQueueTime;
-        }
+        private readonly ILogger<ReporterImpl> _logger = loggerFactory.CreateLogger<ReporterImpl>();
+        private readonly IMcrStatusClient _statusClient = statusClient;
+        private readonly IEnvironmentService _environmentService = environmentService;
+        private readonly TimeSpan _timeout = timeout;
+        private readonly TimeSpan _requeryDelay = requeryDelay;
+        private readonly DateTime? _minimumQueueTime = minimumQueueTime;
 
         public async Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, CancellationToken cancellationToken)
         {

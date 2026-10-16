@@ -13,21 +13,14 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions>
+public class CopyAcrImagesCommand(
+    IManifestJsonService manifestJsonService,
+    ICopyImageService copyImageService,
+    ILogger<CopyAcrImagesCommand> logger,
+    IArtifactService artifactService) : CopyImagesCommand<CopyAcrImagesOptions>(manifestJsonService, copyImageService, logger)
 {
-    private readonly ILogger _logger;
-    private readonly IArtifactService _artifactService;
-
-    public CopyAcrImagesCommand(
-        IManifestJsonService manifestJsonService,
-        ICopyImageService copyImageService,
-        ILogger<CopyAcrImagesCommand> logger,
-        IArtifactService artifactService)
-        : base(manifestJsonService, copyImageService, logger)
-    {
-        _logger = logger;
-        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-    }
+    private readonly ILogger _logger = logger;
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
 
     protected override string Description => "Copies the platform images and manifest lists as specified in the manifest between repositories of an ACR";
 

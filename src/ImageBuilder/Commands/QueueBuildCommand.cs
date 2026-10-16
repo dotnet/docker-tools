@@ -19,24 +19,17 @@ using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class QueueBuildCommand : Command<QueueBuildOptions>
+public class QueueBuildCommand(
+    IVssConnectionFactory connectionFactory,
+    ILogger<QueueBuildCommand> logger,
+    INotificationService notificationService) : Command<QueueBuildOptions>
 {
-    private readonly IVssConnectionFactory _connectionFactory;
-    private readonly ILogger<QueueBuildCommand> _logger;
-    private readonly INotificationService _notificationService;
+    private readonly IVssConnectionFactory _connectionFactory = connectionFactory;
+    private readonly ILogger<QueueBuildCommand> _logger = logger;
+    private readonly INotificationService _notificationService = notificationService;
 
     // The number of most recent builds that must have failed consecutively before skipping the queuing of another build
     public const int BuildFailureLimit = 3;
-
-    public QueueBuildCommand(
-        IVssConnectionFactory connectionFactory,
-        ILogger<QueueBuildCommand> logger,
-        INotificationService notificationService)
-    {
-        _connectionFactory = connectionFactory;
-        _logger = logger;
-        _notificationService = notificationService;
-    }
 
     protected override string Description => "Queues builds to update images";
 
@@ -120,37 +113,35 @@ public class QueueBuildCommand : Command<QueueBuildOptions>
         {
             (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
 
-            using (Services.IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
-            using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
-            using (IBuildHttpClient client = connection.GetBuildHttpClient())
+            using Services.IVssConnection connection = _connectionFactory.Create(baseUrl, credentials);
+            using IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient();
+            using IBuildHttpClient client = connection.GetBuildHttpClient();
+            TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
+
+            WebApi.Build build = new()
             {
-                TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
+                Project = new TeamProjectReference { Id = project.Id },
+                Definition = new WebApi.BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
+                SourceBranch = subscription.Manifest.Branch,
+                Parameters = parameters
+            };
 
-                WebApi.Build build = new()
+            inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id, cancellationToken);
+            if (!inProgressBuilds.Any())
+            {
+                (bool shouldDisallowBuild, IEnumerable<string> recentFailedBuildsLocal) =
+                    await ShouldDisallowBuildDueToRecentFailuresAsync(client, subscription.PipelineTrigger.Id, project.Id, cancellationToken);
+                recentFailedBuilds = recentFailedBuildsLocal;
+                if (shouldDisallowBuild)
                 {
-                    Project = new TeamProjectReference { Id = project.Id },
-                    Definition = new WebApi.BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
-                    SourceBranch = subscription.Manifest.Branch,
-                    Parameters = parameters
-                };
-
-                inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id, cancellationToken);
-                if (!inProgressBuilds.Any())
+                    _logger.LogInformation(
+                        PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
+                    _logger.LogInformation(PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
+                }
+                else
                 {
-                    (bool shouldDisallowBuild, IEnumerable<string> recentFailedBuildsLocal) =
-                        await ShouldDisallowBuildDueToRecentFailuresAsync(client, subscription.PipelineTrigger.Id, project.Id, cancellationToken);
-                    recentFailedBuilds = recentFailedBuildsLocal;
-                    if (shouldDisallowBuild)
-                    {
-                        _logger.LogInformation(
-                            PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
-                        _logger.LogInformation(PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
-                    }
-                    else
-                    {
-                        queuedBuild = await client.QueueBuildAsync(build, cancellationToken);
-                        await client.AddBuildTagAsync(project.Id, queuedBuild.Id, AzdoTags.AutoBuilder, cancellationToken);
-                    }
+                    queuedBuild = await client.QueueBuildAsync(build, cancellationToken);
+                    await client.AddBuildTagAsync(project.Id, queuedBuild.Id, AzdoTags.AutoBuilder, cancellationToken);
                 }
             }
         }

@@ -195,16 +195,22 @@ public static class ManifestListHelper
         foreach (PlatformInfo platform in manifestImage.AllPlatforms)
         {
             if (!TryGetPlatformTagRepresentative(repo, manifestImage, platform, out _))
+            {
                 continue;
+            }
 
             hasExpectedPlatform = true;
 
             if (ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails) is null)
+            {
                 missingPlatforms.Add(GetPlatformDescription(platform));
+            }
         }
 
         if (!hasExpectedPlatform || missingPlatforms.Count == 0)
+        {
             return null;
+        }
 
         return new ManifestListPlatformValidationIssue(manifestListTag, missingPlatforms.AsReadOnly());
     }

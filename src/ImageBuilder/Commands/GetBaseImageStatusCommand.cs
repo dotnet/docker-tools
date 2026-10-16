@@ -9,16 +9,10 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions>
+public class GetBaseImageStatusCommand(IManifestJsonService manifestJsonService, IDockerService dockerService, ILogger<GetBaseImageStatusCommand> logger) : ManifestCommand<GetBaseImageStatusOptions>(manifestJsonService)
 {
-    private readonly IDockerService _dockerService;
-    private readonly ILogger<GetBaseImageStatusCommand> _logger;
-
-    public GetBaseImageStatusCommand(IManifestJsonService manifestJsonService, IDockerService dockerService, ILogger<GetBaseImageStatusCommand> logger) : base(manifestJsonService)
-    {
-        _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IDockerService _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
+    private readonly ILogger<GetBaseImageStatusCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     protected override string Description => "Displays the status of the referenced external base images";
 

@@ -144,7 +144,7 @@ public class ManifestInfo
     /// </summary>
     public IEnumerable<PlatformInfo> GetParents(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
         platform.InternalFromImages
-            .Select(fromImage => GetPlatformByTag(fromImage))
+            .Select(GetPlatformByTag)
             .Intersect(availablePlatforms);
 
     /// <summary>

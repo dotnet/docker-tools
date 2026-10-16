@@ -10,16 +10,10 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class PullImagesCommand : ManifestCommand<PullImagesOptions>
+public class PullImagesCommand(IManifestJsonService manifestJsonService, IDockerService dockerService, ILogger<PullImagesCommand> logger) : ManifestCommand<PullImagesOptions>(manifestJsonService)
 {
-    private readonly IDockerService _dockerService;
-    private readonly ILogger<PullImagesCommand> _logger;
-
-    public PullImagesCommand(IManifestJsonService manifestJsonService, IDockerService dockerService, ILogger<PullImagesCommand> logger) : base(manifestJsonService)
-    {
-        _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IDockerService _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
+    private readonly ILogger<PullImagesCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     protected override string Description => "Pulls the images described in the manifest";
 

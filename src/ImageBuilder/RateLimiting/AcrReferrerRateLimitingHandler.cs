@@ -23,12 +23,16 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         if (!IsAcrReferrerLookup(request))
+        {
             return await base.SendAsync(request, ct);
+        }
 
         using RateLimitLease lease = await rateLimiter.AcquireAsync(request.RequestUri!.Host, ct);
 
         if (!lease.IsAcquired)
+        {
             throw new InvalidOperationException("Unable to acquire a permit from the ACR referrer rate limiter.");
+        }
 
         return await base.SendAsync(request, ct);
     }
@@ -40,7 +44,9 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
             && host.EndsWith(".azurecr.io", StringComparison.OrdinalIgnoreCase);
 
         if (!isAcrRequest)
+        {
             return false;
+        }
 
         string[] pathSegments =
             request.RequestUri?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries) ?? [];

@@ -507,7 +507,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
 
         // The sort order used here is arbitrary and simply helps the readability of the output.
         IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = (await GetPlatformsAsync(cancellationToken))
-            .GroupBy(platform => CreatePlatformId(platform))
+            .GroupBy(CreatePlatformId)
             .OrderBy(platformGroup => platformGroup.Key.OS)
             .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
             .ThenBy(platformGroup => platformGroup.Key.Architecture);

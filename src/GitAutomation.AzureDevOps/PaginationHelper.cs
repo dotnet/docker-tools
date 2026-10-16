@@ -36,7 +36,9 @@ internal static class PaginationHelper
                     ?? throw new InvalidOperationException("Azure DevOps returned null for a paged response.");
 
             foreach (T value in page.Value)
+            {
                 yield return value;
+            }
 
             continuationToken = response.Headers.TryGetValues(ContinuationTokenHeader, out IEnumerable<string>? values)
                 ? values.FirstOrDefault()

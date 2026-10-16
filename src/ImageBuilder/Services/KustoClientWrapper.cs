@@ -16,16 +16,10 @@ using Polly.Retry;
 
 namespace Microsoft.DotNet.ImageBuilder.Services;
 
-internal class KustoClientWrapper : IKustoClient
+internal class KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAzureTokenCredentialProvider tokenCredentialProvider) : IKustoClient
 {
-    private readonly ILogger<KustoClientWrapper> _logger;
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-
-    public KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAzureTokenCredentialProvider tokenCredentialProvider)
-    {
-        _logger = logger;
-        _tokenCredentialProvider = tokenCredentialProvider;
-    }
+    private readonly ILogger<KustoClientWrapper> _logger = logger;
+    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
 
     public async Task IngestFromCsvAsync(
         string csv,
@@ -42,41 +36,39 @@ internal class KustoClientWrapper : IKustoClient
         KustoConnectionStringBuilder connectionBuilder = new KustoConnectionStringBuilder(connectionString)
             .WithAadAzureTokenCredentialsAuthentication(tokenCredential);
 
-        using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
+        using IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder);
+        KustoIngestionProperties properties =
+            new(database, table) { Format = DataSourceFormat.csv };
+        StreamSourceOptions sourceOptions = new() { SourceId = Guid.NewGuid() };
+
+        AsyncRetryPolicy retryPolicy = Policy
+            .Handle<Kusto.Data.Exceptions.KustoException>()
+            .Or<Kusto.Ingest.Exceptions.KustoException>()
+            .WaitAndRetryAsync(
+                Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
+                RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _logger));
+
+        IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
+            ct => IngestFromStreamAsync(csv, client, properties, sourceOptions, ct),
+            cancellationToken);
+
+        IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
+        for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
         {
-            KustoIngestionProperties properties =
-                new(database, table) { Format = DataSourceFormat.csv };
-            StreamSourceOptions sourceOptions = new() { SourceId = Guid.NewGuid() };
+            _logger.LogInformation(
+                $"Waiting for ingestion from source ID {sourceOptions.SourceId} to complete...");
+            await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+            ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
+        }
 
-            AsyncRetryPolicy retryPolicy = Policy
-                .Handle<Kusto.Data.Exceptions.KustoException>()
-                .Or<Kusto.Ingest.Exceptions.KustoException>()
-                .WaitAndRetryAsync(
-                    Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
-                    RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _logger));
-
-            IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
-                ct => IngestFromStreamAsync(csv, client, properties, sourceOptions, ct),
-                cancellationToken);
-
-            IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
-            for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
-            {
-                _logger.LogInformation(
-                    $"Waiting for ingestion from source ID {sourceOptions.SourceId} to complete...");
-                await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
-                ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
-            }
-
-            if (ingestionStatus.Status == Status.Pending)
-            {
-                throw new InvalidOperationException($"Timeout while ingesting Kusto data.");
-            }
-            else if (ingestionStatus.Status != Status.Succeeded)
-            {
-                throw new InvalidOperationException(
-                    $"Failed to ingest Kusto data.{Environment.NewLine}{ingestionStatus.Details}");
-            }
+        if (ingestionStatus.Status == Status.Pending)
+        {
+            throw new InvalidOperationException($"Timeout while ingesting Kusto data.");
+        }
+        else if (ingestionStatus.Status != Status.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to ingest Kusto data.{Environment.NewLine}{ingestionStatus.Details}");
         }
     }
 

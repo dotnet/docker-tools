@@ -19,32 +19,23 @@ using Polly;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
+public class CleanAcrImagesCommand(
+    IAcrClientFactory acrClientFactory,
+    IAcrContentClientFactory acrContentClientFactory,
+    ILogger<CleanAcrImagesCommand> logger,
+    ILifecycleMetadataService lifecycleMetadataService,
+    IOptions<PublishConfiguration> publishConfigOptions) : Command<CleanAcrImagesOptions>
 {
-    private readonly IAcrClientFactory _acrClientFactory;
-    private readonly IAcrContentClientFactory _acrContentClientFactory;
-    private readonly ILogger<CleanAcrImagesCommand> _logger;
-    private readonly ILifecycleMetadataService _lifecycleMetadataService;
-    private readonly PublishConfiguration _publishConfig;
+    private readonly IAcrClientFactory _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
+    private readonly IAcrContentClientFactory _acrContentClientFactory = acrContentClientFactory;
+    private readonly ILogger<CleanAcrImagesCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILifecycleMetadataService _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
+    private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
     private readonly ConcurrentBag<string> _deletedImages = [];
     private int _repositoriesSelectedForDeletion;
 
     private const int MaxConcurrentDeleteRequestsPerRepo = 5;
     private const int ManifestBatchSize = 250;
-
-    public CleanAcrImagesCommand(
-        IAcrClientFactory acrClientFactory,
-        IAcrContentClientFactory acrContentClientFactory,
-        ILogger<CleanAcrImagesCommand> logger,
-        ILifecycleMetadataService lifecycleMetadataService,
-        IOptions<PublishConfiguration> publishConfigOptions)
-    {
-        _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
-        _acrContentClientFactory = acrContentClientFactory;
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
-        _publishConfig = publishConfigOptions.Value;
-    }
 
     protected override string Description => "Removes unnecessary images from an ACR";
 

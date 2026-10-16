@@ -19,25 +19,17 @@ using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotificationOptions>
+public class PostPublishNotificationCommand(
+    IManifestJsonService manifestJsonService,
+    IVssConnectionFactory connectionFactory,
+    INotificationService notificationService,
+    IOctokitClientFactory octokitClientFactory,
+    IArtifactService artifactService) : ManifestCommand<PostPublishNotificationOptions>(manifestJsonService)
 {
-    private readonly IVssConnectionFactory _connectionFactory;
-    private readonly INotificationService _notificationService;
-    private readonly IOctokitClientFactory _octokitClientFactory;
-    private readonly IArtifactService _artifactService;
-
-    public PostPublishNotificationCommand(
-        IManifestJsonService manifestJsonService,
-        IVssConnectionFactory connectionFactory,
-        INotificationService notificationService,
-        IOctokitClientFactory octokitClientFactory,
-        IArtifactService artifactService) : base(manifestJsonService)
-    {
-        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-        _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
-        _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
-        _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-    }
+    private readonly IVssConnectionFactory _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+    private readonly INotificationService _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
+    private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
 
     protected override string Description => "Posts a notification about a publishing event";
 
@@ -56,32 +48,30 @@ public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotific
         if (!Options.IsDryRun)
         {
             (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
-            using (IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
-            using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
-            using (IBuildHttpClient buildClient = connection.GetBuildHttpClient())
-            {
-                TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
-                TeamFoundation.Build.WebApi.Build build = await buildClient.GetBuildAsync(project.Id, Options.BuildId, cancellationToken);
-                buildUrl = build.GetWebLink();
-                buildReason = build.Reason;
+            using IVssConnection connection = _connectionFactory.Create(baseUrl, credentials);
+            using IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient();
+            using IBuildHttpClient buildClient = connection.GetBuildHttpClient();
+            TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
+            TeamFoundation.Build.WebApi.Build build = await buildClient.GetBuildAsync(project.Id, Options.BuildId, cancellationToken);
+            buildUrl = build.GetWebLink();
+            buildReason = build.Reason;
 
-                // Get the build's queue-time parameters
-                if (build.Parameters is not null)
+            // Get the build's queue-time parameters
+            if (build.Parameters is not null)
+            {
+                JObject? parametersJson = JsonConvert.DeserializeObject<JObject>(build.Parameters);
+                if (parametersJson is not null)
                 {
-                    JObject? parametersJson = JsonConvert.DeserializeObject<JObject>(build.Parameters);
-                    if (parametersJson is not null)
+                    foreach (KeyValuePair<string, JToken?> pair in parametersJson)
                     {
-                        foreach (KeyValuePair<string, JToken?> pair in parametersJson)
-                        {
-                            buildParameters.Add(pair.Key, pair.Value?.ToString() ?? string.Empty);
-                        }
+                        buildParameters.Add(pair.Key, pair.Value?.ToString() ?? string.Empty);
                     }
                 }
-
-                overallResult = await GetBuildTaskResultsAsync(taskResults, buildClient, project, cancellationToken);
-                correlatedQueueNotificationUrl =
-                    await GetCorrelatedQueueNotificationUrlAsync(cancellationToken);
             }
+
+            overallResult = await GetBuildTaskResultsAsync(taskResults, buildClient, project, cancellationToken);
+            correlatedQueueNotificationUrl =
+                await GetCorrelatedQueueNotificationUrlAsync(cancellationToken);
         }
 
         notificationMarkdown.AppendLine($"# Publish Results");
@@ -294,7 +284,7 @@ public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotific
         return imagesMarkdown;
     }
 
-    private static IEnumerable<string> GetTags(IEnumerable<string> tags) => tags.Select(tag => DockerHelper.GetTagName(tag));
+    private static IEnumerable<string> GetTags(IEnumerable<string> tags) => tags.Select(DockerHelper.GetTagName);
 
     private static void WriteTaskStatusesMarkdown(Dictionary<string, TaskResult?> taskStatuses, StringBuilder notificationMarkdown)
     {

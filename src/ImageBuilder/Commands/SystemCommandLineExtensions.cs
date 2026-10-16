@@ -17,13 +17,19 @@ public static class SystemCommandLineExtensions
     public static void AddOptions(this Command command, Options options)
     {
         foreach (Argument argument in options.GetCliArguments())
+        {
             command.Add(argument);
+        }
 
         foreach (Option option in options.GetCliOptions())
+        {
             command.Add(option);
+        }
 
         foreach (Action<CommandResult> validator in options.GetValidators())
+        {
             command.Validators.Add(validator);
+        }
     }
 
     /// <summary>

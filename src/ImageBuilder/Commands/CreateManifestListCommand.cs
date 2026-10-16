@@ -177,9 +177,11 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                             builtPlatforms.Count, declaredPlatforms.Count, missingPlatforms.Count);
 
                         foreach (PlatformInfo platform in declaredPlatforms)
+                        {
                             _logger.LogDebug(
                                 "Has platform {Platform}, WasBuilt={WasBuilt}",
                                 platform.PlatformLabel, builtPlatforms.Contains(platform));
+                        }
                     }
 
                     // Finally, project to a tuple.
@@ -305,10 +307,14 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     private void WriteManifestSummary(IReadOnlyList<ManifestListInfo> manifestLists)
     {
         foreach (ManifestListInfo manifestListInfo in manifestLists)
+        {
             _logger.LogInformation(manifestListInfo.Tag);
+        }
 
         if (manifestLists.Count == 0)
+        {
             _logger.LogInformation("No manifest lists created");
+        }
     }
 
     /// <summary>

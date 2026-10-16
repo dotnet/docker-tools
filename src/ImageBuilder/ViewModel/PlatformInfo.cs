@@ -133,8 +133,8 @@ public partial class PlatformInfo
 
         IEnumerable<string> fromImages = fromMatches
             .Select(match => match.Groups[FromImageMatchName].Value)
-            .Select(from => SubstituteOverriddenRepo(from))
-            .Select(from => SubstituteBuildArgs(from))
+            .Select(SubstituteOverriddenRepo)
+            .Select(SubstituteBuildArgs)
             .Where(from => !IsStageReference(from, fromMatches))
             .ToArray();
 
@@ -145,7 +145,7 @@ public partial class PlatformInfo
         }
 
         InternalFromImages = fromImages
-            .Where(from => IsInternalFromImage(from))
+            .Where(IsInternalFromImage)
             .ToArray();
         ExternalFromImages = fromImages
             .Except(InternalFromImages)

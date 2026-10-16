@@ -53,7 +53,10 @@ public class ImageSigningService(
                 .Where(digest => !string.IsNullOrEmpty(digest))
                 .ToList();
 
-        if (imageDigests.Count == 0) return [];
+        if (imageDigests.Count == 0)
+        {
+            return [];
+        }
 
         _logger.LogInformation("Checking {Count} digest(s) for existing signatures.", imageDigests.Count);
 
@@ -124,7 +127,10 @@ public class ImageSigningService(
         CancellationToken cancellationToken)
     {
         List<ImageSigningRequest> requestList = requests.ToList();
-        if (requestList.Count == 0) return [];
+        if (requestList.Count == 0)
+        {
+            return [];
+        }
 
         if (string.IsNullOrEmpty(_buildConfig.ArtifactStagingDirectory))
         {

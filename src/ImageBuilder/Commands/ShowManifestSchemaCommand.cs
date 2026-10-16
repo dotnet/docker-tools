@@ -10,14 +10,9 @@ using Newtonsoft.Json.Schema.Generation;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class ShowManifestSchemaCommand : Command<Options>
+public class ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> logger) : Command<Options>
 {
-    private readonly ILogger<ShowManifestSchemaCommand> _logger;
-
-    public ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<ShowManifestSchemaCommand> _logger = logger;
 
     protected override string Description => "Outputs manifest file schema";
 

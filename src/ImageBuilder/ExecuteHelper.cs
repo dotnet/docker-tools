@@ -199,17 +199,10 @@ public static class ExecuteHelper
         return processResult;
     }
 
-    private class ProcessResult
+    private class ProcessResult(Process process, string standardOutput, string standardError)
     {
-        public ProcessResult(Process process, string standardOutput, string standardError)
-        {
-            Process = process;
-            StandardOutput = standardOutput;
-            StandardError = standardError;
-        }
-
-        public Process Process { get; }
-        public string StandardOutput { get; }
-        public string StandardError { get; }
+        public Process Process { get; } = process;
+        public string StandardOutput { get; } = standardOutput;
+        public string StandardError { get; } = standardError;
     }
 }

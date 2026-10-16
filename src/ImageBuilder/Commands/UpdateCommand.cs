@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// target directory that ImageBuilder no longer ships are removed so the output exactly matches
 /// what is embedded.
 /// </remarks>
-public class UpdateCommand : Command<UpdateOptions>
+public class UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger) : Command<UpdateOptions>
 {
     private static readonly string s_outputRelativePath = PathHelper.SafeCombine("eng", "docker-tools");
     // InfrastructureContent.GetRelativePaths always returns '/'-separated paths, so this is kept in
@@ -36,14 +36,8 @@ public class UpdateCommand : Command<UpdateOptions>
 
     private static readonly DocumentConfiguration s_templateConfiguration = CottleDocumentConfiguration.Create();
 
-    private readonly IFileSystem _fileSystem;
-    private readonly ILogger<UpdateCommand> _logger;
-
-    public UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger)
-    {
-        _fileSystem = fileSystem;
-        _logger = logger;
-    }
+    private readonly IFileSystem _fileSystem = fileSystem;
+    private readonly ILogger<UpdateCommand> _logger = logger;
 
     protected override string Description => "Writes ImageBuilder's bundled docker-tools infrastructure files to disk";
 

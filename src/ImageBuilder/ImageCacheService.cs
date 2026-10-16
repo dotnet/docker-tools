@@ -47,10 +47,10 @@ public interface IImageCacheService
 }
 
 /// <inheritdoc/>
-public class ImageCacheService : IImageCacheService
+public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gitService) : IImageCacheService
 {
-    private readonly ILogger<ImageCacheService> _logger;
-    private readonly IGitService _gitService;
+    private readonly ILogger<ImageCacheService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IGitService _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
 
     private readonly object _cachedPlatformsLock = new();
 
@@ -59,12 +59,6 @@ public class ImageCacheService : IImageCacheService
     /// Keyed by the build cache key derived from the platform's Dockerfile path and build args.
     /// </summary>
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
-
-    public ImageCacheService(ILogger<ImageCacheService> logger, IGitService gitService)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-    }
 
     /// <inheritdoc/>
     public bool HasAnyCachedPlatforms

@@ -27,7 +27,9 @@ try
     IEnumerable<ICommand> commands = host.Services.GetServices<ICommand>();
 
     foreach (ICommand command in commands)
+    {
         rootCliCommand.Add(command.GetCliCommand());
+    }
 
     ParseResult parseResult = rootCliCommand.Parse(args);
     exitCode = await parseResult.InvokeAsync();

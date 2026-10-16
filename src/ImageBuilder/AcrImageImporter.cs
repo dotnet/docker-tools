@@ -16,22 +16,15 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.DotNet.ImageBuilder;
 
 /// <inheritdoc />
-internal class AcrImageImporter : IAcrImageImporter
+internal class AcrImageImporter(
+    ILogger<AcrImageImporter> logger,
+    IAzureTokenCredentialProvider tokenCredentialProvider,
+    IOptions<PublishConfiguration> publishConfigOptions) : IAcrImageImporter
 {
-    private readonly ILogger<AcrImageImporter> _logger;
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-    private readonly PublishConfiguration _publishConfig;
+    private readonly ILogger<AcrImageImporter> _logger = logger;
+    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
+    private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
     private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
-
-    public AcrImageImporter(
-        ILogger<AcrImageImporter> logger,
-        IAzureTokenCredentialProvider tokenCredentialProvider,
-        IOptions<PublishConfiguration> publishConfigOptions)
-    {
-        _logger = logger;
-        _tokenCredentialProvider = tokenCredentialProvider;
-        _publishConfig = publishConfigOptions.Value;
-    }
 
     /// <inheritdoc />
     public async Task ImportImageAsync(

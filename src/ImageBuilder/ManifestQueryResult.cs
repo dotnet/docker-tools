@@ -8,23 +8,17 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Result of a manifest query from <see cref="IManifestService"/>.
 /// </summary>
-public class ManifestQueryResult
+public class ManifestQueryResult(string contentDigest, JsonObject manifest)
 {
     /// <summary>
     /// Digest of the manifest content.
     /// </summary>
-    public string ContentDigest { get; }
+    public string ContentDigest { get; } = contentDigest;
 
     /// <summary>
     /// JSON representation of the manifest content.
     /// </summary>
-    public JsonObject Manifest { get; }
-
-    public ManifestQueryResult(string contentDigest, JsonObject manifest)
-    {
-        ContentDigest = contentDigest;
-        Manifest = manifest;
-    }
+    public JsonObject Manifest { get; } = manifest;
 }
 
 internal static class ManifestQueryResultExtensions

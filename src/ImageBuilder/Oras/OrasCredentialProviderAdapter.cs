@@ -37,7 +37,10 @@ public class OrasCredentialProviderAdapter(
         RegistryCredentials? registryCredentials =
             await _credentialsProvider.GetCredentialsAsync(lookupHost, _credentialsHost, cancellationToken);
 
-        if (registryCredentials is null) return default;
+        if (registryCredentials is null)
+        {
+            return default;
+        }
 
         Credential orasCredential = new Credential(
             Username: registryCredentials.Username,

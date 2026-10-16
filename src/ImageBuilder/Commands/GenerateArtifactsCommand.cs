@@ -18,12 +18,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public delegate (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState<TContext>(
     TContext context, string templatePath, string indent);
 
-public abstract class GenerateArtifactsCommand<TOptions> : ManifestCommand<TOptions>
+public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger logger) : ManifestCommand<TOptions>(manifestJsonService)
     where TOptions : GenerateArtifactsOptions, new()
 {
     private readonly DocumentConfiguration _config = CottleDocumentConfiguration.Create();
 
-    private readonly IEnvironmentService _environmentService;
+    private readonly IEnvironmentService _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
     private readonly List<string> _invalidTemplates = new List<string>();
     private readonly List<string> _outOfSyncArtifacts = new List<string>();
     private readonly Dictionary<string, string> generatedArtifacts = new();
@@ -31,13 +31,7 @@ public abstract class GenerateArtifactsCommand<TOptions> : ManifestCommand<TOpti
     private TimeSpan _documentGenerationTime = TimeSpan.Zero;
     private TimeSpan _artifactGenerationTime = TimeSpan.Zero;
 
-    private readonly ILogger _logger;
-
-    protected GenerateArtifactsCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger logger) : base(manifestJsonService)
-    {
-        _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     protected async Task GenerateArtifactsAsync<TContext>(
         IEnumerable<TContext> contexts,

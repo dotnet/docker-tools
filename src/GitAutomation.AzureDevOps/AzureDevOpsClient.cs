@@ -111,7 +111,9 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
                     .AppendPath("commits");
 
                 if (continuationToken is not null)
+                {
                     uri.AddQueryParameter("continuationToken", continuationToken);
+                }
 
                 return uri.Build();
             },

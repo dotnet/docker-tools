@@ -108,13 +108,21 @@ public class RegistryOptionsBuilder(bool isOverride)
     public void Bind(ParseResult result, RegistryOptions target)
     {
         if (_registryOption is not null)
+        {
             target.Registry = result.GetValue(_registryOption) ?? string.Empty;
+        }
         else if (_registryArgument is not null)
+        {
             target.Registry = result.GetValue(_registryArgument) ?? string.Empty;
+        }
 
         if (_repoPrefixOption is not null)
+        {
             target.RepoPrefix = result.GetValue(_repoPrefixOption) ?? string.Empty;
+        }
         else if (_repoPrefixArgument is not null)
+        {
             target.RepoPrefix = result.GetValue(_repoPrefixArgument) ?? string.Empty;
+        }
     }
 }

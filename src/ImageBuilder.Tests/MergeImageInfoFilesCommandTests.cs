@@ -32,29 +32,28 @@ public class MergeImageInfoFilesCommandTests
     [TestMethod]
     public async Task MergeImageInfoFilesCommand_HappyPath()
     {
-        using (TempFolderContext context = TestHelper.UseTempFolder())
-        {
-            string repo2Image1Dockerfile = CreateDockerfile("1.0/repo2/os1", context);
-            string repo2Image2Dockerfile = CreateDockerfile("1.0/repo2/os2", context);
-            string repo4Image2Dockerfile = CreateDockerfile("1.0/repo4/os2", context);
-            string repo4Image3Dockerfile = CreateDockerfile("1.0/repo4/os3", context);
+        using TempFolderContext context = TestHelper.UseTempFolder();
+        string repo2Image1Dockerfile = CreateDockerfile("1.0/repo2/os1", context);
+        string repo2Image2Dockerfile = CreateDockerfile("1.0/repo2/os2", context);
+        string repo4Image2Dockerfile = CreateDockerfile("1.0/repo4/os2", context);
+        string repo4Image3Dockerfile = CreateDockerfile("1.0/repo4/os3", context);
 
-            PlatformData platform1 = CreatePlatform(
-                repo2Image1Dockerfile,
-                simpleTags: new List<string>
-                {
+        PlatformData platform1 = CreatePlatform(
+            repo2Image1Dockerfile,
+            simpleTags: new List<string>
+            {
                     "tag3"
-                });
+            });
 
-            PlatformData platform2 = CreatePlatform(
-                repo2Image1Dockerfile,
-                simpleTags: new List<string>
-                {
+        PlatformData platform2 = CreatePlatform(
+            repo2Image1Dockerfile,
+            simpleTags: new List<string>
+            {
                     "tag1"
-                },
-                baseImageDigest: "base1hash");
+            },
+            baseImageDigest: "base1hash");
 
-            List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
+        List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
             {
                 new ImageArtifactDetails
                 {
@@ -186,68 +185,68 @@ public class MergeImageInfoFilesCommandTests
                 }
             };
 
-            MergeImageInfoCommand command = CreateCommand(context.Path);
-            command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
-            command.Options.DestinationImageInfoPath = "output.json";
-            command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
+        MergeImageInfoCommand command = CreateCommand(context.Path);
+        command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
+        command.Options.DestinationImageInfoPath = "output.json";
+        command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
 
-            Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
-            for (int i = 0; i < imageArtifactDetailsList.Count; i++)
-            {
-                string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
-                File.WriteAllText(file, JsonHelper.SerializeObject(imageArtifactDetailsList[i]));
-            }
+        Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
+        for (int i = 0; i < imageArtifactDetailsList.Count; i++)
+        {
+            string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
+            File.WriteAllText(file, JsonHelper.SerializeObject(imageArtifactDetailsList[i]));
+        }
 
-            Manifest manifest = CreateManifest(
-                CreateRepo("repo1"),
-                CreateRepo("repo2",
-                    CreateImage(
-                        new Platform[]
-                        {
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo1"),
+            CreateRepo("repo2",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(repo2Image1Dockerfile, new string[] { "tag1" })
-                        },
-                        productVersion: "1.0"),
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0"),
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(repo2Image2Dockerfile, new string[] { "tag2" })
-                        },
-                        productVersion: "1.0")),
-                CreateRepo("repo3"),
-                CreateRepo("repo4",
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0")),
+            CreateRepo("repo3"),
+            CreateRepo("repo4",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(repo4Image2Dockerfile, new string[] { "tag1" })
-                        },
-                        productVersion: "1.0"),
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0"),
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(repo4Image3Dockerfile, new string[] { "tag2" })
-                        },
-                        productVersion: "1.0"))
-            );
-            File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+                    },
+                    productVersion: "1.0"))
+        );
+        File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            string resultsContent = File.ReadAllText(Path.Combine(context.Path, command.Options.DestinationImageInfoPath));
-            ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
+        string resultsContent = File.ReadAllText(Path.Combine(context.Path, command.Options.DestinationImageInfoPath));
+        ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
-            PlatformData expectedPlatform = CreatePlatform(
-                repo2Image1Dockerfile,
-                simpleTags: new List<string>
-                {
+        PlatformData expectedPlatform = CreatePlatform(
+            repo2Image1Dockerfile,
+            simpleTags: new List<string>
+            {
                     "tag1",
                     "tag3"
-                },
-                baseImageDigest: "base1hash");
+            },
+            baseImageDigest: "base1hash");
 
-            ImageArtifactDetails expected = new ImageArtifactDetails
-            {
-                Repos =
+        ImageArtifactDetails expected = new ImageArtifactDetails
+        {
+            Repos =
                 {
                     new RepoData
                     {
@@ -320,10 +319,9 @@ public class MergeImageInfoFilesCommandTests
                         }
                     }
                 }
-            };
+        };
 
-            CompareImageArtifactDetails(expected, actual);
-        }
+        CompareImageArtifactDetails(expected, actual);
     }
 
     [TestMethod]
@@ -333,12 +331,11 @@ public class MergeImageInfoFilesCommandTests
         const string Os1 = "bionic";
         const string Os2 = "noble";
 
-        using (TempFolderContext context = TestHelper.UseTempFolder())
-        {
-            string dockerfile1 = CreateDockerfile("1.0/repo1/os1", context);
-            string dockerfile2 = CreateDockerfile("1.0/repo1/os2", context);
+        using TempFolderContext context = TestHelper.UseTempFolder();
+        string dockerfile1 = CreateDockerfile("1.0/repo1/os1", context);
+        string dockerfile2 = CreateDockerfile("1.0/repo1/os2", context);
 
-            List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
+        List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
             {
                 new ImageArtifactDetails
                 {
@@ -490,51 +487,51 @@ public class MergeImageInfoFilesCommandTests
                 }
             };
 
-            MergeImageInfoCommand command = CreateCommand(context.Path);
-            command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
-            command.Options.DestinationImageInfoPath = "output.json";
-            command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
+        MergeImageInfoCommand command = CreateCommand(context.Path);
+        command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
+        command.Options.DestinationImageInfoPath = "output.json";
+        command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
 
-            Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
-            for (int i = 0; i < imageArtifactDetailsList.Count; i++)
-            {
-                string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
-                File.WriteAllText(file, JsonHelper.SerializeObject(imageArtifactDetailsList[i]));
-            }
+        Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
+        for (int i = 0; i < imageArtifactDetailsList.Count; i++)
+        {
+            string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
+            File.WriteAllText(file, JsonHelper.SerializeObject(imageArtifactDetailsList[i]));
+        }
 
-            Manifest manifest = CreateManifest(
-                CreateRepo("repo1",
-                    CreateImage(
-                        new Platform[]
-                        {
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo1",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfile1, new string[] { "tag1" }, osVersion: Os1, architecture: Architecture.ARM),
                             CreatePlatform(dockerfile1, new string[] { "tag2" }, osVersion: Os1, architecture: Architecture.ARM64)
-                        },
-                        productVersion: "1.0"),
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0"),
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfile1, new string[] { "tag3" }, osVersion: Os2, architecture: Architecture.ARM)
-                        },
-                        productVersion: "1.0"),
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0"),
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfile2, new string[] { "tag4" }, osVersion: Os1)
-                        },
-                        productVersion: "1.0"))
-            );
-            File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+                    },
+                    productVersion: "1.0"))
+        );
+        File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            string resultsContent = File.ReadAllText(Path.Combine(context.Path, command.Options.DestinationImageInfoPath));
-            ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
+        string resultsContent = File.ReadAllText(Path.Combine(context.Path, command.Options.DestinationImageInfoPath));
+        ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
-            ImageArtifactDetails expected = new ImageArtifactDetails
-            {
-                Repos =
+        ImageArtifactDetails expected = new ImageArtifactDetails
+        {
+            Repos =
                 {
                     new RepoData
                     {
@@ -616,10 +613,9 @@ public class MergeImageInfoFilesCommandTests
                         }
                     }
                 }
-            };
+        };
 
-            CompareImageArtifactDetails(expected, actual);
-        }
+        CompareImageArtifactDetails(expected, actual);
     }
 
     [TestMethod]
@@ -635,25 +631,23 @@ public class MergeImageInfoFilesCommandTests
     [TestMethod]
     public async Task MergeImageInfoFilesCommand_SourceFolderEmpty()
     {
-        using (TempFolderContext context = TestHelper.UseTempFolder())
+        using TempFolderContext context = TestHelper.UseTempFolder();
+        ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos =
+            Repos =
                 {
                     new RepoData { Repo = "repo" }
                 }
-            };
+        };
 
-            // Store the content in a .txt file which the command should NOT be looking for.
-            File.WriteAllText("image-info.txt", JsonHelper.SerializeObject(imageArtifactDetails));
+        // Store the content in a .txt file which the command should NOT be looking for.
+        File.WriteAllText("image-info.txt", JsonHelper.SerializeObject(imageArtifactDetails));
 
-            MergeImageInfoCommand command = CreateCommand(context.Path);
-            command.Options.SourceImageInfoFolderPath = context.Path;
-            command.Options.DestinationImageInfoPath = "output.json";
+        MergeImageInfoCommand command = CreateCommand(context.Path);
+        command.Options.SourceImageInfoFolderPath = context.Path;
+        command.Options.DestinationImageInfoPath = "output.json";
 
-            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-        }
+        await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
     }
 
     /// <summary>

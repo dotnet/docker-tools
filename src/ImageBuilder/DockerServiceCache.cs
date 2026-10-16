@@ -12,19 +12,14 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Caches state returned from Docker commands.
 /// </summary>
-internal class DockerServiceCache : IDockerService
+internal class DockerServiceCache(IDockerService inner) : IDockerService
 {
-    private readonly IDockerService _inner;
+    private readonly IDockerService _inner = inner;
     private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new();
     private readonly ConcurrentDictionary<string, long> _imageSizeCache = new();
     private readonly ConcurrentDictionary<string, bool> _localImageExistsCache = new();
     private readonly ConcurrentDictionary<string, bool> _pulledImages = new();
     private readonly ConcurrentDictionary<string, (Architecture, string?)> _architectureCache = new();
-
-    public DockerServiceCache(IDockerService inner)
-    {
-        _inner = inner;
-    }
 
     public Architecture Architecture => _inner.Architecture;
 

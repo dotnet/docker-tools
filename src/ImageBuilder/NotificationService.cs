@@ -10,17 +10,11 @@ using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public class NotificationService : INotificationService
+public class NotificationService(ILogger<NotificationService> logger, IOctokitClientFactory octokitClientFactory) : INotificationService
 {
-    private readonly ILogger<NotificationService> _logger;
-    private readonly IOctokitClientFactory _octokitClientFactory;
-
-    public NotificationService(ILogger<NotificationService> logger, IOctokitClientFactory octokitClientFactory)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _octokitClientFactory = octokitClientFactory
+    private readonly ILogger<NotificationService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
             ?? throw new ArgumentNullException(nameof(octokitClientFactory));
-    }
 
     public async Task PostAsync(
         string title,

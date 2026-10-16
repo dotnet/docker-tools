@@ -27,24 +27,16 @@ public interface ICopyImageService
         bool isDryRun = false);
 }
 
-public class CopyImageService : ICopyImageService
+public class CopyImageService(
+    ILogger<CopyImageService> logger,
+    IAcrImageImporter acrRegistryImporter,
+    IOrasService orasService,
+    IOptions<PublishConfiguration> publishConfigOptions) : ICopyImageService
 {
-    private readonly ILogger<CopyImageService> _logger;
-    private readonly IAcrImageImporter _acrRegistryImporter;
-    private readonly IOrasService _orasService;
-    private readonly PublishConfiguration _publishConfig;
-
-    public CopyImageService(
-        ILogger<CopyImageService> logger,
-        IAcrImageImporter acrRegistryImporter,
-        IOrasService orasService,
-        IOptions<PublishConfiguration> publishConfigOptions)
-    {
-        _logger = logger;
-        _acrRegistryImporter = acrRegistryImporter;
-        _orasService = orasService;
-        _publishConfig = publishConfigOptions.Value;
-    }
+    private readonly ILogger<CopyImageService> _logger = logger;
+    private readonly IAcrImageImporter _acrRegistryImporter = acrRegistryImporter;
+    private readonly IOrasService _orasService = orasService;
+    private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
 
     public async Task ImportImageAsync(
         string[] destTagNames,

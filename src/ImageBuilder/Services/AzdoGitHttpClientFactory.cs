@@ -16,16 +16,10 @@ public class AzdoGitHttpClientFactory(ILoggerFactory loggerFactory) : IAzdoGitHt
     public IAzdoGitHttpClient GetClient(Uri baseUrl, VssCredentials credentials) =>
         new GitHttpClientWrapper(_loggerFactory.CreateLogger<GitHttpClientWrapper>(), new GitHttpClient(baseUrl, credentials));
 
-    private class GitHttpClientWrapper : IAzdoGitHttpClient
+    private class GitHttpClientWrapper(ILogger<AzdoGitHttpClientFactory.GitHttpClientWrapper> logger, GitHttpClient gitHttpClient) : IAzdoGitHttpClient
     {
-        private readonly ILogger<GitHttpClientWrapper> _logger;
-        private readonly GitHttpClient _gitHttpClient;
-
-        public GitHttpClientWrapper(ILogger<GitHttpClientWrapper> logger, GitHttpClient gitHttpClient)
-        {
-            _logger = logger;
-            _gitHttpClient = gitHttpClient;
-        }
+        private readonly ILogger<GitHttpClientWrapper> _logger = logger;
+        private readonly GitHttpClient _gitHttpClient = gitHttpClient;
 
         public Task<List<GitRepository>> GetRepositoriesAsync(CancellationToken cancellationToken) =>
             RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)

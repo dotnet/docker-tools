@@ -65,15 +65,13 @@ public class QueueBuildCommandTests
             CreateBuild("http://contoso")
         };
 
-        using (TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>());
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            // Normally this state would cause a build to be queued but since
-            // a build is marked as in progress, it doesn't.
+        // Normally this state would cause a build to be queued but since
+        // a build is marked as in progress, it doesn't.
 
-            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
-        }
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
     }
 
     /// <summary>
@@ -290,13 +288,12 @@ public class QueueBuildCommandTests
             }
         };
 
-        using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptions[0],
                     new List<string>
@@ -312,10 +309,9 @@ public class QueueBuildCommandTests
                         path3
                     }
                 }
-            };
+        };
 
-            fixture.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
-        }
+        fixture.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
     }
 
     /// <summary>
@@ -349,12 +345,10 @@ public class QueueBuildCommandTests
             }
         };
 
-        using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
-        }
+        fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
     }
 
     [TestMethod]
@@ -429,13 +423,12 @@ public class QueueBuildCommandTests
             }
         };
 
-        using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
-        {
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                new Dictionary<Subscription, IList<string>>
-            {
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptions[0],
                     new List<string>
@@ -445,10 +438,9 @@ public class QueueBuildCommandTests
                         path3
                     }
                 }
-            };
+        };
 
-            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
-        }
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
     }
 
     /// <summary>

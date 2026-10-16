@@ -38,20 +38,12 @@ internal class GitHubClientFactory(
     }
 
     // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled
-    private class GitHubClientWrapper : IGitHubClient
+    private class GitHubClientWrapper(ILoggerFactory loggerFactory, GitHubClient innerClient, bool isDryRun, CancellationToken cancellationToken) : IGitHubClient
     {
-        private readonly ILogger<GitHubClientWrapper> _logger;
-        private readonly GitHubClient _innerClient;
-        private readonly bool _isDryRun;
-        private readonly CancellationToken _cancellationToken;
-
-        public GitHubClientWrapper(ILoggerFactory loggerFactory, GitHubClient innerClient, bool isDryRun, CancellationToken cancellationToken)
-        {
-            _logger = loggerFactory.CreateLogger<GitHubClientWrapper>();
-            _innerClient = innerClient;
-            _isDryRun = isDryRun;
-            _cancellationToken = cancellationToken;
-        }
+        private readonly ILogger<GitHubClientWrapper> _logger = loggerFactory.CreateLogger<GitHubClientWrapper>();
+        private readonly GitHubClient _innerClient = innerClient;
+        private readonly bool _isDryRun = isDryRun;
+        private readonly CancellationToken _cancellationToken = cancellationToken;
 
         public GitHubAuth Auth => _innerClient.Auth;
 

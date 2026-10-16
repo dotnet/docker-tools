@@ -1417,14 +1417,9 @@ public class ImageInfoHelperTests
             new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
             "base");
 
-    private class FakeManifestOptions : IManifestOptionsInfo
+    private class FakeManifestOptions(string manifestPath) : IManifestOptionsInfo
     {
-        public FakeManifestOptions(string manifestPath)
-        {
-            Manifest = manifestPath;
-        }
-
-        public string Manifest { get; }
+        public string Manifest { get; } = manifestPath;
 
         public string RegistryOverride => null;
 

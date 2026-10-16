@@ -11,12 +11,9 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions>
+public class ShowImageStatsCommand(IManifestJsonService manifestJsonService, ILogger<ShowImageStatsCommand> logger) : ManifestCommand<ShowImageStatsOptions>(manifestJsonService)
 {
-    private readonly ILogger<ShowImageStatsCommand> _logger;
-
-    public ShowImageStatsCommand(IManifestJsonService manifestJsonService, ILogger<ShowImageStatsCommand> logger) : base(manifestJsonService) =>
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger<ShowImageStatsCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     protected override string Description => "Displays statistics about the number of images";
 

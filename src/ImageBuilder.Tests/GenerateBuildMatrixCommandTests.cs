@@ -109,58 +109,56 @@ public class GenerateBuildMatrixCommandTests
     [DataRow("--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64", "--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
     public async Task GenerateBuildMatrixCommand_PlatformDependencyGraph(string filterPaths, string expectedPaths)
     {
-        using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateBuildMatrixCommand command = CreateCommand();
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+        if (filterPaths != null)
         {
-            GenerateBuildMatrixCommand command = CreateCommand();
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
-            if (filterPaths != null)
-            {
-                command.Options.FilterOptions.Dockerfile.Paths = filterPaths.Replace("--path ", "").Split(" ");
-            }
-
-            const string runtimeDepsRelativeDir = "1.0/runtimedeps/os/amd64";
-            DirectoryInfo runtimeDepsDir = Directory.CreateDirectory(
-                Path.Combine(tempFolderContext.Path, runtimeDepsRelativeDir));
-            string dockerfileRuntimeDepsFullPath = Path.Combine(runtimeDepsDir.FullName, "Dockerfile");
-            File.WriteAllText(dockerfileRuntimeDepsFullPath, "FROM base");
-
-            const string sdkRelativeDir = "1.0/sdk/os/amd64";
-            DirectoryInfo sdkDir = Directory.CreateDirectory(
-                Path.Combine(tempFolderContext.Path, sdkRelativeDir));
-            string dockerfileSdkPath = Path.Combine(sdkDir.FullName, "Dockerfile");
-            File.WriteAllText(dockerfileSdkPath, "FROM runtime-deps:tag");
-
-            const string sampleRelativeDir = "1.0/sample/os/amd64";
-            DirectoryInfo sampleDir = Directory.CreateDirectory(
-                Path.Combine(tempFolderContext.Path, sampleRelativeDir));
-            string dockerfileSamplePath = Path.Combine(sampleDir.FullName, "Dockerfile");
-            File.WriteAllText(dockerfileSamplePath, "FROM sdk:tag");
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime-deps",
-                    CreateImage(
-                        CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" }))),
-                CreateRepo("sdk",
-                    CreateImage(
-                        CreatePlatform(sdkRelativeDir, new string[] { "tag" }))),
-                CreateRepo("sample",
-                    CreateImage(
-                        CreatePlatform(sampleRelativeDir, new string[] { "tag" })))
-            );
-
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext?.CancellationToken ?? default);
-            matrixInfos.ShouldHaveSingleItem();
-
-            BuildMatrixInfo matrixInfo = matrixInfos.First();
-            BuildLegInfo leg = matrixInfo.Legs.First();
-            string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-
-            imageBuilderPaths.ShouldBe(expectedPaths);
+            command.Options.FilterOptions.Dockerfile.Paths = filterPaths.Replace("--path ", "").Split(" ");
         }
+
+        const string runtimeDepsRelativeDir = "1.0/runtimedeps/os/amd64";
+        DirectoryInfo runtimeDepsDir = Directory.CreateDirectory(
+            Path.Combine(tempFolderContext.Path, runtimeDepsRelativeDir));
+        string dockerfileRuntimeDepsFullPath = Path.Combine(runtimeDepsDir.FullName, "Dockerfile");
+        File.WriteAllText(dockerfileRuntimeDepsFullPath, "FROM base");
+
+        const string sdkRelativeDir = "1.0/sdk/os/amd64";
+        DirectoryInfo sdkDir = Directory.CreateDirectory(
+            Path.Combine(tempFolderContext.Path, sdkRelativeDir));
+        string dockerfileSdkPath = Path.Combine(sdkDir.FullName, "Dockerfile");
+        File.WriteAllText(dockerfileSdkPath, "FROM runtime-deps:tag");
+
+        const string sampleRelativeDir = "1.0/sample/os/amd64";
+        DirectoryInfo sampleDir = Directory.CreateDirectory(
+            Path.Combine(tempFolderContext.Path, sampleRelativeDir));
+        string dockerfileSamplePath = Path.Combine(sampleDir.FullName, "Dockerfile");
+        File.WriteAllText(dockerfileSamplePath, "FROM sdk:tag");
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime-deps",
+                CreateImage(
+                    CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" }))),
+            CreateRepo("sdk",
+                CreateImage(
+                    CreatePlatform(sdkRelativeDir, new string[] { "tag" }))),
+            CreateRepo("sample",
+                CreateImage(
+                    CreatePlatform(sampleRelativeDir, new string[] { "tag" })))
+        );
+
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+        command.LoadManifest();
+        IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext?.CancellationToken ?? default);
+        matrixInfos.ShouldHaveSingleItem();
+
+        BuildMatrixInfo matrixInfo = matrixInfos.First();
+        BuildLegInfo leg = matrixInfo.Legs.First();
+        string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+
+        imageBuilderPaths.ShouldBe(expectedPaths);
     }
 
     private static void SetCacheResult(Mock<IImageCacheService> imageCacheServiceMock, string dockerfilePath, ImageCacheState cacheState)
@@ -487,33 +485,32 @@ public class GenerateBuildMatrixCommandTests
     [DataRow(CustomBuildLegDependencyType.Supplemental)]
     public async Task GenerateBuildMatrixCommand_CustomBuildLegGroupingParentGraph(CustomBuildLegDependencyType dependencyType)
     {
-        using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
-        {
-            const string customBuildLegGroup = "custom";
-            GenerateBuildMatrixCommand command = CreateCommand();
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
-            command.Options.ProductVersionComponents = 2;
-            command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        const string customBuildLegGroup = "custom";
+        GenerateBuildMatrixCommand command = CreateCommand();
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+        command.Options.ProductVersionComponents = 2;
+        command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
 
-            string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
-            string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
+        string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
+        string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
 
-            string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("2.0/runtime/os2", tempFolderContext);
-            string dockerfileSdk2FullPath = DockerfileHelper.CreateDockerfile("2.0/sdk/os2", tempFolderContext, "runtime2:tag");
+        string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("2.0/runtime/os2", tempFolderContext);
+        string dockerfileSdk2FullPath = DockerfileHelper.CreateDockerfile("2.0/sdk/os2", tempFolderContext, "runtime2:tag");
 
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime-deps",
-                    CreateImage(
-                        new Platform[]
-                        {
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime-deps",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfileRuntimeDepsFullPath, new string[] { "tag" })
-                        },
-                        productVersion: "1.0")),
-                CreateRepo("runtime",
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0")),
+            CreateRepo("runtime",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfileRuntimePath, new string[] { "runtime" },
                                 customBuildLegGroups: new CustomBuildLegGroup[]
                                 {
@@ -527,38 +524,37 @@ public class GenerateBuildMatrixCommandTests
                                         }
                                     }
                                 })
-                        },
-                        productVersion: "1.0")),
-                CreateRepo("runtime2",
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "1.0")),
+            CreateRepo("runtime2",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "trixie-slim")
-                        },
-                        productVersion: "2.0")),
-                CreateRepo("sdk2",
-                    CreateImage(
-                        new Platform[]
-                        {
+                    },
+                    productVersion: "2.0")),
+            CreateRepo("sdk2",
+                CreateImage(
+                    new Platform[]
+                    {
                             CreatePlatform(dockerfileSdk2FullPath, new string[] { "tag" }, osVersion: "trixie")
-                        },
-                        productVersion: "2.0"))
-            );
+                    },
+                    productVersion: "2.0"))
+        );
 
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
-            command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext?.CancellationToken ?? default);
-            matrixInfos.ShouldHaveSingleItem();
+        command.LoadManifest();
+        IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync(TestContext?.CancellationToken ?? default);
+        matrixInfos.ShouldHaveSingleItem();
 
-            BuildMatrixInfo matrixInfo = matrixInfos.First();
-            matrixInfo.Legs.ShouldHaveSingleItem();
-            BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
-            string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            imageBuilderPaths.ShouldBe("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile");
-            string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
-            osVersions.ShouldBe("--os-version noble --os-version trixie --os-version trixie-slim");
-        }
+        BuildMatrixInfo matrixInfo = matrixInfos.First();
+        matrixInfo.Legs.ShouldHaveSingleItem();
+        BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
+        string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+        imageBuilderPaths.ShouldBe("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile");
+        string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
+        osVersions.ShouldBe("--os-version noble --os-version trixie --os-version trixie-slim");
     }
 
     /// <summary>

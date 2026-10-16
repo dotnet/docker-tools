@@ -206,7 +206,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
         // non-empty, conflicting values for the other settings
         IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo)
             .GetProperties()
-            .Where(prop => prop.Name != nameof(Repo.Images) && prop.Name != nameof(Repo.Readmes));
+            .Where(prop => prop.Name is not (nameof(Repo.Images)) and not (nameof(Repo.Readmes)));
 
         foreach (PropertyInfo property in propertiesToValidate)
         {

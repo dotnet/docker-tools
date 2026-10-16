@@ -279,8 +279,8 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
     /// indicating the image does not exist in the registry.
     /// </summary>
     private static bool IsImageNotFoundException(Exception ex) =>
-        (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound }) ||
-        (ex is RequestFailedException { Status: 404 });
+        ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound } or
+        RequestFailedException { Status: 404 };
 }
 
 [Flags]

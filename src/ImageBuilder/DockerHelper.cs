@@ -217,28 +217,15 @@ public static class DockerHelper
 
     private static Architecture GetArchitecture()
     {
-        Architecture architecture;
-
         string infoArchitecture = ExecuteCommandWithFormat(
             "info", ".Architecture", "Failed to detect Docker architecture", CancellationToken.None);
-        switch (infoArchitecture)
+        Architecture architecture = infoArchitecture switch
         {
-            case "x86_64":
-                architecture = Architecture.AMD64;
-                break;
-            case "arm":
-            case "arm_32":
-            case "armv7l":
-                architecture = Architecture.ARM;
-                break;
-            case "aarch64":
-            case "arm64":
-                architecture = Architecture.ARM64;
-                break;
-            default:
-                throw new PlatformNotSupportedException($"Unknown Docker Architecture '{infoArchitecture}'");
-        }
-
+            "x86_64" => Architecture.AMD64,
+            "arm" or "arm_32" or "armv7l" => Architecture.ARM,
+            "aarch64" or "arm64" => Architecture.ARM64,
+            _ => throw new PlatformNotSupportedException($"Unknown Docker Architecture '{infoArchitecture}'"),
+        };
         return architecture;
     }
 

@@ -20,12 +20,7 @@ public static class SubscriptionHelper
         IGitService gitService, IManifestJsonService manifestJsonService, Action<ManifestOptions>? configureOptions = null)
     {
         string subscriptionsJson = File.ReadAllText(subscriptionsPath);
-        Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
-        if (subscriptions is null)
-        {
-            throw new JsonException($"Unable to correctly deserialize path '{subscriptionsJson}'.");
-        }
-
+        Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson) ?? throw new JsonException($"Unable to correctly deserialize path '{subscriptionsJson}'.");
         List<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests = new
             List<(Subscription Subscription, ManifestInfo Manifest)>();
         foreach (Subscription subscription in subscriptions)

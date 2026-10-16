@@ -147,13 +147,8 @@ public class PostPublishNotificationCommand(
         Timeline timeline = await buildClient.GetBuildTimelineAsync(project.Id, Options.BuildId, cancellationToken);
         foreach (string task in Options.TaskNames)
         {
-            TimelineRecord? record = timeline.Records.FirstOrDefault(rec => rec.Name.Equals(task, StringComparison.OrdinalIgnoreCase));
-            if (record is null)
-            {
-                throw new InvalidOperationException(
+            TimelineRecord? record = timeline.Records.FirstOrDefault(rec => rec.Name.Equals(task, StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException(
                     $"Build task with name '{task}' could not be found in the build timeline.");
-            }
-
             taskResults[task] = record.Result;
 
             if (record.Result is not null)
@@ -167,7 +162,7 @@ public class PostPublishNotificationCommand(
                         }
                         break;
                     case TaskResult.SucceededWithIssues:
-                        if (overallResult == BuildResult.None || overallResult == BuildResult.Succeeded)
+                        if (overallResult is BuildResult.None or BuildResult.Succeeded)
                         {
                             overallResult = BuildResult.PartiallySucceeded;
                         }

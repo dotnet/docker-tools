@@ -105,13 +105,7 @@ public class ManifestInfo
         PlatformInfo result = AllRepos
             .SelectMany(repo => repo.AllImages)
             .SelectMany(image => image.AllPlatforms)
-            .FirstOrDefault(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName));
-
-        if (result == null)
-        {
-            throw new InvalidOperationException($"Unable to find platform for the tag '{fullTagName}'");
-        }
-
+            .FirstOrDefault(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName)) ?? throw new InvalidOperationException($"Unable to find platform for the tag '{fullTagName}'");
         return result;
     }
 

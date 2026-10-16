@@ -24,13 +24,8 @@ public static class TreesClientExtensions
         TreeResponse treeResponse = await treesClient.Get(repoOwner, repoName, HttpUtility.UrlEncode($"{branch}:{dirPath}"));
         string fileName = Path.GetFileName(path);
         TreeItem? item = treeResponse.Tree
-            .FirstOrDefault(item => string.Equals(item.Path, fileName, StringComparison.OrdinalIgnoreCase));
-        if (item is null)
-        {
-            throw new InvalidOperationException(
+            .FirstOrDefault(item => string.Equals(item.Path, fileName, StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidOperationException(
                 $"Unable to find git tree data for path '{path}' in repo '{repoName}'.");
-        }
-
         return item.Sha;
     }
 }

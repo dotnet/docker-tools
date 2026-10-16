@@ -461,12 +461,12 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         bool skipVariantCheck =
             (platform.Model.Architecture == Models.Manifest.Architecture.ARM64
                 && baseImageArch == Models.Manifest.Architecture.ARM64
-                && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
-                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant))))
+                && (platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
+                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant)))
             || (platform.Model.Architecture == Models.Manifest.Architecture.ARM
                 && baseImageArch == Models.Manifest.Architecture.ARM
-                && ((platform.Model.Variant == "v7" || string.IsNullOrEmpty(platform.Model.Variant))
-                    && (baseImageVariant == "v7" || string.IsNullOrEmpty(baseImageVariant))));
+                && (platform.Model.Variant == "v7" || string.IsNullOrEmpty(platform.Model.Variant))
+                    && (baseImageVariant == "v7" || string.IsNullOrEmpty(baseImageVariant)));
 
         if (platform.Model.Architecture != baseImageArch || (!skipVariantCheck && platform.Model.Variant != baseImageVariant))
         {

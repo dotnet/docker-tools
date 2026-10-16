@@ -411,12 +411,12 @@ public class GenerateBuildMatrixCommandTests
         BuildMatrixInfo matrixInfo = matrixInfos.ElementAt(0);
         matrixInfo.Name.ShouldBe($"{CustomMatrixOsVersion}Amd64");
         matrixInfo.Legs.ShouldHaveSingleItem();
-        (matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value).ShouldBe("--path 1.0/aspnet/os2/amd64/Dockerfile --path 1.0/sdk/os2/amd64/Dockerfile");
+        matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value.ShouldBe("--path 1.0/aspnet/os2/amd64/Dockerfile --path 1.0/sdk/os2/amd64/Dockerfile");
 
         matrixInfo = matrixInfos.ElementAt(1);
         matrixInfo.Name.ShouldBe($"linuxAmd64");
         matrixInfo.Legs.ShouldHaveSingleItem();
-        (matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value).ShouldBe("--path 1.0/aspnet/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile");
+        matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value.ShouldBe("--path 1.0/aspnet/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile");
     }
 
     /// <summary>

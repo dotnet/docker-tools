@@ -578,7 +578,6 @@ public class ImageInfoHelperTests
     [TestMethod]
     public void ImageInfoHelper_MergeRepos_MergeTags()
     {
-        PlatformData srcImage1;
         PlatformData targetImage2;
 
         ImageInfo imageInfo1 = CreateImageInfo();
@@ -597,17 +596,15 @@ public class ImageInfoHelperTests
                             ManifestImage = imageInfo1,
                             Platforms =
                             {
+                                new PlatformData
                                 {
-                                    srcImage1 = new PlatformData
+                                    Dockerfile = "image1",
+                                    SimpleTags =
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
-                                        {
-                                            "tag1",
-                                            "tag3"
-                                        },
-                                        ImageInfo = imageInfo1
-                                    }
+                                        "tag1",
+                                        "tag3"
+                                    },
+                                    ImageInfo = imageInfo1
                                 }
                             },
                             Manifest = new ManifestData
@@ -732,7 +729,6 @@ public class ImageInfoHelperTests
     [TestMethod]
     public void ImageInfoHelper_MergeRepos_RemoveTag()
     {
-        PlatformData srcPlatform1;
         PlatformData targetPlatform2;
 
         ImageInfo imageInfo1 = CreateImageInfo();
@@ -751,17 +747,15 @@ public class ImageInfoHelperTests
                             ManifestImage = imageInfo1,
                             Platforms =
                             {
+                                new PlatformData
                                 {
-                                    srcPlatform1 = new PlatformData
+                                    Dockerfile = "image1",
+                                    SimpleTags =
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
-                                        {
-                                            "tag3",
-                                            "tag1"
-                                        },
-                                        ImageInfo = imageInfo1
-                                    }
+                                        "tag3",
+                                        "tag1"
+                                    },
+                                    ImageInfo = imageInfo1
                                 }
                             },
                             Manifest = new ManifestData

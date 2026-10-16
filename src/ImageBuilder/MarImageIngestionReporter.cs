@@ -77,7 +77,7 @@ public class MarImageIngestionReporter(
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo, CancellationToken cancellationToken)
         {
-            return await (await ReportImageStatusCoreAsync(digestInfo, cancellationToken)
+            return await ReportImageStatusCoreAsync(digestInfo, cancellationToken)
                 .ContinueWith(async task =>
                 {
                     if (task.IsCompletedSuccessfully)
@@ -98,7 +98,8 @@ public class MarImageIngestionReporter(
                     }
 
                     throw new NotSupportedException();
-                }, cancellationToken));
+                }, cancellationToken)
+                .Unwrap();
         }
 
         private async Task<ImageResultInfo> ReportImageStatusCoreAsync(DigestInfo digestInfo, CancellationToken cancellationToken)

@@ -52,7 +52,7 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = ManifestHelper.CreateManifest(
             ManifestHelper.CreateRepo("runtime",
                 ManifestHelper.CreateImage(
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag1", "tag2"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -76,11 +76,11 @@ public class CopyAcrImagesCommandTests
                                     {
                                         CreatePlatform(
                                             PathHelper.NormalizePath(dockerfileRelativePath),
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag1",
                                                 "tag2"
-                                            })
+                                            ])
                                     }
                                 }
                             }
@@ -142,8 +142,8 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = ManifestHelper.CreateManifest(
             ManifestHelper.CreateRepo("runtime",
                 ManifestHelper.CreateImage(
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag1a", "tag1b"], osVersion: "alpine3.10"),
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag2a"], osVersion: "alpine3.11")))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -167,18 +167,18 @@ public class CopyAcrImagesCommandTests
                                     {
                                         CreatePlatform(
                                             PathHelper.NormalizePath(dockerfileRelativePath),
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag1a",
                                                 "tag1b"
-                                            },
+                                            ],
                                             osVersion: "alpine3.10"),
                                         CreatePlatform(
                                             PathHelper.NormalizePath(dockerfileRelativePath),
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag2a"
-                                            },
+                                            ],
                                             osVersion: "alpine3.11")
                                     }
                                 }
@@ -193,12 +193,12 @@ public class CopyAcrImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        List<string> expectedTags = new List<string>
-            {
+        List<string> expectedTags =
+            [
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1a",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1b",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2a"
-            };
+            ];
 
         foreach (string expectedTag in expectedTags)
         {
@@ -242,16 +242,14 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRelativePath, new string[] { "3.1" }, osVersion: "noble")
-                    },
+                    [
+                        CreatePlatform(dockerfileRelativePath, ["3.1"], osVersion: "noble")
+                    ],
                     productVersion: "3.1"),
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRelativePath, new string[] { "5.0" }, osVersion: "noble")
-                    },
+                    [
+                        CreatePlatform(dockerfileRelativePath, ["5.0"], osVersion: "noble")
+                    ],
                     productVersion: "5.0"))
         );
         manifest.Registry = DestinationRegistry;
@@ -276,10 +274,10 @@ public class CopyAcrImagesCommandTests
                                 {
                                     CreatePlatform(
                                         PathHelper.NormalizePath(dockerfileRelativePath),
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "3.1"
-                                        },
+                                        ],
                                         osVersion: "noble")
                                 },
                                 ProductVersion = "3.1"
@@ -290,10 +288,10 @@ public class CopyAcrImagesCommandTests
                                 {
                                     CreatePlatform(
                                         PathHelper.NormalizePath(dockerfileRelativePath),
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "5.0"
-                                        },
+                                        ],
                                         osVersion: "noble")
                                 },
                                 ProductVersion = "5.0"
@@ -309,11 +307,11 @@ public class CopyAcrImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        List<string> expectedTags = new List<string>
-        {
+        List<string> expectedTags =
+        [
             $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:3.1",
             $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:5.0"
-        };
+        ];
 
         foreach (string expectedTag in expectedTags)
         {
@@ -364,7 +362,7 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = ManifestHelper.CreateManifest(
             ManifestHelper.CreateRepo("runtime",
                 ManifestHelper.CreateImage(
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1-$(stamp)", "tag2", "tag3" })))
+                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag1-$(stamp)", "tag2", "tag3"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -393,12 +391,12 @@ public class CopyAcrImagesCommandTests
                                 {
                                     CreatePlatform(
                                         PathHelper.NormalizePath(dockerfileRelativePath),
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "tag1-built",
                                             "tag2",
                                             "tag3"
-                                        })
+                                        ])
                                 }
                             }
                         }
@@ -412,15 +410,15 @@ public class CopyAcrImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        List<string> expectedTags = new List<string>
-        {
+        List<string> expectedTags =
+        [
             $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1-built",
             $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2",
             $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag3",
             $"{command.Options.RepoPrefix}{syndicatedRepo}:tag1-built",
             $"{command.Options.RepoPrefix}{syndicatedRepo}:tag2",
             $"{command.Options.RepoPrefix}{syndicatedRepo}:tag3"
-        };
+        ];
 
         foreach (string expectedTag in expectedTags)
         {
@@ -464,10 +462,9 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRelativePath, new string[] { "tag1" })
-                    },
+                    [
+                        CreatePlatform(dockerfileRelativePath, ["tag1"])
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared1", new Tag() },
@@ -494,7 +491,7 @@ public class CopyAcrImagesCommandTests
                             {
                                 CreatePlatform(
                                     PathHelper.NormalizePath(dockerfileRelativePath),
-                                    simpleTags: new List<string> { "tag1" })
+                                    simpleTags: ["tag1"])
                             },
                             Manifest = new ManifestData
                             {
@@ -574,10 +571,9 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRelativePath, new string[] { "tag1" })
-                    },
+                    [
+                        CreatePlatform(dockerfileRelativePath, ["tag1"])
+                    ],
                     new Dictionary<string, Tag>
                     {
                         {
@@ -608,7 +604,7 @@ public class CopyAcrImagesCommandTests
                             {
                                 CreatePlatform(
                                     PathHelper.NormalizePath(dockerfileRelativePath),
-                                    simpleTags: new List<string> { "tag1" })
+                                    simpleTags: ["tag1"])
                             },
                             Manifest = new ManifestData
                             {
@@ -766,7 +762,7 @@ public class CopyAcrImagesCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    CreatePlatform(dockerfileRelativePath, new string[] { "tag1" })))
+                    CreatePlatform(dockerfileRelativePath, ["tag1"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -789,7 +785,7 @@ public class CopyAcrImagesCommandTests
                             {
                                 CreatePlatform(
                                     PathHelper.NormalizePath(dockerfileRelativePath),
-                                    simpleTags: new List<string> { "tag1" })
+                                    simpleTags: ["tag1"])
                             }
                         }
                     }

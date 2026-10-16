@@ -32,7 +32,7 @@ public class PlatformFilterOptions
     private static readonly Option<string[]> OsVersionsOption = new($"--{OsVersionOptionName}")
     {
         Description = "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 

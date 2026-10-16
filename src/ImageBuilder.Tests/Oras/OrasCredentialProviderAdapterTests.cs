@@ -45,7 +45,7 @@ public class OrasCredentialProviderAdapterTests
 
         Credential result = await adapter.ResolveCredentialAsync("registry.io", CancellationToken.None);
 
-        result.ShouldBe(default(Credential));
+        result.ShouldBe(default);
     }
 
     [TestMethod]

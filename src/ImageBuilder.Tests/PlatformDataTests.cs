@@ -38,12 +38,12 @@ public class PlatformDataTests
         ImageInfo.Create(
             new Image
             {
-                Platforms = Array.Empty<Platform>(),
+                Platforms = [],
                 ProductVersion = productVersion
             },
             "fullrepo",
             "repo",
-            new ManifestFilter(Enumerable.Empty<string>()),
+            new ManifestFilter([]),
             new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
             "base");
 }

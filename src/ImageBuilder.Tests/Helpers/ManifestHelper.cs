@@ -31,13 +31,13 @@ public static class ManifestHelper
         string readmeTemplate = null,
         string mcrTagsMetadataTemplate = null)
     {
-        Readme[] readmes = Array.Empty<Readme>();
+        Readme[] readmes = [];
         if (readme is not null)
         {
-            readmes = new[]
-            {
+            readmes =
+            [
                 new Readme(readme, readmeTemplate)
-            };
+            ];
         }
 
         return new Repo
@@ -92,7 +92,7 @@ public static class ManifestHelper
             Tags = tags.ToDictionary(tag => tag, tag => new Tag() { DocType = tagDocumentationType }),
             Architecture = architecture,
             Variant = variant,
-            CustomBuildLegGroups = customBuildLegGroups ?? Array.Empty<CustomBuildLegGroup>()
+            CustomBuildLegGroups = customBuildLegGroups ?? []
         };
     }
 
@@ -126,7 +126,7 @@ public static class ManifestHelper
 
         manifestOptionsMock
             .Setup(o => o.GetManifestFilter())
-            .Returns(new ManifestFilter(Enumerable.Empty<string>()));
+            .Returns(new ManifestFilter([]));
 
         return manifestOptionsMock.Object;
     }

@@ -53,16 +53,16 @@ public class GetStaleImagesCommandTests
         const string dockerfile1Path = "dockerfile1/Dockerfile";
         const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"]),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -79,11 +79,11 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: "base1@base1digest-diff",
-                                            simpleTags: new List<string> { "tag1" }),
+                                            simpleTags: ["tag1"]),
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: "base2@base2digest",
-                                            simpleTags: new List<string> { "tag2" })
+                                            simpleTags: ["tag2"])
                                     }
                                 }
                             }
@@ -91,7 +91,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -136,16 +136,16 @@ public class GetStaleImagesCommandTests
         const string dockerfile1Path = "dockerfile1/Dockerfile";
         const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"]),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -162,11 +162,11 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: "base2@base2digest-diff",
-                                            simpleTags: new List<string> { "tag1" }),
+                                            simpleTags: ["tag1"]),
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: "base3@base3digest",
-                                            simpleTags: new List<string> { "tag2" })
+                                            simpleTags: ["tag2"])
                                     }
                                 }
                             }
@@ -174,7 +174,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -226,20 +226,20 @@ public class GetStaleImagesCommandTests
         const string dockerfile2Path = "dockerfile2";
         const string dockerfile3Path = "dockerfile3";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1, osType: "windows"),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                            CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                            CreatePlatform(dockerfile1Path, ["tag1"], OS.Windows),
+                            CreatePlatform(dockerfile2Path, ["tag2"], OS.Linux),
+                            CreatePlatform(dockerfile3Path, ["tag3"], OS.Windows)))),
                 new ImageArtifactDetails()
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -290,20 +290,20 @@ public class GetStaleImagesCommandTests
         const string dockerfile2Path = "dockerfile2";
         const string dockerfile3Path = "dockerfile3";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1, osType: "windows"),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                            CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                            CreatePlatform(dockerfile1Path, ["tag1"], OS.Windows),
+                            CreatePlatform(dockerfile2Path, ["tag2"], OS.Linux),
+                            CreatePlatform(dockerfile3Path, ["tag3"], OS.Windows)))),
                 new ImageArtifactDetails()
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -328,9 +328,7 @@ public class GetStaleImagesCommandTests
         await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
         Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-            new Dictionary<Subscription, IList<string>>
-            {
-            };
+            [];
 
         fixture.Verify(expectedPathsBySubscription);
     }
@@ -346,19 +344,19 @@ public class GetStaleImagesCommandTests
         const string dockerfile1Path = "dockerfile1/Dockerfile";
         const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"]),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails()
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -408,15 +406,15 @@ public class GetStaleImagesCommandTests
         const string dockerfile2Path = "dockerfile2/Dockerfile";
         const string dockerfile3Path = "dockerfile3/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1, 1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -433,7 +431,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: "base1@base1digest-diff",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -463,11 +461,11 @@ public class GetStaleImagesCommandTests
                     CreateRepo(
                         repo2,
                         CreateImage(
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" }))),
+                            CreatePlatform(dockerfile2Path, ["tag2"]))),
                     CreateRepo(
                         repo3,
                         CreateImage(
-                            CreatePlatform(dockerfile3Path, new string[] { "tag3" })))),
+                            CreatePlatform(dockerfile3Path, ["tag3"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -484,7 +482,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: "base1@base1digest-diff",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -501,7 +499,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: "base2@base2digest-diff",
-                                            simpleTags: new List<string> { "tag2" })
+                                            simpleTags: ["tag2"])
                                     }
                                 }
                             }
@@ -518,7 +516,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile3Path,
                                             baseImageDigest: "base3@base3digest",
-                                            simpleTags: new List<string> { "tag3" })
+                                            simpleTags: ["tag3"])
                                     }
                                 }
                             }
@@ -526,7 +524,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -586,16 +584,16 @@ public class GetStaleImagesCommandTests
         const string baseImage = "base1";
         const string baseImageDigest = "base1digest";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"]),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -603,28 +601,28 @@ public class GetStaleImagesCommandTests
                         new RepoData
                         {
                             Repo = repo1,
-                            Images = new List<ImageData>
-                            {
+                            Images =
+                            [
                                 new ImageData
                                 {
-                                    Platforms = new List<PlatformData>
-                                    {
+                                    Platforms =
+                                    [
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: baseImageDigest + "-diff",
-                                            simpleTags: new List<string> { "tag1" }),
+                                            simpleTags: ["tag1"]),
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: baseImageDigest + "-diff",
-                                            simpleTags: new List<string> { "tag2" })
-                                    }
+                                            simpleTags: ["tag2"])
+                                    ]
                                 }
-                            }
+                            ]
                         }
                     }
                 }
             )
-        };
+        ];
 
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
@@ -675,15 +673,15 @@ public class GetStaleImagesCommandTests
         const string baseImage = "base1";
         const string baseImageDigest = "base1digest";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -700,7 +698,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: $"{baseImage}@{baseImageDigest}",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -708,7 +706,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -728,7 +726,7 @@ public class GetStaleImagesCommandTests
 
         // No paths are expected
         Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-            new Dictionary<Subscription, IList<string>>();
+            [];
 
         fixture.Verify(expectedPathsBySubscription);
     }
@@ -742,15 +740,15 @@ public class GetStaleImagesCommandTests
         const string repo1 = "test-repo";
         const string dockerfile1Path = "dockerfile1/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -766,7 +764,7 @@ public class GetStaleImagesCommandTests
                                     {
                                         CreatePlatform(
                                             dockerfile1Path,
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -774,7 +772,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -792,7 +790,7 @@ public class GetStaleImagesCommandTests
         await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
         // No paths are expected
-        Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new();
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription = [];
 
         fixture.Verify(expectedPathsBySubscription);
     }
@@ -820,31 +818,31 @@ public class GetStaleImagesCommandTests
         const string otherImage = "other";
         const string otherImageDigest = "otherDigest";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription("repo1"),
                 CreateManifest(
                     CreateRepo(
                         runtimeDepsRepo,
                         CreateImage(
-                            CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(runtimeDepsDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         runtimeRepo,
                         CreateImage(
-                            CreatePlatform(runtimeDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(runtimeDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         sdkRepo,
                         CreateImage(
-                            CreatePlatform(sdkDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(sdkDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         aspnetRepo,
                         CreateImage(
-                            CreatePlatform(aspnetDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(aspnetDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         otherRepo,
                         CreateImage(
-                            CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
+                            CreatePlatform(otherDockerfilePath, ["tag1"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -861,7 +859,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             runtimeDepsDockerfilePath,
                                             baseImageDigest: $"{baseImage}@{baseImageDigest}-diff",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -891,7 +889,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             otherDockerfilePath,
                                             baseImageDigest: $"{otherImage}@{otherImageDigest}",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -899,7 +897,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -969,37 +967,37 @@ public class GetStaleImagesCommandTests
         const string baseImage = "base1";
         const string baseImageDigest = "base1digest";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription("repo1"),
                 CreateManifest(
                     CreateRepo(
                         RuntimeDepsRepo,
                         CreateImage(
-                            CreatePlatform(JammyRuntimeDepsDockerfilePath, new string[] { "jammy" })),
+                            CreatePlatform(JammyRuntimeDepsDockerfilePath, ["jammy"])),
                         CreateImage(
-                            CreatePlatform(JammyChiseledRuntimeDepsDockerfilePath, new string[] { "jammy-chiseled" }))),
+                            CreatePlatform(JammyChiseledRuntimeDepsDockerfilePath, ["jammy-chiseled"]))),
                     CreateRepo(
                         RuntimeRepo,
                         CreateImage(
-                            CreatePlatform(JammyRuntimeDockerfilePath, new string[] { "jammy" })),
+                            CreatePlatform(JammyRuntimeDockerfilePath, ["jammy"])),
                         CreateImage(
-                            CreatePlatform(JammyChiseledRuntimeDockerfilePath, new string[] { "jammy-chiseled" }))),
+                            CreatePlatform(JammyChiseledRuntimeDockerfilePath, ["jammy-chiseled"]))),
                     CreateRepo(
                         AspnetRepo,
                         CreateImage(
-                            CreatePlatform(JammyAspnetDockerfilePath, new string[] { "jammy" })),
+                            CreatePlatform(JammyAspnetDockerfilePath, ["jammy"])),
                         CreateImage(
-                            CreatePlatform(JammyChiseledAspnetDockerfilePath, new string[] { "jammy-chiseled" }))),
+                            CreatePlatform(JammyChiseledAspnetDockerfilePath, ["jammy-chiseled"]))),
                     CreateRepo(
                         SdkRepo,
                         CreateImage(
-                            CreatePlatform(JammySdkDockerfilePath, new string[] { "jammy" }))),
+                            CreatePlatform(JammySdkDockerfilePath, ["jammy"]))),
                     CreateRepo(
                         MonitorRepo,
                         CreateImage(
-                            CreatePlatform(JammyChiseledMonitorDockerfilePath, new string[] { "jammy-chiseled" })))),
+                            CreatePlatform(JammyChiseledMonitorDockerfilePath, ["jammy-chiseled"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -1016,7 +1014,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             JammyRuntimeDepsDockerfilePath,
                                             baseImageDigest: $"{baseImage}@{baseImageDigest}-diff",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -1040,7 +1038,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new()
@@ -1112,36 +1110,36 @@ public class GetStaleImagesCommandTests
         const string otherImage = "other";
         const string otherImageDigest = "otherDigest";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription("repo1"),
                 CreateManifest(
                     CreateRepo(
                         runtimeDepsRepo,
                         CreateImage(
-                            CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(runtimeDepsDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         runtimeRepo,
                         CreateImage(
-                            CreatePlatform(runtimeDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(runtimeDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         sdkRepo,
                         CreateImage(
-                            CreatePlatform(sdkDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(sdkDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         aspnetRepo,
                         CreateImage(
-                            CreatePlatform(aspnetDockerfilePath, new string[] { "tag1" }))),
+                            CreatePlatform(aspnetDockerfilePath, ["tag1"]))),
                     CreateRepo(
                         otherRepo,
                         CreateImage(
-                            CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
+                            CreatePlatform(otherDockerfilePath, ["tag1"])))),
                 new ImageArtifactDetails
                 {
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -1193,16 +1191,16 @@ public class GetStaleImagesCommandTests
         const string dockerfile1Path = "path/to/Dockerfile.custom";
         const string dockerfile2Path = "path/to/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"]),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -1219,11 +1217,11 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: "base1@base1digest-diff",
-                                            simpleTags: new List<string> { "tag1" }),
+                                            simpleTags: ["tag1"]),
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: "base2@base2digest",
-                                            simpleTags: new List<string> { "tag2" })
+                                            simpleTags: ["tag2"])
                                     }
                                 }
                             }
@@ -1231,7 +1229,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -1275,15 +1273,15 @@ public class GetStaleImagesCommandTests
         const string repo1 = "test-repo";
         const string dockerfile1Path = "dockerfile1/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -1307,7 +1305,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -1350,17 +1348,17 @@ public class GetStaleImagesCommandTests
         const string dockerfile1Path = "dockerfile1/Dockerfile";
         const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" })),
+                            CreatePlatform(dockerfile1Path, ["tag1"])),
                         CreateImage(
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -1378,7 +1376,7 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: "base1@base1digest",
-                                            simpleTags: new List<string> { "tag1" })
+                                            simpleTags: ["tag1"])
                                     }
                                 }
                             }
@@ -1386,7 +1384,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -1407,7 +1405,7 @@ public class GetStaleImagesCommandTests
 
         // No paths are expected
         Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-            new Dictionary<Subscription, IList<string>>();
+            [];
 
         fixture.Verify(expectedPathsBySubscription);
     }
@@ -1422,16 +1420,16 @@ public class GetStaleImagesCommandTests
         const string repo1 = "test-repo";
         const string dockerfile1Path = "dockerfile1/Dockerfile";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }, osVersion: "alpine3.10"),
-                            CreatePlatform(dockerfile1Path, new string[] { "tag2" }, osVersion: "alpine3.11")))),
+                            CreatePlatform(dockerfile1Path, ["tag1"], osVersion: "alpine3.10"),
+                            CreatePlatform(dockerfile1Path, ["tag2"], osVersion: "alpine3.11")))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -1460,7 +1458,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
@@ -1506,16 +1504,16 @@ public class GetStaleImagesCommandTests
         const string dockerfile2Path = "dockerfile2/Dockerfile";
         const string CustomRegistry = "my-registry.io";
 
-        SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
-        {
+        SubscriptionInfo[] subscriptionInfos =
+        [
             new SubscriptionInfo(
                 CreateSubscription(repo1),
                 CreateManifest(
                     CreateRepo(
                         repo1,
                         CreateImage(
-                            CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                            CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreatePlatform(dockerfile1Path, ["tag1"]),
+                            CreatePlatform(dockerfile2Path, ["tag2"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -1532,11 +1530,11 @@ public class GetStaleImagesCommandTests
                                         CreatePlatform(
                                             dockerfile1Path,
                                             baseImageDigest: $"{CustomRegistry}/base1@base1digest",
-                                            simpleTags: new List<string> { "tag1" }),
+                                            simpleTags: ["tag1"]),
                                         CreatePlatform(
                                             dockerfile2Path,
                                             baseImageDigest: $"{CustomRegistry}/base2@alternate-base2digest",
-                                            simpleTags: new List<string> { "tag2" })
+                                            simpleTags: ["tag2"])
                                     }
                                 }
                             }
@@ -1544,7 +1542,7 @@ public class GetStaleImagesCommandTests
                     }
                 }
             )
-        };
+        ];
 
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos = new()
         {
@@ -1629,9 +1627,9 @@ public class GetStaleImagesCommandTests
     /// </summary>
     private class TestFixture : IDisposable
     {
-        private readonly List<string> filesToCleanup = new List<string>();
-        private readonly List<string> foldersToCleanup = new List<string>();
-        private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
+        private readonly List<string> filesToCleanup = [];
+        private readonly List<string> foldersToCleanup = [];
+        private readonly Dictionary<string, string> imageDigests = [];
         private readonly string subscriptionsPath;
         private readonly GetStaleImagesCommand command;
         private readonly Mock<ILogger<GetStaleImagesCommand>> loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
@@ -1892,7 +1890,7 @@ public class GetStaleImagesCommandTests
             manifestServiceMock
                 .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ImageName image, bool isDryRun, CancellationToken _) =>
-                    new ManifestQueryResult(imageDigests[image], new JsonObject()));
+                    new ManifestQueryResult(imageDigests[image], []));
 
             Mock<IManifestServiceFactory> manifestServiceFactoryMock =
                 ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock.Object);

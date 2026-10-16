@@ -40,25 +40,24 @@ public class QueueBuildCommandTests
     {
         const string path1 = "path1";
 
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path1
-                    }
+                    ]
                 }
-            }
-        };
+            ]
+        ];
 
         PagedList<WebApi.Build> inProgressBuilds = new()
         {
@@ -82,25 +81,24 @@ public class QueueBuildCommandTests
     {
         const string path1 = "path1";
 
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path1
-                    }
+                    ]
                 }
-            }
-        };
+            ]
+        ];
 
         PagedList<WebApi.Build> allBuilds = new();
 
@@ -126,25 +124,24 @@ public class QueueBuildCommandTests
     {
         const string path1 = "path1";
 
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path1
-                    }
+                    ]
                 }
-            }
-        };
+            ]
+        ];
 
         PagedList<WebApi.Build> allBuilds = new();
 
@@ -182,25 +179,24 @@ public class QueueBuildCommandTests
     {
         const string path1 = "path1";
 
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path1
-                    }
+                    ]
                 }
-            }
-        };
+            ]
+        ];
 
         PagedList<WebApi.Build> allBuilds = new();
 
@@ -248,45 +244,43 @@ public class QueueBuildCommandTests
         const string path2 = "path2";
         const string path3 = "path3";
 
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1"),
             CreateSubscription("repo2")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path1
-                    }
+                    ]
                 },
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[1].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path2
-                    }
+                    ]
                 }
-            },
-            new List<SubscriptionImagePaths>
-            {
+            ],
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[1].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path3
-                    }
+                    ]
                 }
-            }
-        };
+            ]
+        ];
 
         using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
         await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
@@ -320,30 +314,28 @@ public class QueueBuildCommandTests
     [TestMethod]
     public async Task QueueBuildCommand_NoBaseImageChange()
     {
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = Array.Empty<string>()
+                    ImagePaths = []
                 }
-            },
-            new List<SubscriptionImagePaths>
-            {
+            ],
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = Array.Empty<string>()
+                    ImagePaths = []
                 }
-            }
-        };
+            ]
+        ];
 
         using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
         await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
@@ -391,37 +383,35 @@ public class QueueBuildCommandTests
         const string path2 = "path2";
         const string path3 = "path3";
 
-        Subscription[] subscriptions = new Subscription[]
-        {
+        Subscription[] subscriptions =
+        [
             CreateSubscription("repo1")
-        };
+        ];
 
-        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
-        {
-            new List<SubscriptionImagePaths>
-            {
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path1,
                         path2
-                    }
+                    ]
                 }
-            },
-            new List<SubscriptionImagePaths>
-            {
+            ],
+            [
                 new SubscriptionImagePaths
                 {
                     SubscriptionId = subscriptions[0].Id,
-                    ImagePaths = new string[]
-                    {
+                    ImagePaths =
+                    [
                         path3
-                    }
+                    ]
                 }
-            }
-        };
+            ]
+        ];
 
         using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
         await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
@@ -494,8 +484,8 @@ public class QueueBuildCommandTests
     {
         private readonly PagedList<WebApi.Build> inProgressBuilds;
         private readonly PagedList<WebApi.Build> allBuilds;
-        private readonly List<string> filesToCleanup = new List<string>();
-        private readonly List<string> foldersToCleanup = new List<string>();
+        private readonly List<string> filesToCleanup = [];
+        private readonly List<string> foldersToCleanup = [];
         private readonly string subscriptionsPath;
         private readonly Mock<IBuildHttpClient> buildHttpClientMock;
         private readonly Mock<IProjectHttpClient> projectHttpClientMock;

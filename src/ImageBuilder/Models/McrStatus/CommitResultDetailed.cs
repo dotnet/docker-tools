@@ -16,7 +16,7 @@ public class CommitResultDetailed
     public DateTime QueueTime { get; set; }
     public string CommitDigest { get; set; }
     public string Branch { get; set; }
-    public List<string> ContentFiles { get; set; } = new List<string>();
+    public List<string> ContentFiles { get; set; } = [];
     public StageStatus OverallStatus { get; set; }
     public ContentSubstatus Substatus { get; set; } = new ContentSubstatus();
 }

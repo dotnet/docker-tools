@@ -46,7 +46,7 @@ public class CleanAcrImagesOptions : Options
     private static readonly Option<string[]> ImagesToExcludeOption = new("--exclude")
     {
         Description = $"Name of image to exclude from cleaning (does not apply when using the '{nameof(CleanAcrImagesAction.Delete)}' action)",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 

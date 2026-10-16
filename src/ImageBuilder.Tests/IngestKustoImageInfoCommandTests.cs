@@ -36,11 +36,10 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo("r1",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(repo1Image1DockerfilePath, new string[] { "t1" }),
-                        CreatePlatform(repo1Image2DockerfilePath, new string[] { "t2" })
-                    },
+                    [
+                        CreatePlatform(repo1Image1DockerfilePath, ["t1"]),
+                        CreatePlatform(repo1Image2DockerfilePath, ["t2"])
+                    ],
                     productVersion: "1.0.2",
                     sharedTags: new Dictionary<string, Tag>
                     {
@@ -48,10 +47,9 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
                     })),
             CreateRepo("r2",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(repo2Image2DockerfilePath, new string[] { "t3" })
-                    },
+                    [
+                        CreatePlatform(repo2Image2DockerfilePath, ["t3"])
+                    ],
                     productVersion: "2.0.5"))
         );
         string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -72,10 +70,10 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
                             {
                                 Created = new DateTime(2020, 4, 20, 21, 57, 00, DateTimeKind.Utc),
                                 Digest = "abc",
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "st1"
-                                }
+                                ]
                             },
                             Platforms =
                             {
@@ -84,29 +82,29 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
                                         repo1Image1DockerfilePath,
                                         created: new DateTime(2020, 4, 20, 21, 56, 50, DateTimeKind.Utc),
                                         digest: "def",
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "t1"
-                                        },
-                                        layers: new List<Layer>
-                                        {
+                                        ],
+                                        layers:
+                                        [
                                             new Layer("qwe", 123),
                                             new Layer("asd", 456)
-                                        })
+                                        ])
                                 },
                                 {
                                     Helpers.ImageInfoHelper.CreatePlatform(
                                         repo1Image2DockerfilePath,
                                         created: new DateTime(2020, 4, 20, 21, 56, 56, DateTimeKind.Utc),
                                         digest: "ghi",
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "t2"
-                                        },
-                                        layers: new List<Layer>
-                                        {
+                                        ],
+                                        layers:
+                                        [
                                             new Layer("qwe", 123)
-                                        })
+                                        ])
                                 }
                             },
                             ProductVersion = "1.0.2",
@@ -126,14 +124,14 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
                                     repo2Image2DockerfilePath,
                                     created: new DateTime(2020, 4, 20, 21, 56, 58, DateTimeKind.Utc),
                                     digest: "jkl",
-                                    simpleTags: new List<string>
-                                    {
+                                    simpleTags:
+                                    [
                                         "t3"
-                                    },
-                                    layers: new List<Layer>
-                                    {
+                                    ],
+                                    layers:
+                                    [
                                         new Layer("zxc", 789)
-                                    })
+                                    ])
                             },
                             ProductVersion = "2.0.5"
                         }
@@ -173,10 +171,9 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(repo1Image1DockerfilePath, new string[] { "t1", "t2", "t3" } )
-                    },
+                    [
+                        CreatePlatform(repo1Image1DockerfilePath, ["t1", "t2", "t3"] )
+                    ],
                     productVersion: "1.0.5"))
         );
 
@@ -203,16 +200,16 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
                                     repo1Image1DockerfilePath,
                                     created: new DateTime(2020, 4, 20, 21, 56, 58, DateTimeKind.Utc),
                                     digest: "jkl",
-                                    simpleTags: new List<string>
-                                    {
+                                    simpleTags:
+                                    [
                                         "t1",
                                         "t2",
                                         "t3"
-                                    },
-                                    layers: new List<Layer>
-                                    {
+                                    ],
+                                    layers:
+                                    [
                                         new Layer("zxc", 0)
-                                    })
+                                    ])
                             },
                             ProductVersion = "1.0.5"
                         }
@@ -249,7 +246,7 @@ public class IngestKustoImageInfoCommandTests(TestContext testContext)
         string imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
         File.WriteAllText(imageInfoPath, JsonHelper.SerializeObject(srcImageArtifactDetails));
 
-        Dictionary<string, string> ingestedData = new();
+        Dictionary<string, string> ingestedData = [];
 
         Mock<IKustoClient> kustoClientMock = new();
         kustoClientMock

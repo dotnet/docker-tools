@@ -19,8 +19,8 @@ public partial class PlatformInfo
     private const string StageIdMatchName = "stageId";
     private const string ScratchIdentifier = "scratch";
 
-    private readonly List<string> _overriddenFromImages = new();
-    private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();
+    private readonly List<string> _overriddenFromImages = [];
+    private IEnumerable<string> _internalRepos = [];
 
     public string BaseOsVersion { get; private set; }
     public string BuildOsVersion { get; private set; }
@@ -30,8 +30,8 @@ public partial class PlatformInfo
     public string DockerfilePathRelativeToManifest { get; private set; }
     public string? DockerfileTemplate { get; private set; }
     public string? FinalStageFromImage { get; private set; } = string.Empty;
-    public IEnumerable<string> ExternalFromImages { get; private set; } = Enumerable.Empty<string>();
-    public IEnumerable<string> InternalFromImages { get; private set; } = Enumerable.Empty<string>();
+    public IEnumerable<string> ExternalFromImages { get; private set; } = [];
+    public IEnumerable<string> InternalFromImages { get; private set; } = [];
     public bool IsWindows => Model.OS == OS.Windows;
     public Platform Model { get; private set; }
     public IEnumerable<string> OverriddenFromImages => _overriddenFromImages;

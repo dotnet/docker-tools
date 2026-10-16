@@ -40,7 +40,7 @@ public class PostPublishNotificationCommand(
         string buildUrl = string.Empty;
         Dictionary<string, TaskResult?> taskResults = Options.TaskNames
             .ToDictionary(name => name, name => (TaskResult?)null);
-        Dictionary<string, string> buildParameters = new();
+        Dictionary<string, string> buildParameters = [];
         BuildResult overallResult = BuildResult.Succeeded;
         BuildReason buildReason = BuildReason.None;
         string? correlatedQueueNotificationUrl = null;
@@ -225,12 +225,12 @@ public class PostPublishNotificationCommand(
     {
         if (!File.Exists(imageInfoPath))
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
 
         ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
 
-        List<(string digestSha, string repo, IEnumerable<string> tags)> imageInfos = new();
+        List<(string digestSha, string repo, IEnumerable<string> tags)> imageInfos = [];
         foreach (RepoData repoData in imageArtifactDetails.Repos)
         {
             foreach (ImageData image in repoData.Images)
@@ -257,7 +257,7 @@ public class PostPublishNotificationCommand(
             .GroupBy(imageInfo => imageInfo.repo)
             .OrderBy(group => group.Key);
 
-        IEnumerable<string> imagesMarkdown = new List<string>();
+        IEnumerable<string> imagesMarkdown = [];
         foreach (IGrouping<string, (string digestSha, string repo, IEnumerable<string> tags)> imageInfoRepoGroup in imageInfosByRepo)
         {
             StringBuilder imageRepoMarkdown = new();

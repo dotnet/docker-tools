@@ -73,7 +73,7 @@ public static class GitHelper
         {
             GitTree tree = await client.PostTreeAsync(project, masterSha, changes.ToArray());
             GitCommit commit = await client.PostCommitAsync(
-                project, commitMessage, tree.Sha, new[] { masterSha });
+                project, commitMessage, tree.Sha, [masterSha]);
 
             // Only fast-forward. Don't overwrite other changes: throw exception instead.
             return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);

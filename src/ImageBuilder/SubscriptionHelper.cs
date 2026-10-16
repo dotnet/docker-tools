@@ -21,8 +21,7 @@ public static class SubscriptionHelper
     {
         string subscriptionsJson = File.ReadAllText(subscriptionsPath);
         Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson) ?? throw new JsonException($"Unable to correctly deserialize path '{subscriptionsJson}'.");
-        List<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests = new
-            List<(Subscription Subscription, ManifestInfo Manifest)>();
+        List<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests = [];
         foreach (Subscription subscription in subscriptions)
         {
             ManifestInfo? manifest = GetSubscriptionManifest(

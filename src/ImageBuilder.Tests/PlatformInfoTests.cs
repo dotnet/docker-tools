@@ -72,7 +72,7 @@ public class PlatformInfoTests
 
     private void ValidateGetOSDisplayName(OS os, string osVersion, string expectedDisplayName)
     {
-        Platform platform = CreatePlatform("runtime/2.1", new string[] { "runtime" }, os: os, osVersion: osVersion);
+        Platform platform = CreatePlatform("runtime/2.1", ["runtime"], os: os, osVersion: osVersion);
         VariableHelper variableHelper = new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
         PlatformInfo platformInfo = PlatformInfo.Create(platform, "", "runtime", variableHelper, "./");
 

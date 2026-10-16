@@ -58,7 +58,7 @@ public static class CertificateChainCalculator
         // Read unprotected header (index 1) - this is a map
         List<byte[]> x5chainBytes = ReadX5ChainFromMap(reader);
 
-        List<string> thumbprints = new List<string>();
+        List<string> thumbprints = [];
         foreach (byte[] certBytes in x5chainBytes)
         {
             thumbprints.Add(ComputeSha256Hex(certBytes));
@@ -74,7 +74,7 @@ public static class CertificateChainCalculator
     {
         int mapLength = reader.ReadStartMap()
             ?? throw new InvalidOperationException("Indefinite-length CBOR maps are not supported.");
-        List<byte[]> x5chainArray = new List<byte[]>();
+        List<byte[]> x5chainArray = [];
 
         for (int i = 0; i < mapLength; i++)
         {

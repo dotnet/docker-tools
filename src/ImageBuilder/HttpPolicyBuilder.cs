@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public class HttpPolicyBuilder
 {
-    private readonly List<AsyncPolicy<HttpResponseMessage>> _policies = new List<AsyncPolicy<HttpResponseMessage>>();
+    private readonly List<AsyncPolicy<HttpResponseMessage>> _policies = [];
 
     public static HttpPolicyBuilder Create() => new HttpPolicyBuilder();
 

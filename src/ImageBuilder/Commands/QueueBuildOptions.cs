@@ -14,7 +14,7 @@ public class QueueBuildOptions : Options
 {
     public string SubscriptionsPath { get; set; } = string.Empty;
     public AzdoOptions AzdoOptions { get; set; } = new();
-    public IEnumerable<string> AllSubscriptionImagePaths { get; set; } = Enumerable.Empty<string>();
+    public IEnumerable<string> AllSubscriptionImagePaths { get; set; } = [];
     public GitOptions GitOptions { get; set; } = new();
 
     private static readonly GitOptionsBuilder GitBuilder =
@@ -34,7 +34,7 @@ public class QueueBuildOptions : Options
     private static readonly Option<string[]> ImagePathsOption = new("--image-paths")
     {
         Description = "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 

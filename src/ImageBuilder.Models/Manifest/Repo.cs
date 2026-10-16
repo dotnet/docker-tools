@@ -42,7 +42,7 @@ public class Repo
     [Description(
         "Info about the readme that documents the repo."
         )]
-    public Readme[] Readmes { get; set; } = Array.Empty<Readme>();
+    public Readme[] Readmes { get; set; } = [];
 
     public Repo()
     {

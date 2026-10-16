@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class PostPublishNotificationOptions : ManifestOptions
 {
-    public IList<string> TaskNames { get; set; } = new List<string>();
+    public IList<string> TaskNames { get; set; } = [];
     public string SourceRepo { get; set; } = string.Empty;
     public string SourceBranch { get; set; } = string.Empty;
     public string ImageInfoPath { get; set; } = string.Empty;
@@ -29,7 +29,7 @@ public class PostPublishNotificationOptions : ManifestOptions
     private static readonly Option<string[]> TaskNamesOption = new("--task")
     {
         Description = "Name of a build task to report the result of",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 

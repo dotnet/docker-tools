@@ -26,117 +26,117 @@ public class TrimUnchangedPlatformsCommandTests
     {
         ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
                                 new PlatformData { IsUnchanged = true },
-                            }
+                            ]
                         },
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData { IsUnchanged = true },
-                            }
+                            ]
                         },
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
                                 new PlatformData(),
-                            }
+                            ]
                         }
-                    }
+                    ]
                 },
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData { IsUnchanged = true },
-                            }
+                            ]
                         },
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData { IsUnchanged = true },
-                            }
+                            ]
                         }
-                    }
+                    ]
                 },
                 new RepoData
                 {
                     Repo = "repo3",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData()
-                            }
+                            ]
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
-                            }
+                            ]
                         },
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
                                 new PlatformData(),
-                            }
+                            ]
                         }
-                    }
+                    ]
                 },
                 new RepoData
                 {
                     Repo = "repo3",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData()
-                            }
+                            ]
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);
@@ -147,88 +147,88 @@ public class TrimUnchangedPlatformsCommandTests
     {
         ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
-                            }
+                            ]
                         },
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
                                 new PlatformData(),
-                            }
+                            ]
                         }
-                    }
+                    ]
                 },
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData()
-                            }
+                            ]
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
-                            }
+                            ]
                         },
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData(),
                                 new PlatformData(),
-                            }
+                            ]
                         }
-                    }
+                    ]
                 },
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new List<ImageData>
-                    {
+                    Images =
+                    [
                         new ImageData
                         {
-                            Platforms = new List<PlatformData>
-                            {
+                            Platforms =
+                            [
                                 new PlatformData()
-                            }
+                            ]
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);

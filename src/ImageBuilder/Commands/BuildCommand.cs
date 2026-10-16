@@ -27,7 +27,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
     private readonly IImageCacheService _imageCacheService;
     private readonly ImageDigestCache _imageDigestCache;
     private readonly HashSet<string> _processedTagNames = new(StringComparer.Ordinal);
-    private readonly HashSet<PlatformData> _builtPlatforms = new();
+    private readonly HashSet<PlatformData> _builtPlatforms = [];
     private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
     private readonly Lazy<string> _storageAccountToken;
 
@@ -35,7 +35,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
     /// Maps a source digest from the image info file to the corresponding digest in the copied location for image caching.
     /// This is specifically needed to support shared Dockerfile scenarios.
     /// </summary>
-    private readonly Dictionary<string, string> _sourceDigestCopyLocationMapping = new();
+    private readonly Dictionary<string, string> _sourceDigestCopyLocationMapping = [];
 
     private ImageArtifactDetails? _imageArtifactDetails;
 
@@ -158,7 +158,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
             throw new InvalidOperationException("Source repo URL must be provided when outputting to an image info file.");
         }
 
-        Dictionary<string, PlatformData> platformDataByTag = new Dictionary<string, PlatformData>();
+        Dictionary<string, PlatformData> platformDataByTag = [];
         foreach (PlatformData platformData in GetProcessedPlatforms())
         {
             if (platformData.PlatformInfo is not null)
@@ -171,7 +171,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         }
 
         IEnumerable<PlatformData> processedPlatforms = GetProcessedPlatforms();
-        List<PlatformData> platformsWithNoPushTags = new List<PlatformData>();
+        List<PlatformData> platformsWithNoPushTags = [];
 
         foreach (PlatformData platform in processedPlatforms)
         {
@@ -392,7 +392,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
         // published image so we don't need to recalculate it again.
         dstPlatform.BaseImageDigest = srcPlatform.BaseImageDigest;
-        dstPlatform.Layers = new List<Layer>(srcPlatform.Layers);
+        dstPlatform.Layers = [.. srcPlatform.Layers];
     }
 
     private RepoData CreateRepoData(RepoInfo repoInfo) =>
@@ -560,7 +560,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
     private IReadOnlyDictionary<string, string> GetBuildSecrets() =>
         Options.Internal
             ? new Dictionary<string, string> { ["ACCESSTOKEN"] = _storageAccountToken.Value }
-            : new Dictionary<string, string>();
+            : [];
 
     private IEnumerable<string> GetDockerBuildOptions() =>
         Options.DockerBuildOptions.Where(option => !string.IsNullOrWhiteSpace(option));
@@ -734,7 +734,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         .Where(repoData => repoData.Images != null)
         .SelectMany(repoData => repoData.Images)
         .SelectMany(imageData => imageData.Platforms)
-        ?? Enumerable.Empty<PlatformData>();
+        ?? [];
 
     private IReadOnlyList<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
         tagInfos.Select(tag => tag.FullyQualifiedName).Distinct(StringComparer.Ordinal).ToList();

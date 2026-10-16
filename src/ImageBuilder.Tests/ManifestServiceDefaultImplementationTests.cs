@@ -40,10 +40,10 @@ public class ManifestServiceDefaultImplementationTests
 
         manifestService
             .Setup(o => o.GetManifestAsync("tag1", false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult(ManifestDigest, new JsonObject()));
+            .ReturnsAsync(new ManifestQueryResult(ManifestDigest, []));
         manifestService
             .Setup(o => o.GetManifestAsync("tag2", false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
+            .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, []));
 
         string digestSha = await manifestService.Object.GetManifestDigestShaAsync(tag, false, TestContext?.CancellationToken ?? default);
         digestSha.ShouldBe(expectedDigestSha);

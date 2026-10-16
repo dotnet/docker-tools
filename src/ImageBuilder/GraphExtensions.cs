@@ -13,12 +13,12 @@ public static class GraphExtensions
 {
     public static IEnumerable<IEnumerable<T>> GetCompleteSubgraphs<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getParents)
     {
-        List<T[]> subgraphs = new List<T[]>();
+        List<T[]> subgraphs = [];
 
         List<Node<T>> nodes = CreateNodeList(source, getParents);
         while (nodes.Any())
         {
-            HashSet<Node<T>> subgraph = new HashSet<Node<T>>();
+            HashSet<Node<T>> subgraph = [];
             AddSubgraphNode(subgraph, nodes.First(), nodes);
             subgraphs.Add(subgraph.Select(node => node.Item).ToArray());
         }
@@ -28,7 +28,7 @@ public static class GraphExtensions
 
     private static List<Node<T>> CreateNodeList<T>(IEnumerable<T> source, Func<T, IEnumerable<T>> getParents)
     {
-        Dictionary<T, Node<T>> nodes = new Dictionary<T, Node<T>>();
+        Dictionary<T, Node<T>> nodes = [];
 
         foreach (T item in source)
         {
@@ -72,7 +72,7 @@ public static class GraphExtensions
     private class Node<T>
     {
         public T Item;
-        public List<Node<T>> Parents { get; } = new List<Node<T>>();
-        public List<Node<T>> Children { get; } = new List<Node<T>>();
+        public List<Node<T>> Parents { get; } = [];
+        public List<Node<T>> Children { get; } = [];
     }
 }

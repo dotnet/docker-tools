@@ -54,11 +54,11 @@ public class PublishMcrDocsCommandTests
 
         Repo repo;
         Manifest manifest = CreateManifest(
-            repo = CreateRepo("dotnet/repo", new Image[]
-            {
+            repo = CreateRepo("dotnet/repo",
+            [
                 CreateImage(
-                    CreatePlatform(CreateDockerfile("1.0/runtime/linux", tempFolderContext), new string[] { "tag" }))
-            }, RepoReadmePath, ReadmeTemplatePath, Path.GetFileName(tagsMetadataTemplatePath)));
+                    CreatePlatform(CreateDockerfile("1.0/runtime/linux", tempFolderContext), ["tag"]))
+            ], RepoReadmePath, ReadmeTemplatePath, Path.GetFileName(tagsMetadataTemplatePath)));
         manifest.Registry = "mcr.microsoft.com";
         manifest.Readme = new(ProductFamilyReadmePath, ReadmeTemplatePath);
         repo.Id = "repo";

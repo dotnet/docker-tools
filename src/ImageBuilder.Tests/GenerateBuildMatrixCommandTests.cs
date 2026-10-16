@@ -67,17 +67,15 @@ public class GenerateBuildMatrixCommandTests
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime-deps",
                     CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
-                        },
+                        [
+                            CreatePlatform(runtimeDepsRelativeDir, ["tag"])
+                        ],
                         productVersion: "2.1.1")),
                 CreateRepo("runtime",
                     CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(runtimeRelativeDir, new string[] { "runtime" })
-                        },
+                        [
+                            CreatePlatform(runtimeRelativeDir, ["runtime"])
+                        ],
                         productVersion: "2.2.3-preview"))
             );
 
@@ -139,13 +137,13 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime-deps",
                 CreateImage(
-                    CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" }))),
+                    CreatePlatform(runtimeDepsRelativeDir, ["tag"]))),
             CreateRepo("sdk",
                 CreateImage(
-                    CreatePlatform(sdkRelativeDir, new string[] { "tag" }))),
+                    CreatePlatform(sdkRelativeDir, ["tag"]))),
             CreateRepo("sample",
                 CreateImage(
-                    CreatePlatform(sampleRelativeDir, new string[] { "tag" })))
+                    CreatePlatform(sampleRelativeDir, ["tag"])))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -376,31 +374,31 @@ public class GenerateBuildMatrixCommandTests
         GenerateBuildMatrixCommand command = CreateCommand();
         command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
         command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
-        command.Options.DistinctMatrixOsVersions = new string[]
-        {
+        command.Options.DistinctMatrixOsVersions =
+        [
             CustomMatrixOsVersion
-        };
+        ];
 
         Manifest manifest = CreateManifest(
             CreateRepo("aspnet",
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext),
-                        new string[] { "os" })),
+                        ["os"])),
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/aspnet/os2/amd64", tempFolderContext),
-                        new string[] { "os2" },
+                        ["os2"],
                         osVersion: CustomMatrixOsVersion))),
             CreateRepo("sdk",
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/sdk/os/amd64", tempFolderContext, "aspnet:os"),
-                        new string[] { "tag" })),
+                        ["tag"])),
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/sdk/os2/amd64", tempFolderContext, "aspnet:os2"),
-                        new string[] { "tag2" },
+                        ["tag2"],
                         osVersion: CustomMatrixOsVersion)))
         );
 
@@ -441,14 +439,14 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/windowsservercore-ltsc2019", tempFolderContext),
-                        new string[] { "ltsc2019" },
+                        ["ltsc2019"],
                         os: OS.Windows,
                         osVersion: "windowsservercore-ltsc2019",
                         buildOsVersion: "windowsservercore-ltsc2025")),
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/windowsservercore-ltsc2025", tempFolderContext),
-                        new string[] { "ltsc2025" },
+                        ["ltsc2025"],
                         os: OS.Windows,
                         osVersion: "windowsservercore-ltsc2025")))
         );
@@ -491,7 +489,7 @@ public class GenerateBuildMatrixCommandTests
         command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
         command.Options.MatrixType = MatrixType.PlatformVersionedOs;
         command.Options.ProductVersionComponents = 2;
-        command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
+        command.Options.CustomBuildLegGroups = [customBuildLegGroup];
 
         string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
         string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
@@ -502,43 +500,39 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfileRuntimeDepsFullPath, new string[] { "tag" })
-                    },
+                    [
+                            CreatePlatform(dockerfileRuntimeDepsFullPath, ["tag"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfileRuntimePath, new string[] { "runtime" },
-                                customBuildLegGroups: new CustomBuildLegGroup[]
-                                {
+                    [
+                            CreatePlatform(dockerfileRuntimePath, ["runtime"],
+                                customBuildLegGroups:
+                                [
                                     new CustomBuildLegGroup
                                     {
                                         Name = customBuildLegGroup,
                                         Type = dependencyType,
-                                        Dependencies = new string[]
-                                        {
+                                        Dependencies =
+                                        [
                                             "sdk2:tag"
-                                        }
+                                        ]
                                     }
-                                })
-                    },
+                                ])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("runtime2",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "trixie-slim")
-                    },
+                    [
+                            CreatePlatform(dockerfileRuntime2FullPath, ["tag"], osVersion: "trixie-slim")
+                    ],
                     productVersion: "2.0")),
             CreateRepo("sdk2",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfileSdk2FullPath, new string[] { "tag" }, osVersion: "trixie")
-                    },
+                    [
+                            CreatePlatform(dockerfileSdk2FullPath, ["tag"], osVersion: "trixie")
+                    ],
                     productVersion: "2.0"))
         );
 
@@ -572,62 +566,58 @@ public class GenerateBuildMatrixCommandTests
         command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
         command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
         command.Options.ProductVersionComponents = 2;
-        command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
+        command.Options.CustomBuildLegGroups = [customBuildLegGroup];
 
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/runtime/nanoserver-1909", tempFolderContext),
-                            new string[] { "nanoserver-1909" },
+                            ["nanoserver-1909"],
                             os: OS.Windows,
                             osVersion: "nanoserver-1909")
-                    },
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/runtime/windowsservercore-1909", tempFolderContext),
-                            new string[] { "windowsservercore-1909" },
+                            ["windowsservercore-1909"],
                             os: OS.Windows,
                             osVersion: "windowsservercore-1909")
-                    },
+                    ],
                     productVersion: "1.0")),
             CreateRepo("aspnet",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/aspnet/nanoserver-1909", tempFolderContext, "runtime:nanoserver-1909"),
-                            new string[] { "nanoserver-1909" },
+                            ["nanoserver-1909"],
                             os: OS.Windows,
                             osVersion: "nanoserver-1909")
-                    },
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/aspnet/windowsservercore-1909", tempFolderContext, "runtime:windowsservercore-1909"),
-                            new string[] { "windowsservercore-1909" },
+                            ["windowsservercore-1909"],
                             os: OS.Windows,
                             osVersion: "windowsservercore-1909",
-                            customBuildLegGroups: new CustomBuildLegGroup[]
-                            {
+                            customBuildLegGroups:
+                            [
                                 new CustomBuildLegGroup
                                 {
                                     Name = customBuildLegGroup,
                                     Type = CustomBuildLegDependencyType.Supplemental,
-                                    Dependencies = new string[]
-                                    {
+                                    Dependencies =
+                                    [
                                         "aspnet:nanoserver-1909"
-                                    }
+                                    ]
                                 }
-                            })
-                    },
+                            ])
+                    ],
                     productVersion: "1.0"))
         );
 
@@ -669,31 +659,27 @@ public class GenerateBuildMatrixCommandTests
             // ensure it gets its own matrix leg.
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRuntimeFullPath, new string[] { "tag" }, osVersion: "trixie")
-                    },
+                    [
+                        CreatePlatform(dockerfileRuntimeFullPath, ["tag"], osVersion: "trixie")
+                    ],
                     productVersion: "1.0")),
             CreateRepo("runtime2",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRuntime2FullPath, new string[] { "runtime" }, osVersion: "bullseye")
-                    },
+                    [
+                        CreatePlatform(dockerfileRuntime2FullPath, ["runtime"], osVersion: "bullseye")
+                    ],
                     productVersion: "1.0")),
             CreateRepo("runtime3",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileRuntime3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
-                    },
+                    [
+                        CreatePlatform(dockerfileRuntime3FullPath, ["tag"], osVersion: "alpine3.12")
+                    ],
                     productVersion: "1.0")),
             CreateRepo("sdk3",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfileSdk3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
-                    },
+                    [
+                        CreatePlatform(dockerfileSdk3FullPath, ["tag"], osVersion: "alpine3.12")
+                    ],
                     productVersion: "1.0"))
         );
 
@@ -728,72 +714,68 @@ public class GenerateBuildMatrixCommandTests
         command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
         command.Options.MatrixType = MatrixType.PlatformVersionedOs;
         command.Options.ProductVersionComponents = 2;
-        command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup1, customBuildLegGroup2 };
+        command.Options.CustomBuildLegGroups = [customBuildLegGroup1, customBuildLegGroup2];
 
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/repo1/os", tempFolderContext),
-                            new string[] { "tag" },
+                            ["tag"],
                             osVersion: "bionic")
-                    },
+                    ],
                     productVersion: "1.0")),
             CreateRepo("repo2",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/repo2/os", tempFolderContext),
-                            new string[] { "tag" },
+                            ["tag"],
                             osVersion: "noble",
-                            customBuildLegGroups: new CustomBuildLegGroup[]
-                            {
+                            customBuildLegGroups:
+                            [
                                 new CustomBuildLegGroup
                                 {
                                     Name = customBuildLegGroup1,
                                     Type = CustomBuildLegDependencyType.Supplemental,
-                                    Dependencies = new string[]
-                                    {
+                                    Dependencies =
+                                    [
                                         "repo1:tag"
-                                    }
+                                    ]
                                 }
-                            })
-                    },
+                            ])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("repo3",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/repo3/os", tempFolderContext),
-                            new string[] { "tag" },
+                            ["tag"],
                             osVersion: "trixie")
-                    },
+                    ],
                     productVersion: "1.0")),
             CreateRepo("repo4",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("1.0/repo4/os", tempFolderContext),
-                            new string[] { "tag" },
+                            ["tag"],
                             osVersion: "bullseye",
-                            customBuildLegGroups: new CustomBuildLegGroup[]
-                            {
+                            customBuildLegGroups:
+                            [
                                 new CustomBuildLegGroup
                                 {
                                     Name = customBuildLegGroup1,
                                     Type = CustomBuildLegDependencyType.Integral,
-                                    Dependencies = new string[]
-                                    {
+                                    Dependencies =
+                                    [
                                         "repo3:tag"
-                                    }
+                                    ]
                                 }
-                            })
-                    },
+                            ])
+                    ],
                     productVersion: "1.0"))
         );
 
@@ -838,30 +820,27 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("aspnet",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                           CreatePlatform(
                               aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
-                              new string[] { "tag" })
-                    },
+                              ["tag"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("sdk",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                           CreatePlatform(
                               sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
-                              new string[] { "tag" })
-                    },
+                              ["tag"])
+                    ],
                     productVersion: "1.0"))
         );
 
@@ -968,49 +947,44 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             runtimeDepsDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "1.0")),
-            CreateRepo("aspnet", new[]
-                {
+            CreateRepo("aspnet",
+                [
                     CreateImage(
-                        new Platform[]
-                        {
+                        [
                             CreatePlatform(
                                 aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
-                                new string[] { "tag" })
-                        },
+                                ["tag"])
+                        ],
                         productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                           CreatePlatform(
                               aspnetCompositeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os-composite", tempFolderContext, "runtime-deps:tag"),
-                              new string[] { "tag-composite" })
-                    },
+                              ["tag-composite"])
+                    ],
                     productVersion: "1.0")
-                }),
+                ]),
             CreateRepo("sdk",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "1.0"))
         );
 
@@ -1129,24 +1103,21 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("core/runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsRelativeDir, ["tag"])
+                    ],
                     productVersion: "3.1")),
             CreateRepo("runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsRelativeDir, ["tag"])
+                    ],
                     productVersion: "5.0")),
             CreateRepo("new/runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsRelativeDir, ["tag"])
+                    ],
                     productVersion: "5.1"))
         );
 
@@ -1178,39 +1149,35 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("core/runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "3.1")),
             CreateRepo("core/runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext, "core/runtime-deps:tag"),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "3.1")),
             CreateRepo("runtime-deps",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             "3.1/runtime-deps/os/Dockerfile",
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "5.0")),
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("5.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "5.0"))
         );
 
@@ -1257,21 +1224,19 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             CreateDockerfile("1.0/repo1/os", tempFolderContext),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("repo2",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             CreateDockerfile("1.0/repo2/os", tempFolderContext),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "1.0"))
         );
 
@@ -1306,20 +1271,18 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
-                            new string[] { "tag" })
-                    },
+                            ["tag"])
+                    ],
                     productVersion: "3.1"),
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
-                            Array.Empty<string>())
-                    },
+                            [])
+                    ],
                     productVersion: "3.1")));
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -1369,24 +1332,24 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     CreatePlatform(
                         sharedRuntimeDepsPath = CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
-                        new string[] { "3.1-os" })),
+                        ["3.1-os"])),
                 CreateImage(
                     CreatePlatform(
                         sharedRuntimeDepsPath,
-                        new string[] { "6.0-os" }))),
+                        ["6.0-os"]))),
             CreateRepo("runtime",
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("3.1/runtime/os", tempFolderContext, "runtime-deps:3.1-os"),
-                        new string[] { "3.1-os" })),
+                        ["3.1-os"])),
                 CreateImage(
                     CreatePlatform(
                         sharedRuntimePath = CreateDockerfile("6.0/runtime/os", tempFolderContext, "runtime-deps:6.0-os"),
-                        new string[] { "6.0-os" })),
+                        ["6.0-os"])),
                 CreateImage(
                     CreatePlatform(
                         sharedRuntimePath,
-                        Array.Empty<string>()))));
+                        []))));
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -1413,27 +1376,27 @@ public class GenerateBuildMatrixCommandTests
         command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
         command.Options.MatrixType = MatrixType.PlatformVersionedOs;
         command.Options.ProductVersionComponents = 2;
-        command.Options.CustomBuildLegGroups = new string[] { "pr-build" };
+        command.Options.CustomBuildLegGroups = ["pr-build"];
 
         Manifest manifest = CreateManifest(
             CreateRepo("repo",
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/repo/os/amd64", tempFolderContext),
-                        new string[] { "os" }, osVersion: "os")),
+                        ["os"], osVersion: "os")),
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/repo/os-variant/amd64", tempFolderContext),
-                        new string[] { "os-variant" }, osVersion: "os-variant",
-                        customBuildLegGroups: new[]
-                        {
+                        ["os-variant"], osVersion: "os-variant",
+                        customBuildLegGroups:
+                        [
                             new CustomBuildLegGroup
                             {
                                 Type = CustomBuildLegDependencyType.Supplemental,
                                 Name = "pr-build",
-                                Dependencies = new string[] { "repo:os" }
+                                Dependencies = ["repo:os"]
                             }
-                        })))
+                        ])))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -1477,86 +1440,86 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime-deps/mariner/amd64", tempFolderContext),
-                        new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                        ["1.0-mariner"], osVersion: "mariner")),
                 // 1.0 distroless
                 CreateImage(
                     CreatePlatform(
                         sharedRuntimeDepsDockerfilePath = CreateDockerfile("1.0/runtime-deps/mariner-distroless/amd64", tempFolderContext),
-                        new string[] { "1.0-mariner-distroless" }, osVersion: "mariner-distroless")),
+                        ["1.0-mariner-distroless"], osVersion: "mariner-distroless")),
                 // 2.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/runtime-deps/mariner/amd64", tempFolderContext),
-                        new string[] { "2.0-mariner" }, osVersion: "mariner")),
+                        ["2.0-mariner"], osVersion: "mariner")),
                 // 2.0 distroless (shared Dockerfile with 1.0)
                 CreateImage(
                     CreatePlatform(
                         sharedRuntimeDepsDockerfilePath,
-                        new string[] { "2.0-mariner-distroless" }, osVersion: "mariner-distroless"))),
+                        ["2.0-mariner-distroless"], osVersion: "mariner-distroless"))),
             CreateRepo("runtime",
                 // 1.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/mariner/amd64", tempFolderContext, "runtime-deps:1.0-mariner"),
-                        new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                        ["1.0-mariner"], osVersion: "mariner")),
                 // 1.0 distroless
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/mariner-distroless/amd64", tempFolderContext, "runtime-deps:1.0-mariner-distroless"),
-                        new string[] { "1.0-mariner-distroless" }, osVersion: "mariner-distroless")),
+                        ["1.0-mariner-distroless"], osVersion: "mariner-distroless")),
                 // 2.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/runtime/mariner/amd64", tempFolderContext, "runtime-deps:2.0-mariner"),
-                        new string[] { "2.0-mariner" }, osVersion: "mariner")),
+                        ["2.0-mariner"], osVersion: "mariner")),
                 // 2.0 distroless
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/runtime/mariner-distroless/amd64", tempFolderContext, "runtime-deps:2.0-mariner-distroless"),
-                        new string[] { "2.0-mariner-distroless" }, osVersion: "mariner-distroless"))),
+                        ["2.0-mariner-distroless"], osVersion: "mariner-distroless"))),
             CreateRepo("aspnet",
                 // 1.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/aspnet/mariner/amd64", tempFolderContext, "runtime:1.0-mariner"),
-                        new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                        ["1.0-mariner"], osVersion: "mariner")),
                 // 1.0 distroless
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/aspnet/mariner-distroless/amd64", tempFolderContext, "runtime:1.0-mariner-distroless"),
-                        new string[] { "1.0-mariner-distroless" }, osVersion: "mariner-distroless")),
+                        ["1.0-mariner-distroless"], osVersion: "mariner-distroless")),
                 // 2.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/aspnet/mariner/amd64", tempFolderContext, "runtime:2.0-mariner"),
-                        new string[] { "2.0-mariner" }, osVersion: "mariner")),
+                        ["2.0-mariner"], osVersion: "mariner")),
                 // 2.0 distroless
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/aspnet/mariner-distroless/amd64", tempFolderContext, "runtime:2.0-mariner-distroless"),
-                        new string[] { "2.0-mariner-distroless" }, osVersion: "mariner-distroless"))),
+                        ["2.0-mariner-distroless"], osVersion: "mariner-distroless"))),
             CreateRepo("sdk",
                 // 1.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/sdk/mariner/amd64", tempFolderContext, "aspnet:1.0-mariner"),
-                        new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                        ["1.0-mariner"], osVersion: "mariner")),
                 // 2.0
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/sdk/mariner/amd64", tempFolderContext, "aspnet:2.0-mariner"),
-                        new string[] { "2.0-mariner" }, osVersion: "mariner"))),
+                        ["2.0-mariner"], osVersion: "mariner"))),
             CreateRepo("monitor",
                 // 1.0 distroless (based on 1.0 sdk and 1.0 aspnet distroless)
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/monitor/mariner-distroless/amd64", tempFolderContext, "sdk:1.0-mariner", "aspnet:1.0-mariner-distroless"),
-                        new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                        ["1.0-mariner"], osVersion: "mariner")),
                 // 2.0 distroless (based on 2.0 sdk and 2.0 aspnet distroless)
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("2.0/monitor/mariner-distroless/amd64", tempFolderContext, "sdk:2.0-mariner", "aspnet:2.0-mariner-distroless"),
-                        new string[] { "2.0-mariner" }, osVersion: "mariner")))
+                        ["2.0-mariner"], osVersion: "mariner")))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -1577,10 +1540,10 @@ public class GenerateBuildMatrixCommandTests
     {
         PlatformData platform = Helpers.ImageInfoHelper.CreatePlatform(
             PathHelper.NormalizePath(dockerfilePath),
-            simpleTags: new List<string>
-            {
+            simpleTags:
+            [
                 "tag"
-            });
+            ]);
         platform.IsUnchanged = isCached;
         return platform;
     }

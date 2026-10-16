@@ -19,7 +19,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
     private const string VersionRegGroupName = "Version";
 
     private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
-    private static readonly char[] s_pathSeparators = { '/', '\\' };
+    private static readonly char[] s_pathSeparators = ['/', '\\'];
     private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
     private readonly IImageCacheService _imageCacheService;
     private readonly ILogger<GenerateBuildMatrixCommand> _logger;
@@ -61,8 +61,8 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
         IEnumerable<IEnumerable<PlatformInfo>> subgraphs, Func<PlatformInfo, string> getKey)
     {
         List<List<PlatformInfo>> subGraphsList = subgraphs.Select(subgraph => subgraph.ToList()).ToList();
-        Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = new();
-        HashSet<List<PlatformInfo>> subgraphsToDelete = new();
+        Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = [];
+        HashSet<List<PlatformInfo>> subgraphsToDelete = [];
 
         foreach (List<PlatformInfo> subgraph in subGraphsList)
         {
@@ -115,7 +115,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
             .Select(set => set.SelectMany(subgraph => subgraph))
             .ToArray();
 
-        Dictionary<string, BuildLegInfo> buildLegsByDockerfilePath = new();
+        Dictionary<string, BuildLegInfo> buildLegsByDockerfilePath = [];
         foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
         {
             string[] dockerfilePaths = GetDockerfilePaths(subgraph).ToArray();
@@ -328,7 +328,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
     private List<List<PlatformInfo>> ConsolidateSubGraphs(IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
     {
         // Combine platforms which share Dockerfile paths and product version.
-        List<List<PlatformInfo>> consolidatedSubGraphs = new();
+        List<List<PlatformInfo>> consolidatedSubGraphs = [];
         foreach (IEnumerable<PlatformInfo> graph in subgraphs)
         {
             // Look through the list of consolidated graphs we've collected so far. Find the one, if any, that has a platform
@@ -515,10 +515,10 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
         foreach (IGrouping<PlatformId, PlatformInfo> platformGrouping in platformGroups)
         {
             string[] matrixNameParts =
-            {
+            [
                 GetOsMatrixNamePart(platformGrouping.Key),
                 platformGrouping.Key.Architecture.GetDisplayName()
-            };
+            ];
             BuildMatrixInfo matrix = new() { Name = FormatMatrixName(matrixNameParts) };
             matrices.Add(matrix);
 

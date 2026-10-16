@@ -54,7 +54,7 @@ public class RepoInfo
 
         repoInfo.Readmes = model.Readmes
             ?.Select(readme => new Readme(Path.Combine(baseDirectory, readme.Path), Path.Combine(baseDirectory, readme.TemplatePath)))
-            ?? Enumerable.Empty<Readme>();
+            ?? [];
 
         repoInfo.AllImages = model.Images
             .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.QualifiedName, manifestFilter, variableHelper, baseDirectory))

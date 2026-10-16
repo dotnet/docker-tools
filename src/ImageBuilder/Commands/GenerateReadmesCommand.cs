@@ -37,7 +37,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
 
         // Generate Product Family Readme
         await GenerateArtifactsAsync(
-            contexts: new ManifestInfo[] { Manifest },
+            contexts: [Manifest],
             getTemplatePath: (manifest) => manifest.ReadmeTemplatePath,
             getArtifactPath: (manifest) => manifest.ReadmePath,
             getState: (manifest, templatePath, indent) =>
@@ -86,11 +86,13 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
                 GetTemplateState(repo, templatePath, currentIndent + indent, cancellationToken),
             indent,
             cancellationToken);
-        Dictionary<Value, Value> symbols = new(state.Symbols);
-        symbols["FULL_REPO"] = repo.QualifiedName;
-        symbols["REPO"] = repo.Name;
-        symbols["PARENT_REPO"] = repo.GetParentRepoName();
-        symbols["SHORT_REPO"] = repo.GetShortName();
+        Dictionary<Value, Value> symbols = new(state.Symbols)
+        {
+            ["FULL_REPO"] = repo.QualifiedName,
+            ["REPO"] = repo.Name,
+            ["PARENT_REPO"] = repo.GetParentRepoName(),
+            ["SHORT_REPO"] = repo.GetShortName()
+        };
 
         return (symbols, indent);
     }

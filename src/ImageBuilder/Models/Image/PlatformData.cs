@@ -26,7 +26,7 @@ public class PlatformData : IComparable<PlatformData>
     [JsonProperty(Required = Required.Always)]
     public string Dockerfile { get; set; } = string.Empty;
 
-    public List<string> SimpleTags { get; set; } = new();
+    public List<string> SimpleTags { get; set; } = [];
 
     [JsonProperty(Required = Required.Always)]
     public string Digest { get; set; } = string.Empty;
@@ -48,7 +48,7 @@ public class PlatformData : IComparable<PlatformData>
     [JsonProperty(Required = Required.Always)]
     public string CommitUrl { get; set; } = string.Empty;
 
-    public List<Layer> Layers { get; set; } = new();
+    public List<Layer> Layers { get; set; } = [];
 
     /// <summary>
     /// Gets or sets whether the image or its associated tag names have changed since it was last published.
@@ -68,7 +68,7 @@ public class PlatformData : IComparable<PlatformData>
 
     [JsonIgnore]
     public IEnumerable<TagInfo> AllTags =>
-        ImageInfo?.SharedTags.Union(PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>()) ?? Enumerable.Empty<TagInfo>();
+        ImageInfo?.SharedTags.Union(PlatformInfo?.Tags ?? []) ?? [];
 
     public int CompareTo([AllowNull] PlatformData other)
     {

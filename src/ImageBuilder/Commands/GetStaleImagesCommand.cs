@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
 {
-    private readonly Dictionary<string, string> _imageDigests = new();
+    private readonly Dictionary<string, string> _imageDigests = [];
     private readonly SemaphoreSlim _imageDigestsLock = new(1);
     private readonly Lazy<IManifestService> _manifestService;
     private readonly IManifestJsonService _manifestJsonService;
@@ -97,7 +97,7 @@ public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
             repoPrefix: null,
             sourceRepoPrefix: Options.SourceRepoPrefix);
 
-        List<string> pathsToRebuild = new();
+        List<string> pathsToRebuild = [];
 
         foreach (RepoInfo repo in manifest.FilteredRepos)
         {

@@ -32,43 +32,43 @@ public class WaitForMcrDocIngestionCommandTests
         {
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.NotStarted
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.Processing
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.Processing
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.Succeeded
                     }
-                }
+                ]
             }
         }.GetEnumerator();
 
@@ -112,44 +112,44 @@ public class WaitForMcrDocIngestionCommandTests
         {
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.NotStarted
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.Processing
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OverallStatus = StageStatus.Processing
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OnboardingRequestId = onboardingRequestId,
                         OverallStatus = StageStatus.Failed
                     }
-                }
+                ]
             }
         }.GetEnumerator();
 
@@ -207,8 +207,8 @@ public class WaitForMcrDocIngestionCommandTests
         {
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         QueueTime = baselineTime,
@@ -219,12 +219,12 @@ public class WaitForMcrDocIngestionCommandTests
                         QueueTime = baselineTime.AddMinutes(1),
                         OverallStatus = StageStatus.Processing
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         QueueTime = baselineTime,
@@ -236,12 +236,12 @@ public class WaitForMcrDocIngestionCommandTests
                         QueueTime = baselineTime.AddMinutes(1),
                         OverallStatus = StageStatus.Failed
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         QueueTime = baselineTime,
@@ -253,7 +253,7 @@ public class WaitForMcrDocIngestionCommandTests
                         QueueTime = baselineTime.AddMinutes(1),
                         OverallStatus = StageStatus.Failed
                     }
-                }
+                ]
             }
         }.GetEnumerator();
 
@@ -307,8 +307,8 @@ public class WaitForMcrDocIngestionCommandTests
         {
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         QueueTime = baselineTime,
@@ -319,12 +319,12 @@ public class WaitForMcrDocIngestionCommandTests
                         QueueTime = baselineTime.AddMinutes(1),
                         OverallStatus = StageStatus.Processing
                     }
-                }
+                ]
             },
             new CommitResult
             {
-                Value = new List<CommitStatus>
-                {
+                Value =
+                [
                     new CommitStatus
                     {
                         OnboardingRequestId = onboardingRequestId1,
@@ -337,7 +337,7 @@ public class WaitForMcrDocIngestionCommandTests
                         QueueTime = baselineTime.AddMinutes(1),
                         OverallStatus = StageStatus.Failed
                     }
-                }
+                ]
             }
         }.GetEnumerator();
 
@@ -398,13 +398,13 @@ public class WaitForMcrDocIngestionCommandTests
             .ReturnsAsync(
                 new CommitResult
                 {
-                    Value = new List<CommitStatus>
-                    {
+                    Value =
+                    [
                         new CommitStatus
                         {
                             OverallStatus = StageStatus.NotStarted
                         }
-                    }
+                    ]
                 });
 
         Mock<IEnvironmentService> environmentServiceMock = new();

@@ -18,14 +18,14 @@ public class DockerfileFilterOptions
     private static readonly Option<string[]> PathsOption = new($"--{PathOptionName}")
     {
         Description = "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 
     private static readonly Option<string[]> ProductVersionsOption = new("--version")
     {
         Description = "Product versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 

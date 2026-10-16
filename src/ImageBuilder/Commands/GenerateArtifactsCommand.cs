@@ -24,9 +24,9 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
     private readonly DocumentConfiguration _config = CottleDocumentConfiguration.Create();
 
     private readonly IEnvironmentService _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-    private readonly List<string> _invalidTemplates = new List<string>();
-    private readonly List<string> _outOfSyncArtifacts = new List<string>();
-    private readonly Dictionary<string, string> generatedArtifacts = new();
+    private readonly List<string> _invalidTemplates = [];
+    private readonly List<string> _outOfSyncArtifacts = [];
+    private readonly Dictionary<string, string> generatedArtifacts = [];
 
     private TimeSpan _documentGenerationTime = TimeSpan.Zero;
     private TimeSpan _artifactGenerationTime = TimeSpan.Zero;

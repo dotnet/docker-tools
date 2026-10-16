@@ -67,11 +67,10 @@ public class McrTagsMetadataGeneratorTests
         // Create manifest
         Manifest manifest = ManifestHelper.CreateManifest(
             ManifestHelper.CreateRepo(RepoName,
-                new Image[]
-                {
+                [
                     ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { TagName }))
-                },
+                        ManifestHelper.CreatePlatform(dockerfileRelativePath, [TagName]))
+                ],
                 readme: emptyFileName,
                 readmeTemplate: emptyFileName,
                 mcrTagsMetadataTemplate: Path.GetFileName(tagsMetadataTemplatePath))
@@ -145,7 +144,7 @@ public class McrTagsMetadataGeneratorTests
 
         Platform platform = ManifestHelper.CreatePlatform(
             DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
-            Array.Empty<string>());
+            []);
         platform.Tags = new Dictionary<string, Tag>
         {
             {
@@ -162,14 +161,13 @@ public class McrTagsMetadataGeneratorTests
         // Create manifest
         Manifest manifest = ManifestHelper.CreateManifest(
             ManifestHelper.CreateRepo(RepoName,
-                new Image[]
-                {
+                [
                     image = ManifestHelper.CreateImage(
                         platform,
                         ManifestHelper.CreatePlatform(
                             DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os2", tempFolderContext),
-                            new string[] { "tag1a", "tag1b" }))
-                },
+                            ["tag1a", "tag1b"]))
+                ],
                 readme: emptyFileName,
                 readmeTemplate: emptyFileName,
                 mcrTagsMetadataTemplate: Path.GetFileName(tagsMetadataTemplatePath))
@@ -215,11 +213,11 @@ public class McrTagsMetadataGeneratorTests
         tagsMetadata.Repos[0].TagGroups.ShouldHaveSingleItem();
         tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile");
 
-        List<string> expectedTags = new List<string>
-        {
+        List<string> expectedTags =
+        [
             "tag1a",
             "tag1b"
-        };
+        ];
         if (hasSharedTag)
         {
             expectedTags.Add("shared");
@@ -255,32 +253,29 @@ public class McrTagsMetadataGeneratorTests
         // Create manifest
         Manifest manifest = ManifestHelper.CreateManifest(
             ManifestHelper.CreateRepo(RepoName,
-                new Image[]
-                {
+                [
                     ManifestHelper.CreateImage(
-                        new Platform[]
-                        {
+                        [
                             ManifestHelper.CreatePlatform(
                                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
-                                new string[] { "concreteTagZ", "concreteTagA" })
-                        },
+                                ["concreteTagZ", "concreteTagA"])
+                        ],
                         sharedTags: new Dictionary<string, Tag>
                         {
                             { "shared1", new Tag() },
                             { "latest", new Tag() },
                         }),
                     ManifestHelper.CreateImage(
-                        new Platform[]
-                        {
+                        [
                             ManifestHelper.CreatePlatform(
                                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
-                                Array.Empty<string>())
-                        },
+                                [])
+                        ],
                         sharedTags: new Dictionary<string, Tag>
                         {
                             { "shared2", new Tag() }
                         })
-                },
+                ],
                 readme: emptyFileName,
                 readmeTemplate: emptyFileName,
                 mcrTagsMetadataTemplate: Path.GetFileName(tagsMetadataTemplatePath))
@@ -315,14 +310,14 @@ public class McrTagsMetadataGeneratorTests
         tagsMetadata.Repos[0].TagGroups.ShouldHaveSingleItem();
         tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os/Dockerfile");
 
-        List<string> expectedTags = new List<string>
-        {
+        List<string> expectedTags =
+        [
             "concreteTagZ",
             "concreteTagA",
             "shared2",
             "shared1",
             "latest"
-        };
+        ];
 
         tagsMetadata.Repos[0].TagGroups[0].Tags.ShouldBe(expectedTags);
     }

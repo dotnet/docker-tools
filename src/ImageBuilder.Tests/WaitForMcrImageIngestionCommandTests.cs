@@ -58,16 +58,14 @@ public class WaitForMcrImageIngestionCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo(repo1,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfile1Path, new string[] { platformTag1, platformTag2 })
-                    })),
+                    [
+                        CreatePlatform(dockerfile1Path, [platformTag1, platformTag2])
+                    ])),
             CreateRepo(repo2,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfile2Path, new string[] { platformTag3 })
-                    }))
+                    [
+                        CreatePlatform(dockerfile2Path, [platformTag3])
+                    ]))
         );
 
         ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -85,21 +83,21 @@ public class WaitForMcrImageIngestionCommandTests
                                 Manifest = new ManifestData
                                 {
                                     Digest = manifestDigest1,
-                                    SharedTags = new List<string>
-                                    {
+                                    SharedTags =
+                                    [
                                         sharedTag1,
                                         sharedTag2
-                                    }
+                                    ]
                                 },
                                 Platforms =
                                 {
                                     CreatePlatform(
                                         PathHelper.NormalizePath(dockerfile1Path),
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             platformTag1,
                                             platformTag2
-                                        },
+                                        ],
                                         digest: platformDigest1)
                                 }
                             }
@@ -118,10 +116,10 @@ public class WaitForMcrImageIngestionCommandTests
                                 {
                                     CreatePlatform(
                                         PathHelper.NormalizePath(dockerfile2Path),
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             platformTag3
-                                        },
+                                        ],
                                         digest: platformDigest2)
                                 }
                             }
@@ -192,10 +190,9 @@ public class WaitForMcrImageIngestionCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo(repo1,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(dockerfile1Path, new string[] { platformTag1 })
-                    },
+                    [
+                        CreatePlatform(dockerfile1Path, [platformTag1])
+                    ],
                     sharedTags: new Dictionary<string, Tag>
                     {
                         {
@@ -223,19 +220,19 @@ public class WaitForMcrImageIngestionCommandTests
                                 Manifest = new ManifestData
                                 {
                                     Digest = repo1ManifestDigest1,
-                                    SharedTags = new List<string>
-                                    {
+                                    SharedTags =
+                                    [
                                         sharedTag1
-                                    }
+                                    ]
                                 },
                                 Platforms =
                                 {
                                     CreatePlatform(
                                         PathHelper.NormalizePath(dockerfile1Path),
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             platformTag1
-                                        },
+                                        ],
                                         digest: repo1PlatformDigest1)
                                 }
                             }

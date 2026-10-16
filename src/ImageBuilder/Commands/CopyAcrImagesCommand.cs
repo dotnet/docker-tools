@@ -79,7 +79,7 @@ public class CopyAcrImagesCommand(
         PlatformInfo platform,
         ImageArtifactDetails imageArtifactDetails)
     {
-        List<(string SourceTag, string DestinationTag)> tags = new List<(string SourceTag, string DestinationTag)>();
+        List<(string SourceTag, string DestinationTag)> tags = [];
 
         // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
         // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value

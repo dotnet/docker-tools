@@ -110,7 +110,7 @@ public class ManifestListHelperTests
         string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
 
         Image imageA = CreateImage(
-            [CreatePlatform(dockerfile, Array.Empty<string>())],
+            [CreatePlatform(dockerfile, [])],
             new Dictionary<string, Tag>
             {
                 { "sharedtag", new Tag() }
@@ -349,7 +349,7 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfile, ["tag1", "tag2"])),
                 CreateImage(
                     ["sharedtag2"],
-                    CreatePlatform(dockerfile, Array.Empty<string>()))));
+                    CreatePlatform(dockerfile, []))));
 
         manifest.Registry = "mcr.microsoft.com";
 

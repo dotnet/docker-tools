@@ -187,7 +187,7 @@ public class MarImageIngestionReporter(
         {
             _logger.LogInformation("IMAGE RESULTS");
 
-            List<Task<string>> failedStatusTasks = new List<Task<string>>();
+            List<Task<string>> failedStatusTasks = [];
 
             IEnumerable<ImageResultInfo> failedResults = imageResultInfos
                 // Find any result where all of the statuses of a given tag have failed

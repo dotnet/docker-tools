@@ -85,22 +85,22 @@ public class BuildCommandTests(TestContext testContext)
             ]);
 
         string[] runtimeDepsInstalledPackages =
-        {
+        [
                 "DEB,pkg1=1.0.0"
-            };
+            ];
 
         string[] runtimeInstalledPackages =
-        {
+        [
                 "DEB,pkg1=1.0.0",
                 "DEB,pkg2=1.1.0"
-            };
+            ];
 
         string[] aspnetInstalledPackages =
-        {
+        [
                 "DEB,pkg1=1.0.0",
                 "DEB,pkg2=1.1.0",
                 "DEB,pkg3=2.0.0",
-            };
+            ];
 
         Mock<IProcessService> processServiceMock = new();
 
@@ -164,15 +164,14 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.1";
 
-        Platform runtimePlatform = CreatePlatform(runtimeDockerfileRelativePath, new string[] { tag });
+        Platform runtimePlatform = CreatePlatform(runtimeDockerfileRelativePath, [tag]);
 
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                            CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
+                    ],
                     new Dictionary<string, Tag>
                     {
                             { "shared", new Tag() }
@@ -180,17 +179,15 @@ public class BuildCommandTests(TestContext testContext)
                     ProductVersion)),
             CreateRepo(runtimeRepo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                             runtimePlatform
-                    },
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(aspnetRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(aspnetDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                            CreatePlatform(aspnetDockerfileRelativePath, [tag])
+                    ],
                     productVersion: ProductVersion))
         );
         manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
@@ -365,16 +362,14 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                        CreatePlatform(runtimeDockerfileRelativePath, [tag])
+                    ],
                     productVersion: ProductVersion),
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDockerfileRelativePath, new string[0])
-                    },
+                    [
+                        CreatePlatform(runtimeDockerfileRelativePath, [])
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared", new Tag() }
@@ -423,10 +418,10 @@ public class BuildCommandTests(TestContext testContext)
                             ProductVersion = ProductVersion,
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             },
                             Platforms =
                             {
@@ -490,15 +485,14 @@ public class BuildCommandTests(TestContext testContext)
         string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
         File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
-        Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: "v7");
+        Platform platform = CreatePlatform(dockerfileRelativePath, [tag], architecture: Architecture.ARM, variant: "v7");
 
         Manifest manifest = CreateManifest(
             CreateRepo(repoName,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         platform
-                    },
+                    ],
                     new Dictionary<string, Tag>
                     {
                         {
@@ -713,15 +707,14 @@ public class BuildCommandTests(TestContext testContext)
         string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
         File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
-        Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: "v7");
+        Platform platform = CreatePlatform(dockerfileRelativePath, [tag], architecture: Architecture.ARM, variant: "v7");
 
         Manifest manifest = CreateManifest(
             CreateRepo(repoName,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         platform
-                    }))
+                    ]))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -767,15 +760,14 @@ public class BuildCommandTests(TestContext testContext)
         string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
         File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
-        Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: manifestVariant);
+        Platform platform = CreatePlatform(dockerfileRelativePath, [tag], architecture: Architecture.ARM, variant: manifestVariant);
 
         Manifest manifest = CreateManifest(
             CreateRepo(repoName,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         platform
-                    }))
+                    ]))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -829,7 +821,7 @@ public class BuildCommandTests(TestContext testContext)
 
         Platform platform = CreatePlatform(
             DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, baseImageTag),
-            new string[] { tag },
+            [tag],
             os: os,
             osVersion: os == OS.Windows ? "nanoserver-ltsc2022" : "noble");
         platform.BuildArgs.Add("arg2", "val2b");
@@ -838,10 +830,9 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(repoName,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         platform
-                    }))
+                    ]))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -900,15 +891,14 @@ public class BuildCommandTests(TestContext testContext)
 
         Platform platform = CreatePlatform(
             DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, baseImageTag),
-            new string[] { tag });
+            [tag]);
 
         Manifest manifest = CreateManifest(
             CreateRepo(repoName,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         platform
-                    }))
+                    ]))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -958,15 +948,14 @@ public class BuildCommandTests(TestContext testContext)
         string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
         File.WriteAllText(dockerfileAbsolutePath, $"FROM scratch");
 
-        Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag });
+        Platform platform = CreatePlatform(dockerfileRelativePath, [tag]);
 
         Manifest manifest = CreateManifest(
             CreateRepo(repoName,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         platform
-                    },
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { sharedTag, new Tag() }
@@ -1059,8 +1048,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.0";
 
-        List<RepoData> sourceRepos = new()
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = runtimeDepsRepo,
@@ -1088,15 +1077,15 @@ public class BuildCommandTests(TestContext testContext)
                         },
                         Manifest = new ManifestData
                         {
-                            SharedTags = new List<string>
-                            {
+                            SharedTags =
+                            [
                                 "shared"
-                            }
+                            ]
                         }
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new()
         {
@@ -1109,10 +1098,9 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { tag, newTag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [tag, newTag])
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared", new Tag() }
@@ -1127,8 +1115,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new()
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -1157,15 +1145,15 @@ public class BuildCommandTests(TestContext testContext)
                             },
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             }
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -1192,7 +1180,7 @@ public class BuildCommandTests(TestContext testContext)
             Times.Never);
 
         VerifyImportImage(copyImageServiceMock, command,
-                new string[] { $"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared" },
+                [$"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared"],
                 runtimeDepsDigest,
                 destRegistryName: null,
                 srcRegistryName: null);
@@ -1239,7 +1227,7 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    CreatePlatform(dockerfileRelativePath, new string[] { "runtime" })))
+                    CreatePlatform(dockerfileRelativePath, ["runtime"])))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -1281,10 +1269,9 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
-                         CreatePlatform(dockerfileRelativePath, new string[] { "tag" })
-                    },
+                    [
+                         CreatePlatform(dockerfileRelativePath, ["tag"])
+                    ],
                     new Dictionary<string, Tag>
                     {
                          { "shared", new Tag() }
@@ -1705,8 +1692,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.1";
 
-        List<RepoData> sourceRepos = new List<RepoData>
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = runtimeDepsRepo,
@@ -1750,15 +1737,15 @@ public class BuildCommandTests(TestContext testContext)
                         },
                         Manifest = new ManifestData
                         {
-                            SharedTags = new List<string>
-                            {
+                            SharedTags =
+                            [
                                 "shared"
-                            }
+                            ]
                         }
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
         {
@@ -1771,15 +1758,14 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { linuxTag }),
+                    [
+                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [linuxTag]),
                         CreatePlatform(
                             runtimeDepsWindowsDockerfileRelativePath,
-                            new string[] { windowsTag },
+                            [windowsTag],
                             OS.Windows,
                             "nanoserver-2004")
-                    },
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared", new Tag() }
@@ -1787,10 +1773,9 @@ public class BuildCommandTests(TestContext testContext)
                     productVersion: ProductVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { linuxTag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [linuxTag])
+                    ],
                     productVersion: ProductVersion))
         );
 
@@ -1801,8 +1786,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -1848,10 +1833,10 @@ public class BuildCommandTests(TestContext testContext)
                             },
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             }
                         }
                     }
@@ -1885,7 +1870,7 @@ public class BuildCommandTests(TestContext testContext)
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -1918,19 +1903,19 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.VerifyNoOtherCalls();
 
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{runtimeDepsRepo}:{linuxTag}", $"{runtimeDepsRepo}:shared" },
+            [$"{runtimeDepsRepo}:{linuxTag}", $"{runtimeDepsRepo}:shared"],
             runtimeDepsLinuxDigest,
             destRegistryName: null,
             srcRegistryName: null);
 
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{runtimeDeps2Repo}:{linuxTag}" },
+            [$"{runtimeDeps2Repo}:{linuxTag}"],
             runtimeDepsLinuxDigest,
             destRegistryName: null,
             srcRegistryName: null);
 
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{runtimeDepsRepo}:{windowsTag}", $"{runtimeDepsRepo}:shared" },
+            [$"{runtimeDepsRepo}:{windowsTag}", $"{runtimeDepsRepo}:shared"],
             runtimeDepsWindowsDigest,
             destRegistryName: null,
             srcRegistryName: null);
@@ -2017,8 +2002,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.1";
 
-        List<RepoData> sourceRepos = new List<RepoData>
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = runtimeDepsRepo,
@@ -2048,7 +2033,7 @@ public class BuildCommandTests(TestContext testContext)
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
         {
@@ -2058,17 +2043,17 @@ public class BuildCommandTests(TestContext testContext)
         string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
         File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
 
-        Platform runtimeDeps1Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag });
+        Platform runtimeDeps1Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, [tag]);
         runtimeDeps1Platform.BuildArgs = new Dictionary<string, string>
         {
             { "ARG1", "val1" },
             { "ARG2", "val2" }
         };
 
-        Platform runtimeDeps2Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag });
+        Platform runtimeDeps2Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, [tag]);
         runtimeDeps2Platform.BuildArgs = runtimeDeps1Platform.BuildArgs;
 
-        Platform runtimeDeps3Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag });
+        Platform runtimeDeps3Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, [tag]);
         runtimeDeps3Platform.BuildArgs = new Dictionary<string, string>
         {
             { "ARG1", "val1" },
@@ -2078,24 +2063,21 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         runtimeDeps1Platform
-                    },
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         runtimeDeps2Platform
-                    },
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(runtimeDeps3Repo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         runtimeDeps3Platform
-                    },
+                    ],
                     productVersion: ProductVersion))
         );
 
@@ -2106,8 +2088,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -2196,7 +2178,7 @@ public class BuildCommandTests(TestContext testContext)
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -2234,12 +2216,12 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.VerifyNoOtherCalls();
 
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{runtimeDepsRepo}:{tag}" },
+            [$"{runtimeDepsRepo}:{tag}"],
             runtimeDepsDigest,
             destRegistryName: null,
             srcRegistryName: null);
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{runtimeDeps2Repo}:{tag}" },
+            [$"{runtimeDeps2Repo}:{tag}"],
             runtimeDepsDigest,
             destRegistryName: null,
             srcRegistryName: null);
@@ -2307,7 +2289,7 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.1";
 
-        List<RepoData> sourceRepos = new List<RepoData>();
+        List<RepoData> sourceRepos = [];
 
         ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
         {
@@ -2320,17 +2302,15 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                         CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                         CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
+                    ],
                     productVersion: ProductVersion))
         );
 
@@ -2341,8 +2321,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -2401,7 +2381,7 @@ public class BuildCommandTests(TestContext testContext)
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -2412,11 +2392,11 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
         dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-        string[] expectedTags = new string[]
-        {
+        string[] expectedTags =
+        [
             $"{runtimeDepsRepo}:{tag}",
             $"{runtimeDeps2Repo}:{tag}"
-        };
+        ];
 
         foreach (string expectedTag in expectedTags)
         {
@@ -2515,8 +2495,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.1";
 
-        List<RepoData> sourceRepos = new()
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = runtimeDepsRepo,
@@ -2545,15 +2525,15 @@ public class BuildCommandTests(TestContext testContext)
                         },
                         Manifest = new ManifestData
                         {
-                            SharedTags = new List<string>
-                            {
+                            SharedTags =
+                            [
                                 "shared"
-                            }
+                            ]
                         }
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new()
         {
@@ -2566,17 +2546,15 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                         CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                         CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
+                    ],
                     productVersion: ProductVersion))
         );
 
@@ -2587,8 +2565,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new()
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -2647,7 +2625,7 @@ public class BuildCommandTests(TestContext testContext)
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -2658,11 +2636,11 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
         dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-        string[] expectedTags = new string[]
-        {
+        string[] expectedTags =
+        [
             $"{runtimeDepsRepo}:{tag}",
             $"{runtimeDeps2Repo}:{tag}"
-        };
+        ];
 
         foreach (string expectedTag in expectedTags)
         {
@@ -2765,8 +2743,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.0";
 
-        List<RepoData> sourceRepos = new List<RepoData>
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = runtimeDepsRepo,
@@ -2795,15 +2773,15 @@ public class BuildCommandTests(TestContext testContext)
                         },
                         Manifest = new ManifestData
                         {
-                            SharedTags = new List<string>
-                            {
+                            SharedTags =
+                            [
                                 "shared"
-                            }
+                            ]
                         }
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
         {
@@ -2816,10 +2794,9 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { tag, newTag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [tag, newTag])
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared", new Tag() }
@@ -2834,8 +2811,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -2865,15 +2842,15 @@ public class BuildCommandTests(TestContext testContext)
                             },
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             }
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -2905,7 +2882,7 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.VerifyNoOtherCalls();
 
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared" },
+            [$"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared"],
             runtimeDepsDigest,
             destRegistryName: null,
             srcRegistryName: null);
@@ -2987,8 +2964,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.0";
 
-        List<RepoData> sourceRepos = new List<RepoData>
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = runtimeDepsRepo,
@@ -3017,15 +2994,15 @@ public class BuildCommandTests(TestContext testContext)
                         },
                         Manifest = new ManifestData
                         {
-                            SharedTags = new List<string>
-                            {
+                            SharedTags =
+                            [
                                 "shared"
-                            }
+                            ]
                         }
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
         {
@@ -3038,10 +3015,9 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { tag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [tag])
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared", new Tag() }
@@ -3049,10 +3025,9 @@ public class BuildCommandTests(TestContext testContext)
                     productVersion: ProductVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { tag, newTag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [tag, newTag])
+                    ],
                     productVersion: ProductVersion))
         );
         manifest.Registry = registry;
@@ -3064,8 +3039,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = runtimeDepsRepo,
@@ -3095,10 +3070,10 @@ public class BuildCommandTests(TestContext testContext)
                             },
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             }
                         }
                     }
@@ -3133,7 +3108,7 @@ public class BuildCommandTests(TestContext testContext)
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -3163,12 +3138,12 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.VerifyNoOtherCalls();
 
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared" },
+            [$"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared"],
             runtimeDepsLinuxDigest,
             destRegistryName: registryOverride,
             srcRegistryName: registry);
         VerifyImportImage(copyImageServiceMock, command,
-            new string[] { $"{repoPrefixOverride}{runtimeDeps2Repo}:{tag}", $"{repoPrefixOverride}{runtimeDeps2Repo}:{newTag}" },
+            [$"{repoPrefixOverride}{runtimeDeps2Repo}:{tag}", $"{repoPrefixOverride}{runtimeDeps2Repo}:{newTag}"],
             runtimeDepsLinuxDigest,
             destRegistryName: registryOverride,
             srcRegistryName: registry);
@@ -3299,8 +3274,8 @@ public class BuildCommandTests(TestContext testContext)
 
         const string ProductVersion = "1.0.1";
 
-        List<RepoData> sourceRepos = new List<RepoData>
-        {
+        List<RepoData> sourceRepos =
+        [
             new RepoData
             {
                 Repo = RuntimeDepsRepo,
@@ -3320,10 +3295,10 @@ public class BuildCommandTests(TestContext testContext)
                                 Digest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
                                 BaseImageDigest = hasCachedImage ? mirrorBaseImageDigest : mirrorBaseImageDigest + "b",
                                 CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                SimpleTags = new List<string>
-                                {
+                                SimpleTags =
+                                [
                                     Tag
-                                }
+                                ]
                             }
                         }
                     }
@@ -3350,16 +3325,16 @@ public class BuildCommandTests(TestContext testContext)
                                     $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" :
                                     $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" + "b",
                                 CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
-                                SimpleTags = new List<string>
-                                {
+                                SimpleTags =
+                                [
                                     Tag
-                                }
+                                ]
                             }
                         }
                     }
                 }
             }
-        };
+        ];
 
         ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
         {
@@ -3372,30 +3347,27 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(RuntimeDepsRepo,
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { Tag })
-                    },
+                    [
+                        CreatePlatform(runtimeDepsDockerfileRelativePath, [Tag])
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(RuntimeRepo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatformWithRepoBuildArg(
                             runtimeDockerfileRelativePath,
                             $"$(Repo:{RuntimeDepsRepo})",
-                            new string[] { Tag })
-                    },
+                            [Tag])
+                    ],
                     productVersion: ProductVersion)),
             CreateRepo(AspnetRepo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatformWithRepoBuildArg(
                             aspnetDockerfileRelativePath,
                             $"$(Repo:{RuntimeRepo})",
-                            new string[] { Tag })
-                    },
+                            [Tag])
+                    ],
                     productVersion: ProductVersion))
         );
         manifest.Registry = Registry;
@@ -3407,8 +3379,8 @@ public class BuildCommandTests(TestContext testContext)
 
         ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
         {
-            Repos = new List<RepoData>
-            {
+            Repos =
+            [
                 new RepoData
                 {
                     Repo = RuntimeDepsRepo,
@@ -3430,10 +3402,10 @@ public class BuildCommandTests(TestContext testContext)
                                     CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
                                     Created = createdDate,
                                     IsUnchanged = hasCachedImage,
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         Tag
-                                    }
+                                    ]
                                 }
                             }
                         }
@@ -3460,10 +3432,10 @@ public class BuildCommandTests(TestContext testContext)
                                     CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
                                     Created = createdDate,
                                     IsUnchanged = hasCachedImage,
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         Tag
-                                    }
+                                    ]
                                 }
                             }
                         }
@@ -3489,16 +3461,16 @@ public class BuildCommandTests(TestContext testContext)
                                     BaseImageDigest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
                                     CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{aspnetDockerfileRelativePath}",
                                     Created = createdDate,
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         Tag
-                                    }
+                                    ]
                                 }
                             }
                         }
                     }
                 }
-            }
+            ]
         };
 
         string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
@@ -3528,7 +3500,7 @@ public class BuildCommandTests(TestContext testContext)
             dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             VerifyImportImage(copyImageServiceMock, command,
-                new string[] { $"{RepoPrefix}{RuntimeDepsRepo}:{Tag}" },
+                [$"{RepoPrefix}{RuntimeDepsRepo}:{Tag}"],
                 $"{RuntimeDepsRepo}@{RuntimeDepsDigest}",
                 RegistryOverride,
                 Registry);
@@ -3537,7 +3509,7 @@ public class BuildCommandTests(TestContext testContext)
             dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
 
             VerifyImportImage(copyImageServiceMock, command,
-                new string[] { $"{RepoPrefix}{RuntimeRepo}:{Tag}" },
+                [$"{RepoPrefix}{RuntimeRepo}:{Tag}"],
                 $"{RuntimeRepo}@{RuntimeDigest}",
                 RegistryOverride,
                 Registry);
@@ -3642,12 +3614,11 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(SamplesRepo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             sampleDockerfileRelativePath,
-                            new string[] { Tag })
-                    },
+                            [Tag])
+                    ],
                     productVersion: ProductVersion))
         );
         manifest.Registry = manifestRegistry;
@@ -3740,13 +3711,12 @@ public class BuildCommandTests(TestContext testContext)
         Manifest manifest = CreateManifest(
             CreateRepo(SamplesRepo,
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile(
                                 "1.0/samples/os", tempFolderContext, SrcBaseTag),
-                            new string[] { ImageTag })
-                    },
+                            [ImageTag])
+                    ],
                     productVersion: "1.0.1"))
         );
         manifest.Registry = "mcr.microsoft.com";

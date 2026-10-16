@@ -13,10 +13,10 @@ public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
 {
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
     public MatrixType MatrixType { get; set; }
-    public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
+    public IEnumerable<string> CustomBuildLegGroups { get; set; } = [];
     public int ProductVersionComponents { get; set; }
     public string? ImageInfoPath { get; set; }
-    public IEnumerable<string> DistinctMatrixOsVersions { get; set; } = Enumerable.Empty<string>();
+    public IEnumerable<string> DistinctMatrixOsVersions { get; set; } = [];
     public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
     public string? SourceRepoPrefix { get; set; }
     public string? SourceRepoUrl { get; set; }
@@ -34,7 +34,7 @@ public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     private static readonly Option<string[]> CustomBuildLegGroupsOption = new("--custom-build-leg-group")
     {
         Description = "Name of custom build leg group to use.",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 
@@ -52,7 +52,7 @@ public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     private static readonly Option<string[]> DistinctMatrixOsVersionsOption = new("--distinct-matrix-os-version")
     {
         Description = "OS version to be contained in its own distinct matrix",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 

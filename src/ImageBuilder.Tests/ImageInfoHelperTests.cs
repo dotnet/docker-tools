@@ -80,7 +80,7 @@ public class ImageInfoHelperTests
                                     OsType = "Linux",
                                     OsVersion = "noble",
                                     Architecture = "amd64",
-                                    SimpleTags = new List<string> { "linux" }
+                                    SimpleTags = ["linux"]
                                 },
                                 new PlatformData
                                 {
@@ -88,15 +88,15 @@ public class ImageInfoHelperTests
                                     OsType = "Windows",
                                     OsVersion = "nanoserver-2004",
                                     Architecture = "amd64",
-                                    SimpleTags = new List<string> { "windows" }
+                                    SimpleTags = ["windows"]
                                 }
                             },
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             }
                         }
                     }
@@ -109,19 +109,18 @@ public class ImageInfoHelperTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             CreateDockerfile("1.0/runtime/linux", tempFolderContext),
-                            new string[] { "linux" },
+                            ["linux"],
                             OS.Linux,
                             "noble"),
                         CreatePlatform(
                             CreateDockerfile("1.0/runtime/windows", tempFolderContext),
-                            new string[] { "windows" },
+                            ["windows"],
                             OS.Windows,
                             "nanoserver-2004")
-                    },
+                    ],
                     new Dictionary<string, Tag>
                     {
                         { "shared", new Tag() }
@@ -172,7 +171,7 @@ public class ImageInfoHelperTests
                                     OsType = "Linux",
                                     OsVersion = "noble",
                                     Architecture = "amd64",
-                                    SimpleTags = new List<string> { "linux" }
+                                    SimpleTags = ["linux"]
                                 }
                             }
                         }
@@ -186,14 +185,13 @@ public class ImageInfoHelperTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             CreateDockerfile("1.0/runtime/linux", tempFolderContext),
-                            new string[] { "linux" },
+                            ["linux"],
                             OS.Linux,
                             "noble")
-                    },
+                    ],
                     productVersion: "1.0.1"))
         );
 
@@ -240,7 +238,7 @@ public class ImageInfoHelperTests
                                     OsType = "Linux",
                                     OsVersion = "noble",
                                     Architecture = "amd64",
-                                    SimpleTags = new List<string> { "linux" }
+                                    SimpleTags = ["linux"]
                                 }
                             }
                         },
@@ -254,7 +252,7 @@ public class ImageInfoHelperTests
                                     OsType = "Linux",
                                     OsVersion = "noble",
                                     Architecture = "amd64",
-                                    SimpleTags = new List<string>()
+                                    SimpleTags = []
                                 }
                             }
                         }
@@ -269,23 +267,21 @@ public class ImageInfoHelperTests
         Manifest manifest = CreateManifest(
             CreateRepo("runtime",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             dockerfile,
-                            new string[] { "linux" },
+                            ["linux"],
                             OS.Linux,
                             "noble")
-                    }),
+                    ]),
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             dockerfile,
-                            new string[0],
+                            [],
                             OS.Linux,
                             "noble")
-                    }))
+                    ]))
         );
 
         string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -933,10 +929,10 @@ public class ImageInfoHelperTests
                                 new PlatformData
                                 {
                                     Dockerfile = "image1",
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         "tag1"
-                                    }
+                                    ]
                                 }
                             }
                         }
@@ -971,10 +967,10 @@ public class ImageInfoHelperTests
                                 new PlatformData
                                 {
                                     Dockerfile = "image1",
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         "tag1"
-                                    }
+                                    ]
                                 }
                             }
                         },
@@ -1014,10 +1010,10 @@ public class ImageInfoHelperTests
                                     OsVersion = "noble",
                                     Architecture = "amd64",
                                     Dockerfile = "1.0/runtime/os/Dockerfile",
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         "tag1"
-                                    }
+                                    ]
                                 }
                             }
                         }
@@ -1047,10 +1043,10 @@ public class ImageInfoHelperTests
                                     OsVersion = "noble",
                                     Architecture = "amd64",
                                     Dockerfile = "1.0/runtime/os/Dockerfile",
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         "tag2"
-                                    }
+                                    ]
                                 }
                             }
                         }
@@ -1079,10 +1075,10 @@ public class ImageInfoHelperTests
                                     OsVersion = "noble",
                                     Architecture = "amd64",
                                     Dockerfile = "1.0/runtime/os/Dockerfile",
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         "tag1"
-                                    }
+                                    ]
                                 }
                             }
                         },
@@ -1097,10 +1093,10 @@ public class ImageInfoHelperTests
                                     OsVersion = "noble",
                                     Architecture = "amd64",
                                     Dockerfile = "1.0/runtime/os/Dockerfile",
-                                    SimpleTags = new List<string>
-                                    {
+                                    SimpleTags =
+                                    [
                                         "tag2"
-                                    }
+                                    ]
                                 }
                             }
                         },
@@ -1114,16 +1110,14 @@ public class ImageInfoHelperTests
         Manifest manifest = CreateManifest(
             CreateRepo("repo",
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag1" })
-                    },
+                    [
+                        CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), ["tag1"])
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
-                        CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag2" })
-                    },
+                    [
+                        CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), ["tag2"])
+                    ],
                     productVersion: "2.0")));
 
         string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -1160,10 +1154,10 @@ public class ImageInfoHelperTests
                             ManifestImage = imageInfo1,
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             },
                             Platforms =
                             {
@@ -1262,10 +1256,10 @@ public class ImageInfoHelperTests
                             ManifestImage = imageInfo1,
                             Manifest = new ManifestData
                             {
-                                SharedTags = new List<string>
-                                {
+                                SharedTags =
+                                [
                                     "shared"
-                                }
+                                ]
                             },
                             Platforms =
                             {
@@ -1408,12 +1402,12 @@ public class ImageInfoHelperTests
         ImageInfo.Create(
             new Image
             {
-                Platforms = Array.Empty<Platform>(),
+                Platforms = [],
                 ProductVersion = "1.0"
             },
             "fullrepo",
             "repo",
-            new ManifestFilter(Enumerable.Empty<string>()),
+            new ManifestFilter([]),
             new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
             "base");
 
@@ -1431,7 +1425,7 @@ public class ImageInfoHelperTests
 
         public bool IsVerbose => false;
 
-        public ManifestFilter GetManifestFilter() => new ManifestFilter(Enumerable.Empty<string>());
+        public ManifestFilter GetManifestFilter() => new ManifestFilter([]);
 
         public string GetOption(string name) => throw new NotImplementedException();
     }

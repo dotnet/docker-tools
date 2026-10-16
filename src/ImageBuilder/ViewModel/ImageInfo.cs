@@ -50,7 +50,7 @@ public class ImageInfo
         IEnumerable<TagInfo> sharedTags;
         if (model.SharedTags == null)
         {
-            sharedTags = Enumerable.Empty<TagInfo>();
+            sharedTags = [];
         }
         else
         {

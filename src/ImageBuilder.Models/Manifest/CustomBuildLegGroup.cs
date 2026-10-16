@@ -34,5 +34,5 @@ public class CustomBuildLegGroup
 
     [Description("The set of dependencies the image has for this scenario.")]
     [JsonProperty(Required = Required.Always)]
-    public string[] Dependencies { get; set; } = Array.Empty<string>();
+    public string[] Dependencies { get; set; } = [];
 }

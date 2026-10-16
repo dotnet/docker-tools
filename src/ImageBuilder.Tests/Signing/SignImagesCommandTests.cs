@@ -103,11 +103,11 @@ public class SignImagesCommandTests
         mockSigning
             .Setup(s => s.SignImagesAsync(
                 It.IsAny<ImageArtifactDetails>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ImageSigningResult>
-            {
+            .ReturnsAsync(
+            [
                 new("registry.io/repo@sha256:platform1", "sha256:sig1"),
                 new("registry.io/repo@sha256:manifest1", "sha256:sig2")
-            });
+            ]);
 
         SignImagesCommand command = CreateCommand(
             mockSigning: mockSigning,

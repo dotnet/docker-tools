@@ -152,7 +152,7 @@ public class ManifestInfo
     public IEnumerable<PlatformInfo> GetDescendants(
         PlatformInfo parent, IEnumerable<PlatformInfo> availablePlatforms, bool includeAncestorsOfDescendants = false)
     {
-        List<PlatformInfo> platforms = new();
+        List<PlatformInfo> platforms = [];
         GetDescendants(parent, availablePlatforms, includeAncestorsOfDescendants, platforms);
 
         // Remove the first item which is the the platform that was provided, we only want the descendants of that

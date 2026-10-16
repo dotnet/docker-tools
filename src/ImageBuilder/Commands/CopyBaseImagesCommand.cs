@@ -48,7 +48,7 @@ public class CopyBaseImagesCommand(
         string fullRegistryName;
         if (Options.SubscriptionOptions.SubscriptionsPath is null)
         {
-            manifests = new ManifestInfo[] { Manifest };
+            manifests = [Manifest];
             fullRegistryName = Manifest.Registry;
         }
         else

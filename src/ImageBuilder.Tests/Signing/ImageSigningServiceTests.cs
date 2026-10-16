@@ -220,7 +220,7 @@ public class ImageSigningServiceTests
         mockOras
             .Setup(s => s.GetReferrersAsync(
                 It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>());
+            .ReturnsAsync([]);
 
         InMemoryFileSystem fileSystem = new InMemoryFileSystem();
         Mock<IEsrpSigningService> mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
@@ -308,7 +308,7 @@ public class ImageSigningServiceTests
         mock
             .Setup(s => s.GetReferrersAsync(
                 It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>());
+            .ReturnsAsync([]);
         return mock;
     }
 
@@ -372,10 +372,10 @@ public class ImageSigningServiceTests
         mockOras
             .Setup(s => s.GetReferrersAsync(
                 It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>
-            {
+            .ReturnsAsync(
+            [
                 new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
-            });
+            ]);
 
         ImageSigningService service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 
@@ -431,14 +431,14 @@ public class ImageSigningServiceTests
         mockOras
             .Setup(s => s.GetReferrersAsync(
                 "sha256:already-signed", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>
-            {
+            .ReturnsAsync(
+            [
                 new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
-            });
+            ]);
         mockOras
             .Setup(s => s.GetReferrersAsync(
                 "sha256:not-yet-signed", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>());
+            .ReturnsAsync([]);
 
         ImageSigningService service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 
@@ -490,10 +490,10 @@ public class ImageSigningServiceTests
         mockOras
             .Setup(s => s.GetReferrersAsync(
                 It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>
-            {
+            .ReturnsAsync(
+            [
                 new("registry/repo@sha256:sbom123", "application/spdx+json")
-            });
+            ]);
 
         ImageSigningService service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 

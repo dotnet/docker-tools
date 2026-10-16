@@ -95,7 +95,7 @@ public class CreateManifestListCommandTests
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
         manifestServiceMock
             .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult("digest-sha", new JsonObject()));
+            .ReturnsAsync(new ManifestQueryResult("digest-sha", []));
 
         DateTime createdDate = DateTime.UtcNow;
         IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == createdDate);
@@ -144,7 +144,7 @@ public class CreateManifestListCommandTests
         manifestServiceMock
             .Setup(o => o.GetManifestAsync(
                 It.Is<ImageName>(i => i.ToString().Contains("repo:sharedtag")), false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult("primary-digest", new JsonObject()));
+            .ReturnsAsync(new ManifestQueryResult("primary-digest", []));
 
         DateTime createdDate = DateTime.UtcNow;
         IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == createdDate);
@@ -241,7 +241,7 @@ public class CreateManifestListCommandTests
         // source registry; its previously-published digest is looked up here.
         manifestServiceMock
             .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult("sha256:windows-prior", new JsonObject()));
+            .ReturnsAsync(new ManifestQueryResult("sha256:windows-prior", []));
 
         Mock<IDockerService> dockerServiceMock = new();
 
@@ -315,7 +315,7 @@ public class CreateManifestListCommandTests
                     && n.Repo == "samples"
                     && n.Tag == "app-linux"),
                 It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult(PreviousLinuxDigestSha, new JsonObject()));
+            .ReturnsAsync(new ManifestQueryResult(PreviousLinuxDigestSha, []));
 
         // Digest returned for the freshly-published shared tag (used when the command
         // records the new manifest list digest into image-info).

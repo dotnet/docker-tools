@@ -78,8 +78,8 @@ public static class AzdoGitHttpClientExtensions
 
         GitPush push = new GitPush
         {
-            RefUpdates = new GitRefUpdate[] { branchRefUpdate },
-            Commits = new GitCommitRef[] { commitRef }
+            RefUpdates = [branchRefUpdate],
+            Commits = [commitRef]
         };
 
         return await gitHttpClient.CreatePushAsync(push, repositoryId, cancellationToken);

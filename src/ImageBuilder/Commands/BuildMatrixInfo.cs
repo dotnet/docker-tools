@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class BuildMatrixInfo
 {
     public string Name { get; set; }
-    public List<BuildLegInfo> Legs { get; } = new List<BuildLegInfo>();
+    public List<BuildLegInfo> Legs { get; } = [];
 
     public IEnumerable<BuildLegInfo> OrderedLegs => Legs.OrderBy(leg => leg.Name);
 }

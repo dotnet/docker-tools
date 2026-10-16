@@ -16,7 +16,7 @@ internal class ManifestService(IOrasService orasService) : IManifestService
     {
         if (isDryRun)
         {
-            return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
+            return Task.FromResult(new ManifestQueryResult("", []));
         }
 
         // Use the image's logical registry (e.g., "docker.io") in the ORAS

@@ -42,7 +42,7 @@ public static class DockerHelper
         string trimmedDigests = digests.TrimStart('[').TrimEnd(']');
         if (trimmedDigests == string.Empty)
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
 
         return trimmedDigests.Split(' ');

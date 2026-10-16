@@ -74,7 +74,7 @@ public class Platform
     [Description(
         "The custom build leg groups associated with the platform."
         )]
-    public CustomBuildLegGroup[] CustomBuildLegGroups { get; set; } = Array.Empty<CustomBuildLegGroup>();
+    public CustomBuildLegGroup[] CustomBuildLegGroups { get; set; } = [];
 
     [Description(
         "A label which further distinguishes the architecture when it " +

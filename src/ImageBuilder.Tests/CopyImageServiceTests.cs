@@ -84,7 +84,7 @@ public class CopyImageServiceTests
         Mock<IOrasService> mockOras = new Mock<IOrasService>();
         mockOras
             .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(Array.Empty<ReferrerInfo>());
+            .ReturnsAsync([]);
 
         CopyImageService service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
@@ -188,11 +188,11 @@ public class CopyImageServiceTests
         Mock<IOrasService> mockOras = new Mock<IOrasService>();
         mockOras
             .Setup(o => o.GetReferrersAsync("myacr.azurecr.io/repo:tag", It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(new List<ReferrerInfo>
-            {
+            .ReturnsAsync(
+            [
                 new("myacr.azurecr.io/repo@sha256:ref1", "application/vnd.cncf.notary.signature"),
                 new("myacr.azurecr.io/repo@sha256:ref2", "application/vnd.cncf.notary.signature")
-            });
+            ]);
 
         CopyImageService service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
@@ -316,7 +316,7 @@ public class CopyImageServiceTests
         Mock<IOrasService> mockOras = new Mock<IOrasService>();
         mockOras
             .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
-            .ReturnsAsync(Array.Empty<ReferrerInfo>());
+            .ReturnsAsync([]);
 
         CopyImageService service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),

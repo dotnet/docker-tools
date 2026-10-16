@@ -188,7 +188,7 @@ public static class ExecuteHelper
             .WaitAndRetry(
                 Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
                 RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, logger))
-            .Execute((_, _) => executor(info), new Context(), cancellationToken);
+            .Execute((_, _) => executor(info), [], cancellationToken);
 
         return processResult;
     }

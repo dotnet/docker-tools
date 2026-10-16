@@ -292,7 +292,7 @@ public class QueueBuildCommand(
         IPagedList<WebApi.Build> builds = await client.GetBuildsAsync(
             projectId,
             cancellationToken,
-            definitions: new int[] { pipelineId },
+            definitions: [pipelineId],
             statusFilter: WebApi.BuildStatus.InProgress);
         return builds.Select(build => build.GetWebLink());
     }
@@ -303,7 +303,7 @@ public class QueueBuildCommand(
         Guid projectId,
         CancellationToken cancellationToken)
     {
-        List<WebApi.Build> recentBuilds = (await client.GetBuildsAsync(projectId, cancellationToken, definitions: new int[] { pipelineId }))
+        List<WebApi.Build> recentBuilds = (await client.GetBuildsAsync(projectId, cancellationToken, definitions: [pipelineId]))
             .OrderByDescending(build => build.QueueTime)
             .Take(BuildFailureLimit)
             .ToList();

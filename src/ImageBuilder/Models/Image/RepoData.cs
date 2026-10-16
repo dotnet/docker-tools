@@ -15,7 +15,7 @@ public class RepoData : IComparable<RepoData>
     [JsonProperty(Required = Required.Always)]
     public string Repo { get; set; }
 
-    public List<ImageData> Images { get; set; } = new List<ImageData>();
+    public List<ImageData> Images { get; set; } = [];
 
     public int CompareTo([AllowNull] RepoData other)
     {

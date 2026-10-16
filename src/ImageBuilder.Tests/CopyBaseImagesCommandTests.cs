@@ -54,25 +54,25 @@ public class CopyBaseImagesCommandTests
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/base:tag"),
-                        new string[] { "arm32v7" }),
+                        ["arm32v7"]),
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/os/amd64", tempFolderContext, "base:tag"),
-                        new string[] { "amd64" }))),
+                        ["amd64"]))),
             CreateRepo("aspnet",
                 CreateImage(
                     CreatePlatformWithRepoBuildArg(
                         CreateDockerfile("1.0/aspnet/os/arm32v7", tempFolderContext, "$REPO:arm32v7"),
                         $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
-                        new string[] { "arm32v7" }),
+                        ["arm32v7"]),
                     CreatePlatformWithRepoBuildArg(
                         CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext, "$REPO:amd64"),
                         $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
-                        new string[] { "amd64" }))),
+                        ["amd64"]))),
             CreateRepo("test",
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/test/os/amd64", tempFolderContext, "my-registry.com/repo:tag"),
-                        new string[] { "amd64" })))
+                        ["amd64"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -81,12 +81,12 @@ public class CopyBaseImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
-        {
+        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos =
+        [
             ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag", "docker.io", "user", "pass" ),
             ( "library/base:tag", $"{command.Options.RepoPrefix}library/base:tag", "docker.io", "user", "pass" ),
             ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
-        };
+        ];
 
         foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) expectedTagInfo in expectedTagInfos)
         {
@@ -146,10 +146,10 @@ public class CopyBaseImagesCommandTests
                 CreateImage(
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/os:tag"),
-                        new string[] { "os" }),
+                        ["os"]),
                     CreatePlatform(
                         CreateDockerfile("1.0/runtime/os2/arm32v7", tempFolderContext, "arm32v7/os2:tag"),
-                        new string[] { "os2" })))
+                        ["os2"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -158,11 +158,11 @@ public class CopyBaseImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos = new(string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
-        {
+        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos =
+        [
             ( $"os:tag", $"{command.Options.RepoPrefix}{CustomRegistry}/os:tag", CustomRegistry, null, null),
             ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
-        };
+        ];
 
         foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) expectedTagInfo in expectedTagInfos)
         {

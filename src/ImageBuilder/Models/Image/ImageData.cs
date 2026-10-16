@@ -23,7 +23,7 @@ public class ImageData : IComparable<ImageData>
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public string SyndicatedRepo { get; set; }
 
-    public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
+    public List<PlatformData> Platforms { get; set; } = [];
 
     /// <summary>
     /// Gets or sets a reference to the corresponding image definition in the manifest.

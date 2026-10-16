@@ -211,10 +211,10 @@ ABC-123";
         }
 
         Repo repo = CreateRepo("dotnet/repo");
-        repo.Readmes = new[]
-        {
+        repo.Readmes =
+        [
             new Readme(RepoReadmePath, templatePath)
-        };
+        ];
         Manifest manifest = CreateManifest(repo);
         manifest.Registry = "mcr.microsoft.com";
         manifest.Readme = new(ProductFamilyReadmePath, templatePath);

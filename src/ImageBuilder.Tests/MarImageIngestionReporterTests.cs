@@ -100,42 +100,42 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             previousSharedTag1ImageStatus,
                             sharedTag1ImageStatus,
                             sharedTag2ImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             previousSharedTag1ImageStatus,
                             Clone(sharedTag1ImageStatus, StageStatus.Processing),
                             sharedTag2ImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             previousSharedTag1ImageStatus,
                             Clone(sharedTag1ImageStatus, StageStatus.Succeeded),
                             sharedTag2ImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             previousSharedTag1ImageStatus,
                             Clone(sharedTag1ImageStatus, StageStatus.Succeeded),
                             Clone(sharedTag2ImageStatus, StageStatus.Succeeded),
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             },
@@ -146,20 +146,20 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             platformTag1ImageStatus,
                             platformTag2ImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(platformTag1ImageStatus, StageStatus.Succeeded),
                             Clone(platformTag2ImageStatus, StageStatus.Succeeded),
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             },
@@ -170,15 +170,15 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = platformDigest2,
-                        Value = new List<ImageStatus>()
+                        Value = []
                     },
                     new ImageResult
                     {
                         Digest = platformDigest2,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             platformTag3ImageStatus
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             }
@@ -458,26 +458,26 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             sharedTag1ImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(sharedTag1ImageStatus, StageStatus.Processing),
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = manifestDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(sharedTag1ImageStatus, StageStatus.Failed),
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             },
@@ -488,20 +488,20 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             platformTag1ImageStatus,
                             platformTag2ImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(platformTag1ImageStatus, StageStatus.Succeeded),
                             Clone(platformTag2ImageStatus, StageStatus.Failed),
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             }
@@ -612,20 +612,20 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             platformTag1aImageStatus,
                             platformTag1bImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(platformTag1aImageStatus, StageStatus.Succeeded),
                             Clone(platformTag1bImageStatus, StageStatus.Failed),
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             }
@@ -711,29 +711,29 @@ public class MarImageIngestionReporterTests
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             platformTag1aImageStatus,
                             platformTag1bImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(platformTag1aImageStatus, StageStatus.Failed),
                             platformTag1bImageStatus,
-                        }
+                        ]
                     },
                     new ImageResult
                     {
                         Digest = platformDigest1,
-                        Value = new List<ImageStatus>
-                        {
+                        Value =
+                        [
                             Clone(platformTag1aImageStatus, StageStatus.Failed),
                             Clone(platformTag1bImageStatus, StageStatus.Failed),
-                        }
+                        ]
                     }
                 }.GetEnumerator()
             }
@@ -819,8 +819,8 @@ public class MarImageIngestionReporterTests
                 new ImageResult
                 {
                     Digest = platformDigest1,
-                    Value = new List<ImageStatus>
-                    {
+                    Value =
+                    [
                         new ImageStatus
                         {
                             Tag = platformTag1,
@@ -828,7 +828,7 @@ public class MarImageIngestionReporterTests
                             QueueTime = baselineTime.AddHours(1),
                             OverallStatus = StageStatus.Processing
                         }
-                    }
+                    ]
                 });
 
         Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();

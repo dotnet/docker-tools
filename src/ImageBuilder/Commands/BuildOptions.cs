@@ -148,7 +148,7 @@ public class BuildOptions : ManifestOptions, IFilterableOptions
         SourceRepoUrl = result.GetValue(SourceRepoOption);
         NoCache = result.GetValue(NoCacheOption);
         SourceRepoPrefix = result.GetValue(SourceRepoPrefixOption);
-        BuildArgs = result.GetValue(BuildArgsOption) ?? new Dictionary<string, string>();
+        BuildArgs = result.GetValue(BuildArgsOption) ?? [];
         DockerBuildOptions = result.GetValue(DockerBuildOption) ?? [];
         SkipPlatformCheck = result.GetValue(SkipPlatformCheckOption);
         OutputVariableName = result.GetValue(DigestsOutVarOption);

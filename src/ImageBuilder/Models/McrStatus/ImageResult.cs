@@ -10,5 +10,5 @@ namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 public class ImageResult
 {
     public string Digest { get; set; }
-    public List<ImageStatus> Value { get; set; } = new List<ImageStatus>();
+    public List<ImageStatus> Value { get; set; } = [];
 }

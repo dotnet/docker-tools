@@ -34,7 +34,7 @@ public class ManifestFilter(IEnumerable<string> repos)
             if (resolvedProductVersion is not null &&
                 !Regex.IsMatch(resolvedProductVersion, includeProductVersionsPattern, RegexOptions.IgnoreCase))
             {
-                return Enumerable.Empty<Platform>();
+                return [];
             }
         }
 

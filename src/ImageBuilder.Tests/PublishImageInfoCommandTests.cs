@@ -29,7 +29,7 @@ public class PublishImageInfoCommandTests : IDisposable
 
     #nullable disable annotations
 
-    private readonly List<string> foldersToDelete = new List<string>();
+    private readonly List<string> foldersToDelete = [];
 
     public void Dispose()
     {
@@ -50,17 +50,15 @@ public class PublishImageInfoCommandTests : IDisposable
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(repo1Image1DockerfilePath, new string[] { "tag1" })
-                    },
+                    [
+                            CreatePlatform(repo1Image1DockerfilePath, ["tag1"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("repo2",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(repo2Image2DockerfilePath, new string[] { "tag1" })
-                    },
+                    [
+                            CreatePlatform(repo2Image2DockerfilePath, ["tag1"])
+                    ],
                     productVersion: "2.0"))
         );
 
@@ -80,19 +78,19 @@ public class PublishImageInfoCommandTests : IDisposable
                                 Platforms =
                                 {
                                     Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "newtag"
-                                        })
+                                        ])
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
                                 {
-                                    SharedTags = new List<string>
-                                    {
+                                    SharedTags =
+                                    [
                                         "newshared1",
                                         "newshared2"
-                                    }
+                                    ]
                                 }
                             }
                         }
@@ -108,10 +106,10 @@ public class PublishImageInfoCommandTests : IDisposable
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo2Image2DockerfilePath,
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "tag1"
-                                        })
+                                        ])
                                     },
                                     ProductVersion = "2.0"
                                 }
@@ -180,7 +178,7 @@ public class PublishImageInfoCommandTests : IDisposable
 
     private static Mock<IRepository> GetRepositoryMock()
     {
-        List<Remote> remotes = new List<Remote>();
+        List<Remote> remotes = [];
 
         Mock<RemoteCollection> remoteCollection = new Mock<RemoteCollection>();
         remoteCollection

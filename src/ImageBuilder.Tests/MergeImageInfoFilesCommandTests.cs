@@ -40,21 +40,21 @@ public class MergeImageInfoFilesCommandTests
 
         PlatformData platform1 = CreatePlatform(
             repo2Image1Dockerfile,
-            simpleTags: new List<string>
-            {
+            simpleTags:
+            [
                     "tag3"
-            });
+            ]);
 
         PlatformData platform2 = CreatePlatform(
             repo2Image1Dockerfile,
-            simpleTags: new List<string>
-            {
+            simpleTags:
+            [
                     "tag1"
-            },
+            ],
             baseImageDigest: "base1hash");
 
-        List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
-            {
+        List<ImageArtifactDetails> imageArtifactDetailsList =
+            [
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -81,10 +81,10 @@ public class MergeImageInfoFilesCommandTests
                                     Platforms =
                                     {
                                         CreatePlatform(repo2Image2Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "tag2"
-                                        })
+                                        ])
                                     },
                                     ProductVersion = "1.0"
                                 }
@@ -101,10 +101,10 @@ public class MergeImageInfoFilesCommandTests
                                     {
                                         CreatePlatform(
                                             repo4Image2Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag1"
-                                            })
+                                            ])
                                     },
                                     ProductVersion = "1.0"
                                 }
@@ -135,10 +135,10 @@ public class MergeImageInfoFilesCommandTests
                                     {
                                         CreatePlatform(
                                             repo2Image2Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag2"
-                                            })
+                                            ])
                                     },
                                     ProductVersion = "1.0"
                                 }
@@ -159,10 +159,10 @@ public class MergeImageInfoFilesCommandTests
                                     {
                                         CreatePlatform(
                                             repo4Image2Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag2"
-                                            })
+                                            ])
                                     },
                                     ProductVersion = "1.0"
                                 },
@@ -172,10 +172,10 @@ public class MergeImageInfoFilesCommandTests
                                     {
                                         CreatePlatform(
                                             repo4Image3Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag1"
-                                            })
+                                            ])
                                     },
                                     ProductVersion = "1.0"
                                 }
@@ -183,7 +183,7 @@ public class MergeImageInfoFilesCommandTests
                         }
                     }
                 }
-            };
+            ];
 
         MergeImageInfoCommand command = CreateCommand(context.Path);
         command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
@@ -201,30 +201,26 @@ public class MergeImageInfoFilesCommandTests
             CreateRepo("repo1"),
             CreateRepo("repo2",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(repo2Image1Dockerfile, new string[] { "tag1" })
-                    },
+                    [
+                            CreatePlatform(repo2Image1Dockerfile, ["tag1"])
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(repo2Image2Dockerfile, new string[] { "tag2" })
-                    },
+                    [
+                            CreatePlatform(repo2Image2Dockerfile, ["tag2"])
+                    ],
                     productVersion: "1.0")),
             CreateRepo("repo3"),
             CreateRepo("repo4",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(repo4Image2Dockerfile, new string[] { "tag1" })
-                    },
+                    [
+                            CreatePlatform(repo4Image2Dockerfile, ["tag1"])
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(repo4Image3Dockerfile, new string[] { "tag2" })
-                    },
+                    [
+                            CreatePlatform(repo4Image3Dockerfile, ["tag2"])
+                    ],
                     productVersion: "1.0"))
         );
         File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -237,11 +233,11 @@ public class MergeImageInfoFilesCommandTests
 
         PlatformData expectedPlatform = CreatePlatform(
             repo2Image1Dockerfile,
-            simpleTags: new List<string>
-            {
+            simpleTags:
+            [
                     "tag1",
                     "tag3"
-            },
+            ],
             baseImageDigest: "base1hash");
 
         ImageArtifactDetails expected = new ImageArtifactDetails
@@ -271,10 +267,10 @@ public class MergeImageInfoFilesCommandTests
                                 {
                                     CreatePlatform(
                                         repo2Image2Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "tag2"
-                                        })
+                                        ])
                                 },
                                 ProductVersion = "1.0"
                             }
@@ -295,11 +291,11 @@ public class MergeImageInfoFilesCommandTests
                                 {
                                     CreatePlatform(
                                         repo4Image2Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "tag1",
                                             "tag2"
-                                        })
+                                        ])
                                 },
                                 ProductVersion = "1.0"
                             },
@@ -309,10 +305,10 @@ public class MergeImageInfoFilesCommandTests
                                 {
                                     CreatePlatform(
                                         repo4Image3Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
+                                        simpleTags:
+                                        [
                                             "tag1"
-                                        })
+                                        ])
                                 },
                                 ProductVersion = "1.0"
                             }
@@ -335,8 +331,8 @@ public class MergeImageInfoFilesCommandTests
         string dockerfile1 = CreateDockerfile("1.0/repo1/os1", context);
         string dockerfile2 = CreateDockerfile("1.0/repo1/os2", context);
 
-        List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
-            {
+        List<ImageArtifactDetails> imageArtifactDetailsList =
+            [
                 new ImageArtifactDetails
                 {
                     Repos =
@@ -485,7 +481,7 @@ public class MergeImageInfoFilesCommandTests
                         }
                     }
                 }
-            };
+            ];
 
         MergeImageInfoCommand command = CreateCommand(context.Path);
         command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
@@ -502,23 +498,20 @@ public class MergeImageInfoFilesCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfile1, new string[] { "tag1" }, osVersion: Os1, architecture: Architecture.ARM),
-                            CreatePlatform(dockerfile1, new string[] { "tag2" }, osVersion: Os1, architecture: Architecture.ARM64)
-                    },
+                    [
+                            CreatePlatform(dockerfile1, ["tag1"], osVersion: Os1, architecture: Architecture.ARM),
+                            CreatePlatform(dockerfile1, ["tag2"], osVersion: Os1, architecture: Architecture.ARM64)
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfile1, new string[] { "tag3" }, osVersion: Os2, architecture: Architecture.ARM)
-                    },
+                    [
+                            CreatePlatform(dockerfile1, ["tag3"], osVersion: Os2, architecture: Architecture.ARM)
+                    ],
                     productVersion: "1.0"),
                 CreateImage(
-                    new Platform[]
-                    {
-                            CreatePlatform(dockerfile2, new string[] { "tag4" }, osVersion: Os1)
-                    },
+                    [
+                            CreatePlatform(dockerfile2, ["tag4"], osVersion: Os1)
+                    ],
                     productVersion: "1.0"))
         );
         File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

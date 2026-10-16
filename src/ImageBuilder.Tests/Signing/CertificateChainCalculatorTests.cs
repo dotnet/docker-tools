@@ -98,7 +98,7 @@ public class CertificateChainCalculatorTests
 
         // x5chain key = 33
         writer.WriteInt32(33);
-        byte[][] certs = cert2 is not null ? new[] { cert1, cert2 } : new[] { cert1 };
+        byte[][] certs = cert2 is not null ? [cert1, cert2] : [cert1];
         writer.WriteStartArray(certs.Length);
         foreach (byte[]? cert in certs)
         {

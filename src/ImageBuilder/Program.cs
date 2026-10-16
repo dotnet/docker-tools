@@ -23,7 +23,7 @@ try
     ILoggerFactory loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
     StandaloneLoggerFactory.LoggerFactory = loggerFactory;
 
-    RootCommand rootCliCommand = new RootCommand();
+    RootCommand rootCliCommand = [];
     IEnumerable<ICommand> commands = host.Services.GetServices<ICommand>();
 
     foreach (ICommand command in commands)

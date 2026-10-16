@@ -97,21 +97,20 @@ ENV TEST2 Value1";
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag1" },
+                            ["tag1"],
                             OS.Windows,
                             "nanoserver-1903",
                             dockerfileTemplatePath: templatePath1),
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag2" },
+                            ["tag2"],
                             OS.Windows,
                             "windowsservercore-1903",
                             dockerfileTemplatePath: templatePath2)
-                    },
+                    ],
                     productVersion: "1.2.3"
                 )
             )
@@ -221,11 +220,10 @@ ENV TEST2 Value1";
         Manifest manifest = CreateManifest(
             CreateRepo("repo1",
                 CreateImage(
-                    new Platform[]
-                    {
+                    [
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag1" },
+                            ["tag1"],
                             OS.Linux,
                             "trixie-slim",
                             Architecture.ARM,
@@ -233,30 +231,30 @@ ENV TEST2 Value1";
                             dockerfileTemplatePath: templatePath),
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag2" },
+                            ["tag2"],
                             OS.Windows,
                             "nanoserver-1903"),
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag3" },
+                            ["tag3"],
                             OS.Windows,
                             "windowsservercore-1903"),
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag4" },
+                            ["tag4"],
                             OS.Windows,
                             "windowsservercore-ltsc2019"),
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag5" },
+                            ["tag5"],
                             OS.Linux,
                             "alpine3.12"),
                         CreatePlatform(
                             DockerfilePath,
-                            new string[] { "tag6" },
+                            ["tag6"],
                             OS.Linux,
                             "cbl-mariner1.0")
-                    },
+                    ],
                     productVersion: "1.2.3"
                 )
             )

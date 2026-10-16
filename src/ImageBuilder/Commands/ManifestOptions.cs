@@ -16,7 +16,7 @@ public abstract class ManifestOptions : Options, IManifestOptionsInfo
 
     public string Manifest { get; set; } = string.Empty;
     public string? RegistryOverride { get; set; }
-    public IEnumerable<string> Repos { get; set; } = Enumerable.Empty<string>();
+    public IEnumerable<string> Repos { get; set; } = [];
     public string? RepoPrefix { get; set; }
     public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
@@ -34,7 +34,7 @@ public abstract class ManifestOptions : Options, IManifestOptionsInfo
     private static readonly Option<string[]> ReposOption = new("--repo")
     {
         Description = "Repos to operate on (Default is all)",
-        DefaultValueFactory = _ => Array.Empty<string>(),
+        DefaultValueFactory = _ => [],
         AllowMultipleArgumentsPerToken = false
     };
 
@@ -57,7 +57,7 @@ public abstract class ManifestOptions : Options, IManifestOptionsInfo
         RegistryOverride = result.GetValue(RegistryOverrideOption);
         Repos = result.GetValue(ReposOption) ?? [];
         RepoPrefix = result.GetValue(RepoPrefixOption);
-        Variables = result.GetValue(VariablesOption) ?? new Dictionary<string, string>();
+        Variables = result.GetValue(VariablesOption) ?? [];
     }
 
     public virtual ManifestFilter GetManifestFilter()

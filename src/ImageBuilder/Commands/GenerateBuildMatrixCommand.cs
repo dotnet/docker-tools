@@ -624,14 +624,8 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
                 && OsVersion == other.OsVersion;
         }
 
-        public override bool Equals(object? obj)
-        {
-            return Equals(obj as PlatformId);
-        }
+        public override bool Equals(object? obj) => Equals(obj as PlatformId);
 
-        public override int GetHashCode()
-        {
-            return $"{Architecture}-{OS}-{OsVersion}".GetHashCode();
-        }
+        public override int GetHashCode() => $"{Architecture}-{OS}-{OsVersion}".GetHashCode();
     }
 }

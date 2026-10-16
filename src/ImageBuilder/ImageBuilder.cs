@@ -81,11 +81,9 @@ public static class ImageBuilder
         });
 
         builder.Services.AddHttpClient(nameof(OrasDotNetService), httpClient =>
-        {
             // ORAS referrer lookups can intentionally wait in the rate-limiter queue longer
             // than HttpClient's 100s default timeout.
-            httpClient.Timeout = Timeout.InfiniteTimeSpan;
-        })
+            httpClient.Timeout = Timeout.InfiniteTimeSpan)
             // Referrer-lookup rate limiting must be per-retry-attempt, otherwise retries would
             // eat up rate limited requests without acquiring additional rate limiting leases.
             .AddHttpMessageHandler<AcrReferrerRateLimitingHandler>()

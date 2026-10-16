@@ -11,10 +11,7 @@ public class GitService(ILogger<GitService> logger) : IGitService
 {
     private readonly ILogger<GitService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public string GetCommitSha(string filePath, bool useFullHash = false)
-    {
-        return GitHelper.GetCommitSha(filePath, useFullHash);
-    }
+    public string GetCommitSha(string filePath, bool useFullHash = false) => GitHelper.GetCommitSha(filePath, useFullHash);
 
     public IRepository CloneRepository(string sourceUrl, string workdirPath, CloneOptions options)
     {

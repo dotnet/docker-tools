@@ -21,8 +21,5 @@ public class McrStatusClientFactory(
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly ILogger<McrStatusClient> _logger = logger;
 
-    public IMcrStatusClient Create(IServiceConnection serviceConnection)
-    {
-        return new McrStatusClient(_httpClientFactory, _logger, _tokenCredentialProvider, serviceConnection);
-    }
+    public IMcrStatusClient Create(IServiceConnection serviceConnection) => new McrStatusClient(_httpClientFactory, _logger, _tokenCredentialProvider, serviceConnection);
 }

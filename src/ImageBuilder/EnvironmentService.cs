@@ -8,10 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal class EnvironmentService : IEnvironmentService
 {
-    public void Exit(int exitCode)
-    {
-        Environment.Exit(exitCode);
-    }
+    public void Exit(int exitCode) => Environment.Exit(exitCode);
 
     public int ExitCode
     {
@@ -19,8 +16,5 @@ internal class EnvironmentService : IEnvironmentService
         set => Environment.ExitCode = value;
     }
 
-    public string? GetEnvironmentVariable(string variable)
-    {
-        return Environment.GetEnvironmentVariable(variable);
-    }
+    public string? GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
 }

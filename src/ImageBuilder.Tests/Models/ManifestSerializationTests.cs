@@ -34,10 +34,7 @@ public class ManifestSerializationTests
     }
 
     [TestMethod]
-    public void DefaultManifest_RoundTrip()
-    {
-        AssertRoundTrip(new Manifest(), AssertManifestsEqual);
-    }
+    public void DefaultManifest_RoundTrip() => AssertRoundTrip(new Manifest(), AssertManifestsEqual);
 
     [TestMethod]
     public void FullyPopulatedManifest_Bidirectional()

@@ -103,10 +103,7 @@ public static class DockerHelper
     public static string ReplaceRepo(string image, string newRepo) =>
         newRepo + image.Substring(GetTagOrDigestSeparatorIndex(image));
 
-    public static void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken)
-    {
-        DockerHelper.ExecuteCommand("tag", "Failed to create tag", cancellationToken, $"{image} {tag}", isDryRun);
-    }
+    public static void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken) => DockerHelper.ExecuteCommand("tag", "Failed to create tag", cancellationToken, $"{image} {tag}", isDryRun);
 
     public static string GetCreatedDate(string image, bool isDryRun, CancellationToken cancellationToken)
     {

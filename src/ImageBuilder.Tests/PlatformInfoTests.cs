@@ -31,10 +31,7 @@ public class PlatformInfoTests
     [DataRow("cbl-mariner2.0", "CBL-Mariner 2.0")]
     [DataRow("azurelinux3.0", "Azure Linux 3.0")]
     [DataRow("azurelinux3.0-distroless", "Azure Linux 3.0")]
-    public void GetOSDisplayName_Linux(string osVersion, string expectedDisplayName)
-    {
-        ValidateGetOSDisplayName(OS.Linux, osVersion, expectedDisplayName);
-    }
+    public void GetOSDisplayName_Linux(string osVersion, string expectedDisplayName) => ValidateGetOSDisplayName(OS.Linux, osVersion, expectedDisplayName);
 
     [TestMethod]
     [DataRow("windowsservercore-ltsc2016", "Windows Server Core 2016")]
@@ -43,10 +40,7 @@ public class PlatformInfoTests
     [DataRow("windowsservercore-1903", "Windows Server Core, version 1903")]
     [DataRow("nanoserver-1903", "Nano Server, version 1903")]
     [DataRow("nanoserver-ltsc2022", "Nano Server 2022")]
-    public void GetOSDisplayName_Windows(string osVersion, string expectedDisplayName)
-    {
-        ValidateGetOSDisplayName(OS.Windows, osVersion, expectedDisplayName);
-    }
+    public void GetOSDisplayName_Windows(string osVersion, string expectedDisplayName) => ValidateGetOSDisplayName(OS.Windows, osVersion, expectedDisplayName);
 
     [TestMethod]
     [DataRow("VALID", "ubuntu:latest", "$VALID", "ubuntu:latest")]

@@ -28,10 +28,7 @@ public class TagSerializationTests
     }
 
     [TestMethod]
-    public void DefaultTag_RoundTrip()
-    {
-        AssertRoundTrip(new Tag(), AssertTagsEqual);
-    }
+    public void DefaultTag_RoundTrip() => AssertRoundTrip(new Tag(), AssertTagsEqual);
 
     [TestMethod]
     public void FullyPopulatedTag_Bidirectional()

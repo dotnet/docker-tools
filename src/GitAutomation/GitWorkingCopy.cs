@@ -88,31 +88,19 @@ public sealed class GitWorkingCopy(IProcessRunner processRunner, ILogger logger)
     }
 
     /// <inheritdoc/>
-    public void Dispose()
-    {
-        DeleteDirectory(WorkspaceDirectory);
-    }
+    public void Dispose() => DeleteDirectory(WorkspaceDirectory);
 
     /// <summary>Gets the tree hash for HEAD.</summary>
     /// <param name="cancellationToken">A token that cancels the operation.</param>
     /// <returns>The tree hash.</returns>
-    public Task<string> GetTreeHashAsync(CancellationToken cancellationToken)
-    {
-        return RunGitAsync(cancellationToken, "rev-parse", "HEAD^{tree}");
-    }
+    public Task<string> GetTreeHashAsync(CancellationToken cancellationToken) => RunGitAsync(cancellationToken, "rev-parse", "HEAD^{tree}");
 
     /// <summary>Gets the commit hash for HEAD.</summary>
     /// <param name="cancellationToken">A token that cancels the operation.</param>
     /// <returns>The commit hash.</returns>
-    public Task<string> GetHeadCommitAsync(CancellationToken cancellationToken)
-    {
-        return RunGitAsync(cancellationToken, "rev-parse", "HEAD");
-    }
+    public Task<string> GetHeadCommitAsync(CancellationToken cancellationToken) => RunGitAsync(cancellationToken, "rev-parse", "HEAD");
 
-    private Task<string> RunGitAsync(CancellationToken cancellationToken, params string[] arguments)
-    {
-        return RunGitAsync(environment: null, WorkspaceDirectory, cancellationToken, arguments);
-    }
+    private Task<string> RunGitAsync(CancellationToken cancellationToken, params string[] arguments) => RunGitAsync(environment: null, WorkspaceDirectory, cancellationToken, arguments);
 
     private async Task<string> RunGitWithRemoteAsync(
         Uri remoteUrl,

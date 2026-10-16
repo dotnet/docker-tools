@@ -25,10 +25,7 @@ public static class ImageInfoHelper
         return imageInfoPath;
     }
 
-    public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
-    {
-        JsonHelper.SerializeObject(actual).ShouldBe(JsonHelper.SerializeObject(expected));
-    }
+    public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual) => JsonHelper.SerializeObject(actual).ShouldBe(JsonHelper.SerializeObject(expected));
 
     public static ImageArtifactDetails CreateImageInfo(
         string registry,

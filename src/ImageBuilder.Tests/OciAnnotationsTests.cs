@@ -23,16 +23,10 @@ public class OciAnnotationsTests
     [TestMethod]
     [DataRow("")]
     [DataRow("not-a-date")]
-    public void Created_InvalidAnnotation_ReturnsNull(string value)
-    {
-        CreateReferrer(value).Created.ShouldBeNull();
-    }
+    public void Created_InvalidAnnotation_ReturnsNull(string value) => CreateReferrer(value).Created.ShouldBeNull();
 
     [TestMethod]
-    public void Created_NoAnnotations_ReturnsNull()
-    {
-        new ReferrerInfo("registry.io/repo@sha256:abc", ArtifactType: null).Created.ShouldBeNull();
-    }
+    public void Created_NoAnnotations_ReturnsNull() => new ReferrerInfo("registry.io/repo@sha256:abc", ArtifactType: null).Created.ShouldBeNull();
 
     private static ReferrerInfo CreateReferrer(string createdValue) =>
         new("registry.io/repo@sha256:abc", ArtifactType: null)

@@ -37,8 +37,5 @@ public class TagInfo
         return tagInfo;
     }
 
-    public static string GetFullyQualifiedName(string repoName, string tagName)
-    {
-        return $"{repoName}:{tagName}";
-    }
+    public static string GetFullyQualifiedName(string repoName, string tagName) => $"{repoName}:{tagName}";
 }

@@ -19,10 +19,7 @@ public class TrimUnchangedPlatformsCommandTests
     public TestContext? TestContext { get; set; }
 
     [TestMethod]
-    public async Task NoPlatforms()
-    {
-        await RunTestAsync(new ImageArtifactDetails(), new ImageArtifactDetails());
-    }
+    public async Task NoPlatforms() => await RunTestAsync(new ImageArtifactDetails(), new ImageArtifactDetails());
 
     [TestMethod]
     public async Task MixOfCachedPlatforms()

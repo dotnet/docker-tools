@@ -34,7 +34,7 @@ public partial class PlatformInfo
     public IEnumerable<string> InternalFromImages { get; private set; } = Enumerable.Empty<string>();
     public bool IsWindows => Model.OS == OS.Windows;
     public Platform Model { get; private set; }
-    public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
+    public IEnumerable<string> OverriddenFromImages => _overriddenFromImages;
     public string FullRepoModelName { get; set; }
     public string RepoName { get; private set; }
     public IEnumerable<TagInfo> Tags { get; private set; }
@@ -156,10 +156,7 @@ public partial class PlatformInfo
     private static bool IsFromScratchImage(string image) =>
         image.Equals(ScratchIdentifier, StringComparison.OrdinalIgnoreCase);
 
-    public bool IsInternalFromImage(string fromImage)
-    {
-        return _internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
-    }
+    public bool IsInternalFromImage(string fromImage) => _internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
 
     public string GetOSDisplayName() => Model.OS switch
     {

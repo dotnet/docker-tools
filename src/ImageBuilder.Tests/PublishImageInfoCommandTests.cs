@@ -150,10 +150,7 @@ public class PublishImageInfoCommandTests : IDisposable
         string actualImageArtifactDetailsContents = null;
         gitServiceMock
             .Setup(o => o.Stage(It.IsAny<IRepository>(), It.IsAny<string>()))
-            .Callback((IRepository repo, string path) =>
-            {
-                actualImageArtifactDetailsContents = File.ReadAllText(path);
-            });
+            .Callback((IRepository repo, string path) => actualImageArtifactDetailsContents = File.ReadAllText(path));
 
         PublishImageInfoCommand command = new(
             TestHelper.CreateManifestJsonService(),

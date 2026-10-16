@@ -20,20 +20,14 @@ public static class ExecuteHelper
         bool isDryRun,
         CancellationToken cancellationToken,
         string? errorMessage = null,
-        string? executeMessageOverride = null)
-    {
-        return Execute(new ProcessStartInfo(fileName, args), isDryRun, cancellationToken, errorMessage, executeMessageOverride);
-    }
+        string? executeMessageOverride = null) => Execute(new ProcessStartInfo(fileName, args), isDryRun, cancellationToken, errorMessage, executeMessageOverride);
 
     public static string Execute(
         ProcessStartInfo info,
         bool isDryRun,
         CancellationToken cancellationToken,
         string? errorMessage = null,
-        string? executeMessageOverride = null)
-    {
-        return Execute(info, info => ExecuteProcess(info, cancellationToken), isDryRun, errorMessage, executeMessageOverride);
-    }
+        string? executeMessageOverride = null) => Execute(info, info => ExecuteProcess(info, cancellationToken), isDryRun, errorMessage, executeMessageOverride);
 
     public static string ExecuteWithRetry(
         string fileName,

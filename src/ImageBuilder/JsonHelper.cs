@@ -21,17 +21,11 @@ public static class JsonHelper
         DefaultValueHandling = DefaultValueHandling.Ignore
     };
 
-    public static string SerializeObject(object? value)
-    {
-        return JsonConvert.SerializeObject(value, JsonSerializerSettings);
-    }
+    public static string SerializeObject(object? value) => JsonConvert.SerializeObject(value, JsonSerializerSettings);
 
     private class CustomContractResolver : DefaultContractResolver
     {
-        public CustomContractResolver()
-        {
-            NamingStrategy = new CamelCaseNamingStrategy();
-        }
+        public CustomContractResolver() => NamingStrategy = new CamelCaseNamingStrategy();
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {

@@ -22,10 +22,7 @@ public static class ManifestHelper
         };
     }
 
-    public static Repo CreateRepo(string name, params IEnumerable<Image> images)
-    {
-        return CreateRepo(name, images, readme: null);
-    }
+    public static Repo CreateRepo(string name, params IEnumerable<Image> images) => CreateRepo(name, images, readme: null);
 
     public static Repo CreateRepo(
         string name,

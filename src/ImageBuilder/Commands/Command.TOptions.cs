@@ -13,10 +13,7 @@ public abstract class Command<TOptions> : ICommand where TOptions : Options, new
 
     protected abstract string Description { get; }
 
-    public Command()
-    {
-        Options = new TOptions();
-    }
+    public Command() => Options = new TOptions();
 
     public Command GetCliCommand()
     {
@@ -33,10 +30,7 @@ public abstract class Command<TOptions> : ICommand where TOptions : Options, new
             });
     }
 
-    protected virtual void Initialize(TOptions options)
-    {
-        Options = options;
-    }
+    protected virtual void Initialize(TOptions options) => Options = options;
 
     public abstract Task ExecuteAsync(CancellationToken cancellationToken);
 }

@@ -713,13 +713,11 @@ public class BuildCommand : ManifestCommand<BuildOptions>
             finalStageExternalFromImages,
             cancellationToken,
             async (fromImage, ct) =>
-        {
             // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
             // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
             // greater chance the tag could be updated resulting in a different digest returned than what was
             // originally pulled.
-            await _imageDigestCache.GetLocalImageDigestAsync(fromImage, Options.IsDryRun, ct);
-        });
+            await _imageDigestCache.GetLocalImageDigestAsync(fromImage, Options.IsDryRun, ct));
 
         // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles
         Parallel.ForEach(externalFromImages, fromImage =>

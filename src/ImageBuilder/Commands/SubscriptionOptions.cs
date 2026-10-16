@@ -20,8 +20,5 @@ public class SubscriptionOptions
 
     public IEnumerable<Argument> GetCliArguments() => [];
 
-    public void Bind(ParseResult result)
-    {
-        SubscriptionsPath = result.GetValue(SubscriptionsPathOption);
-    }
+    public void Bind(ParseResult result) => SubscriptionsPath = result.GetValue(SubscriptionsPathOption);
 }

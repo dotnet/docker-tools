@@ -18,10 +18,7 @@ internal class VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILogge
     private readonly ILogger<VssConnectionFactory> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
-    public IVssConnection Create(Uri baseUrl, VssCredentials credentials)
-    {
-        return new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
-    }
+    public IVssConnection Create(Uri baseUrl, VssCredentials credentials) => new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
 
     private class VssConnectionWrapper : IVssConnection
     {
@@ -36,20 +33,11 @@ internal class VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILogge
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
 
-        public void Dispose()
-        {
-            _inner.Dispose();
-        }
+        public void Dispose() => _inner.Dispose();
 
-        public IProjectHttpClient GetProjectHttpClient()
-        {
-            return new ProjectHttpClientWrapper(_loggerFactory, _inner.GetClient<ProjectHttpClient>());
-        }
+        public IProjectHttpClient GetProjectHttpClient() => new ProjectHttpClientWrapper(_loggerFactory, _inner.GetClient<ProjectHttpClient>());
 
-        public IBuildHttpClient GetBuildHttpClient()
-        {
-            return new BuildHttpClientWrapper(_loggerFactory, _inner.GetClient<WebApi.BuildHttpClient>());
-        }
+        public IBuildHttpClient GetBuildHttpClient() => new BuildHttpClientWrapper(_loggerFactory, _inner.GetClient<WebApi.BuildHttpClient>());
 
         private class ProjectHttpClientWrapper : IProjectHttpClient
         {
@@ -63,10 +51,7 @@ internal class VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILogge
                 _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             }
 
-            public void Dispose()
-            {
-                _inner.Dispose();
-            }
+            public void Dispose() => _inner.Dispose();
 
             public Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
@@ -85,10 +70,7 @@ internal class VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILogge
                 _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             }
 
-            public void Dispose()
-            {
-                _inner.Dispose();
-            }
+            public void Dispose() => _inner.Dispose();
 
             public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag, CancellationToken cancellationToken) =>
                 RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)

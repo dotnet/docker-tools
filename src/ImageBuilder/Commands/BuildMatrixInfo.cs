@@ -13,5 +13,5 @@ public class BuildMatrixInfo
     public string Name { get; set; }
     public List<BuildLegInfo> Legs { get; } = new List<BuildLegInfo>();
 
-    public IEnumerable<BuildLegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
+    public IEnumerable<BuildLegInfo> OrderedLegs => Legs.OrderBy(leg => leg.Name);
 }

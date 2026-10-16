@@ -16,13 +16,7 @@ public sealed record Payload(Descriptor TargetArtifact)
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
 
-    public string ToJson()
-    {
-        return JsonSerializer.Serialize(this, s_jsonOptions);
-    }
+    public string ToJson() => JsonSerializer.Serialize(this, s_jsonOptions);
 
-    public static Payload FromJson(string json)
-    {
-        return JsonSerializer.Deserialize<Payload>(json, s_jsonOptions);
-    }
+    public static Payload FromJson(string json) => JsonSerializer.Deserialize<Payload>(json, s_jsonOptions);
 }

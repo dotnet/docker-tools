@@ -32,10 +32,7 @@ public static class TestHelper
         return new ArtifactService(new FileSystem(), Options.Create(buildConfiguration));
     }
 
-    public static TempFolderContext UseTempFolder()
-    {
-        return new TempFolderContext();
-    }
+    public static TempFolderContext UseTempFolder() => new TempFolderContext();
 
     /// <summary>
     /// Returns a value indicating whether the two lists are equivalent (order does not matter).
@@ -83,8 +80,5 @@ public class TempFolderContext : IDisposable
 
     public string Path { get; }
 
-    public void Dispose()
-    {
-        Directory.Delete(Path, true);
-    }
+    public void Dispose() => Directory.Delete(Path, true);
 }

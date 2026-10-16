@@ -77,10 +77,7 @@ public sealed class AzureDevOpsClientTests
 
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            throw new NotSupportedException();
-        }
+            CancellationToken cancellationToken) => throw new NotSupportedException();
 
         protected override void Dispose(bool disposing)
         {

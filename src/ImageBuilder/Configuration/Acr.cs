@@ -14,10 +14,7 @@ public sealed record Acr
     private const string AcrDomain = ".azurecr.io";
     private const string Https = "https://";
 
-    private Acr(string name)
-    {
-        Name = name;
-    }
+    private Acr(string name) => Name = name;
 
     /// <summary>
     /// Parses a reference to an <see cref="Acr"/> from a string.

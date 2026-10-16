@@ -19,18 +19,12 @@ public class LifecycleAnnotationsTests
     [DataRow("2026-05-22", 2026, 5, 22)]
     [DataRow("2026-05-22T00:00:00Z", 2026, 5, 22)]
     [DataRow("2026-05-22T23:00:00-05:00", 2026, 5, 23)]
-    public void EndOfLifeDate_ParsesAnnotation(string value, int year, int month, int day)
-    {
-        CreateArtifact(value).EndOfLifeDate.ShouldBe(new DateOnly(year, month, day));
-    }
+    public void EndOfLifeDate_ParsesAnnotation(string value, int year, int month, int day) => CreateArtifact(value).EndOfLifeDate.ShouldBe(new DateOnly(year, month, day));
 
     [TestMethod]
     [DataRow("")]
     [DataRow("not-a-date")]
-    public void EndOfLifeDate_InvalidAnnotation_ReturnsNull(string value)
-    {
-        CreateArtifact(value).EndOfLifeDate.ShouldBeNull();
-    }
+    public void EndOfLifeDate_InvalidAnnotation_ReturnsNull(string value) => CreateArtifact(value).EndOfLifeDate.ShouldBeNull();
 
     [TestMethod]
     public void EndOfLifeDate_NoAnnotations_ReturnsNull()

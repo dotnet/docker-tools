@@ -115,10 +115,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                 DateTime createdDate = _dateTimeService.UtcNow;
 
                 // Push the manifest lists, then record their digests back into image-info.
-                Parallel.ForEach(manifestLists, manifestListInfo =>
-                {
-                    _dockerService.PushManifestList(manifestListInfo.Tag, Options.IsDryRun, ct);
-                });
+                Parallel.ForEach(manifestLists, manifestListInfo => _dockerService.PushManifestList(manifestListInfo.Tag, Options.IsDryRun, ct));
 
                 WriteManifestSummary(manifestLists);
 

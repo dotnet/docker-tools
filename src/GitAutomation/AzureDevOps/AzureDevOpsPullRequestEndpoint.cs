@@ -29,30 +29,21 @@ public sealed class AzureDevOpsPullRequestEndpoint(
         new(() => client.GetRepositoryAsync(repositoryIdOrName, CancellationToken.None));
 
     /// <inheritdoc/>
-    public async ValueTask<AutomationIdentity> GetIdentityAsync(CancellationToken cancellationToken)
-    {
-        return await ValueTask.FromResult(_identity);
-    }
+    public async ValueTask<AutomationIdentity> GetIdentityAsync(CancellationToken cancellationToken) => await ValueTask.FromResult(_identity);
 
     /// <inheritdoc/>
     public async Task CloneSourceAsync(
         GitWorkingCopy workingCopy,
         string branch,
         AutomationIdentity identity,
-        CancellationToken cancellationToken)
-    {
-        await CloneAsync(workingCopy, branch, identity, cancellationToken);
-    }
+        CancellationToken cancellationToken) => await CloneAsync(workingCopy, branch, identity, cancellationToken);
 
     /// <inheritdoc/>
     public async Task CloneTargetAsync(
         GitWorkingCopy workingCopy,
         string branch,
         AutomationIdentity identity,
-        CancellationToken cancellationToken)
-    {
-        await CloneAsync(workingCopy, branch, identity, cancellationToken);
-    }
+        CancellationToken cancellationToken) => await CloneAsync(workingCopy, branch, identity, cancellationToken);
 
     /// <inheritdoc/>
     public async Task PushAsync(
@@ -168,16 +159,10 @@ public sealed class AzureDevOpsPullRequestEndpoint(
             cancellationToken);
     }
 
-    private async ValueTask<string> GetAuthorizationHeaderAsync(CancellationToken cancellationToken)
-    {
-        return await ValueTask.FromResult($"Bearer {_accessToken}");
-    }
+    private async ValueTask<string> GetAuthorizationHeaderAsync(CancellationToken cancellationToken) => await ValueTask.FromResult($"Bearer {_accessToken}");
 
     // GitAutomation uses short branch names, while the Azure DevOps REST API uses full refs.
-    private static string GetRefName(string branch)
-    {
-        return $"{HeadRefPrefix}{branch}";
-    }
+    private static string GetRefName(string branch) => $"{HeadRefPrefix}{branch}";
 
     private static string GetBranchName(string refName)
     {

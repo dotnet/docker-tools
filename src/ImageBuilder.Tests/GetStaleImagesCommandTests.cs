@@ -1590,10 +1590,7 @@ public class GetStaleImagesCommandTests
     /// the <see cref="GetStaleImagesCommand"/> generates temp folders partially based on the name of
     /// the repo owner.
     /// </summary>
-    private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null)
-    {
-        return testMethodName + suffix;
-    }
+    private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null) => testMethodName + suffix;
 
     private static Subscription CreateSubscription(
         string repoName,
@@ -1648,9 +1645,9 @@ public class GetStaleImagesCommandTests
 
         public Mock<IManifestServiceFactory> ManifestServiceFactoryMock { get; }
 
-        public GetStaleImagesCommand Command { get => command; }
+        public GetStaleImagesCommand Command => command;
 
-        public IDictionary<string, string> ImageDigests { get => imageDigests; }
+        public IDictionary<string, string> ImageDigests => imageDigests;
 
         /// <summary>
         /// Initializes a new instance of <see cref="TestFixture"/>.
@@ -1692,10 +1689,7 @@ public class GetStaleImagesCommandTests
             command = CreateCommand();
         }
 
-        public Task ExecuteCommandAsync(CancellationToken cancellationToken)
-        {
-            return command.ExecuteAsync(cancellationToken);
-        }
+        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => command.ExecuteAsync(cancellationToken);
 
         /// <summary>
         /// Verifies the test execution to ensure the results match the expected state.
@@ -1833,10 +1827,7 @@ public class GetStaleImagesCommandTests
                 string url = $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}.git";
                 gitServiceMock
                     .Setup(o => o.CloneRepository(url, It.IsAny<string>(), It.Is<CloneOptions>(options => options.BranchName == subscription.Manifest.Branch)))
-                    .Callback((string url, string repoPath, CloneOptions options) =>
-                    {
-                        GenerateRepo(repoPath, subscription, subscriptionInfo.Manifest, repoDockerfileInfos);
-                    })
+                    .Callback((string url, string repoPath, CloneOptions options) => GenerateRepo(repoPath, subscription, subscriptionInfo.Manifest, repoDockerfileInfos))
                     .Returns(Mock.Of<IRepository>());
 
             }

@@ -449,10 +449,7 @@ public class QueueBuildCommandTests
     /// the <see cref="QueueBuildCommand"/> generates temp folders partially based on the name of
     /// the repo owner.
     /// </summary>
-    private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null)
-    {
-        return testMethodName + suffix;
-    }
+    private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null) => testMethodName + suffix;
 
     private static Subscription CreateSubscription(
         string repoName,
@@ -559,10 +556,7 @@ public class QueueBuildCommandTests
             command = CreateCommand(connectionFactoryMock);
         }
 
-        public Task ExecuteCommandAsync(CancellationToken cancellationToken)
-        {
-            return command.ExecuteAsync(cancellationToken);
-        }
+        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => command.ExecuteAsync(cancellationToken);
 
         public void CancelWhenGettingProject(CancellationTokenSource cancellationTokenSource)
         {

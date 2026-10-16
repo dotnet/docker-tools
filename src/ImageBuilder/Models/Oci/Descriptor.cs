@@ -15,13 +15,7 @@ public sealed record Descriptor(string MediaType, string Digest, long Size)
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
 
-    public string ToJson()
-    {
-        return JsonSerializer.Serialize(this, s_jsonOptions);
-    }
+    public string ToJson() => JsonSerializer.Serialize(this, s_jsonOptions);
 
-    public static Descriptor FromJson(string json)
-    {
-        return JsonSerializer.Deserialize<Descriptor>(json, s_jsonOptions);
-    }
+    public static Descriptor FromJson(string json) => JsonSerializer.Deserialize<Descriptor>(json, s_jsonOptions);
 }

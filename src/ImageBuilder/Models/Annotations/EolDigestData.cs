@@ -21,8 +21,5 @@ public record EolDigestData
     {
     }
 
-    public EolDigestData(string digest)
-    {
-        Digest = digest;
-    }
+    public EolDigestData(string digest) => Digest = digest;
 }

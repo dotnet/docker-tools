@@ -315,10 +315,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
     }
 
     private static HttpClient CreateHttpClient(
-        Func<HttpRequestMessage, int, HttpResponseMessage> send)
-    {
-        return CreateHttpClient((request, count) => Task.FromResult(send(request, count)));
-    }
+        Func<HttpRequestMessage, int, HttpResponseMessage> send) => CreateHttpClient((request, count) => Task.FromResult(send(request, count)));
 
     private static HttpResponseMessage JsonResponse(string json)
     {

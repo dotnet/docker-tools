@@ -98,10 +98,7 @@ public class ManifestInfo
             .SelectMany(platform => platform.Tags);
     }
 
-    public RepoInfo GetFilteredRepoById(string id)
-    {
-        return FilteredRepos.FirstOrDefault(repo => repo.Id == id);
-    }
+    public RepoInfo GetFilteredRepoById(string id) => FilteredRepos.FirstOrDefault(repo => repo.Id == id);
 
     public PlatformInfo GetPlatformByTag(string fullTagName)
     {
@@ -118,15 +115,9 @@ public class ManifestInfo
         return result;
     }
 
-    public RepoInfo GetRepoById(string id)
-    {
-        return AllRepos.FirstOrDefault(repo => repo.Id == id);
-    }
+    public RepoInfo GetRepoById(string id) => AllRepos.FirstOrDefault(repo => repo.Id == id);
 
-    public RepoInfo GetRepoByModelName(string name)
-    {
-        return AllRepos.FirstOrDefault(repo => repo.Model.Name == name);
-    }
+    public RepoInfo GetRepoByModelName(string name) => AllRepos.FirstOrDefault(repo => repo.Model.Name == name);
 
     public RepoInfo GetRepoByImage(ImageInfo image) =>
         AllRepos

@@ -25,8 +25,5 @@ public class RegistryCredentialsOptions : IRegistryCredentialsHost
 
     public IEnumerable<Argument> GetCliArguments() => [];
 
-    public void Bind(ParseResult result)
-    {
-        Credentials = result.GetValue(CredentialsOption) ?? new Dictionary<string, RegistryCredentials>();
-    }
+    public void Bind(ParseResult result) => Credentials = result.GetValue(CredentialsOption) ?? new Dictionary<string, RegistryCredentials>();
 }

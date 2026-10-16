@@ -118,10 +118,7 @@ public static class SerializationHelper
     /// <summary>
     /// Normalizes a JSON string by removing trailing whitespace and normalizing line endings.
     /// </summary>
-    private static string NormalizeJson(string json)
-    {
-        return json.Trim().Replace("\r\n", "\n");
-    }
+    private static string NormalizeJson(string json) => json.Trim().Replace("\r\n", "\n");
 
     /// <summary>
     /// Serializes an object to JSON using test settings (with StringEnumConverter).
@@ -129,10 +126,7 @@ public static class SerializationHelper
     /// <typeparam name="T">The type of object to serialize.</typeparam>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>The JSON string representation.</returns>
-    private static string Serialize<T>(T obj)
-    {
-        return JsonConvert.SerializeObject(obj, s_serializerSettings);
-    }
+    private static string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj, s_serializerSettings);
 
     /// <summary>
     /// Deserializes a JSON string to an object using test settings (with StringEnumConverter).

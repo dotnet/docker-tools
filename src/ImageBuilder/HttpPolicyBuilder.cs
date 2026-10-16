@@ -16,10 +16,7 @@ public class HttpPolicyBuilder
 {
     private readonly List<AsyncPolicy<HttpResponseMessage>> _policies = new List<AsyncPolicy<HttpResponseMessage>>();
 
-    public static HttpPolicyBuilder Create()
-    {
-        return new HttpPolicyBuilder();
-    }
+    public static HttpPolicyBuilder Create() => new HttpPolicyBuilder();
 
     public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILogger logger)
     {

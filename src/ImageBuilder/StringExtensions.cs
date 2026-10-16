@@ -58,10 +58,7 @@ public static class StringExtensions
         return source;
     }
 
-    public static string ToCamelCase(this string source)
-    {
-        return source.Substring(0, 1).ToLowerInvariant() + source.Substring(1);
-    }
+    public static string ToCamelCase(this string source) => source.Substring(0, 1).ToLowerInvariant() + source.Substring(1);
 
     public static string NormalizeLineEndings(this string value, string targetFormat)
     {

@@ -49,10 +49,7 @@ public class ImageSubstatus
     /// </summary>
     public StageStatus ValidateNoDocRepoChanges { get; set; }
 
-    public override string ToString()
-    {
-        return ToString(null);
-    }
+    public override string ToString() => ToString(null);
 
     public string ToString(string prefix)
     {

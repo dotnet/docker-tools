@@ -10,8 +10,5 @@ public class ManifestServiceFactory(IOrasServiceFactory orasServiceFactory) : IM
 {
     private readonly IOrasServiceFactory _orasServiceFactory = orasServiceFactory;
 
-    public IManifestService Create(IRegistryCredentialsHost? credsHost = null)
-    {
-        return new ManifestService(_orasServiceFactory.Create(credsHost));
-    }
+    public IManifestService Create(IRegistryCredentialsHost? credsHost = null) => new ManifestService(_orasServiceFactory.Create(credsHost));
 }

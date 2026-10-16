@@ -48,10 +48,7 @@ public class ImageArtifactDetails
         // done using the new format (via the default conversion settings).
         public override bool CanWrite => false;
 
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(Layer);
-        }
+        public override bool CanConvert(Type objectType) => objectType == typeof(Layer);
 
         public override object? ReadJson(
             JsonReader reader,
@@ -85,9 +82,6 @@ public class ImageArtifactDetails
             };
         }
 
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer) => throw new NotImplementedException();
     }
 }

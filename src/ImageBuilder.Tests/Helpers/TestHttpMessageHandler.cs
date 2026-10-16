@@ -17,8 +17,5 @@ public class TestHttpMessageHandler(IDictionary<string, HttpResponseMessage> res
 {
     private readonly IDictionary<string, HttpResponseMessage> responses = responses ?? throw new ArgumentNullException(nameof(responses));
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(responses[request.RequestUri.ToString()]);
-    }
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(responses[request.RequestUri.ToString()]);
 }

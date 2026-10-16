@@ -341,12 +341,9 @@ public class MultiPlatformTags : IDisposable
 
         private readonly TempFolderContext _tempFolderContext = TestHelper.UseTempFolder();
 
-        public MultiPlatformTags()
-        {
-            File.WriteAllText(EmptyFilePath, string.Empty);
-        }
+    public MultiPlatformTags() => File.WriteAllText(EmptyFilePath, string.Empty);
 
-        private string EmptyFilePath =>
+    private string EmptyFilePath =>
             Path.Combine(_tempFolderContext.Path, EmptyFileName);
 
         private string TagsMetadataTemplateFilePath =>

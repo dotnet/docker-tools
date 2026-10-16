@@ -27,10 +27,7 @@ internal sealed class RequestUriBuilder(string repository)
         return this;
     }
 
-    public RequestUriBuilder AppendPath(int segment)
-    {
-        return AppendPath(segment.ToString(CultureInfo.InvariantCulture));
-    }
+    public RequestUriBuilder AppendPath(int segment) => AppendPath(segment.ToString(CultureInfo.InvariantCulture));
 
     public RequestUriBuilder AddQueryParameter(string name, string value)
     {

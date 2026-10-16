@@ -221,10 +221,7 @@ public static class ImageInfoHelper
     /// Whether to skip validation if no associated manifest model item was found for a given image info model item.
     /// </param>
     /// <param name="useFilteredManifest">Whether to use the filtered content of the manifest for lookups.</param>
-    public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest, bool skipManifestValidation = false, bool useFilteredManifest = false)
-    {
-        return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation, useFilteredManifest);
-    }
+    public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest, bool skipManifestValidation = false, bool useFilteredManifest = false) => LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation, useFilteredManifest);
 
     /// <summary>
     /// Finds the <see cref="PlatformData"/> that matches the given <see cref="PlatformInfo"/>.

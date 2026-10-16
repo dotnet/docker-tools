@@ -39,7 +39,7 @@ public static class AzdoGitHttpClientExtensions
             OldObjectId = branchRef.ObjectId
         };
 
-        string branchName = branchRef.Name.Substring(branchRefUpdate.Name.LastIndexOf('/') + 1);
+        string branchName = branchRef.Name[(branchRefUpdate.Name.LastIndexOf('/') + 1)..];
 
         var fileInfos = files
             .Select(kvp => new

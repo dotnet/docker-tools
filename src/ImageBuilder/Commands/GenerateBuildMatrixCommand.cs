@@ -554,22 +554,11 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
 
     private PlatformId CreatePlatformId(PlatformInfo platform)
     {
-        string? osVersion;
-
         // The build OS version determines which build host/agent the platform is grouped onto,
         // which may differ from the base image's OS version (BaseOsVersion).
-        if (Options.DistinctMatrixOsVersions.Contains(platform.BuildOsVersion))
-        {
-            osVersion = platform.BuildOsVersion;
-        }
-        else if (platform.Model.OS != OS.Linux)
-        {
-            osVersion = GetNormalizedOsVersion(platform.BuildOsVersion);
-        }
-        else
-        {
-            osVersion = null;
-        }
+        string? osVersion = Options.DistinctMatrixOsVersions.Contains(platform.BuildOsVersion)
+            ? platform.BuildOsVersion
+            : platform.Model.OS != OS.Linux ? GetNormalizedOsVersion(platform.BuildOsVersion) : null;
 
         return new PlatformId
         {

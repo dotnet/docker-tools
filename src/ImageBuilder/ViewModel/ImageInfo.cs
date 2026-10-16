@@ -47,18 +47,11 @@ public class ImageInfo
         VariableHelper variableHelper,
         string baseDirectory)
     {
-        IEnumerable<TagInfo> sharedTags;
-        if (model.SharedTags == null)
-        {
-            sharedTags = [];
-        }
-        else
-        {
-            sharedTags = model.SharedTags
+        IEnumerable<TagInfo> sharedTags = model.SharedTags == null
+            ? []
+            : (IEnumerable<TagInfo>)model.SharedTags
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper))
                 .ToArray();
-        }
-
         IEnumerable<PlatformInfo> allPlatforms = model
             .Platforms.Select(platform =>
                 PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))

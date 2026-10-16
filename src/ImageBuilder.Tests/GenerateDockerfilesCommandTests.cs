@@ -188,16 +188,7 @@ ENV TEST2 Value1";
         (IReadOnlyDictionary<Value, Value> symbols, string indent) = command.GetTemplateState(
             command.Manifest.GetPlatformByTag(tag), DockerfileTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
 
-        Value variableValue;
-        if (isVariable)
-        {
-            variableValue = symbols["VARIABLES"].Fields[symbol];
-        }
-        else
-        {
-            variableValue = symbols[symbol];
-        }
-
+        Value variableValue = isVariable ? symbols["VARIABLES"].Fields[symbol] : symbols[symbol];
         variableValue.ShouldBe(expectedValue);
     }
 

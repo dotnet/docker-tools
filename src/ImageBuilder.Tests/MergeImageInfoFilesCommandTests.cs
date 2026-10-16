@@ -1008,7 +1008,7 @@ public class MergeImageInfoFilesCommandTests
         string staticDockerfile = CreateDockerfile(StaticDockerfilePath, context);
         string changingDockerfile = CreateDockerfile(ChangingDockerfilePath, context);
 
-        Func<string, string, string> createCommitUrl = (string path, string commit) => $"https://github.com/dotnet/dotnet-docker/blob/{commit}/src/{path}/Dockerfile";
+        string createCommitUrl(string path, string commit) => $"https://github.com/dotnet/dotnet-docker/blob/{commit}/src/{path}/Dockerfile";
 
         string manifestFile = Path.Combine(context.Path, "manifest.json");
         Manifest manifest = CreateManifest(

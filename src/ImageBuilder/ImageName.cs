@@ -89,16 +89,7 @@ public record ImageName
             }
         }
 
-        string repo;
-        if (separatorIndex >= 0)
-        {
-            repo = imageName[..separatorIndex];
-        }
-        else
-        {
-            repo = imageName;
-        }
-
+        string repo = separatorIndex >= 0 ? imageName[..separatorIndex] : imageName;
         if (autoResolveImpliedNames && registry == DockerHelper.DockerHubRegistry && !repo.Contains('/'))
         {
             repo = $"library/{repo}";

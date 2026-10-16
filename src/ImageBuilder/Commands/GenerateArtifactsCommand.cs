@@ -193,16 +193,16 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
 
         // Indents for nested templates are cumulative. Pass the current indent value and the result will contain
         // the new indent value to use for the nested template.
-        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = getTemplateState(context, templatePath, currentIndent);
-        IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(state.Symbols)
+        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) = getTemplateState(context, templatePath, currentIndent);
+        IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(Symbols)
         {
             { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) },
-            { "INDENT", state.Indent }
+            { "INDENT", Indent }
         };
 
-        state.Indent ??= "";
+        Indent ??= "";
         // Indents all the lines except the first one
-        template = template.Replace("\n", $"\n{state.Indent}");
+        template = template.Replace("\n", $"\n{Indent}");
 
         if (Options.IsVerbose)
         {
@@ -233,7 +233,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
             // Furthermore, ParseException's "LocationStart" is actually the end of the error.
             // Calculate text position ourselves given the template and the character index of the error,
             // compensating for the indent length and error properties.
-            int indentLength = state.Indent.Length;
+            int indentLength = Indent.Length;
             (int startLine, int startColumn) = GetTextLocationFromIndex(template, e.LocationStart - e.LocationLength, indentLength);
             (int endLine, int endColumn) = GetTextLocationFromIndex(template, e.LocationStart, indentLength);
 

@@ -35,16 +35,9 @@ public class VariableHelper
         {
             foreach (KeyValuePair<string, string?> kvp in Manifest.Variables)
             {
-                string? variableValue;
-                if (Options.Variables is not null && Options.Variables.TryGetValue(kvp.Key, out string? overridenValue))
-                {
-                    variableValue = overridenValue;
-                }
-                else
-                {
-                    variableValue = kvp.Value;
-                }
-
+                string? variableValue = Options.Variables is not null && Options.Variables.TryGetValue(kvp.Key, out string? overridenValue)
+                    ? overridenValue
+                    : kvp.Value;
                 variableValue = SubstituteValues(variableValue);
                 ResolvedVariables.Add(kvp.Key, variableValue);
             }
@@ -76,14 +69,9 @@ public class VariableHelper
             string? variableValue;
             string variableName = match.Groups[VariableGroupName].Value;
 
-            if (variableName.Contains(BuiltInDelimiter))
-            {
-                variableValue = GetBuiltInValue(variableName, getContextBasedSystemValue);
-            }
-            else
-            {
-                variableValue = GetUserValue(variableName);
-            }
+            variableValue = variableName.Contains(BuiltInDelimiter)
+                ? GetBuiltInValue(variableName, getContextBasedSystemValue)
+                : GetUserValue(variableName);
 
             if (variableValue == null)
             {

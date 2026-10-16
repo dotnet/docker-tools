@@ -8,6 +8,6 @@ public static class CommandExtensions
     public static string GetCommandName(this ICommand command)
     {
         string commandName = command.GetType().Name.TrimEndString("Command");
-        return char.ToLowerInvariant(commandName[0]) + commandName.Substring(1);
+        return char.ToLowerInvariant(commandName[0]) + commandName[1..];
     }
 }

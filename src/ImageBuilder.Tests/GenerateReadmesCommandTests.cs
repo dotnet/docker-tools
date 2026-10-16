@@ -166,27 +166,13 @@ ABC-123";
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
 
-        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) templateState;
-        if (isManifest)
-        {
-            templateState = command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
-        }
-        else
-        {
-            templateState = command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
-        }
-
-        Value actualSymbolValue = templateState.Symbols[symbol];
-        Value expectedSymbolValue;
-        if (actualSymbolValue.Type == ValueContent.Boolean)
-        {
-            expectedSymbolValue = Value.FromBoolean(bool.Parse(expectedValue));
-        }
-        else
-        {
-            expectedSymbolValue = Value.FromString(expectedValue);
-        }
-
+        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) = isManifest
+            ? command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default)
+            : command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
+        Value actualSymbolValue = Symbols[symbol];
+        Value expectedSymbolValue = actualSymbolValue.Type == ValueContent.Boolean
+            ? Value.FromBoolean(bool.Parse(expectedValue))
+            : Value.FromString(expectedValue);
         actualSymbolValue.ShouldBe(expectedSymbolValue);
     }
 

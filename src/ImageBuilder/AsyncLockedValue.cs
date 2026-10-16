@@ -50,14 +50,7 @@ public class AsyncLockedValue<T> : IDisposable
     {
         await _semaphore.LockAsync(async ct =>
         {
-            if (valueInitializer is null)
-            {
-                _value = default;
-            }
-            else
-            {
-                _value = await valueInitializer(ct);
-            }
+            _value = valueInitializer is null ? default : await valueInitializer(ct);
         }, cancellationToken);
 
         return _value;

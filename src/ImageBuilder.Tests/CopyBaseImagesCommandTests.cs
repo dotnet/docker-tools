@@ -88,17 +88,17 @@ public class CopyBaseImagesCommandTests
             ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
         ];
 
-        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) expectedTagInfo in expectedTagInfos)
+        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) in expectedTagInfos)
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
-                        new string[] { expectedTagInfo.TargetTag },
+                        new string[] { TargetTag },
                         manifest.Registry,
-                        expectedTagInfo.SourceImage,
+                        SourceImage,
                         false,
                         It.IsAny<CancellationToken>(),
-                        expectedTagInfo.Registry,
-                        It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
+                        Registry,
+                        It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == Username && creds.Password == Password),
                         false));
         }
 
@@ -164,17 +164,17 @@ public class CopyBaseImagesCommandTests
             ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
         ];
 
-        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) expectedTagInfo in expectedTagInfos)
+        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) in expectedTagInfos)
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
-                        new string[] { expectedTagInfo.TargetTag },
+                        new string[] { TargetTag },
                         manifest.Registry,
-                        expectedTagInfo.SourceImage,
+                        SourceImage,
                         false,
                         It.IsAny<CancellationToken>(),
-                        expectedTagInfo.Registry,
-                        It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
+                        Registry,
+                        It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && Username == null) || (creds.Username == Username && creds.Password == Password)),
                         false));
         }
     }

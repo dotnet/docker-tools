@@ -60,7 +60,7 @@ public static class DockerHelper
         int tagSeparator = GetTagOrDigestSeparatorIndex(image);
         if (tagSeparator >= 0)
         {
-            return image.Substring(0, tagSeparator);
+            return image[..tagSeparator];
         }
 
         return image;
@@ -101,7 +101,7 @@ public static class DockerHelper
     }
 
     public static string ReplaceRepo(string image, string newRepo) =>
-        newRepo + image.Substring(GetTagOrDigestSeparatorIndex(image));
+        newRepo + image[GetTagOrDigestSeparatorIndex(image)..];
 
     public static void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken) => DockerHelper.ExecuteCommand("tag", "Failed to create tag", cancellationToken, $"{image} {tag}", isDryRun);
 
@@ -111,7 +111,7 @@ public static class DockerHelper
             "inspect", ".Created", "Failed to retrieve created date", cancellationToken, image, isDryRun);
     }
 
-    public static string GetDigestSha(string digest) => digest.Substring(digest.IndexOf("@") + 1);
+    public static string GetDigestSha(string digest) => digest[(digest.IndexOf("@") + 1)..];
 
     public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
 
@@ -173,7 +173,7 @@ public static class DockerHelper
         int separatorIndex = imageName.IndexOf("/");
         if (separatorIndex >= 0)
         {
-            string firstSegment = imageName.Substring(0, separatorIndex);
+            string firstSegment = imageName[..separatorIndex];
             if (firstSegment.Contains(".") || firstSegment.Contains(":"))
             {
                 return firstSegment;

@@ -4,6 +4,6 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.ImageBuilder.ViewModel;
 
 public record ImageDigestInfo(string Digest, List<string> Tags, bool IsManifestList);

@@ -127,7 +127,7 @@ public class PlatformData : IComparable<PlatformData>
         int separatorIndex = fullVersion.IndexOf("-");
         if (separatorIndex >= 0)
         {
-            fullVersion = fullVersion.Substring(0, separatorIndex);
+            fullVersion = fullVersion[..separatorIndex];
         }
 
         return new Version(fullVersion).ToString(2);

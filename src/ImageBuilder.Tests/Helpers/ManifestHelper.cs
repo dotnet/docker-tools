@@ -108,10 +108,7 @@ public static class ManifestHelper
 
     public static void AddVariable(Manifest manifest, string name, string value)
     {
-        if (manifest.Variables == null)
-        {
-            manifest.Variables = new Dictionary<string, string>();
-        }
+        manifest.Variables ??= new Dictionary<string, string>();
 
         manifest.Variables.Add(name, value);
     }

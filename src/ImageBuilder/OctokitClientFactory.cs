@@ -70,20 +70,13 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
             GitHubClient appClient = CreateClient(appCredentials);
             GitHubAppInfoResult appInfo = await GetCurrentAppInfoAsync(appClient.Credentials, cancellationToken);
 
-            Installation appInstallation;
-            if (authOptions.InstallationId is string providedId)
-            {
-                appInstallation = appInfo.Installations
+            Installation appInstallation = authOptions.InstallationId is string providedId
+                ? appInfo.Installations
                     .FirstOrDefault(installation => installation.Id.ToString() == providedId)
-                        ?? throw new InvalidOperationException($"No installation found with ID {providedId}.");
-            }
-            else
-            {
-                appInstallation = appInfo.Installations.SingleOrDefault()
+                        ?? throw new InvalidOperationException($"No installation found with ID {providedId}.")
+                : appInfo.Installations.SingleOrDefault()
                     ?? throw new InvalidOperationException("Expected exactly one installation for GitHub App but "
                         + "found none or multiple. Provide an installation ID explicitly.");
-            }
-
             AccessToken installationToken = await appClient.GitHubApps.CreateInstallationToken(appInstallation.Id);
 
             _logger.LogInformation(

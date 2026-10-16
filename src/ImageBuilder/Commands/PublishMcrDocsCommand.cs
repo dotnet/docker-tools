@@ -152,7 +152,7 @@ public class PublishMcrDocsCommand(
     private string GetProductRepo(RepoInfo repo)
     {
         string repoName = repo.QualifiedName.TrimStartString($"{Manifest.Registry}/");
-        return repoName.Substring(0, repoName.LastIndexOf('/'));
+        return repoName[..repoName.LastIndexOf('/')];
     }
 
     private List<GitObject> GetUpdatedReadmes()

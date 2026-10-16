@@ -1295,16 +1295,7 @@ public class GenerateBuildMatrixCommandTests
 
         matrixInfo.Legs.ShouldHaveSingleItem();
 
-        string expectedLegName;
-        if (matrixType == MatrixType.PlatformDependencyGraph)
-        {
-            expectedLegName = "3.1-runtime-os-Dockerfile";
-        }
-        else
-        {
-            expectedLegName = "3.1-noble-runtime";
-        }
-
+        string expectedLegName = matrixType == MatrixType.PlatformDependencyGraph ? "3.1-runtime-os-Dockerfile" : "3.1-noble-runtime";
         matrixInfo.Legs[0].Name.ShouldBe(expectedLegName);
 
         string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;

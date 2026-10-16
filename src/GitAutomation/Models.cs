@@ -21,16 +21,14 @@ public sealed partial record PullRequestDefinition(
     string TargetBranch,
     Func<IGitContext, CancellationToken, Task> ApplyChanges)
 {
-    private string _key = ValidateKey(Key);
-
     /// <summary>
     /// The source branch name used to identify and update the pull request.
     /// </summary>
     public string Key
     {
-        get => _key;
-        init => _key = ValidateKey(value);
-    }
+        get;
+        init => field = ValidateKey(value);
+    } = ValidateKey(Key);
 
     private static string ValidateKey(string key)
     {

@@ -24,7 +24,7 @@ public static class StringExtensions
         return (index == min && s1.Length == s2.Length) ? -1 : index;
     }
 
-    public static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source.Substring(1);
+    public static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source[1..];
 
     public static string TrimEndString(this string source, string trimString)
     {
@@ -35,7 +35,7 @@ public static class StringExtensions
 
         while (source.EndsWith(trimString))
         {
-            source = source.Substring(0, source.Length - trimString.Length);
+            source = source[..^trimString.Length];
         }
 
         return source;
@@ -52,13 +52,13 @@ public static class StringExtensions
 
         while (source.StartsWith(trimString))
         {
-            source = source.Substring(trimString.Length);
+            source = source[trimString.Length..];
         }
 
         return source;
     }
 
-    public static string ToCamelCase(this string source) => source.Substring(0, 1).ToLowerInvariant() + source.Substring(1);
+    public static string ToCamelCase(this string source) => source[..1].ToLowerInvariant() + source[1..];
 
     public static string NormalizeLineEndings(this string value, string targetFormat)
     {
@@ -81,6 +81,6 @@ public static class StringExtensions
     public static (string Key, string Value) ParseKeyValuePair(this string value, char delimiter)
     {
         int firstEqualIndex = value.IndexOf(delimiter);
-        return (value.Substring(0, firstEqualIndex), value.Substring(firstEqualIndex + 1));
+        return (value[..firstEqualIndex], value[(firstEqualIndex + 1)..]);
     }
 }

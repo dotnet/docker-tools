@@ -50,16 +50,16 @@ public class GetBaseImageStatusCommand(IManifestJsonService manifestJsonService,
             .ToList();
 
         _logger.LogInformation("PULLING LATEST BASE IMAGES");
-        foreach ((string Tag, string Platform) imageTag in platformTags)
+        foreach ((string Tag, string Platform) in platformTags)
         {
-            _dockerService.PullImage(imageTag.Tag, imageTag.Platform, Options.IsDryRun, cancellationToken);
+            _dockerService.PullImage(Tag, Platform, Options.IsDryRun, cancellationToken);
         }
 
         _logger.LogInformation("QUERYING STATUS");
         var statuses = platformTags
             .Select(imageTag => new
             {
-                Tag = imageTag.Tag,
+                imageTag.Tag,
                 DateCreated = _dockerService.GetCreatedDate(imageTag.Tag, Options.IsDryRun, cancellationToken)
             })
             .ToList();

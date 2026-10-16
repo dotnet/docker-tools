@@ -1631,7 +1631,6 @@ public class GetStaleImagesCommandTests
         private readonly List<string> foldersToCleanup = [];
         private readonly Dictionary<string, string> imageDigests = [];
         private readonly string subscriptionsPath;
-        private readonly GetStaleImagesCommand command;
         private readonly Mock<ILogger<GetStaleImagesCommand>> loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
         private readonly string osType;
         private readonly IOctokitClientFactory octokitClientFactory;
@@ -1643,7 +1642,7 @@ public class GetStaleImagesCommandTests
 
         public Mock<IManifestServiceFactory> ManifestServiceFactoryMock { get; }
 
-        public GetStaleImagesCommand Command => command;
+        public GetStaleImagesCommand Command { get; }
 
         public IDictionary<string, string> ImageDigests => imageDigests;
 
@@ -1684,10 +1683,10 @@ public class GetStaleImagesCommandTests
 
             (ManifestServiceFactoryMock, ManifestServiceMock) = CreateManifestServiceMocks();
 
-            command = CreateCommand();
+            Command = CreateCommand();
         }
 
-        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => command.ExecuteAsync(cancellationToken);
+        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => Command.ExecuteAsync(cancellationToken);
 
         /// <summary>
         /// Verifies the test execution to ensure the results match the expected state.
@@ -1700,11 +1699,10 @@ public class GetStaleImagesCommandTests
 
             string message = invocation.Arguments[2].ToString();
             int variableNameStartIndex = message.IndexOf("=") + 1;
-            string actualVariableName = message.Substring(variableNameStartIndex, message.IndexOf(";") - variableNameStartIndex);
+            string actualVariableName = message[variableNameStartIndex..message.IndexOf(";")];
             actualVariableName.ShouldBe(VariableName);
 
-            string variableValue = message
-                .Substring(message.IndexOf("]") + 1);
+            string variableValue = message[(message.IndexOf("]") + 1)..];
 
             SubscriptionImagePaths[] pathsBySubscription =
                 JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(variableValue.Replace("\\\"", "\""));

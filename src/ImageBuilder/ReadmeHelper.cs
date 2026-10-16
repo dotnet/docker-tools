@@ -38,13 +38,13 @@ public static class ReadmeHelper
             }
 
             readme =
-                readme.Substring(0, endOfFullTagListingHeaderIndex) +
+                readme[..endOfFullTagListingHeaderIndex] +
                 targetLineEnding +
                 targetLineEnding +
                 tagsListing +
                 EndOfGeneratedTagsMarker +
                 targetLineEnding +
-                readme.Substring(endOfGeneratedTagsIndex + EndOfGeneratedTagsMarker.Length);
+                readme[(endOfGeneratedTagsIndex + EndOfGeneratedTagsMarker.Length)..];
         }
 
         return readme;

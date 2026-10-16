@@ -79,14 +79,14 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
     public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent, CancellationToken cancellationToken)
     {
-        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = GetCommonTemplateState(
+        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) = GetCommonTemplateState(
             templatePath,
             repo,
             (repo, templatePath, currentIndent) =>
                 GetTemplateState(repo, templatePath, currentIndent + indent, cancellationToken),
             indent,
             cancellationToken);
-        Dictionary<Value, Value> symbols = new(state.Symbols)
+        Dictionary<Value, Value> symbols = new(Symbols)
         {
             ["FULL_REPO"] = repo.QualifiedName,
             ["REPO"] = repo.Name,
@@ -280,7 +280,7 @@ internal static class ReadmeTemplateVariablesExtensions
     public static string GetParentRepoName(this RepoInfo repo)
     {
         string[] parts = repo.Name.Split('/');
-        return parts.Length > 1 ? parts[parts.Length - 2] : string.Empty;
+        return parts.Length > 1 ? parts[^2] : string.Empty;
     }
 
     /// <summary>
@@ -290,6 +290,6 @@ internal static class ReadmeTemplateVariablesExtensions
     public static string GetShortName(this RepoInfo repo)
     {
         int lastSlashIndex = repo.Name.LastIndexOf('/');
-        return lastSlashIndex == -1 ? repo.Name : repo.Name.Substring(lastSlashIndex + 1);
+        return lastSlashIndex == -1 ? repo.Name : repo.Name[(lastSlashIndex + 1)..];
     }
 }

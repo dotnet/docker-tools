@@ -40,8 +40,8 @@ public class MarImageIngestionReporterTests
         const string platformDigest1 = "repo@sha256:platformDigest1";
         const string platformDigest2 = "repo@sha256:platformDigest2";
 
-        var statusClientMock = new Mock<IMcrStatusClient>();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         ImageStatus previousSharedTag1ImageStatus = new ImageStatus
         {
@@ -234,7 +234,7 @@ public class MarImageIngestionReporterTests
         const string repo1 = "repo1";
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         ImageStatus sharedTag2ImageStatus = new()
         {
@@ -322,7 +322,7 @@ public class MarImageIngestionReporterTests
         const string onboardingRequestId = "onboardingRequestId";
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         ImageStatus platformTag2ImageStatus = new()
         {
@@ -421,7 +421,7 @@ public class MarImageIngestionReporterTests
         const string onboardingRequestId2 = "onboardingRequestId2";
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         ImageStatus sharedTag1ImageStatus = new ImageStatus
         {
@@ -585,7 +585,7 @@ public class MarImageIngestionReporterTests
         const string platformDigest1 = "repo@sha256:platformDigest1";
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         ImageStatus platformTag1aImageStatus = new ImageStatus
         {
@@ -682,7 +682,7 @@ public class MarImageIngestionReporterTests
         const string tag1bOnboardingRequestId = "onboard request2";
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         ImageStatus platformTag1aImageStatus = new ImageStatus
         {
@@ -831,8 +831,8 @@ public class MarImageIngestionReporterTests
                     }
                 });
 
-        var environmentServiceMock = new Mock<IEnvironmentService>();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
         MarImageIngestionReporter reporter = new(
             LoggerFactory.Create(_ => { }),

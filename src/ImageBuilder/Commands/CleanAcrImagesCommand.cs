@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure;
@@ -205,8 +206,8 @@ public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
         int manifestCount = 0;
         int batchNumber = 0;
 
-        var batches = manifests.Chunk(ManifestBatchSize).WithCancellation(cancellationToken);
-        await foreach (var batch in batches)
+        ConfiguredCancelableAsyncEnumerable<ArtifactManifestProperties[]> batches = manifests.Chunk(ManifestBatchSize).WithCancellation(cancellationToken);
+        await foreach (ArtifactManifestProperties[]? batch in batches)
         {
             long batchStartTimestamp = Stopwatch.GetTimestamp();
             batchNumber++;
@@ -393,7 +394,7 @@ public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
             includeInternal: false,
             cancellationToken);
 
-        var gracePeriod = TimeSpan.FromDays(eolGracePeriodDays);
+        TimeSpan gracePeriod = TimeSpan.FromDays(eolGracePeriodDays);
         bool isEndOfLife = lifecycleArtifact?.IsEndOfLife(DateTimeOffset.Now, gracePeriod) ?? false;
         return isEndOfLife;
     }

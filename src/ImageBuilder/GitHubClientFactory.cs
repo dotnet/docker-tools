@@ -27,9 +27,9 @@ internal class GitHubClientFactory(
 
     public async Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken)
     {
-        var token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions, cancellationToken);
+        string token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions, cancellationToken);
 
-        var auth = new GitHubAuth(
+        GitHubAuth auth = new GitHubAuth(
             authToken: token,
             user: gitOptions.Username,
             email: gitOptions.Email);

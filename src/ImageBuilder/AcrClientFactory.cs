@@ -21,7 +21,7 @@ public class AcrClientFactory(
 
     public IAcrClient Create(string acrName)
     {
-        var auth = _publishConfig.FindRegistryAuthentication(acrName);
+        RegistryAuthentication? auth = _publishConfig.FindRegistryAuthentication(acrName);
         if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
@@ -36,7 +36,7 @@ public class AcrClientFactory(
     {
         TokenCredential credential = _tokenCredentialProvider.GetCredential(serviceConnection);
 
-        var client = new ContainerRegistryClient(DockerHelper.GetAcrUri(acrName), credential);
+        ContainerRegistryClient client = new ContainerRegistryClient(DockerHelper.GetAcrUri(acrName), credential);
         return new AcrClientWrapper(client);
     }
 }

@@ -38,13 +38,13 @@ internal sealed class GitHubAppCredentialStore(string clientId, CryptographyClie
             // GitHub's maximum expiration time is 10 minutes, stay a little under that.
             DateTimeOffset expiresAt = now.AddMinutes(9);
 
-            var header = new JwtHeader
+            JwtHeader header = new JwtHeader
             {
                 [JwtHeaderParameterNames.Alg] = SecurityAlgorithms.RsaSha256,
                 [JwtHeaderParameterNames.Typ] = "JWT",
             };
 
-            var payload = new JwtPayload(
+            JwtPayload payload = new JwtPayload(
                 issuer: clientId,
                 audience: null,
                 claims: null,

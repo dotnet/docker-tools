@@ -49,9 +49,9 @@ public static class SerializationHelper
     /// <param name="expectedJson">The expected JSON string.</param>
     public static void AssertSerialization<T>(T obj, string expectedJson)
     {
-        var actualJson = Serialize(obj);
-        var normalizedActualJson = NormalizeJson(actualJson);
-        var normalizedExpectedJson = NormalizeJson(expectedJson);
+        string actualJson = Serialize(obj);
+        string normalizedActualJson = NormalizeJson(actualJson);
+        string normalizedExpectedJson = NormalizeJson(expectedJson);
         normalizedActualJson.ShouldBeEquivalentTo(normalizedExpectedJson);
     }
 

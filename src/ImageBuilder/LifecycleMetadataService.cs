@@ -102,7 +102,7 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
         string repository = digest[(digest.IndexOf('/') + 1)..digest.IndexOf('@')];
         string artifactReference = $"{registry}/{repository}@{artifactDigest}";
 
-        var referrerInfo = new ReferrerInfo(artifactReference, OciArtifactType.Lifecycle)
+        ReferrerInfo referrerInfo = new ReferrerInfo(artifactReference, OciArtifactType.Lifecycle)
         {
             Annotations = annotations
         };

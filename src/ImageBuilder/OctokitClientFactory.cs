@@ -22,20 +22,20 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
 
     public async Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
     {
-        var credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
-        var client = CreateClient(credentials);
+        Credentials credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
+        GitHubClient client = CreateClient(credentials);
         return client;
     }
 
     public async Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
     {
-        var apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
+        ApiConnection apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
         return new BlobsClient(apiConnection);
     }
 
     public async Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
     {
-        var apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
+        ApiConnection apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
         return new TreesClient(apiConnection);
     }
 
@@ -65,10 +65,10 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
                 3. Use the GitHub App client to get an token for a specific App installation.
             **/
 
-            var jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
-            var appCredentials = CreateCredentials(jwt);
-            var appClient = CreateClient(appCredentials);
-            var appInfo = await GetCurrentAppInfoAsync(appClient.Credentials, cancellationToken);
+            string jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
+            Credentials appCredentials = CreateCredentials(jwt);
+            GitHubClient appClient = CreateClient(appCredentials);
+            GitHubAppInfoResult appInfo = await GetCurrentAppInfoAsync(appClient.Credentials, cancellationToken);
 
             Installation appInstallation;
             if (authOptions.InstallationId is string providedId)
@@ -84,7 +84,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
                         + "found none or multiple. Provide an installation ID explicitly.");
             }
 
-            var installationToken = await appClient.GitHubApps.CreateInstallationToken(appInstallation.Id);
+            AccessToken installationToken = await appClient.GitHubApps.CreateInstallationToken(appInstallation.Id);
 
             _logger.LogInformation(
                 $"GitHub App token created for App ID {appInstallation.AppId} and installation "
@@ -98,8 +98,8 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
 
     private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
     {
-        var credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
-        var connection = new Connection(s_productHeaderValue)
+        Credentials credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
+        Connection connection = new Connection(s_productHeaderValue)
         {
             Credentials = credentials
         };
@@ -109,7 +109,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
 
     private async Task<Credentials> CreateCredentialsAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
     {
-        var token = await CreateGitHubTokenAsync(authOptions, cancellationToken);
+        string token = await CreateGitHubTokenAsync(authOptions, cancellationToken);
         return CreateCredentials(token);
     }
 
@@ -124,7 +124,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
         // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app#about-json-web-tokens-jwts
         // > [The expiration time] must be no more than 10 minutes into the future.
         // Use 9 minutes to be safe.
-        var timeout = TimeSpan.FromMinutes(9);
+        TimeSpan timeout = TimeSpan.FromMinutes(9);
         return JwtHelper.CreateJwt(clientId, privateKey, timeout);
     }
 
@@ -149,9 +149,9 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
 
     private static async Task<GitHubAppInfoResult> GetCurrentAppInfoAsync(Credentials credentials, CancellationToken cancellationToken)
     {
-        var client = CreateClient(credentials);
-        var currentApp = await client.GitHubApps.GetCurrent();
-        var installations = await client.GitHubApps.GetAllInstallationsForCurrent();
+        GitHubClient client = CreateClient(credentials);
+        GitHubApp currentApp = await client.GitHubApps.GetCurrent();
+        IReadOnlyList<Installation> installations = await client.GitHubApps.GetAllInstallationsForCurrent();
         return new GitHubAppInfoResult(currentApp, installations);
     }
 

@@ -48,8 +48,8 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         // Authentication is required to connect to MAR status service
         ArgumentNullException.ThrowIfNull(serviceConnection, nameof(serviceConnection));
 
-        var mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
-        var reporter = new ReporterImpl(
+        IMcrStatusClient mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
+        ReporterImpl reporter = new ReporterImpl(
             _loggerFactory,
             mcrStatusClient,
             _environmentService,

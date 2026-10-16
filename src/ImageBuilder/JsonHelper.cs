@@ -64,7 +64,7 @@ public static class JsonHelper
 
         private static bool IsEmptyList(JsonProperty property, object targetObj)
         {
-            var propertyValue = property.ValueProvider?.GetValue(targetObj);
+            object? propertyValue = property.ValueProvider?.GetValue(targetObj);
             return propertyValue is IList list && list.Count == 0;
         }
     }

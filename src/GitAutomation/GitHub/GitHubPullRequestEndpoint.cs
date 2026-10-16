@@ -87,7 +87,7 @@ public sealed class GitHubPullRequestEndpoint(
             State = ItemStateFilter.Open,
         };
 
-        var pullRequests = await pullRequestsClient.GetAllForRepository(_upstream.Owner, _upstream.Name, query);
+        IReadOnlyList<PullRequest> pullRequests = await pullRequestsClient.GetAllForRepository(_upstream.Owner, _upstream.Name, query);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (pullRequests.Count == 0)
@@ -108,7 +108,7 @@ public sealed class GitHubPullRequestEndpoint(
         Commit headCommit = await sourceAccess.Client.Git.Commit.Get(_source.Owner, _source.Name, pullRequest.Head.Sha);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var pullRequestCommits = await pullRequestsClient.Commits(_upstream.Owner, _upstream.Name, pullRequest.Number);
+        IReadOnlyList<PullRequestCommit> pullRequestCommits = await pullRequestsClient.Commits(_upstream.Owner, _upstream.Name, pullRequest.Number);
         cancellationToken.ThrowIfCancellationRequested();
 
         PullRequestState content = new PullRequestState(

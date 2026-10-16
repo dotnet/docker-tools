@@ -32,9 +32,9 @@ public class OrasDotNetServiceTests
     [DataRow("   ")]
     public async Task GetReferrersAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
     {
-        var service = CreateService();
+        OrasDotNetService service = CreateService();
 
-        var exception = await Should.ThrowAsync<ArgumentException>(async () =>
+        ArgumentException exception = await Should.ThrowAsync<ArgumentException>(async () =>
             await service.GetReferrersAsync(reference!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -43,17 +43,17 @@ public class OrasDotNetServiceTests
     [TestMethod]
     public async Task PushSignatureAsync_ReadsPayloadFile()
     {
-        var fileSystem = new InMemoryFileSystem();
-        var service = CreateService(fileSystem);
-        var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
+        OrasDotNetService service = CreateService(fileSystem);
+        Descriptor subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
-        var result = new PayloadSigningResult(
+        PayloadSigningResult result = new PayloadSigningResult(
             "registry.io/repo:tag",
             subjectDescriptor,
             "/nonexistent/file.cose",
             "sha256:abcd1234");
 
-        var exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
+        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
             await service.PushSignatureAsync(subjectDescriptor, result, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -62,10 +62,10 @@ public class OrasDotNetServiceTests
     [TestMethod]
     public async Task PushSignatureAsync_ThrowsForNullResult()
     {
-        var service = CreateService();
-        var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        OrasDotNetService service = CreateService();
+        Descriptor subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
-        var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
+        ArgumentNullException exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
             await service.PushSignatureAsync(subjectDescriptor, null!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -78,9 +78,9 @@ public class OrasDotNetServiceTests
     [DataRow("   ")]
     public async Task GetDescriptorAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
     {
-        var service = CreateService();
+        OrasDotNetService service = CreateService();
 
-        var exception = await Should.ThrowAsync<ArgumentException>(async () =>
+        ArgumentException exception = await Should.ThrowAsync<ArgumentException>(async () =>
             await service.GetDescriptorAsync(reference!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -89,15 +89,15 @@ public class OrasDotNetServiceTests
     [TestMethod]
     public async Task PushSignatureAsync_NullSubjectDescriptor_ThrowsArgumentNullException()
     {
-        var service = CreateService();
-        var descriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
-        var signedPayload = new PayloadSigningResult(
+        OrasDotNetService service = CreateService();
+        Descriptor descriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        PayloadSigningResult signedPayload = new PayloadSigningResult(
             "registry.io/repo:tag",
             descriptor,
             "/tmp/test.cose",
             "[\"thumbprint\"]");
 
-        var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
+        ArgumentNullException exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
             await service.PushSignatureAsync(null!, signedPayload, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -174,10 +174,10 @@ public class OrasDotNetServiceTests
         IFileSystem? fileSystem = null,
         IHttpClientFactory? httpClientFactory = null)
     {
-        var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
+        IRegistryCredentialsProvider credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
         httpClientFactory ??= CreateHttpClientFactory();
-        var cache = Mock.Of<IMemoryCache>();
-        var logger = Mock.Of<ILogger<OrasDotNetService>>();
+        IMemoryCache cache = Mock.Of<IMemoryCache>();
+        ILogger<OrasDotNetService> logger = Mock.Of<ILogger<OrasDotNetService>>();
 
         return new OrasDotNetService(
             credentialsProvider,

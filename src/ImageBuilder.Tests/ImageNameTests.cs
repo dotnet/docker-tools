@@ -136,7 +136,7 @@ public class ImageNameTests
     [TestMethod]
     public void ToString_WithRegistryAndTag()
     {
-        var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", null);
+        ImageName imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", null);
 
         imageName.ToString().ShouldBe("mcr.microsoft.com/dotnet/runtime:8.0");
     }
@@ -144,7 +144,7 @@ public class ImageNameTests
     [TestMethod]
     public void ToString_WithRegistryAndDigest()
     {
-        var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", null, "sha256:abc123");
+        ImageName imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", null, "sha256:abc123");
 
         imageName.ToString().ShouldBe("mcr.microsoft.com/dotnet/runtime@sha256:abc123");
     }
@@ -152,7 +152,7 @@ public class ImageNameTests
     [TestMethod]
     public void ToString_WithRegistryTagAndDigest()
     {
-        var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", "sha256:abc123");
+        ImageName imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", "sha256:abc123");
 
         imageName.ToString().ShouldBe("mcr.microsoft.com/dotnet/runtime:8.0@sha256:abc123");
     }
@@ -160,7 +160,7 @@ public class ImageNameTests
     [TestMethod]
     public void ToString_RepoOnly()
     {
-        var imageName = new ImageName(null, "myimage", null, null);
+        ImageName imageName = new ImageName(null, "myimage", null, null);
 
         imageName.ToString().ShouldBe("myimage");
     }
@@ -168,7 +168,7 @@ public class ImageNameTests
     [TestMethod]
     public void ToString_WithEmptyRegistry()
     {
-        var imageName = new ImageName("", "myuser/myimage", "latest", null);
+        ImageName imageName = new ImageName("", "myuser/myimage", "latest", null);
 
         imageName.ToString().ShouldBe("myuser/myimage:latest");
     }
@@ -200,7 +200,7 @@ public class ImageNameTests
     [TestMethod]
     public void ImplicitConversion_ImageNameToString()
     {
-        var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", null);
+        ImageName imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", null);
 
         string result = imageName;
 

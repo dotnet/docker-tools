@@ -124,7 +124,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
             return readme;
         }
 
-        var repoTagGroups = GenerateRepoTagGroups(repo);
+        IEnumerable<TagGroup> repoTagGroups = GenerateRepoTagGroups(repo);
 
         _logger.LogInformation("GENERATING TAGS LISTING");
         string tagsMarkdown = GenerateMarkdownTables(repoTagGroups);
@@ -135,7 +135,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
             _logger.LogInformation(tagsMarkdown);
         }
 
-        var updatedReadme = ReadmeHelper.UpdateTagsListing(readme, tagsMarkdown);
+        string updatedReadme = ReadmeHelper.UpdateTagsListing(readme, tagsMarkdown);
         return updatedReadme;
     }
 
@@ -145,8 +145,8 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     /// </summary>
     private IEnumerable<TagGroup> GenerateRepoTagGroups(RepoInfo repo)
     {
-        var tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
-        var tagsMetadata = new DeserializerBuilder()
+        string tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
+        TagsMetadata tagsMetadata = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build()
             .Deserialize<TagsMetadata>(tagsMetadataYaml);
@@ -155,7 +155,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
         // on a per-repo basis so only one repo output is expected. We also don't need the repo
         // metadata for generating tags tables either, so return only the tags.
         // Each tag group here is one set of tags that all point to the same image.
-        var repoTagsMetadata = tagsMetadata.Repos.Single();
+        Models.McrTags.Repo repoTagsMetadata = tagsMetadata.Repos.Single();
         return repoTagsMetadata.TagGroups;
     }
 
@@ -165,15 +165,15 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     /// </summary>
     private static IEnumerable<TagsTable> GroupTagsIntoSections(IEnumerable<TagGroup> tagGroups)
     {
-        var groupedByOsArch = tagGroups.GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture));
+        IEnumerable<IGrouping<(string OS, string Architecture), TagGroup>> groupedByOsArch = tagGroups.GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture));
 
-        foreach (var osArchGroup in groupedByOsArch)
+        foreach (IGrouping<(string OS, string Architecture), TagGroup> osArchGroup in groupedByOsArch)
         {
             string title = $"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(osArchGroup.Key.OS)} {osArchGroup.Key.Architecture} Tags";
 
             // Further group by custom sub-table title (e.g., "Preview tags")
             // Tags without a custom sub-table title come first (null/empty keys sort first)
-            var subGroups = osArchGroup
+            List<IGrouping<string, TagGroup>> subGroups = osArchGroup
                 .GroupBy(tagGroup => tagGroup.CustomSubTableTitle)
                 .OrderBy(g => g.Key)
                 .ToList();
@@ -187,10 +187,10 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
             {
                 // Tags without custom title go directly in the parent section
                 // Tags with custom titles become sub-sections
-                var mainTags = subGroups
+                IEnumerable<TagGroup> mainTags = subGroups
                     .Where(g => string.IsNullOrEmpty(g.Key))
                     .SelectMany(g => g);
-                var subSections = subGroups
+                IEnumerable<TagsTable> subSections = subGroups
                     .Where(g => !string.IsNullOrEmpty(g.Key))
                     .Select(subGroup => new TagsTable(subGroup.Key!, tags: subGroup));
 
@@ -207,7 +207,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
         StringBuilder tables = new();
         const int HeadingLevel = 3;
 
-        var sections = GroupTagsIntoSections(tagGroups).ToList();
+        List<TagsTable> sections = GroupTagsIntoSections(tagGroups).ToList();
         sections.ForEach(tableSection => tableSection.RenderAsMarkdown(tables, HeadingLevel));
 
         return tables.ToString();
@@ -254,14 +254,14 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
 
                 foreach (TagGroup tagGroup in Tags)
                 {
-                    var tagsString = string.Join(", ", tagGroup.Tags);
+                    string tagsString = string.Join(", ", tagGroup.Tags);
                     builder.AppendLine($"{tagsString} | [Dockerfile]({tagGroup.Dockerfile}) | {tagGroup.OsVersion}");
                 }
             }
 
             builder.AppendLine();
 
-            foreach (var subTable in SubTables)
+            foreach (TagsTable subTable in SubTables)
             {
                 subTable.RenderAsMarkdown(builder, headingLevel + 1);
             }

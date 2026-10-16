@@ -18,7 +18,7 @@ internal static class MarStatusHelper
     {
         client ??= new Mock<IMcrStatusClient>().Object;
 
-        var factoryMock = new Mock<IMcrStatusClientFactory>();
+        Mock<IMcrStatusClientFactory> factoryMock = new Mock<IMcrStatusClientFactory>();
         factoryMock
             .Setup(o => o.Create(It.IsAny<IServiceConnection>()))
             .Returns(client);

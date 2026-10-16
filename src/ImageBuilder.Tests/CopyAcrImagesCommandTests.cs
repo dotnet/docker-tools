@@ -125,9 +125,9 @@ public class CopyAcrImagesCommandTests
     {
         using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
         {
-            var copyImageServiceMock = new Mock<ICopyImageService>();
+            Mock<ICopyImageService> copyImageServiceMock = new Mock<ICopyImageService>();
 
-            var command = new CopyAcrImagesCommand(
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(
                 TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
                 Mock.Of<ILogger<CopyAcrImagesCommand>>(),
@@ -229,9 +229,9 @@ public class CopyAcrImagesCommandTests
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        var copyImageServiceMock = new Mock<ICopyImageService>();
+        Mock<ICopyImageService> copyImageServiceMock = new Mock<ICopyImageService>();
 
-        var command = new CopyAcrImagesCommand(
+        CopyAcrImagesCommand command = new CopyAcrImagesCommand(
             TestHelper.CreateManifestJsonService(),
             copyImageServiceMock.Object,
             Mock.Of<ILogger<CopyAcrImagesCommand>>(),
@@ -346,9 +346,9 @@ public class CopyAcrImagesCommandTests
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        var copyImageServiceMock = new Mock<ICopyImageService>();
+        Mock<ICopyImageService> copyImageServiceMock = new Mock<ICopyImageService>();
 
-        var command = new CopyAcrImagesCommand(
+        CopyAcrImagesCommand command = new CopyAcrImagesCommand(
             TestHelper.CreateManifestJsonService(),
             copyImageServiceMock.Object,
             Mock.Of<ILogger<CopyAcrImagesCommand>>(),

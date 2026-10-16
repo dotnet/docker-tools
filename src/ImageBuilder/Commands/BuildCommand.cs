@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -74,7 +75,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
 
         _storageAccountToken = new Lazy<string>(() =>
         {
-            var tokenObject = _tokenCredentialProvider.GetToken(
+            AccessToken tokenObject = _tokenCredentialProvider.GetToken(
                 Options.StorageServiceConnection,
                 AzureScopes.StorageAccount);
 
@@ -543,12 +544,12 @@ public class BuildCommand : ManifestCommand<BuildOptions>
     {
         Dictionary<string, string?> buildArgs = [];
 
-        foreach (var kvp in Options.BuildArgs)
+        foreach (KeyValuePair<string, string> kvp in Options.BuildArgs)
         {
             buildArgs[kvp.Key] = kvp.Value;
         }
 
-        foreach (var kvp in platform.BuildArgs)
+        foreach (KeyValuePair<string, string?> kvp in platform.BuildArgs)
         {
             buildArgs[kvp.Key] = kvp.Value;
         }

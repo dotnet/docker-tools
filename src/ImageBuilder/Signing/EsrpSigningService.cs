@@ -104,8 +104,8 @@ public class EsrpSigningService(
             payloadFilePaths.Select(path => new SignFileEntry(SrcPath: path, DstPath: path));
 
         string keycodeString = signingKeyCode.ToString();
-        var record = new SignFileRecord(Certs: keycodeString, SignFileList: signFiles);
-        var signList = new SignList(SignFileRecordList: [record]);
+        SignFileRecord record = new SignFileRecord(Certs: keycodeString, SignFileList: signFiles);
+        SignList signList = new SignList(SignFileRecordList: [record]);
 
         return JsonSerializer.Serialize(signList, s_esrpJsonOptions);
     }

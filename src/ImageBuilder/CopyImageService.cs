@@ -86,7 +86,7 @@ public class CopyImageService : ICopyImageService
             referrers.Add(referrer);
         }
 
-        var destinationImageNames =
+        List<string> destinationImageNames =
             destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
 

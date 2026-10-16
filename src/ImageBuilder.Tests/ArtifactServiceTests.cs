@@ -19,7 +19,7 @@ public class ArtifactServiceTests
     [TestMethod]
     public void ResolvePath_RelativePath_ResolvesUnderArtifactStagingDirectory()
     {
-        var service = CreateService(new InMemoryFileSystem());
+        ArtifactService service = CreateService(new InMemoryFileSystem());
 
         string path = service.ResolvePath(Path.Combine("image-info", "input.json"));
 
@@ -29,8 +29,8 @@ public class ArtifactServiceTests
     [TestMethod]
     public void WriteAllText_WritesUnderArtifactStagingDirectory()
     {
-        var fileSystem = new InMemoryFileSystem();
-        var service = CreateService(fileSystem);
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
+        ArtifactService service = CreateService(fileSystem);
         string expectedPath = Path.Combine(s_outputRoot, "image-info", "output.json");
 
         service.WriteAllText(Path.Combine("image-info", "output.json"), "contents");
@@ -42,7 +42,7 @@ public class ArtifactServiceTests
     [TestMethod]
     public void WriteAllText_MissingArtifactStagingDirectory_Throws()
     {
-        var service = new ArtifactService(
+        ArtifactService service = new ArtifactService(
             new InMemoryFileSystem(),
             Options.Create(new BuildConfiguration()));
 
@@ -55,7 +55,7 @@ public class ArtifactServiceTests
     [TestMethod]
     public void WriteAllText_PathOutsideArtifactStagingDirectory_Throws()
     {
-        var service = CreateService(new InMemoryFileSystem());
+        ArtifactService service = CreateService(new InMemoryFileSystem());
 
         Should.Throw<ArgumentException>(
             () => service.WriteAllText(Path.Combine("..", "output.json"), "contents"));

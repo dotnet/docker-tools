@@ -18,7 +18,7 @@ internal static class UrlHelper
         string organizationPath = organizationUri.AbsolutePath.TrimEnd('/');
         project = Uri.EscapeDataString(project);
 
-        var baseAddress = new UriBuilder(organizationUri)
+        UriBuilder baseAddress = new UriBuilder(organizationUri)
         {
             Path = $"{organizationPath}/{project}/_apis/git/repositories/",
             Query = string.Empty,

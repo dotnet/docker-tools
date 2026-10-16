@@ -40,8 +40,8 @@ internal class AcrImageImporter : IAcrImageImporter
         ContainerRegistryImportImageContent importContent,
         CancellationToken cancellationToken)
     {
-        var armClient = GetArmClientForAcr(destAcrName);
-        var registryResource = armClient.GetContainerRegistryResource(destResourceId);
+        ArmClient armClient = GetArmClientForAcr(destAcrName);
+        ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
 
         try
         {
@@ -52,7 +52,7 @@ internal class AcrImageImporter : IAcrImageImporter
         }
         catch (Exception e)
         {
-            var formattedTags = string.Join(", ", importContent.TargetTags);
+            string formattedTags = string.Join(", ", importContent.TargetTags);
             _logger.LogError(e, "Importing Failure: {DestinationTags}", formattedTags);
             throw;
         }
@@ -60,7 +60,7 @@ internal class AcrImageImporter : IAcrImageImporter
 
     private ArmClient GetArmClientForAcr(string acrName)
     {
-        var auth = _publishConfig.FindRegistryAuthentication(acrName);
+        RegistryAuthentication? auth = _publishConfig.FindRegistryAuthentication(acrName);
 
         if (auth?.ServiceConnection is null)
         {
@@ -70,10 +70,10 @@ internal class AcrImageImporter : IAcrImageImporter
         }
 
         // Cache ArmClient instances per service connection to avoid recreating them
-        var cacheKey = string.Join('|', auth.ServiceConnection.TenantId, auth.ServiceConnection.ClientId);
+        string cacheKey = string.Join('|', auth.ServiceConnection.TenantId, auth.ServiceConnection.ClientId);
         return _armClientCache.GetOrAdd(cacheKey, _ =>
         {
-            var credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
+            TokenCredential credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
             return new ArmClient(credential);
         });
     }

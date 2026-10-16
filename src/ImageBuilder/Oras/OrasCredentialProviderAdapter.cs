@@ -39,7 +39,7 @@ public class OrasCredentialProviderAdapter(
 
         if (registryCredentials is null) return default;
 
-        var orasCredential = new Credential(
+        Credential orasCredential = new Credential(
             Username: registryCredentials.Username,
             Password: registryCredentials.Password,
             RefreshToken: string.Empty,

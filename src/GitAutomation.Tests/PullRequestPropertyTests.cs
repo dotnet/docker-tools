@@ -85,7 +85,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ChangesWithNoPR_CreatesNewPR()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from targetBranch in GenTargetBranchState
             from updateStrategy in GenUpdateStrategy
@@ -107,7 +107,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ChangesWithNoPR_ResetsExistingBranch()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from targetBranch in GenTargetBranchState
             from updateStrategy in GenUpdateStrategy
@@ -129,7 +129,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void NoChanges_NoOp()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from prNumber in GenPullRequestNumber
             from existingCommits in GenRandomCommits
@@ -151,7 +151,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void NoChanges_DoesNotPush()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             // 20% of scenarios will have no existing pull request
             from existingPullRequest in Gen.Null(GenExistingPullRequest, 0.2)
@@ -174,7 +174,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ExistingPR_DoesNotCreateNewPR()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from existingPullRequest in GenExistingPullRequest
             from targetBranch in GenTargetBranchState
@@ -195,7 +195,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ExistingPR_StopsOnForeignCommits()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from existingState in GenPullRequestState
             from prNumber in GenPullRequestNumber

@@ -22,7 +22,7 @@ public static class ImageBuilder
 {
     public static IHost CreateAppHost()
     {
-        var builder = Host.CreateApplicationBuilder();
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
         // Configuration
         builder.AddPublishConfiguration();
@@ -63,7 +63,7 @@ public static class ImageBuilder
 
         builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
         {
-            var retryOptions = new HttpRetryStrategyOptions()
+            HttpRetryStrategyOptions retryOptions = new HttpRetryStrategyOptions()
             {
                 MaxRetryAttempts = 5,
                 BackoffType = DelayBackoffType.Exponential,

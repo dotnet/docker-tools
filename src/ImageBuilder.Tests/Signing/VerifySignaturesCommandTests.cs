@@ -180,8 +180,8 @@ public class VerifySignaturesCommandTests
     [TestMethod]
     public async Task VerifySignatures_SkipsWhenSigningDisabled()
     {
-        var notationClientMock = new Mock<INotationClient>();
-        var signingConfig = new SigningConfiguration
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
+        SigningConfiguration signingConfig = new SigningConfiguration
         {
             Enabled = false,
             TrustStoreName = TrustStoreName
@@ -195,7 +195,7 @@ public class VerifySignaturesCommandTests
     [TestMethod]
     public async Task VerifySignatures_SkipsWhenSigningConfigNull()
     {
-        var notationClientMock = new Mock<INotationClient>();
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, signingConfig: null);
 
         await testFixture.Command.ExecuteAsync(TestContext?.CancellationToken ?? default);
@@ -206,7 +206,7 @@ public class VerifySignaturesCommandTests
     [TestMethod]
     public async Task VerifySignatures_SkipsWhenImageInfoMissing()
     {
-        var notationClientMock = new Mock<INotationClient>();
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig());
         testFixture.Command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
 
@@ -229,11 +229,11 @@ public class VerifySignaturesCommandTests
     [TestMethod]
     public async Task VerifySignatures_SkipsWhenNoDigests()
     {
-        var fileSystem = new InMemoryFileSystem();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
         fileSystem.AddFile(ImageInfoPath, s_emptyDigestsImageInfoJson);
         SeedTrustMaterials(fileSystem);
 
-        var notationClientMock = new Mock<INotationClient>();
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
@@ -247,12 +247,12 @@ public class VerifySignaturesCommandTests
     [TestMethod]
     public async Task VerifySignatures_ThrowsWhenCertMissing()
     {
-        var fileSystem = new InMemoryFileSystem();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
         SeedImageInfoFile(fileSystem);
         // Only seed the policy, not the cert
         SeedPolicy(fileSystem);
 
-        var notationClientMock = new Mock<INotationClient>();
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
@@ -263,12 +263,12 @@ public class VerifySignaturesCommandTests
     [TestMethod]
     public async Task VerifySignatures_ThrowsWhenTrustPolicyMissing()
     {
-        var fileSystem = new InMemoryFileSystem();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
         SeedImageInfoFile(fileSystem);
         // Only seed the cert, not the policy
         SeedCert(fileSystem);
 
-        var notationClientMock = new Mock<INotationClient>();
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
@@ -281,11 +281,11 @@ public class VerifySignaturesCommandTests
     /// </summary>
     private static TestFixture CreateSeededCommand()
     {
-        var fileSystem = new InMemoryFileSystem();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
         SeedImageInfoFile(fileSystem);
         SeedTrustMaterials(fileSystem);
 
-        var notationClientMock = new Mock<INotationClient>();
+        Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
         TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
         testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
         return testFixture;
@@ -302,8 +302,8 @@ public class VerifySignaturesCommandTests
     {
         ILogger<VerifySignaturesCommand> logger = Mock.Of<ILogger<VerifySignaturesCommand>>();
         IRegistryCredentialsProvider credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
-        var environmentServiceMock = new Mock<IEnvironmentService>();
-        var notationClientMock = Mock.Get(notationClient);
+        Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+        Mock<INotationClient> notationClientMock = Mock.Get(notationClient);
         InMemoryFileSystem inMemoryFileSystem = fileSystem as InMemoryFileSystem ?? new InMemoryFileSystem();
 
         PublishConfiguration publishConfig = new() { Signing = signingConfig };

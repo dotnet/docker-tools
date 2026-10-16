@@ -25,7 +25,7 @@ public class TagInfo
         VariableHelper variableHelper,
         string buildContextPath = null)
     {
-        var tagInfo = new TagInfo()
+        TagInfo tagInfo = new TagInfo()
         {
             Model = model,
             BuildContextPath = buildContextPath,

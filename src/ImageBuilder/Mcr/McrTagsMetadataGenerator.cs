@@ -188,7 +188,7 @@ public class McrTagsMetadataGenerator
             // If the tag is multi-arch, add a separate tag group yaml for each architecture that it refers to.
             if (matchingSharedTags.Any())
             {
-                var yaml = new StringBuilder();
+                StringBuilder yaml = new StringBuilder();
 
                 // Find all other doc infos that match this one. This accounts for scenarios where a platform is
                 // duplicated in another image in order to associate it within a distinct set of shared tags.

@@ -39,7 +39,7 @@ public static class ConfigurationExtensions
         string registryName)
     {
         // Try normalized ACR name lookup (handles both "myacr" and "myacr.azurecr.io")
-        var targetAcr = Acr.Parse(registryName);
+        Acr targetAcr = Acr.Parse(registryName);
 
         return publishConfig.RegistryAuthentication
             .FirstOrDefault(auth =>
@@ -49,22 +49,22 @@ public static class ConfigurationExtensions
 
     public static ResourceIdentifier GetAcrResource(this PublishConfiguration publishConfig, string registry)
     {
-        var registryAuthentication = publishConfig.FindRegistryAuthentication(registry)
+        RegistryAuthentication registryAuthentication = publishConfig.FindRegistryAuthentication(registry)
             ?? throw new InvalidOperationException(
                 $"No authentication details found for source registry '{registry}'."
                 + $" Ensure the registry is configured in the publish configuration.");
 
-        var subscription = registryAuthentication.Subscription
+        string subscription = registryAuthentication.Subscription
             ?? throw new InvalidOperationException(
                 $"No subscription found for source registry '{registry}'."
                 + $" Ensure the registry is configured in the publish configuration.");
 
-        var resourceGroup = registryAuthentication.ResourceGroup
+        string resourceGroup = registryAuthentication.ResourceGroup
             ?? throw new InvalidOperationException(
                 $"No resource group found for source registry '{registry}'."
                 + $" Ensure the registry is configured in the publish configuration.");
 
-        var resourceId =
+        ResourceIdentifier resourceId =
             ContainerRegistryResource.CreateResourceIdentifier(
                 subscriptionId: subscription,
                 resourceGroupName: resourceGroup,

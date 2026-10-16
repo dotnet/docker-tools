@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-using var host = ImageBuilder.CreateAppHost();
+using IHost host = ImageBuilder.CreateAppHost();
 int exitCode = 1;
 
 try
@@ -18,21 +20,21 @@ try
     // Some parts of ImageBuilder aren't fully onboarded to DI yet (see StandaloneLoggerFactory).
     // Hand them the host's logger factory so those static code paths can log through the
     // application host's configured logging.
-    var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+    ILoggerFactory loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
     StandaloneLoggerFactory.LoggerFactory = loggerFactory;
 
-    var rootCliCommand = new RootCommand();
-    var commands = host.Services.GetServices<ICommand>();
+    RootCommand rootCliCommand = new RootCommand();
+    IEnumerable<ICommand> commands = host.Services.GetServices<ICommand>();
 
-    foreach (var command in commands)
+    foreach (ICommand command in commands)
         rootCliCommand.Add(command.GetCliCommand());
 
-    var parseResult = rootCliCommand.Parse(args);
+    ParseResult parseResult = rootCliCommand.Parse(args);
     exitCode = await parseResult.InvokeAsync();
 }
 catch (Exception e)
 {
-    var loggerFactory = host.Services.GetService<ILoggerFactory>();
+    ILoggerFactory? loggerFactory = host.Services.GetService<ILoggerFactory>();
     if (loggerFactory is not null)
     {
         ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");

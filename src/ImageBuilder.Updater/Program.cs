@@ -203,8 +203,8 @@ static async Task<IGitHubAccessProvider> GetAccessProviderAsync(
     {
         logger.LogInformation("Using GitHub App authentication for authentication.");
         Uri appKeyUri = new(gitHubAppKeyUri);
-        var azureCredential = new AzureCliCredential();
-        var cryptographyClient = new CryptographyClient(appKeyUri, azureCredential);
+        AzureCliCredential azureCredential = new AzureCliCredential();
+        CryptographyClient cryptographyClient = new CryptographyClient(appKeyUri, azureCredential);
         return new GitHubAppAccessProvider(gitHubAppClientId, cryptographyClient);
     }
 

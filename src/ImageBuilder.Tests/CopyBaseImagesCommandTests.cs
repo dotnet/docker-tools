@@ -81,14 +81,14 @@ public class CopyBaseImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        var expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
+        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
         {
             ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag", "docker.io", "user", "pass" ),
             ( "library/base:tag", $"{command.Options.RepoPrefix}library/base:tag", "docker.io", "user", "pass" ),
             ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
         };
 
-        foreach (var expectedTagInfo in expectedTagInfos)
+        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) expectedTagInfo in expectedTagInfos)
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
@@ -158,13 +158,13 @@ public class CopyBaseImagesCommandTests
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        var expectedTagInfos = new(string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
+        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos = new(string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
         {
             ( $"os:tag", $"{command.Options.RepoPrefix}{CustomRegistry}/os:tag", CustomRegistry, null, null),
             ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
         };
 
-        foreach (var expectedTagInfo in expectedTagInfos)
+        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) expectedTagInfo in expectedTagInfos)
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(

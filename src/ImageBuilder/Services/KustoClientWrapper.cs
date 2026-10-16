@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Azure.Core;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Ingest;
@@ -36,9 +37,9 @@ internal class KustoClientWrapper : IKustoClient
     {
         _logger.LogInformation("INGESTING DATA INTO KUSTO");
 
-        var connectionString = $"https://{cluster}.kusto.windows.net";
-        var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
-        var connectionBuilder = new KustoConnectionStringBuilder(connectionString)
+        string connectionString = $"https://{cluster}.kusto.windows.net";
+        TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
+        KustoConnectionStringBuilder connectionBuilder = new KustoConnectionStringBuilder(connectionString)
             .WithAadAzureTokenCredentialsAuthentication(tokenCredential);
 
         using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))

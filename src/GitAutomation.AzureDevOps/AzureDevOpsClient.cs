@@ -201,7 +201,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
 
     private static HttpClient CreateHttpClient(string organization, string project, string accessToken)
     {
-        var authenticationHandler = new AuthenticationHandler(accessToken)
+        AuthenticationHandler authenticationHandler = new AuthenticationHandler(accessToken)
         {
             InnerHandler = new HttpClientHandler(),
         };

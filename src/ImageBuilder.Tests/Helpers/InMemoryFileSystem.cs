@@ -85,7 +85,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public byte[] ReadAllBytes(string path)
     {
         FilesRead.Add(path);
-        return _files.TryGetValue(path, out var bytes)
+        return _files.TryGetValue(path, out byte[]? bytes)
             ? bytes
             : throw new FileNotFoundException("File not found", path);
     }
@@ -96,7 +96,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public string ReadAllText(string path)
     {
         FilesRead.Add(path);
-        return _files.TryGetValue(path, out var bytes)
+        return _files.TryGetValue(path, out byte[]? bytes)
             ? Encoding.UTF8.GetString(bytes)
             : throw new FileNotFoundException("File not found", path);
     }
@@ -104,7 +104,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken)
     {
         FilesRead.Add(path);
-        return _files.TryGetValue(path, out var bytes)
+        return _files.TryGetValue(path, out byte[]? bytes)
             ? Task.FromResult(Encoding.UTF8.GetString(bytes))
             : throw new FileNotFoundException("File not found", path);
     }

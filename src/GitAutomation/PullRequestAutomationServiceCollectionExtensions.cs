@@ -52,7 +52,7 @@ public static class PullRequestAutomationServiceCollectionExtensions
         services.AddSingleton(accessProvider);
         services.AddTransient(serviceProvider =>
         {
-            var accessProvider = serviceProvider.GetRequiredService<IGitHubAccessProvider>();
+            IGitHubAccessProvider accessProvider = serviceProvider.GetRequiredService<IGitHubAccessProvider>();
             return new GitHubPullRequestEndpoint(accessProvider, upstream, fork);
         });
 
@@ -75,7 +75,7 @@ public static class PullRequestAutomationServiceCollectionExtensions
         string accessToken,
         GitHubRepo? fork = null)
     {
-        var accessProvider = new StaticGitHubAccessProvider(accessToken, identity);
+        StaticGitHubAccessProvider accessProvider = new StaticGitHubAccessProvider(accessToken, identity);
         return services.AddGitHubPullRequestAutomation(accessProvider, upstream, fork);
     }
 
@@ -103,7 +103,7 @@ public static class PullRequestAutomationServiceCollectionExtensions
         services.AddAzureDevOpsClient(organization, project, accessToken);
         services.AddTransient(serviceProvider =>
         {
-            var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
+            AzureDevOpsClient client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
             return new AzureDevOpsPullRequestEndpoint(client, repositoryIdOrName, accessToken, identity);
         });
 

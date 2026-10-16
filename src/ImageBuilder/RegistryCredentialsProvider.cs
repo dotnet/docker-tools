@@ -97,7 +97,7 @@ public class RegistryCredentialsProvider(
     {
         // Get AAD/Entra access token
         TokenCredential tokenCredential = tokenCredentialProvider.GetCredential(serviceConnection);
-        var tokenRequestContext = new TokenRequestContext([AzureScopes.Default]);
+        TokenRequestContext tokenRequestContext = new TokenRequestContext([AzureScopes.Default]);
         AccessToken accessToken = await tokenCredential.GetTokenAsync(tokenRequestContext, ct);
 
         // Exchange for ACR refresh token

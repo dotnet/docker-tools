@@ -201,7 +201,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
             ManifestQueryResult result = await _manifestService.Value.GetManifestAsync(sourceName, isDryRun: false, cancellationToken);
 
-            var platformImportData = new PlatformImportData(
+            PlatformImportData platformImportData = new PlatformImportData(
                 Repo: imageData.ManifestRepo,
                 Image: imageData.ManifestImage,
                 Platform: platform,

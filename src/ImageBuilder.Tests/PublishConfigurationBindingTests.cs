@@ -4,6 +4,7 @@
 
 #nullable enable
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -99,7 +100,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var buildAuth = config.FindRegistryAuthentication("build.azurecr.io");
+        RegistryAuthentication? buildAuth = config.FindRegistryAuthentication("build.azurecr.io");
         buildAuth.ShouldNotBeNull();
         buildAuth.ServiceConnection.ShouldNotBeNull();
         buildAuth.ServiceConnection.Name.ShouldBe("build-sc");
@@ -115,7 +116,7 @@ public class PublishConfigurationBindingTests
     public void AddPublishConfiguration_GetKnownRegistries_ReturnsAllEndpoints()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
-        var knownRegistries = config.GetKnownRegistries().ToList();
+        List<RegistryEndpoint> knownRegistries = config.GetKnownRegistries().ToList();
 
         knownRegistries.Count.ShouldBe(4);
         knownRegistries.ShouldContain(r => r.Server == "build.azurecr.io");
@@ -129,7 +130,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var auth = config.FindRegistryAuthentication("build.azurecr.io");
+        RegistryAuthentication? auth = config.FindRegistryAuthentication("build.azurecr.io");
 
         auth.ShouldNotBeNull();
         auth.ServiceConnection?.TenantId.ShouldBe("tenant-build");
@@ -140,7 +141,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var auth = config.FindRegistryAuthentication("build");
+        RegistryAuthentication? auth = config.FindRegistryAuthentication("build");
 
         auth.ShouldNotBeNull();
         auth.ServiceConnection?.TenantId.ShouldBe("tenant-build");
@@ -151,7 +152,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var auth = config.FindRegistryAuthentication("nonexistent.azurecr.io");
+        RegistryAuthentication? auth = config.FindRegistryAuthentication("nonexistent.azurecr.io");
 
         auth.ShouldBeNull();
     }
@@ -224,8 +225,8 @@ public class PublishConfigurationBindingTests
 
         PublishConfiguration config = BuildConfiguration(sharedAuthJson);
 
-        var buildAuth = config.FindRegistryAuthentication(config.BuildRegistry!.Server!);
-        var mirrorAuth = config.FindRegistryAuthentication(config.InternalMirrorRegistry!.Server!);
+        RegistryAuthentication? buildAuth = config.FindRegistryAuthentication(config.BuildRegistry!.Server!);
+        RegistryAuthentication? mirrorAuth = config.FindRegistryAuthentication(config.InternalMirrorRegistry!.Server!);
 
         buildAuth.ShouldNotBeNull();
         mirrorAuth.ShouldNotBeNull();
@@ -239,12 +240,12 @@ public class PublishConfigurationBindingTests
     /// </summary>
     private static PublishConfiguration BuildConfiguration(string json)
     {
-        var builder = Host.CreateApplicationBuilder();
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(json)));
         builder.AddPublishConfiguration();
 
-        using var host = builder.Build();
-        var options = host.Services.GetRequiredService<IOptions<PublishConfiguration>>();
+        using IHost host = builder.Build();
+        IOptions<PublishConfiguration> options = host.Services.GetRequiredService<IOptions<PublishConfiguration>>();
         return options.Value;
     }
 }

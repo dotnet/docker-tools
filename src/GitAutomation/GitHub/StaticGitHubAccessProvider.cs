@@ -23,7 +23,7 @@ public sealed class StaticGitHubAccessProvider(string token, AutomationIdentity 
 
     private static GitHubAccess CreateAccess(string token, AutomationIdentity identity)
     {
-        var credentials = new InMemoryCredentialStore(new Credentials(token));
+        InMemoryCredentialStore credentials = new InMemoryCredentialStore(new Credentials(token));
         return new(credentials, identity, new GitHubClient(s_productHeaderValue, credentials));
     }
 }

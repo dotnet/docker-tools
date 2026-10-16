@@ -14,9 +14,9 @@ internal static class AzureTokenCredentialProviderExtensions
         CancellationToken cancellationToken,
         string scope = AzureScopes.Default)
     {
-        var credential = provider.GetCredential(serviceConnection);
-        var requestContext = new TokenRequestContext([scope]);
-        var token = credential.GetTokenAsync(requestContext, cancellationToken);
+        TokenCredential credential = provider.GetCredential(serviceConnection);
+        TokenRequestContext requestContext = new TokenRequestContext([scope]);
+        ValueTask<AccessToken> token = credential.GetTokenAsync(requestContext, cancellationToken);
         return token;
     }
 
@@ -25,9 +25,9 @@ internal static class AzureTokenCredentialProviderExtensions
         IServiceConnection? serviceConnection,
         string scope = AzureScopes.Default)
     {
-        var credential = provider.GetCredential(serviceConnection);
-        var requestContext = new TokenRequestContext([scope]);
-        var token = credential.GetToken(requestContext, CancellationToken.None);
+        TokenCredential credential = provider.GetCredential(serviceConnection);
+        TokenRequestContext requestContext = new TokenRequestContext([scope]);
+        AccessToken token = credential.GetToken(requestContext, CancellationToken.None);
         return token;
     }
 }

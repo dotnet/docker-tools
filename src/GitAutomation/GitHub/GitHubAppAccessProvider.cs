@@ -69,8 +69,8 @@ public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
                 return access;
             }
 
-            var credentials = new GitHubAppInstallationCredentialStore(_appClient, installationId);
-            var installationClient = new GitHubClient(s_productHeaderValue, credentials);
+            GitHubAppInstallationCredentialStore credentials = new GitHubAppInstallationCredentialStore(_appClient, installationId);
+            GitHubClient installationClient = new GitHubClient(s_productHeaderValue, credentials);
 
             AutomationIdentity identity = await GetIdentityAsync(installationClient, cancellationToken);
 

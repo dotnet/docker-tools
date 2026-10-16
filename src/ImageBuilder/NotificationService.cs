@@ -38,7 +38,7 @@ public class NotificationService : INotificationService
         Issue? issue = null;
         if (!isDryRun)
         {
-            var newIssue = new NewIssue(title) { Body = description };
+            NewIssue newIssue = new NewIssue(title) { Body = description };
             foreach (string label in labels)
             {
                 newIssue.Labels.Add(label);

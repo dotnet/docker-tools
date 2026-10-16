@@ -18,12 +18,12 @@ public class OrasCredentialProviderAdapterTests
     [TestMethod]
     public async Task ResolveCredentialAsync_ReturnsCredentials_WhenProviderReturnsCredentials()
     {
-        var mockProvider = new Mock<IRegistryCredentialsProvider>();
+        Mock<IRegistryCredentialsProvider> mockProvider = new Mock<IRegistryCredentialsProvider>();
         mockProvider
             .Setup(p => p.GetCredentialsAsync("registry.io", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new RegistryCredentials("testuser", "testpass"));
 
-        var adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
+        OrasCredentialProviderAdapter adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
 
         Credential result = await adapter.ResolveCredentialAsync("registry.io", CancellationToken.None);
 
@@ -36,12 +36,12 @@ public class OrasCredentialProviderAdapterTests
     [TestMethod]
     public async Task ResolveCredentialAsync_ReturnsDefault_WhenProviderReturnsNull()
     {
-        var mockProvider = new Mock<IRegistryCredentialsProvider>();
+        Mock<IRegistryCredentialsProvider> mockProvider = new Mock<IRegistryCredentialsProvider>();
         mockProvider
             .Setup(p => p.GetCredentialsAsync("registry.io", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync((RegistryCredentials?)null);
 
-        var adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
+        OrasCredentialProviderAdapter adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
 
         Credential result = await adapter.ResolveCredentialAsync("registry.io", CancellationToken.None);
 
@@ -51,14 +51,14 @@ public class OrasCredentialProviderAdapterTests
     [TestMethod]
     public async Task ResolveCredentialAsync_PassesCredentialsHost_WhenProvided()
     {
-        var mockProvider = new Mock<IRegistryCredentialsProvider>();
-        var mockHost = new Mock<IRegistryCredentialsHost>();
+        Mock<IRegistryCredentialsProvider> mockProvider = new Mock<IRegistryCredentialsProvider>();
+        Mock<IRegistryCredentialsHost> mockHost = new Mock<IRegistryCredentialsHost>();
 
         mockProvider
             .Setup(p => p.GetCredentialsAsync("registry.io", mockHost.Object, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new RegistryCredentials("user", "pass"));
 
-        var adapter = new OrasCredentialProviderAdapter(mockProvider.Object, mockHost.Object);
+        OrasCredentialProviderAdapter adapter = new OrasCredentialProviderAdapter(mockProvider.Object, mockHost.Object);
 
         await adapter.ResolveCredentialAsync("registry.io", CancellationToken.None);
 
@@ -70,12 +70,12 @@ public class OrasCredentialProviderAdapterTests
     [DataRow("REGISTRY-1.DOCKER.IO")]
     public async Task ResolveCredentialAsync_NormalizesDockerHubApiHostToDockerIo(string apiHost)
     {
-        var mockProvider = new Mock<IRegistryCredentialsProvider>();
+        Mock<IRegistryCredentialsProvider> mockProvider = new Mock<IRegistryCredentialsProvider>();
         mockProvider
             .Setup(p => p.GetCredentialsAsync("docker.io", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new RegistryCredentials("hubuser", "hubpass"));
 
-        var adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
+        OrasCredentialProviderAdapter adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
 
         Credential result = await adapter.ResolveCredentialAsync(apiHost, CancellationToken.None);
 

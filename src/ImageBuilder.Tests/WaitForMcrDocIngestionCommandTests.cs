@@ -73,7 +73,7 @@ public class WaitForMcrDocIngestionCommandTests
         }.GetEnumerator();
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
         statusClientMock
             .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
@@ -154,7 +154,7 @@ public class WaitForMcrDocIngestionCommandTests
         }.GetEnumerator();
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
         statusClientMock
             .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
@@ -258,7 +258,7 @@ public class WaitForMcrDocIngestionCommandTests
         }.GetEnumerator();
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
         statusClientMock
             .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
@@ -342,7 +342,7 @@ public class WaitForMcrDocIngestionCommandTests
         }.GetEnumerator();
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
         statusClientMock
             .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
@@ -392,7 +392,7 @@ public class WaitForMcrDocIngestionCommandTests
         const string commitDigest = "commit digest";
 
         Mock<IMcrStatusClient> statusClientMock = new();
-        var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
+        Mock<IMcrStatusClientFactory> statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
         statusClientMock
             .Setup(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()))
             .ReturnsAsync(

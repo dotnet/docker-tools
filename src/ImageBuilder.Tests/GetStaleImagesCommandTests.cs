@@ -1698,7 +1698,7 @@ public class GetStaleImagesCommandTests
             string osType = "*")
         {
             this.osType = osType;
-            this.subscriptionsPath = this.SerializeJsonObjectToTempFile(
+            subscriptionsPath = SerializeJsonObjectToTempFile(
                 subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
             // Cache image digests lookup
@@ -1709,7 +1709,7 @@ public class GetStaleImagesCommandTests
                 {
                     // Normalize the key using ImageName.Parse to match how the mock receives ImageName
                     string normalizedName = ImageName.Parse(fromImage.Name, autoResolveImpliedNames: true).ToString();
-                    this.imageDigests[normalizedName] = fromImage.Digest;
+                    imageDigests[normalizedName] = fromImage.Digest;
                 }
             }
 
@@ -1718,17 +1718,17 @@ public class GetStaleImagesCommandTests
                 Id = Guid.NewGuid()
             };
 
-            this.gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
-            this.octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
+            gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
+            octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
             (ManifestServiceFactoryMock, ManifestServiceMock) = CreateManifestServiceMocks();
 
-            this.command = this.CreateCommand();
+            command = CreateCommand();
         }
 
         public Task ExecuteCommandAsync(CancellationToken cancellationToken)
         {
-            return this.command.ExecuteAsync(cancellationToken);
+            return command.ExecuteAsync(cancellationToken);
         }
 
         /// <summary>
@@ -1736,7 +1736,7 @@ public class GetStaleImagesCommandTests
         /// </summary>
         public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
         {
-            IInvocation invocation = this.loggerServiceMock.Invocations
+            IInvocation invocation = loggerServiceMock.Invocations
                 .First(invocation => invocation.Method.Name == nameof(ILogger.Log) &&
                     invocation.Arguments[2]?.ToString()?.StartsWith("##vso") == true);
 
@@ -1766,17 +1766,17 @@ public class GetStaleImagesCommandTests
         {
             string path = Path.GetTempFileName();
             File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-            this.filesToCleanup.Add(path);
+            filesToCleanup.Add(path);
             return path;
         }
 
         private GetStaleImagesCommand CreateCommand()
         {
             GetStaleImagesCommand command = new(
-                this.ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
-            command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
+                ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), loggerServiceMock.Object, octokitClientFactory, gitService);
+            command.Options.SubscriptionOptions.SubscriptionsPath = subscriptionsPath;
             command.Options.VariableName = VariableName;
-            command.Options.FilterOptions.Platform.OsType = this.osType;
+            command.Options.FilterOptions.Platform.OsType = osType;
             command.Options.GitOptions.Email = "test";
             command.Options.GitOptions.Username = "test";
             command.Options.GitOptions.GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "test");
@@ -1935,7 +1935,7 @@ public class GetStaleImagesCommandTests
             manifestServiceMock
                 .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ImageName image, bool isDryRun, CancellationToken _) =>
-                    new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
+                    new ManifestQueryResult(imageDigests[image], new JsonObject()));
 
             Mock<IManifestServiceFactory> manifestServiceFactoryMock =
                 ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock.Object);
@@ -1975,12 +1975,12 @@ public class GetStaleImagesCommandTests
 
         public void Dispose()
         {
-            foreach (string file in this.filesToCleanup)
+            foreach (string file in filesToCleanup)
             {
                 File.Delete(file);
             }
 
-            foreach (string folder in this.foldersToCleanup)
+            foreach (string folder in foldersToCleanup)
             {
                 Directory.Delete(folder, true);
             }
@@ -1991,8 +1991,8 @@ public class GetStaleImagesCommandTests
     {
         public DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
         {
-            this.DockerfilePath = dockerfilePath;
-            this.FromImages = fromImages;
+            DockerfilePath = dockerfilePath;
+            FromImages = fromImages;
         }
 
         public string DockerfilePath { get; }

@@ -11,7 +11,7 @@ public static class NotificationHelper
     private const string MetadataPrefix = "<!--NOTIFICATION METADATA:";
     private const string MetadataSuffix = "-->";
     private const string MetadataGroup = "metadata";
-    private static string MetadataRegex = $"{MetadataPrefix}(?<{MetadataGroup}>.+){MetadataSuffix}";
+    private static readonly string MetadataRegex = $"{MetadataPrefix}(?<{MetadataGroup}>.+){MetadataSuffix}";
 
     /// <summary>
     /// Extracts the notification metadata out of a GitHub notification issue.

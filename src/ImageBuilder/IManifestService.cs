@@ -15,7 +15,7 @@ public interface IManifestService
 {
     Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken);
 
-    public async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
+    async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
         if (isDryRun)
         {
@@ -38,7 +38,7 @@ public interface IManifestService
             .Reverse();
     }
 
-    public async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
+    async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
         IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun, cancellationToken);
 
@@ -66,7 +66,7 @@ public interface IManifestService
         return digest;
     }
 
-    public async Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun, CancellationToken cancellationToken)
+    async Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun, CancellationToken cancellationToken)
     {
         ManifestQueryResult manifestResult = await GetManifestAsync(tag, isDryRun, cancellationToken);
         return manifestResult.ContentDigest;

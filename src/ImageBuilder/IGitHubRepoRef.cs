@@ -6,7 +6,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IGitHubRepoRef
 {
-    public string Owner { get; set; }
+    string Owner { get; set; }
 
-    public string Repo { get; set; }
+    string Repo { get; set; }
 }

@@ -49,7 +49,7 @@ public sealed class PullRequestPlannerTests
 
     private static readonly Gen<CommitInfo[]> GenRandomCommits = GenRandomCommit.Array[1, 3];
 
-    private static Gen<CommitInfo[]> GenCommitsGuaranteedForeign =
+    private static readonly Gen<CommitInfo[]> GenCommitsGuaranteedForeign =
         from foreign in GenForeignCommit
         from rest in GenRandomCommit.Array[0, 2]
         from commits in Gen.Shuffle((CommitInfo[])[foreign, .. rest])

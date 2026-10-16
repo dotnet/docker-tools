@@ -19,7 +19,7 @@ public partial class PlatformInfo
     private const string StageIdMatchName = "stageId";
     private const string ScratchIdentifier = "scratch";
 
-    private List<string> _overriddenFromImages = new();
+    private readonly List<string> _overriddenFromImages = new();
     private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();
 
     public string BaseOsVersion { get; private set; }

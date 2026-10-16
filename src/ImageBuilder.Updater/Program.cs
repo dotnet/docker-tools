@@ -252,4 +252,4 @@ static string GetEnvVar(string name) => Environment.GetEnvironmentVariable(name)
     string value => value,
 };
 
-sealed record UpdateOutcome(GitHubRepo Repository, string TargetBranch, string Status, bool Succeeded);
+internal sealed record UpdateOutcome(GitHubRepo Repository, string TargetBranch, string Status, bool Succeeded);

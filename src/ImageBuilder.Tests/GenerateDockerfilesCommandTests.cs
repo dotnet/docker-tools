@@ -39,7 +39,7 @@ ENV TEST1 IfWorks
 ENV TEST2 Value1";
 
     private readonly Exception _exitException = new Exception();
-    Mock<IEnvironmentService> _environmentServiceMock;
+    private Mock<IEnvironmentService> _environmentServiceMock;
 
     public GenerateDockerfilesCommandTests()
     {

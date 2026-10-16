@@ -550,31 +550,31 @@ public class QueueBuildCommandTests
             this.inProgressBuilds = inProgressBuilds;
             this.allBuilds = allBuilds;
 
-            this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
+            subscriptionsPath = SerializeJsonObjectToTempFile(subscriptions);
 
             TeamProject project = new TeamProject
             {
                 Id = Guid.NewGuid()
             };
 
-            this.projectHttpClientMock = CreateProjectHttpClientMock(project);
-            this.buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
+            projectHttpClientMock = CreateProjectHttpClientMock(project);
+            buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
             Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
-                this.projectHttpClientMock, this.buildHttpClientMock);
+                projectHttpClientMock, buildHttpClientMock);
 
             _notificationServiceMock = new Mock<INotificationService>();
 
-            this.command = this.CreateCommand(connectionFactoryMock);
+            command = CreateCommand(connectionFactoryMock);
         }
 
         public Task ExecuteCommandAsync(CancellationToken cancellationToken)
         {
-            return this.command.ExecuteAsync(cancellationToken);
+            return command.ExecuteAsync(cancellationToken);
         }
 
         public void CancelWhenGettingProject(CancellationTokenSource cancellationTokenSource)
         {
-            this.projectHttpClientMock
+            projectHttpClientMock
                 .Setup(o => o.GetProjectAsync(It.IsAny<string>(), cancellationTokenSource.Token))
                 .Callback(cancellationTokenSource.Cancel)
                 .ThrowsAsync(new OperationCanceledException(cancellationTokenSource.Token));
@@ -609,7 +609,7 @@ public class QueueBuildCommandTests
 
             if (!isQueuedBuildExpected)
             {
-                this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
+                buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
             }
             else
             {
@@ -622,7 +622,7 @@ public class QueueBuildCommandTests
                 {
                     if (kvp.Value.Any())
                     {
-                        this.buildHttpClientMock
+                        buildHttpClientMock
                             .Verify(o =>
                                 o.QueueBuildAsync(
                                     It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value)),
@@ -636,7 +636,7 @@ public class QueueBuildCommandTests
         {
             string path = Path.GetTempFileName();
             File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-            this.filesToCleanup.Add(path);
+            filesToCleanup.Add(path);
             return path;
         }
 
@@ -647,8 +647,8 @@ public class QueueBuildCommandTests
             QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
             command.Options.AzdoOptions.Organization = BuildOrganization;
             command.Options.AzdoOptions.AccessToken = "testToken";
-            command.Options.SubscriptionsPath = this.subscriptionsPath;
-            command.Options.AllSubscriptionImagePaths = this.allSubscriptionImagePaths
+            command.Options.SubscriptionsPath = subscriptionsPath;
+            command.Options.AllSubscriptionImagePaths = allSubscriptionImagePaths
                 .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
 
             command.Options.GitOptions.Owner = GitOwner;
@@ -777,12 +777,12 @@ public class QueueBuildCommandTests
 
         public void Dispose()
         {
-            foreach (string file in this.filesToCleanup)
+            foreach (string file in filesToCleanup)
             {
                 File.Delete(file);
             }
 
-            foreach (string folder in this.foldersToCleanup)
+            foreach (string folder in foldersToCleanup)
             {
                 Directory.Delete(folder, true);
             }

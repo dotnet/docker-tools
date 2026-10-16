@@ -7,9 +7,9 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IAcrContentClient
 {
-    public string RepositoryName { get; }
+    string RepositoryName { get; }
 
-    public Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest, CancellationToken cancellationToken);
+    Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest, CancellationToken cancellationToken);
 
-    public Task DeleteManifestAsync(string tagOrDigest, CancellationToken cancellationToken);
+    Task DeleteManifestAsync(string tagOrDigest, CancellationToken cancellationToken);
 }

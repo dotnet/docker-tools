@@ -52,7 +52,7 @@ public class RegistryOptions
 
 public class RegistryOptionsBuilder(bool isOverride)
 {
-    private bool _isOverride = isOverride;
+    private readonly bool _isOverride = isOverride;
 
     // Choose one of either CliOptions or CliArguments - not both. Use CliArguments in the case that
     // the registry options are required. Otherwise, use CliOptions.

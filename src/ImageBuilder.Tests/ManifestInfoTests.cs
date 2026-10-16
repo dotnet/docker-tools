@@ -17,8 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class ManifestInfoTests
 {
-    private static string s_dockerfilePath = "testDockerfile";
-    private static string s_repoJson =
+    private static readonly string s_dockerfilePath = "testDockerfile";
+    private static readonly string s_repoJson =
 $@"
   ""repos"": [
     {CreateRepo("testRepo", s_dockerfilePath)}

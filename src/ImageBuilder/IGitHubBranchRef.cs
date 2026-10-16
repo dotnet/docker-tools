@@ -6,5 +6,5 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IGitHubBranchRef : IGitHubRepoRef
 {
-    public string Branch { get; set; }
+    string Branch { get; set; }
 }

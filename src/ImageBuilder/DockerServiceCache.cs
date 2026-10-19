@@ -48,7 +48,7 @@ internal class DockerServiceCache(IDockerService inner) : IDockerService
                 cancellationToken);
 
     public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun, CancellationToken cancellationToken) =>
-        _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun, cancellationToken));
+        _architectureCache.GetOrAdd(image, _ => _inner.GetImageArch(image, isDryRun, cancellationToken));
 
     public void CreateTag(string image, string tag, bool isDryRun, CancellationToken cancellationToken) =>
         _inner.CreateTag(image, tag, isDryRun, cancellationToken);

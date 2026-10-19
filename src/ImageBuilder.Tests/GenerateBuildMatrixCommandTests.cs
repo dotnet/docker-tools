@@ -23,10 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class GenerateBuildMatrixCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     /// <summary>
     /// Verifies the platformVersionedOs matrix type.

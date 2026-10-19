@@ -18,10 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class CopyBaseImagesCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     private const string SubscriptionId = "my subscription";
     private const string ResourceGroup = "my resource group";

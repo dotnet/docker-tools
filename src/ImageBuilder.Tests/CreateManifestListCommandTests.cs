@@ -27,10 +27,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class CreateManifestListCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     /// <summary>
     /// Verifies that manifest lists are created, pushed, and digests are

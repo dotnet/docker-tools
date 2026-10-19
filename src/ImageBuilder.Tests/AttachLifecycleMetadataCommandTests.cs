@@ -25,10 +25,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class AttachLifecycleMetadataCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     private const string DefaultRepoPrefix = "public/";
     private const string AcrName = "myacr.azurecr.io";

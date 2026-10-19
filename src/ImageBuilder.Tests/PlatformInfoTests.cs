@@ -49,23 +49,23 @@ public class PlatformInfoTests
         string buildArgKey, string buildArgValue, string fromTag, string expectedFromImage)
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        
+
         // Create a dockerfile with the ARG
         string dockerfileContent = $"ARG {buildArgKey}\nFROM {fromTag}";
         string dockerfilePath = Path.Combine(tempFolderContext.Path, "Dockerfile");
         File.WriteAllText(dockerfilePath, dockerfileContent);
-        
-        Platform platform = CreatePlatform("Dockerfile", [ "test" ]);
+
+        Platform platform = CreatePlatform("Dockerfile", ["test"]);
         platform.BuildArgs = new Dictionary<string, string>
         {
             { buildArgKey, buildArgValue }
         };
-        
+
         VariableHelper variableHelper = new(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
         PlatformInfo platformInfo = PlatformInfo.Create(
             platform, "", "test", variableHelper, tempFolderContext.Path);
         platformInfo.Initialize([], "test.azurecr.io");
-        
+
         platformInfo.ExternalFromImages.ShouldContain(expectedFromImage);
     }
 

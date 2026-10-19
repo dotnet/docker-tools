@@ -16,10 +16,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class MarImageIngestionReporterTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     [TestMethod]
     [DataRow("")]

@@ -23,7 +23,7 @@ public static class JwtHelper
         {
             rsa.ImportFromPem(privateKey);
             rsaSecurityKey = new RsaSecurityKey(rsa.ExportParameters(true));
-        };
+        }
 
         DateTime now = DateTime.UtcNow;
         SigningCredentials signingCredentials = new SigningCredentials(rsaSecurityKey, SecurityAlgorithms.RsaSha256);

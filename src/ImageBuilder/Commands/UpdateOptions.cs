@@ -36,10 +36,10 @@ public class UpdateOptions : Options
     };
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [..base.GetCliOptions(), InitOption];
+        [.. base.GetCliOptions(), InitOption];
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [..base.GetCliArguments(), ImageBuilderRefArgument];
+        [.. base.GetCliArguments(), ImageBuilderRefArgument];
 
     public override void Bind(ParseResult result)
     {

@@ -32,10 +32,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class GetStaleImagesCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     private const string GitHubBranch = "my-branch";
     private const string GitHubRepo = "my-repo";

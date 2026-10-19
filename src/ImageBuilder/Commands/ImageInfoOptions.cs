@@ -16,7 +16,7 @@ public abstract class ImageInfoOptions : ManifestOptions
     };
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [..base.GetCliArguments(), ImageInfoPathArgument];
+        [.. base.GetCliArguments(), ImageInfoPathArgument];
 
     public override void Bind(ParseResult result)
     {

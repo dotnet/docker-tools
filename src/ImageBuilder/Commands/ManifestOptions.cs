@@ -47,7 +47,7 @@ public abstract class ManifestOptions : Options, IManifestOptionsInfo
             "Named variables to substitute into the manifest (<name>=<value>)");
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [..base.GetCliOptions(), ManifestOption, RegistryOverrideOption, ReposOption, RepoPrefixOption, VariablesOption];
+        [.. base.GetCliOptions(), ManifestOption, RegistryOverrideOption, ReposOption, RepoPrefixOption, VariablesOption];
 
     public override void Bind(ParseResult result)
     {

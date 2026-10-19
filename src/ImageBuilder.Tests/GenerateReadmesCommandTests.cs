@@ -20,10 +20,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class GenerateReadmesCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
     private const string RepoReadmePath = "RepoReadme.md";

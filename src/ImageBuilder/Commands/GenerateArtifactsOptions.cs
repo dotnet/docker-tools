@@ -23,7 +23,7 @@ public abstract class GenerateArtifactsOptions : ManifestOptions
     };
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [..base.GetCliOptions(), OptionalTemplatesOption, ValidateOption];
+        [.. base.GetCliOptions(), OptionalTemplatesOption, ValidateOption];
 
     public override void Bind(ParseResult result)
     {

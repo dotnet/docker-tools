@@ -106,12 +106,13 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ChangesWithNoPR_ResetsExistingBranch()
     {
+        // Collision between desiredState.TreeHash and targetBranch.TreeHash should be very unlikely,
+        // but filter it out anyways.
         Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from targetBranch in GenTargetBranchState
             from updateStrategy in GenUpdateStrategy
             from onForeignCommits in GenForeignCommitPolicy
-            // Collision should be very unlikely, but filter it out anyways
             where desiredState.TreeHash != targetBranch.TreeHash
             select new PullRequestScenario(
                 DesiredState: desiredState,
@@ -156,9 +157,9 @@ public sealed class PullRequestPlannerTests
             from existingPullRequest in Gen.Null(GenExistingPullRequest, 0.2)
             from targetTree in GenSha1
             from updateStrategy in GenUpdateStrategy
-            // The base tree is the existing PR's head, or the target branch when none exists.
-            // Pin the desired tree to it so there is no content diff to push.
             select new PullRequestScenario(
+                // The base tree is the existing PR's head, or the target branch when none exists.
+                // Pin the desired tree to it so there is no content diff to push.
                 desiredState with { TreeHash = existingPullRequest?.Content.TreeHash ?? targetTree },
                 new TargetBranchState(targetTree),
                 existingPullRequest,

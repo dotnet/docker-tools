@@ -43,7 +43,7 @@ public class PublishImageInfoCommand(
             CredentialsHandler credentials = await GetCredentialsAsync(cancellationToken);
             cloneOptions.FetchOptions.CredentialsProvider = credentials;
 
-            using IRepository repo =_gitService.CloneRepository(
+            using IRepository repo = _gitService.CloneRepository(
                 $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
                 repoPath,
                 cloneOptions);

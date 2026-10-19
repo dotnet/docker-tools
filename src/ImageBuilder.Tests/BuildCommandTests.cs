@@ -1302,7 +1302,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
         "runtimeCommitSha-1", "runtimeCommitSha-1",
-        new string[] {},
+        new string[] { },
         false,
         true, true)]
     [DataRow(
@@ -1311,7 +1311,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
         "runtimeCommitSha-1", "runtimeCommitSha-2",
-        new string[] {},
+        new string[] { },
         false,
         false, false)]
     [DataRow(
@@ -1320,7 +1320,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
         "runtimeCommitSha-1", "runtimeCommitSha-1",
-        new string[] {},
+        new string[] { },
         false,
         true, false)]
     [DataRow(
@@ -1329,7 +1329,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
         "runtimeCommitSha-1", "runtimeCommitSha-2",
-        new string[] {},
+        new string[] { },
         false,
         true, false)]
     [DataRow(
@@ -1338,7 +1338,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
         "runtimeCommitSha-1", "runtimeCommitSha-1",
-        new string[] {},
+        new string[] { },
         false,
         false, false)]
     [DataRow(
@@ -1347,7 +1347,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
         null, "runtimeCommitSha-1",
-        new string[] {},
+        new string[] { },
         false,
         true, false)]
     [DataRow(
@@ -1356,7 +1356,7 @@ public class BuildCommandTests(TestContext testContext)
         null, "sha256:runtimeDepsImageSha-1",
         null, "runtimeDepsCommitSha-1",
         null, "runtimeCommitSha-1",
-        new string[] {},
+        new string[] { },
         false,
         false, false)]
     [DataRow(
@@ -1365,7 +1365,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
         "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
         "runtimeCommitSha", "runtimeCommitSha",
-        new string[] {},
+        new string[] { },
         false,
         false, false)]
     [DataRow(
@@ -1374,7 +1374,7 @@ public class BuildCommandTests(TestContext testContext)
         "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
         "runtimeDepsCommitSha", "runtimeDepsCommitSha",
         "runtimeCommitSha", "runtimeCommitSha",
-        new string[] {},
+        new string[] { },
         true,
         false, false)]
     // Test failing due to https://github.com/dotnet/docker-tools/issues/1185
@@ -3799,7 +3799,7 @@ public class BuildCommandTests(TestContext testContext)
         dockerServiceMock.VerifyNoOtherCalls();
     }
 
-    #nullable enable
+#nullable enable
     private static BuildCommand CreateBuildCommand(
         IManifestJsonService? manifestJsonService = null,
         IDockerService? dockerService = null,
@@ -3826,7 +3826,7 @@ public class BuildCommandTests(TestContext testContext)
 
         return command;
     }
-    #nullable disable
+#nullable disable
 
     private static Mock<IDockerService> CreateDockerServiceMock(string buildOutput = null)
     {

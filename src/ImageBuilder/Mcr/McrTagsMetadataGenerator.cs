@@ -208,7 +208,7 @@ public class McrTagsMetadataGenerator
                     yaml.AppendLine(GetTagGroupYaml(imageDocInfos, customSubTableTitle)));
 
                 // Remove used imageDocInfos from the list
-                foreach(ImageDocumentationInfo imageDocInfo in matchingSharedTags)
+                foreach (ImageDocumentationInfo imageDocInfo in matchingSharedTags)
                 {
                     _imageDocInfos.Remove(imageDocInfo);
                 }
@@ -247,7 +247,7 @@ public class McrTagsMetadataGenerator
             .Prepend(info)
             .ToList();
 
-    #nullable enable
+#nullable enable
     private class ImageDocumentationInfo
     {
         public PlatformInfo Platform { get; }
@@ -267,12 +267,12 @@ public class McrTagsMetadataGenerator
 
             SharedTags = Image.SharedTags;
             PlatformTags = Platform.Tags;
-            AllTags = [..PlatformTags, ..SharedTags];
+            AllTags = [.. PlatformTags, .. SharedTags];
 
             DocumentedPlatformTags = PlatformTags.Where(TagIsDocumented);
             DocumentedSharedTags = SharedTags.Where(tag =>
                 TagIsDocumented(tag) || TagIsPlatformDocumented(tag, DocumentedPlatformTags));
-            DocumentedTags = [..DocumentedPlatformTags, ..DocumentedSharedTags];
+            DocumentedTags = [.. DocumentedPlatformTags, .. DocumentedSharedTags];
 
             FormattedDocumentedTags = string.Join(", ", DocumentedTags.Select(tag => tag.Name));
         }
@@ -284,5 +284,5 @@ public class McrTagsMetadataGenerator
             tag.Model.DocType == TagDocumentationType.PlatformDocumented
                 && documentedPlatformTags?.Any() == true;
     }
-    #nullable disable
+#nullable disable
 }

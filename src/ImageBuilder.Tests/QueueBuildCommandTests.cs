@@ -26,10 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class QueueBuildCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     /// <summary>
     /// Verifies that no build is queued if a build is currently in progress.

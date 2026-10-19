@@ -169,7 +169,7 @@ public class CleanAcrImagesCommand(
 
     private async Task LogSummaryAsync(IAcrClient acrClient, TimeSpan? reachedTimeLimit, CancellationToken cancellationToken)
     {
-        int remainingRepositoryCount = await acrClient .GetRepositoryNamesAsync(cancellationToken) .CountAsync(cancellationToken);
+        int remainingRepositoryCount = await acrClient.GetRepositoryNamesAsync(cancellationToken).CountAsync(cancellationToken);
 
         _logger.LogInformation(
             "Registry cleanup ended for {RegistryName}: deleted {ImageCount} images and "

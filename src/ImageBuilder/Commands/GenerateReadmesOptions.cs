@@ -23,10 +23,10 @@ public class GenerateReadmesOptions : GenerateArtifactsOptions
     };
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [..base.GetCliOptions(), SourceBranchOption];
+        [.. base.GetCliOptions(), SourceBranchOption];
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [..base.GetCliArguments(), SourceRepoUrlArgument];
+        [.. base.GetCliArguments(), SourceRepoUrlArgument];
 
     public override void Bind(ParseResult result)
     {

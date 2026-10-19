@@ -30,10 +30,10 @@ public class CopyAcrImagesOptions : CopyImagesOptions
     };
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [..base.GetCliOptions(), ImageInfoOption];
+        [.. base.GetCliOptions(), ImageInfoOption];
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [..base.GetCliArguments(), SourceRepoPrefixArgument, SourceRegistryArgument];
+        [.. base.GetCliArguments(), SourceRepoPrefixArgument, SourceRegistryArgument];
 
     public override void Bind(ParseResult result)
     {

@@ -127,7 +127,7 @@ public static class ImageInfoHelper
             digest: GenerateFakeDigest(registry, repoName, productVersion, os, arch),
             architecture: arch,
             osVersion: os,
-            simpleTags: [ $"{productVersion}-{os}-{arch}" ]
+            simpleTags: [$"{productVersion}-{os}-{arch}"]
         );
     }
 
@@ -169,7 +169,7 @@ public static class ImageInfoHelper
     }
 
     private static List<string> GetSharedTags(string productVersion, string os) =>
-        [ productVersion, $"{productVersion}-{os}" ];
+        [productVersion, $"{productVersion}-{os}"];
 
     private static string GenerateFakeDigest(
         string registry,

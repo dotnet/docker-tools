@@ -23,10 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class MergeImageInfoFilesCommandTests
 {
-    #nullable enable annotations
+#nullable enable annotations
     public TestContext? TestContext { get; set; }
 
-    #nullable disable annotations
+#nullable disable annotations
 
     [TestMethod]
     public async Task MergeImageInfoFilesCommand_HappyPath()

@@ -29,7 +29,7 @@ indent_size = 4
 tab_width = 4
 
 # New line preferences
-insert_final_newline = false
+insert_final_newline = true
 
 #### .NET Coding Conventions ####
 [*.{cs,vb}]
@@ -39,7 +39,9 @@ dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = true
 # Remove unnecessary using directives
 dotnet_diagnostic.IDE0005.severity = warning
-file_header_template = unset
+file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.
+# Require file header
+dotnet_diagnostic.IDE0073.severity = warning
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false:warning

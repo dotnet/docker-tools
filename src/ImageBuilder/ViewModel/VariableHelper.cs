@@ -68,15 +68,10 @@ public class VariableHelper
             string? variableValue;
             string variableName = match.Groups[VariableGroupName].Value;
 
-            variableValue = variableName.Contains(BuiltInDelimiter)
+            variableValue = (variableName.Contains(BuiltInDelimiter)
                 ? GetBuiltInValue(variableName, getContextBasedSystemValue)
-                : GetUserValue(variableName);
-
-            if (variableValue == null)
-            {
-                throw new InvalidOperationException($"A value was not found for the variable '{match.Value}'");
-            }
-
+                : GetUserValue(variableName))
+                    ?? throw new InvalidOperationException($"A value was not found for the variable '{match.Value}'");
             expression = expression.Replace(match.Value, variableValue);
         }
 

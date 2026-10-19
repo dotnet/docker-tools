@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;

@@ -47,10 +47,9 @@ public class AsyncLockedValue<T> : IDisposable
 
     public async Task<T> ResetValueAsync(CancellationToken cancellationToken, Func<CancellationToken, Task<T>> valueInitializer = null)
     {
-        await _semaphore.LockAsync(async ct =>
-        {
-            _value = valueInitializer is null ? default : await valueInitializer(ct);
-        }, cancellationToken);
+        await _semaphore.LockAsync(
+            async ct => _value = valueInitializer is null ? default : await valueInitializer(ct),
+            cancellationToken);
 
         return _value;
     }

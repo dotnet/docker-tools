@@ -14,10 +14,7 @@ public abstract class ManifestCommand<TOptions>(IManifestJsonService manifestJso
 
     public ManifestInfo Manifest { get; private set; }
 
-    public virtual void LoadManifest()
-    {
-        Manifest ??= _manifestJsonService.Load(Options);
-    }
+    public virtual void LoadManifest() => Manifest ??= _manifestJsonService.Load(Options);
 
     protected override void Initialize(TOptions options)
     {

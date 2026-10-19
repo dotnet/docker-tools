@@ -50,14 +50,14 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
             contexts: Manifest.FilteredRepos
                 .Select(repo => repo.Readmes.Select(readme => (repo, readme)))
                 .SelectMany(repoReadme => repoReadme),
-            getTemplatePath: ((RepoInfo repo, Readme readme) context) => context.readme.TemplatePath,
-            getArtifactPath: ((RepoInfo repo, Readme readme) context) => context.readme.Path,
-            getState: ((RepoInfo repo, Readme readme) context, string templatePath, string indent) =>
+            getTemplatePath: context => context.readme.TemplatePath,
+            getArtifactPath: context => context.readme.Path,
+            getState: (context, templatePath, indent) =>
                 GetTemplateState(context.repo, templatePath, indent, cancellationToken),
             templatePropertyName: nameof(Readme.TemplatePath),
             artifactName: ArtifactName,
             cancellationToken,
-            postProcess: (string readmeContent, (RepoInfo repo, Readme readme) context) =>
+            postProcess: (readmeContent, context) =>
                 UpdateTagsListing(readmeContent, context.repo));
 
         ValidateArtifacts();

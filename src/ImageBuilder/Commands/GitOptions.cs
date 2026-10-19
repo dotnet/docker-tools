@@ -153,40 +153,40 @@ public class GitOptionsBuilder
 
         _options.AddRange([tokenOption, privateKeyOption, clientIdOption, installationIdOption]);
 
-        _validators.Add((CommandResult commandResult) =>
+        _validators.Add(commandResult =>
+        {
+            bool hasToken = commandResult.Has(tokenOption);
+            bool hasPrivateKey = commandResult.Has(privateKeyOption);
+            bool hasClientId = commandResult.Has(clientIdOption);
+
+            // If token is provided, ensure that private key and client ID were not provided
+            if (hasToken && (hasPrivateKey || hasClientId))
             {
-                bool hasToken = commandResult.Has(tokenOption);
-                bool hasPrivateKey = commandResult.Has(privateKeyOption);
-                bool hasClientId = commandResult.Has(clientIdOption);
+                commandResult.AddError(
+                    "Authentication conflict: Cannot use both GitHub personal access token ({tokenOption.Name})"
+                    + $" and GitHub App credentials ({privateKeyOption.Name} and {clientIdOption.Name})"
+                    + $" simultaneously. Please provide only one authentication method.");
+                return;
+            }
 
-                // If token is provided, ensure that private key and client ID were not provided
-                if (hasToken && (hasPrivateKey || hasClientId))
-                {
-                    commandResult.AddError(
-                        "Authentication conflict: Cannot use both GitHub personal access token ({tokenOption.Name})"
-                        + $" and GitHub App credentials ({privateKeyOption.Name} and {clientIdOption.Name})"
-                        + $" simultaneously. Please provide only one authentication method.");
-                    return;
-                }
+            // Both client ID and private key file are required for GitHub App authentication
+            if (hasPrivateKey != hasClientId)
+            {
+                commandResult.AddError(
+                    $"GitHub App authentication requires both {clientIdOption.Name} and {privateKeyOption.Name}"
+                    + $" but only one was provided.");
+                return;
+            }
 
-                // Both client ID and private key file are required for GitHub App authentication
-                if (hasPrivateKey != hasClientId)
-                {
-                    commandResult.AddError(
-                        $"GitHub App authentication requires both {clientIdOption.Name} and {privateKeyOption.Name}"
-                        + $" but only one was provided.");
-                    return;
-                }
-
-                // When auth is required, at least one auth method must be provided
-                if (isRequired && !hasToken && !hasPrivateKey)
-                {
-                    commandResult.AddError(
-                        $"GitHub authentication is required. Provide either a personal access token"
-                        + $" ({tokenOption.Name}) or GitHub App credentials ({privateKeyOption.Name} and"
-                        + $" {clientIdOption.Name}).");
-                }
-            });
+            // When auth is required, at least one auth method must be provided
+            if (isRequired && !hasToken && !hasPrivateKey)
+            {
+                commandResult.AddError(
+                    $"GitHub authentication is required. Provide either a personal access token"
+                    + $" ({tokenOption.Name}) or GitHub App credentials ({privateKeyOption.Name} and"
+                    + $" {clientIdOption.Name}).");
+            }
+        });
 
         _binders.Add((parseResult, target) =>
             target.GitHubAuthOptions =

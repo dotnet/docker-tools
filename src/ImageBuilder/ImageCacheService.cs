@@ -51,7 +51,7 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
     private readonly ILogger<ImageCacheService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IGitService _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
 
-    private readonly object _cachedPlatformsLock = new();
+    private readonly Lock _cachedPlatformsLock = new();
 
     /// <summary>
     /// Metadata about Dockerfiles whose images have been retrieved from the cache.

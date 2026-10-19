@@ -103,6 +103,7 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
                 {
                     cacheState = ImageCacheState.CachedWithMissingTags;
                 }
+
                 return new ImageCacheResult(cacheState, isNewCacheHit, cachedPlatform);
             }
         }
@@ -128,6 +129,7 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
                 {
                     cacheState = ImageCacheState.CachedWithMissingTags;
                 }
+
                 lock (_cachedPlatformsLock)
                 {
                     _cachedPlatforms[cacheKey] = srcPlatformData;
@@ -233,9 +235,9 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
             }
         }
 
-        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
-            DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
-            null;
+        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null
+            ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)
+            : null;
 
         bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 

@@ -622,7 +622,6 @@ public class GetStaleImagesCommandTests
             )
         ];
 
-
         Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
             new Dictionary<GitFile, List<DockerfileInfo>>
         {

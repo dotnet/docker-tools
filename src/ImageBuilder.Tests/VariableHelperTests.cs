@@ -66,7 +66,6 @@ public class VariableHelperTests
             { "test1", "$(test2)" }
         };
 
-
         Should.Throw<InvalidOperationException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
     }
 

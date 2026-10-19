@@ -245,7 +245,6 @@ public class CleanAcrImagesCommandTest
                 CreateArtifactManifestProperties(repositoryName: repo2Name, digest: repo2Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(31)))
             ]);
 
-
         Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
 
         IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);

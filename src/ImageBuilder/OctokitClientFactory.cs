@@ -64,7 +64,6 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
                    information about the App itself.
                 3. Use the GitHub App client to get an token for a specific App installation.
             **/
-
             string jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
             Credentials appCredentials = CreateCredentials(jwt);
             GitHubClient appClient = CreateClient(appCredentials);

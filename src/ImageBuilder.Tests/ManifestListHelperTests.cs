@@ -43,7 +43,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfile1, simpleTags: ["tag-amd64"]),
                     CreatePlatform(dockerfile2, simpleTags: ["tag-arm64"], architecture: "arm64"))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -85,7 +84,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]),
                     CreatePlatform(dockerfileArm64, simpleTags: ["tag-arm64"], architecture: "arm64"))));
-
 
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
@@ -246,7 +244,6 @@ public class ManifestListHelperTests
                     ["built-sharedtag"],
                     CreatePlatform(dockerfile2, simpleTags: ["tag2"]))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -285,7 +282,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfileUnchanged, simpleTags: ["unchanged-tag"],
                         architecture: "arm64", isUnchanged: true))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -317,7 +313,6 @@ public class ManifestListHelperTests
             CreateRepoData("repo",
                 CreateImageData(
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
-
 
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
@@ -360,7 +355,6 @@ public class ManifestListHelperTests
                     ["sharedtag2"],
                     CreatePlatform(dockerfile))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -398,7 +392,6 @@ public class ManifestListHelperTests
                 CreateImageData(
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
-
 
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
@@ -439,7 +432,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfile1, simpleTags: ["tag1"]),
                     CreatePlatform(dockerfile2, simpleTags: ["tag2"]))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -477,7 +469,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -513,7 +504,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
 
-
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -547,7 +537,6 @@ public class ManifestListHelperTests
                 CreateImageData(
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"], isUnchanged: true))));
-
 
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);

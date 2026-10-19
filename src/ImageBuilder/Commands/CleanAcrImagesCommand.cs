@@ -160,6 +160,7 @@ public class CleanAcrImagesCommand(
                 {
                     await DeleteRepositoryAsync(acrClient, repository, cancellationToken);
                 }
+
                 break;
 
             default:

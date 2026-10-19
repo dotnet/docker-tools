@@ -155,7 +155,6 @@ public class QueueBuildCommandTests
         using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
         await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-
         Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
         {
             {

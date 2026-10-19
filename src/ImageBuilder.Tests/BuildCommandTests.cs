@@ -1041,9 +1041,6 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-
-
-
         const string productVersion = "1.0.0";
 
         List<RepoData> sourceRepos =
@@ -2736,9 +2733,6 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-
-
-
         const string productVersion = "1.0.0";
 
         List<RepoData> sourceRepos =
@@ -3267,9 +3261,6 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.RegistryOverride = registryOverride;
         command.Options.RepoPrefix = repoPrefix;
 
-
-
-
         const string productVersion = "1.0.1";
 
         List<RepoData> sourceRepos =
@@ -3319,9 +3310,9 @@ public class BuildCommandTests(TestContext testContext)
                                 OsType = "Linux",
                                 OsVersion = "noble",
                                 Digest = $"{registry}/{runtimeRepo}@{runtimeDigest}",
-                                BaseImageDigest = hasCachedImage ?
-                                    $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}" :
-                                    $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}" + "b",
+                                BaseImageDigest = hasCachedImage
+                                    ? $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}"
+                                    : $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}" + "b",
                                 CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
                                 SimpleTags =
                                 [

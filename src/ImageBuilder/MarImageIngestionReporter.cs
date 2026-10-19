@@ -10,7 +10,6 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
 public interface IMarImageIngestionReporter
 {
     Task ReportImageStatusesAsync(

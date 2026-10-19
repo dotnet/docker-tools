@@ -272,5 +272,4 @@ public static class ImageInfoHelper
             Version.TryParse(productVersion2, out Version version2) &&
             version1.ToString(2) == version2.ToString(2);
     }
-
 }

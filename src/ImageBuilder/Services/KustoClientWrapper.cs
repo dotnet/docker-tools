@@ -12,7 +12,6 @@ using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
 
-
 namespace Microsoft.DotNet.ImageBuilder.Services;
 
 internal class KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAzureTokenCredentialProvider tokenCredentialProvider) : IKustoClient

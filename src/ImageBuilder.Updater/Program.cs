@@ -13,6 +13,7 @@ if (args.Length != 1 || string.IsNullOrWhiteSpace(args[0]))
     Console.Error.WriteLine("Usage: ImageBuilder.Updater <image-builder-reference>");
     return 1;
 }
+
 string imageBuilderRef = args[0];
 
 // Setup services

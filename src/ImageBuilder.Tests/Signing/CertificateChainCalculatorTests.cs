@@ -104,6 +104,7 @@ public class CertificateChainCalculatorTests
         {
             writer.WriteByteString(cert);
         }
+
         writer.WriteEndArray();
 
         writer.WriteEndMap();

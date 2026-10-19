@@ -24,6 +24,7 @@ internal static class ContainerRegistryHelper
                 .Setup(o => o.GetProperties(It.IsAny<CancellationToken>()))
                 .Returns(CreateAzureResponse(repositoryProperties));
         }
+
         repoMock
             .Setup(o => o.GetAllManifestPropertiesAsync(It.IsAny<ArtifactManifestOrder>(), It.IsAny<CancellationToken>()))
             .Returns(new AsyncPageableMock<ArtifactManifestProperties>(manifestProperties));

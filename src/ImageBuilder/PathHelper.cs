@@ -65,6 +65,7 @@ public static class PathHelper
         {
             throw new InvalidOperationException($"'{path}' must start with '{trimPath}'");
         }
+
         string result = path[trimPath.Length..];
         if (result.StartsWith("/") || result.StartsWith("\\"))
         {

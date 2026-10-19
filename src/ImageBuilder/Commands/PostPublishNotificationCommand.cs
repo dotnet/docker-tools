@@ -160,12 +160,14 @@ public class PostPublishNotificationCommand(
                         {
                             overallResult = BuildResult.Succeeded;
                         }
+
                         break;
                     case TaskResult.SucceededWithIssues:
                         if (overallResult is BuildResult.None or BuildResult.Succeeded)
                         {
                             overallResult = BuildResult.PartiallySucceeded;
                         }
+
                         break;
                     case TaskResult.Failed:
                         overallResult = BuildResult.Failed;
@@ -273,6 +275,7 @@ public class PostPublishNotificationCommand(
                     imageRepoMarkdown.AppendLine($"  * {tag}");
                 }
             }
+
             imagesMarkdown = imagesMarkdown.Append(imageRepoMarkdown.ToString());
         }
 

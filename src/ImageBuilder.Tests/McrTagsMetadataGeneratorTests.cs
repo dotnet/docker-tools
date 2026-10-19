@@ -299,7 +299,6 @@ public class McrTagsMetadataGeneratorTests
             sourceRepoUrl: sourceRepoUrl,
             sourceBranch: sourceBranch);
 
-
         TagsMetadata tagsMetadata = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build()

@@ -260,7 +260,6 @@ public partial class PlatformInfo
         }
     }
 
-
     private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
     {
         bool isStageReference = false;

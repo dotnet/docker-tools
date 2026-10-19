@@ -69,6 +69,7 @@ public class NotificationService(ILogger<NotificationService> logger, IOctokitCl
                 _logger.LogInformation($"====COMMENT {i + 1} MARKDOWN===");
                 _logger.LogInformation(comments.ElementAt(i));
             }
+
             _logger.LogInformation($"====END COMMENTS MARKDOWN===");
         }
 

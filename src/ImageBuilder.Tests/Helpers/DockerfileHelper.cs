@@ -17,6 +17,7 @@ public static class DockerfileHelper
         {
             contents += $"{Environment.NewLine}FROM {fromTag2}";
         }
+
         CreateFile(relativeDockerfilePath, context, contents);
         return relativeDockerfilePath;
     }

@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
 /// <summary>
 /// Implementation of <see cref="IRegistryResolver"/> that centralizes the logic
 /// for determining how to authenticate with a given container registry.

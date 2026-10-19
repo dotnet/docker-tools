@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
 public class AcrClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,
     IOptions<PublishConfiguration> publishConfigOptions

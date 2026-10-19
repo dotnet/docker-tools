@@ -76,7 +76,6 @@ public class PlatformData : IComparable<PlatformData>
             return 1;
         }
 
-
         if (HasDifferentTagState(other))
         {
             return 1;

@@ -106,6 +106,7 @@ public static class CertificateChainCalculator
                     {
                         x5chainArray.Add(reader.ReadByteString());
                     }
+
                     reader.ReadEndArray();
                 }
                 else

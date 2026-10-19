@@ -193,8 +193,6 @@ public class MarImageIngestionReporterTests
                     return enumerator.Current;
                 }
 
-
-
                 return null;
             });
 
@@ -283,8 +281,6 @@ public class MarImageIngestionReporterTests
                 {
                     return enumerator.Current;
                 }
-
-
 
                 return null;
             });

@@ -60,6 +60,7 @@ public interface IOrasService
 
     /// <summary>
     /// Creates and pushes a referrer artifact with the given type and annotations.
+    /// Transient manifest push timeouts are retried up to twice, respecting caller cancellation.
     /// </summary>
     /// <param name="reference">Full registry reference of the subject image (e.g., "registry.io/repo@sha256:...").</param>
     /// <param name="artifactType">The OCI artifact type for the referrer.</param>

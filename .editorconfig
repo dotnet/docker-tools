@@ -63,6 +63,7 @@ dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:war
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 
 # Expression-level preferences
+dotnet_prefer_system_hash_code = true:silent
 dotnet_style_coalesce_expression = true:warning
 dotnet_style_collection_initializer = true:warning
 dotnet_style_explicit_tuple_names = true:warning
@@ -81,6 +82,7 @@ dotnet_style_prefer_foreach_explicit_cast_in_source = when_strongly_typed:warnin
 dotnet_style_prefer_inferred_anonymous_type_member_names = true:warning
 dotnet_style_prefer_inferred_tuple_names = true:warning
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
+dotnet_style_prefer_non_hidden_explicit_cast_in_source = true:silent
 dotnet_style_prefer_simplified_boolean_expressions = true:warning
 dotnet_style_prefer_simplified_interpolation = true:warning
 
@@ -92,6 +94,10 @@ dotnet_code_quality_unused_parameters = all:warning
 
 # Suppression preferences
 dotnet_remove_unnecessary_suppression_exclusions = none
+
+# New line preferences
+dotnet_style_allow_multiple_blank_lines_experimental = true:silent
+dotnet_style_allow_statement_immediately_after_block_experimental = true:silent
 
 #### C# Coding Conventions ####
 [*.cs]
@@ -132,9 +138,12 @@ csharp_style_prefer_readonly_struct_member = true:warning
 # Code-block preferences
 csharp_prefer_braces = true:warning
 csharp_prefer_simple_using_statement = true:warning
+csharp_prefer_system_threading_lock = true:silent
 csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_prefer_labeled_jump_statements = true:silent
 csharp_style_prefer_method_group_conversion = true:warning
 csharp_style_prefer_primary_constructors = true:warning
+csharp_style_prefer_simple_property_accessors = true:silent
 csharp_style_prefer_top_level_statements = true:warning
 
 # Expression-level preferences
@@ -142,11 +151,13 @@ csharp_prefer_simple_default_expression = true:warning
 csharp_style_deconstructed_variable_declaration = true:warning
 csharp_style_implicit_object_creation_when_type_is_apparent = false:warning
 csharp_style_inlined_variable_declaration = true:warning
+csharp_style_prefer_implicitly_typed_lambda_expression = true:silent
 csharp_style_prefer_index_operator = true:warning
 csharp_style_prefer_local_over_anonymous_function = true:warning
 csharp_style_prefer_null_check_over_type_check = true:warning
 csharp_style_prefer_range_operator = true:warning
 csharp_style_prefer_tuple_swap = true:warning
+csharp_style_prefer_unbound_generic_type_in_nameof = true:silent
 csharp_style_prefer_utf8_string_literals = true:warning
 csharp_style_throw_expression = true:warning
 csharp_style_unused_value_assignment_preference = discard_variable:warning
@@ -154,6 +165,13 @@ csharp_style_unused_value_expression_statement_preference = discard_variable:sil
 
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace:warning
+
+# New line preferences
+csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = true:silent
+csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental = true:silent
+csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental = true:silent
+csharp_style_allow_blank_lines_between_consecutive_braces_experimental = true:silent
+csharp_style_allow_embedded_statements_on_same_line_experimental = true:silent
 
 #### C# Formatting Rules ####
 

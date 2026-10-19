@@ -79,14 +79,14 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
     public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent, CancellationToken cancellationToken)
     {
-        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) = GetCommonTemplateState(
+        (IReadOnlyDictionary<Value, Value> baseSymbols, string nextIndent) = GetCommonTemplateState(
             templatePath,
             repo,
             (repo, templatePath, currentIndent) =>
                 GetTemplateState(repo, templatePath, currentIndent + indent, cancellationToken),
             indent,
             cancellationToken);
-        Dictionary<Value, Value> symbols = new(Symbols)
+        Dictionary<Value, Value> symbols = new(baseSymbols)
         {
             ["FULL_REPO"] = repo.QualifiedName,
             ["REPO"] = repo.Name,
@@ -94,7 +94,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
             ["SHORT_REPO"] = repo.GetShortName()
         };
 
-        return (symbols, indent);
+        return (symbols, nextIndent);
     }
 
     /// <summary>
@@ -207,10 +207,10 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     private static string GenerateMarkdownTables(IEnumerable<TagGroup> tagGroups)
     {
         StringBuilder tables = new();
-        const int HeadingLevel = 3;
+        const int headingLevel = 3;
 
         List<TagsTable> sections = GroupTagsIntoSections(tagGroups).ToList();
-        sections.ForEach(tableSection => tableSection.RenderAsMarkdown(tables, HeadingLevel));
+        sections.ForEach(tableSection => tableSection.RenderAsMarkdown(tables, headingLevel));
 
         return tables.ToString();
     }

@@ -482,15 +482,15 @@ public class QueueBuildCommandTests
     /// </summary>
     private class TestFixture : IDisposable
     {
-        private readonly PagedList<WebApi.Build> inProgressBuilds;
-        private readonly PagedList<WebApi.Build> allBuilds;
-        private readonly List<string> filesToCleanup = [];
-        private readonly List<string> foldersToCleanup = [];
-        private readonly string subscriptionsPath;
-        private readonly Mock<IBuildHttpClient> buildHttpClientMock;
-        private readonly Mock<IProjectHttpClient> projectHttpClientMock;
-        private readonly QueueBuildCommand command;
-        private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths;
+        private readonly PagedList<WebApi.Build> _inProgressBuilds;
+        private readonly PagedList<WebApi.Build> _allBuilds;
+        private readonly List<string> _filesToCleanup = [];
+        private readonly List<string> _foldersToCleanup = [];
+        private readonly string _subscriptionsPath;
+        private readonly Mock<IBuildHttpClient> _buildHttpClientMock;
+        private readonly Mock<IProjectHttpClient> _projectHttpClientMock;
+        private readonly QueueBuildCommand _command;
+        private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> _allSubscriptionImagePaths;
         private readonly Mock<INotificationService> _notificationServiceMock;
 
         private const string BuildOrganization = "testOrg";
@@ -498,7 +498,7 @@ public class QueueBuildCommandTests
         private const string GitRepo = "git-repo";
         private const string GitAccessToken = "git-pat";
 
-        private static readonly GitHubAuthOptions s_gitHubAuthOptions = new(AuthToken: GitAccessToken);
+        private static readonly GitHubAuthOptions GitHubAuthOptions = new(AuthToken: GitAccessToken);
 
         /// <summary>
         /// Initializes a new instance of <see cref="TestFixture"/>.
@@ -525,32 +525,32 @@ public class QueueBuildCommandTests
             PagedList<WebApi.Build> inProgressBuilds,
             PagedList<WebApi.Build> allBuilds)
         {
-            this.allSubscriptionImagePaths = allSubscriptionImagePaths;
-            this.inProgressBuilds = inProgressBuilds;
-            this.allBuilds = allBuilds;
+            _allSubscriptionImagePaths = allSubscriptionImagePaths;
+            _inProgressBuilds = inProgressBuilds;
+            _allBuilds = allBuilds;
 
-            subscriptionsPath = SerializeJsonObjectToTempFile(subscriptions);
+            _subscriptionsPath = SerializeJsonObjectToTempFile(subscriptions);
 
             TeamProject project = new TeamProject
             {
                 Id = Guid.NewGuid()
             };
 
-            projectHttpClientMock = CreateProjectHttpClientMock(project);
-            buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
+            _projectHttpClientMock = CreateProjectHttpClientMock(project);
+            _buildHttpClientMock = CreateBuildHttpClientMock(project, _inProgressBuilds, _allBuilds);
             Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
-                projectHttpClientMock, buildHttpClientMock);
+                _projectHttpClientMock, _buildHttpClientMock);
 
             _notificationServiceMock = new Mock<INotificationService>();
 
-            command = CreateCommand(connectionFactoryMock);
+            _command = CreateCommand(connectionFactoryMock);
         }
 
-        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => command.ExecuteAsync(cancellationToken);
+        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => _command.ExecuteAsync(cancellationToken);
 
         public void CancelWhenGettingProject(CancellationTokenSource cancellationTokenSource)
         {
-            projectHttpClientMock
+            _projectHttpClientMock
                 .Setup(o => o.GetProjectAsync(It.IsAny<string>(), cancellationTokenSource.Token))
                 .Callback(cancellationTokenSource.Cancel)
                 .ThrowsAsync(new OperationCanceledException(cancellationTokenSource.Token));
@@ -577,7 +577,7 @@ public class QueueBuildCommandTests
                         It.IsAny<IEnumerable<string>>(),
                         GitOwner,
                         GitRepo,
-                        s_gitHubAuthOptions,
+                        GitHubAuthOptions,
                         It.IsAny<bool>(),
                         It.IsAny<CancellationToken>(),
                         It.IsAny<IEnumerable<string>>()),
@@ -585,7 +585,7 @@ public class QueueBuildCommandTests
 
             if (!isQueuedBuildExpected)
             {
-                buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
+                _buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
             }
             else
             {
@@ -598,7 +598,7 @@ public class QueueBuildCommandTests
                 {
                     if (kvp.Value.Any())
                     {
-                        buildHttpClientMock
+                        _buildHttpClientMock
                             .Verify(o =>
                                 o.QueueBuildAsync(
                                     It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value)),
@@ -612,7 +612,7 @@ public class QueueBuildCommandTests
         {
             string path = Path.GetTempFileName();
             File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-            filesToCleanup.Add(path);
+            _filesToCleanup.Add(path);
             return path;
         }
 
@@ -623,13 +623,13 @@ public class QueueBuildCommandTests
             QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
             command.Options.AzdoOptions.Organization = BuildOrganization;
             command.Options.AzdoOptions.AccessToken = "testToken";
-            command.Options.SubscriptionsPath = subscriptionsPath;
-            command.Options.AllSubscriptionImagePaths = allSubscriptionImagePaths
+            command.Options.SubscriptionsPath = _subscriptionsPath;
+            command.Options.AllSubscriptionImagePaths = _allSubscriptionImagePaths
                 .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
 
             command.Options.GitOptions.Owner = GitOwner;
             command.Options.GitOptions.Repo = GitRepo;
-            command.Options.GitOptions.GitHubAuthOptions = s_gitHubAuthOptions;
+            command.Options.GitOptions.GitHubAuthOptions = GitHubAuthOptions;
 
             return command;
         }
@@ -753,12 +753,12 @@ public class QueueBuildCommandTests
 
         public void Dispose()
         {
-            foreach (string file in filesToCleanup)
+            foreach (string file in _filesToCleanup)
             {
                 File.Delete(file);
             }
 
-            foreach (string folder in foldersToCleanup)
+            foreach (string folder in _foldersToCleanup)
             {
                 Directory.Delete(folder, true);
             }

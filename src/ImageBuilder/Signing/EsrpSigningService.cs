@@ -107,11 +107,11 @@ public class EsrpSigningService(
         SignFileRecord record = new SignFileRecord(Certs: keycodeString, SignFileList: signFiles);
         SignList signList = new SignList(SignFileRecordList: [record]);
 
-        return JsonSerializer.Serialize(signList, s_esrpJsonOptions);
+        return JsonSerializer.Serialize(signList, EsrpJsonOptions);
     }
 
     // Models for ESRP/MicroBuild signing service
-    private static readonly JsonSerializerOptions s_esrpJsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions EsrpJsonOptions = new() { WriteIndented = true };
     private record SignList(IEnumerable<SignFileRecord> SignFileRecordList);
     private record SignFileRecord(string Certs, IEnumerable<SignFileEntry> SignFileList);
     private record SignFileEntry(string SrcPath, string DstPath);

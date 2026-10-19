@@ -61,18 +61,18 @@ public class GenerateDockerfilesCommand(IManifestJsonService manifestJsonService
 
     private static string GetOsVersionNumber(PlatformInfo platform)
     {
-        const string PrefixGroup = "Prefix";
-        const string VersionGroup = "Version";
-        const string LtscPrefix = "ltsc";
-        Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{PrefixGroup}>[a-zA-Z_]*))?(?<{VersionGroup}>\d+.\d+)");
+        const string prefixGroup = "Prefix";
+        const string versionGroup = "Version";
+        const string ltscPrefix = "ltsc";
+        Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{prefixGroup}>[a-zA-Z_]*))?(?<{versionGroup}>\d+.\d+)");
 
         string versionNumber = string.Empty;
-        if (match.Groups[PrefixGroup].Success && match.Groups[PrefixGroup].Value == LtscPrefix)
+        if (match.Groups[prefixGroup].Success && match.Groups[prefixGroup].Value == ltscPrefix)
         {
-            versionNumber = LtscPrefix;
+            versionNumber = ltscPrefix;
         }
 
-        versionNumber += match.Groups[VersionGroup].Value;
+        versionNumber += match.Groups[versionGroup].Value;
         return versionNumber;
     }
 

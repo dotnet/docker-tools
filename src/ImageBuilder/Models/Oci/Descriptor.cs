@@ -13,9 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Oci;
 /// </summary>
 public sealed record Descriptor(string MediaType, string Digest, long Size)
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public string ToJson() => JsonSerializer.Serialize(this, s_jsonOptions);
+    public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
 
-    public static Descriptor FromJson(string json) => JsonSerializer.Deserialize<Descriptor>(json, s_jsonOptions);
+    public static Descriptor FromJson(string json) => JsonSerializer.Deserialize<Descriptor>(json, JsonOptions);
 }

@@ -19,8 +19,8 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
     private const string VersionRegGroupName = "Version";
 
     private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
-    private static readonly char[] s_pathSeparators = ['/', '\\'];
-    private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
+    private static readonly char[] PathSeparators = ['/', '\\'];
+    private static readonly Regex VersionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
     private readonly IImageCacheService _imageCacheService;
     private readonly ILogger<GenerateBuildMatrixCommand> _logger;
     private readonly ImageDigestCache _imageDigestCache;
@@ -240,7 +240,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
             return null;
         }
 
-        Match match = s_versionRegex.Match(image.ProductVersion);
+        Match match = VersionRegex.Match(image.ProductVersion);
         if (match.Success)
         {
             if (Options.ProductVersionComponents <= 0)
@@ -384,7 +384,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
     /// </summary>
     private static string GetDockerfilePathLegName(IEnumerable<string> dockerfilePath, IEnumerable<string> matrixNameParts)
     {
-        string legName = dockerfilePath.First().Split(s_pathSeparators)
+        string legName = dockerfilePath.First().Split(PathSeparators)
             .Where(subPart =>
                 !matrixNameParts.Any(matrixPart => matrixPart.StartsWith(subPart, StringComparison.OrdinalIgnoreCase)))
             .Aggregate((working, next) => $"{working}-{next}");
@@ -587,9 +587,9 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
             foreach (BuildLegInfo leg in matrix.OrderedLegs)
             {
                 _logger.LogInformation($"    {leg.Name}:");
-                foreach ((string Name, string Value) in leg.Variables)
+                foreach ((string name, string value) in leg.Variables)
                 {
-                    _logger.LogInformation($"      {Name}: {Value}");
+                    _logger.LogInformation($"      {name}: {value}");
                 }
             }
         }

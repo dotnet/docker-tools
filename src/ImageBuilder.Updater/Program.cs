@@ -47,7 +47,7 @@ await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", 
     (new("microsoft", "go-infra-images"), "main"),
 ];
 
-const string PullRequestTitle = "Update common Docker engineering infrastructure with latest";
+const string pullRequestTitle = "Update common Docker engineering infrastructure with latest";
 string commitMessage = $"Update common Docker engineering infrastructure from {imageBuilderRef}";
 
 List<UpdateOutcome> outcomes = [];
@@ -59,7 +59,7 @@ foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
 
     PullRequestDefinition definition = new(
         Key: $"dotnet-containers-bot/update-docker-tools-{targetBranch}",
-        Title: $"[{targetBranch}] {PullRequestTitle}",
+        Title: $"[{targetBranch}] {pullRequestTitle}",
         Body: $"Updates the common Docker engineering infrastructure from `{imageBuilderRef}`.",
         TargetBranch: targetBranch,
         ApplyChanges: async (git, ct) =>

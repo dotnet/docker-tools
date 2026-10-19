@@ -20,7 +20,7 @@ public class RegistryCredentialsProvider(
 ) : IRegistryCredentialsProvider
 {
     // Re-exchange a cached refresh token slightly before it expires so it isn't used past its lifetime.
-    private static readonly TimeSpan s_refreshBuffer = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan RefreshBuffer = TimeSpan.FromMinutes(5);
 
     // Cache refresh tokens per-registry to prevent rate limit/throttling errors from many parallel requests.
     private readonly ConcurrentDictionary<string, CachedRefreshToken> _refreshTokenCache =
@@ -64,7 +64,7 @@ public class RegistryCredentialsProvider(
         CancellationToken ct)
     {
         if (_refreshTokenCache.TryGetValue(acr.Server, out CachedRefreshToken? refreshToken)
-            && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
+            && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, RefreshBuffer))
         {
             return refreshToken;
         }
@@ -75,7 +75,7 @@ public class RegistryCredentialsProvider(
         try
         {
             if (_refreshTokenCache.TryGetValue(acr.Server, out refreshToken)
-                && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
+                && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, RefreshBuffer))
             {
                 return refreshToken;
             }
@@ -117,7 +117,7 @@ public class RegistryCredentialsProvider(
     private sealed record CachedRefreshToken(string RefreshToken, DateTimeOffset Expiration)
     {
         // Used when an ACR refresh token's expiration can't be read from its JWT payload.
-        private static readonly TimeSpan s_fallbackLifetime = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan FallbackLifetime = TimeSpan.FromMinutes(30);
 
         public static CachedRefreshToken Create(string refreshToken)
         {
@@ -144,7 +144,7 @@ public class RegistryCredentialsProvider(
             }
 
             // Fall back to sane default
-            return DateTimeOffset.UtcNow + s_fallbackLifetime;
+            return DateTimeOffset.UtcNow + FallbackLifetime;
         }
     }
 }

@@ -162,7 +162,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         Platform runtimePlatform = CreatePlatform(runtimeDockerfileRelativePath, [tag]);
 
@@ -176,19 +176,19 @@ public class BuildCommandTests(TestContext testContext)
                     {
                             { "shared", new Tag() }
                     },
-                    ProductVersion)),
+                    productVersion)),
             CreateRepo(runtimeRepo,
                 CreateImage(
                     [
                             runtimePlatform
                     ],
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(aspnetRepo,
                 CreateImage(
                     [
                             CreatePlatform(aspnetDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
         manifest.Repos[0].Images[0].Syndication = syndicatedRepo;
 
@@ -208,7 +208,7 @@ public class BuildCommandTests(TestContext testContext)
                         {
                             new ImageData
                             {
-                                ProductVersion = ProductVersion,
+                                ProductVersion = productVersion,
                                 SyndicatedRepo = syndicatedRepo,
                                 Platforms =
                                 {
@@ -246,7 +246,7 @@ public class BuildCommandTests(TestContext testContext)
                         {
                             new ImageData
                             {
-                                ProductVersion = ProductVersion,
+                                ProductVersion = productVersion,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -276,7 +276,7 @@ public class BuildCommandTests(TestContext testContext)
                         {
                             new ImageData
                             {
-                                ProductVersion = ProductVersion,
+                                ProductVersion = productVersion,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -357,7 +357,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         Manifest manifest = CreateManifest(
             CreateRepo(runtimeRepo,
@@ -365,7 +365,7 @@ public class BuildCommandTests(TestContext testContext)
                     [
                         CreatePlatform(runtimeDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion),
+                    productVersion: productVersion),
                 CreateImage(
                     [
                         CreatePlatform(runtimeDockerfileRelativePath, [])
@@ -374,7 +374,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         { "shared", new Tag() }
                     },
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -393,7 +393,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -415,7 +415,7 @@ public class BuildCommandTests(TestContext testContext)
                         },
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Manifest = new ManifestData
                             {
                                 SharedTags =
@@ -1046,7 +1046,7 @@ public class BuildCommandTests(TestContext testContext)
 
 
 
-        const string ProductVersion = "1.0.0";
+        const string productVersion = "1.0.0";
 
         List<RepoData> sourceRepos =
         [
@@ -1057,7 +1057,7 @@ public class BuildCommandTests(TestContext testContext)
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -1105,7 +1105,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         { "shared", new Tag() }
                     },
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -1124,7 +1124,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -1690,7 +1690,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         List<RepoData> sourceRepos =
         [
@@ -1701,7 +1701,7 @@ public class BuildCommandTests(TestContext testContext)
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -1770,13 +1770,13 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         { "shared", new Tag() }
                     },
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
                     [
                         CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [linuxTag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -1795,7 +1795,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -1848,7 +1848,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2000,7 +2000,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         List<RepoData> sourceRepos =
         [
@@ -2011,7 +2011,7 @@ public class BuildCommandTests(TestContext testContext)
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -2066,19 +2066,19 @@ public class BuildCommandTests(TestContext testContext)
                     [
                         runtimeDeps1Platform
                     ],
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
                     [
                         runtimeDeps2Platform
                     ],
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(runtimeDeps3Repo,
                 CreateImage(
                     [
                         runtimeDeps3Platform
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -2097,7 +2097,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2127,7 +2127,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2156,7 +2156,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2287,7 +2287,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         List<RepoData> sourceRepos = [];
 
@@ -2305,13 +2305,13 @@ public class BuildCommandTests(TestContext testContext)
                     [
                          CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
                     [
                         CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -2330,7 +2330,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2359,7 +2359,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2493,7 +2493,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         List<RepoData> sourceRepos =
         [
@@ -2504,7 +2504,7 @@ public class BuildCommandTests(TestContext testContext)
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -2549,13 +2549,13 @@ public class BuildCommandTests(TestContext testContext)
                     [
                          CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
                     [
                         CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -2574,7 +2574,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2603,7 +2603,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2741,7 +2741,7 @@ public class BuildCommandTests(TestContext testContext)
 
 
 
-        const string ProductVersion = "1.0.0";
+        const string productVersion = "1.0.0";
 
         List<RepoData> sourceRepos =
         [
@@ -2752,7 +2752,7 @@ public class BuildCommandTests(TestContext testContext)
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -2801,7 +2801,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         { "shared", new Tag() }
                     },
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -2820,7 +2820,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -2962,7 +2962,7 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.RegistryOverride = registryOverride;
         command.Options.RepoPrefix = repoPrefixOverride;
 
-        const string ProductVersion = "1.0.0";
+        const string productVersion = "1.0.0";
 
         List<RepoData> sourceRepos =
         [
@@ -2973,7 +2973,7 @@ public class BuildCommandTests(TestContext testContext)
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -3022,13 +3022,13 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         { "shared", new Tag() }
                     },
-                    productVersion: ProductVersion)),
+                    productVersion: productVersion)),
             CreateRepo(runtimeDeps2Repo,
                 CreateImage(
                     [
                         CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, [tag, newTag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
         manifest.Registry = registry;
 
@@ -3048,7 +3048,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -3085,7 +3085,7 @@ public class BuildCommandTests(TestContext testContext)
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -3160,28 +3160,28 @@ public class BuildCommandTests(TestContext testContext)
     [DataRow(true, "library/baserepo", "library/baserepo")]
     public async Task BuildCommand_MirroredImages(bool hasCachedImage, string srcBaseImageRepo, string referencedBaseImageRepo)
     {
-        const string Registry = "mcr.microsoft.com";
-        const string RegistryOverride = "dotnetdocker.azurecr.io";
-        const string RuntimeDepsRepo = "runtime-deps";
-        const string RuntimeRepo = "runtime";
-        const string AspnetRepo = "aspnet";
-        const string RuntimeDepsDigest = "sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
-        const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
-        const string AspnetDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
-        const string Tag = "tag";
-        const string RepoPrefix = "prefix/";
+        const string registry = "mcr.microsoft.com";
+        const string registryOverride = "dotnetdocker.azurecr.io";
+        const string runtimeDepsRepo = "runtime-deps";
+        const string runtimeRepo = "runtime";
+        const string aspnetRepo = "aspnet";
+        const string runtimeDepsDigest = "sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
+        const string runtimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+        const string aspnetDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+        const string tag = "tag";
+        const string repoPrefix = "prefix/";
         string srcBaseImageTag = $"{srcBaseImageRepo}:basetag";
         string referencedBaseImageTag = $"{referencedBaseImageRepo}:basetag";
 
-        const string SourceRepoPrefix = "my-mirror/";
-        string mirrorBaseTag = $"{RegistryOverride}/{SourceRepoPrefix}{srcBaseImageTag}";
+        const string sourceRepoPrefix = "my-mirror/";
+        string mirrorBaseTag = $"{registryOverride}/{sourceRepoPrefix}{srcBaseImageTag}";
         const string srcBaseImageDigestSha = "sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
         string srcBaseImageDigest =
             $"{srcBaseImageRepo}@{srcBaseImageDigestSha}";
         string expectedImageInfoBaseImageDigest =
             $"{referencedBaseImageRepo}@sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
         string mirrorBaseImageDigest =
-            $"{RegistryOverride}/{SourceRepoPrefix}{srcBaseImageDigest}";
+            $"{registryOverride}/{sourceRepoPrefix}{srcBaseImageDigest}";
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -3192,17 +3192,17 @@ public class BuildCommandTests(TestContext testContext)
             manifestServiceMock = CreateManifestServiceMock(
                 localImageDigestResults:
                 [
-                    new($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", $"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}"),
-                    new($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", $"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}"),
+                    new($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", $"{registryOverride}/{runtimeRepo}@{runtimeDigest}"),
+                    new($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", $"{registryOverride}/{aspnetRepo}@{aspnetDigest}"),
                 ],
                 externalImageDigestResults:
                 [
-                    new($"{Registry}/{RuntimeDepsRepo}:{Tag}", RuntimeDepsDigest),
-                    new($"{Registry}/{RuntimeRepo}:{Tag}", RuntimeDigest),
-                    new($"{Registry}/{AspnetRepo}:{Tag}", AspnetDigest),
-                    new($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", RuntimeDepsDigest),
-                    new($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", RuntimeDigest),
-                    new($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", AspnetDigest),
+                    new($"{registry}/{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{registry}/{runtimeRepo}:{tag}", runtimeDigest),
+                    new($"{registry}/{aspnetRepo}:{tag}", aspnetDigest),
+                    new($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", runtimeDigest),
+                    new($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", aspnetDigest),
                 ]);
         }
         else
@@ -3212,16 +3212,16 @@ public class BuildCommandTests(TestContext testContext)
             manifestServiceMock = CreateManifestServiceMock([], []);
 
             manifestServiceMock
-                .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
+                .Setup(o => o.GetLocalImageDigestAsync($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(callCount => callCount > 1 ? $"{registryOverride}/{repoPrefix}{runtimeDepsRepo}@{runtimeDepsDigest}" : null);
 
             manifestServiceMock
-                .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}" : null);
+                .Setup(o => o.GetLocalImageDigestAsync($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(callCount => callCount > 1 ? $"{registryOverride}/{repoPrefix}{runtimeRepo}@{runtimeDigest}" : null);
 
             manifestServiceMock
-                .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(callCount => callCount > 0 ? $"{RegistryOverride}/{RepoPrefix}{AspnetRepo}@{AspnetDigest}" : null);
+                .Setup(o => o.GetLocalImageDigestAsync($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(callCount => callCount > 0 ? $"{registryOverride}/{repoPrefix}{aspnetRepo}@{aspnetDigest}" : null);
         }
 
         manifestServiceMock
@@ -3241,10 +3241,10 @@ public class BuildCommandTests(TestContext testContext)
             "1.0/runtime-deps/os", tempFolderContext, referencedBaseImageTag);
 
         string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-            "1.0/runtime/os", tempFolderContext, $"$REPO:{Tag}");
+            "1.0/runtime/os", tempFolderContext, $"$REPO:{tag}");
 
         string aspnetDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-            "1.0/aspnet/os", tempFolderContext, $"$REPO:{Tag}");
+            "1.0/aspnet/os", tempFolderContext, $"$REPO:{tag}");
 
         const string dockerfileCommitSha = "mycommit";
         Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -3265,25 +3265,25 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-        command.Options.SourceRepoPrefix = SourceRepoPrefix;
-        command.Options.RegistryOverride = RegistryOverride;
-        command.Options.RepoPrefix = RepoPrefix;
+        command.Options.SourceRepoPrefix = sourceRepoPrefix;
+        command.Options.RegistryOverride = registryOverride;
+        command.Options.RepoPrefix = repoPrefix;
 
 
 
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         List<RepoData> sourceRepos =
         [
             new RepoData
             {
-                Repo = RuntimeDepsRepo,
+                Repo = runtimeDepsRepo,
                 Images =
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -3292,12 +3292,12 @@ public class BuildCommandTests(TestContext testContext)
                                 Architecture = "amd64",
                                 OsType = "Linux",
                                 OsVersion = "noble",
-                                Digest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                                Digest = $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}",
                                 BaseImageDigest = hasCachedImage ? mirrorBaseImageDigest : mirrorBaseImageDigest + "b",
                                 CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
                                 SimpleTags =
                                 [
-                                    Tag
+                                    tag
                                 ]
                             }
                         }
@@ -3306,12 +3306,12 @@ public class BuildCommandTests(TestContext testContext)
             },
             new RepoData
             {
-                Repo = RuntimeRepo,
+                Repo = runtimeRepo,
                 Images =
                 {
                     new ImageData
                     {
-                        ProductVersion = ProductVersion,
+                        ProductVersion = productVersion,
                         Platforms =
                         {
                             new PlatformData
@@ -3320,14 +3320,14 @@ public class BuildCommandTests(TestContext testContext)
                                 Architecture = "amd64",
                                 OsType = "Linux",
                                 OsVersion = "noble",
-                                Digest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
+                                Digest = $"{registry}/{runtimeRepo}@{runtimeDigest}",
                                 BaseImageDigest = hasCachedImage ?
-                                    $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" :
-                                    $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" + "b",
+                                    $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}" :
+                                    $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}" + "b",
                                 CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
                                 SimpleTags =
                                 [
-                                    Tag
+                                    tag
                                 ]
                             }
                         }
@@ -3345,32 +3345,32 @@ public class BuildCommandTests(TestContext testContext)
         File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
 
         Manifest manifest = CreateManifest(
-            CreateRepo(RuntimeDepsRepo,
+            CreateRepo(runtimeDepsRepo,
                 CreateImage(
                     [
-                        CreatePlatform(runtimeDepsDockerfileRelativePath, [Tag])
+                        CreatePlatform(runtimeDepsDockerfileRelativePath, [tag])
                     ],
-                    productVersion: ProductVersion)),
-            CreateRepo(RuntimeRepo,
+                    productVersion: productVersion)),
+            CreateRepo(runtimeRepo,
                 CreateImage(
                     [
                         CreatePlatformWithRepoBuildArg(
                             runtimeDockerfileRelativePath,
-                            $"$(Repo:{RuntimeDepsRepo})",
-                            [Tag])
+                            $"$(Repo:{runtimeDepsRepo})",
+                            [tag])
                     ],
-                    productVersion: ProductVersion)),
-            CreateRepo(AspnetRepo,
+                    productVersion: productVersion)),
+            CreateRepo(aspnetRepo,
                 CreateImage(
                     [
                         CreatePlatformWithRepoBuildArg(
                             aspnetDockerfileRelativePath,
-                            $"$(Repo:{RuntimeRepo})",
-                            [Tag])
+                            $"$(Repo:{runtimeRepo})",
+                            [tag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
-        manifest.Registry = Registry;
+        manifest.Registry = registry;
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -3383,12 +3383,12 @@ public class BuildCommandTests(TestContext testContext)
             [
                 new RepoData
                 {
-                    Repo = RuntimeDepsRepo,
+                    Repo = runtimeDepsRepo,
                     Images =
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -3397,14 +3397,14 @@ public class BuildCommandTests(TestContext testContext)
                                     Architecture = "amd64",
                                     OsType = "Linux",
                                     OsVersion = "noble",
-                                    Digest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                                    Digest = $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}",
                                     BaseImageDigest = expectedImageInfoBaseImageDigest,
                                     CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
                                     Created = createdDate,
                                     IsUnchanged = hasCachedImage,
                                     SimpleTags =
                                     [
-                                        Tag
+                                        tag
                                     ]
                                 }
                             }
@@ -3413,12 +3413,12 @@ public class BuildCommandTests(TestContext testContext)
                 },
                 new RepoData
                 {
-                    Repo = RuntimeRepo,
+                    Repo = runtimeRepo,
                     Images =
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -3427,14 +3427,14 @@ public class BuildCommandTests(TestContext testContext)
                                     Architecture = "amd64",
                                     OsType = "Linux",
                                     OsVersion = "noble",
-                                    Digest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
-                                    BaseImageDigest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                                    Digest = $"{registry}/{runtimeRepo}@{runtimeDigest}",
+                                    BaseImageDigest = $"{registry}/{runtimeDepsRepo}@{runtimeDepsDigest}",
                                     CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
                                     Created = createdDate,
                                     IsUnchanged = hasCachedImage,
                                     SimpleTags =
                                     [
-                                        Tag
+                                        tag
                                     ]
                                 }
                             }
@@ -3443,12 +3443,12 @@ public class BuildCommandTests(TestContext testContext)
                 },
                 new RepoData
                 {
-                    Repo = AspnetRepo,
+                    Repo = aspnetRepo,
                     Images =
                     {
                         new ImageData
                         {
-                            ProductVersion = ProductVersion,
+                            ProductVersion = productVersion,
                             Platforms =
                             {
                                 new PlatformData
@@ -3457,13 +3457,13 @@ public class BuildCommandTests(TestContext testContext)
                                     Architecture = "amd64",
                                     OsType = "Linux",
                                     OsVersion = "noble",
-                                    Digest = $"{Registry}/{AspnetRepo}@{AspnetDigest}",
-                                    BaseImageDigest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
+                                    Digest = $"{registry}/{aspnetRepo}@{aspnetDigest}",
+                                    BaseImageDigest = $"{registry}/{runtimeRepo}@{runtimeDigest}",
                                     CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{aspnetDockerfileRelativePath}",
                                     Created = createdDate,
                                     SimpleTags =
                                     [
-                                        Tag
+                                        tag
                                     ]
                                 }
                             }
@@ -3496,60 +3496,60 @@ public class BuildCommandTests(TestContext testContext)
 
         if (hasCachedImage)
         {
-            dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", null, false, It.IsAny<CancellationToken>()));
-            dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PullImage($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}@{runtimeDepsDigest}", null, false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.CreateTag($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}@{runtimeDepsDigest}", $"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
             VerifyImportImage(copyImageServiceMock, command,
-                [$"{RepoPrefix}{RuntimeDepsRepo}:{Tag}"],
-                $"{RuntimeDepsRepo}@{RuntimeDepsDigest}",
-                RegistryOverride,
-                Registry);
+                [$"{repoPrefix}{runtimeDepsRepo}:{tag}"],
+                $"{runtimeDepsRepo}@{runtimeDepsDigest}",
+                registryOverride,
+                registry);
 
-            dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", null, false, It.IsAny<CancellationToken>()));
-            dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PullImage($"{registryOverride}/{repoPrefix}{runtimeRepo}@{runtimeDigest}", null, false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.CreateTag($"{registryOverride}/{repoPrefix}{runtimeRepo}@{runtimeDigest}", $"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
             VerifyImportImage(copyImageServiceMock, command,
-                [$"{RepoPrefix}{RuntimeRepo}:{Tag}"],
-                $"{RuntimeRepo}@{RuntimeDigest}",
-                RegistryOverride,
-                Registry);
+                [$"{repoPrefix}{runtimeRepo}:{tag}"],
+                $"{runtimeRepo}@{runtimeDigest}",
+                registryOverride,
+                registry);
         }
         else
         {
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
         }
 
         manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
         if (!hasCachedImage)
         {
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.PushImage($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-            dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-            dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageSize($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageSize($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
         }
 
-        dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.PushImage($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetImageSize($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-        dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetCreatedDate($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetCreatedDate($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetCreatedDate($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{registryOverride}/{repoPrefix}{aspnetRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
         if (!hasCachedImage)
         {
             dockerServiceMock.Verify(o => o.GetImageArch(mirrorBaseTag, false, It.IsAny<CancellationToken>()));
-            dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+            dockerServiceMock.Verify(o => o.GetImageArch($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
         }
 
-        dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetImageArch($"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
         dockerServiceMock.VerifyNoOtherCalls();
         copyImageServiceMock.VerifyNoOtherCalls();
@@ -3563,13 +3563,13 @@ public class BuildCommandTests(TestContext testContext)
     [DataRow("other-registry.com", "mcr.microsoft.com")]
     public async Task BuildCommand_MirroredImages_External(string baseImageRegistry, string manifestRegistry)
     {
-        const string RegistryOverride = "dotnetdocker.azurecr.io";
-        const string RuntimeRepo = "runtime";
-        const string SamplesRepo = "samples";
-        const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
-        const string SampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
-        const string Tag = "tag";
-        const string SourceRepoPrefix = "mirror/";
+        const string registryOverride = "dotnetdocker.azurecr.io";
+        const string runtimeRepo = "runtime";
+        const string samplesRepo = "samples";
+        const string runtimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+        const string sampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+        const string tag = "tag";
+        const string sourceRepoPrefix = "mirror/";
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -3579,16 +3579,16 @@ public class BuildCommandTests(TestContext testContext)
         string baseImageRepoPrefix = $"{baseImageRegistry}";
         if (isExternallyOwnedBaseImage)
         {
-            baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{baseImageRegistry}";
+            baseImageRepoPrefix = $"{registryOverride}/{sourceRepoPrefix}{baseImageRegistry}";
         }
 
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
-            new($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRepoPrefix}/{RuntimeRepo}@{RuntimeDigest}"),
-            new($"{RegistryOverride}/{SamplesRepo}:{Tag}", $"{RegistryOverride}/{SamplesRepo}@{SampleDigest}"),
+            new($"{baseImageRepoPrefix}/{runtimeRepo}:{tag}", $"{baseImageRepoPrefix}/{runtimeRepo}@{runtimeDigest}"),
+            new($"{registryOverride}/{samplesRepo}:{tag}", $"{registryOverride}/{samplesRepo}@{sampleDigest}"),
         ], []);
 
         string sampleDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-            "1.0/samples/os", tempFolderContext, $"{baseImageRegistry}/{RuntimeRepo}:{Tag}");
+            "1.0/samples/os", tempFolderContext, $"{baseImageRegistry}/{runtimeRepo}:{tag}");
 
         const string dockerfileCommitSha = "mycommit";
         Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -3606,20 +3606,20 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-        command.Options.RegistryOverride = RegistryOverride;
-        command.Options.SourceRepoPrefix = SourceRepoPrefix;
+        command.Options.RegistryOverride = registryOverride;
+        command.Options.SourceRepoPrefix = sourceRepoPrefix;
 
-        const string ProductVersion = "1.0.1";
+        const string productVersion = "1.0.1";
 
         Manifest manifest = CreateManifest(
-            CreateRepo(SamplesRepo,
+            CreateRepo(samplesRepo,
                 CreateImage(
                     [
                         CreatePlatform(
                             sampleDockerfileRelativePath,
-                            [Tag])
+                            [tag])
                     ],
-                    productVersion: ProductVersion))
+                    productVersion: productVersion))
         );
         manifest.Registry = manifestRegistry;
 
@@ -3640,22 +3640,22 @@ public class BuildCommandTests(TestContext testContext)
                 It.IsAny<IEnumerable<string>>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(), It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetImageSize($"{registryOverride}/{samplesRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-        dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", "linux/amd64", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{runtimeRepo}:{tag}", "linux/amd64", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{registryOverride}/{samplesRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.PushImage($"{registryOverride}/{samplesRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetCreatedDate($"{registryOverride}/{samplesRepo}:{tag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{registryOverride}/{samplesRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
         if (isExternallyOwnedBaseImage)
         {
             dockerServiceMock.Verify(o =>
-                o.CreateTag($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRegistry}/{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+                o.CreateTag($"{baseImageRepoPrefix}/{runtimeRepo}:{tag}", $"{baseImageRegistry}/{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
         }
 
-        dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
         dockerServiceMock.VerifyNoOtherCalls();
     }
@@ -3666,25 +3666,25 @@ public class BuildCommandTests(TestContext testContext)
     [TestMethod]
     public async Task BuildCommand_MirroredImages_BaseImageTagOverride()
     {
-        const string RegistryOverride = "dotnetdocker.azurecr.io";
-        const string SamplesRepo = "samples";
-        const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
-        const string SampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
-        const string ImageTag = "tag";
-        const string SourceRepoPrefix = "mirror/";
-        const string CustomRegistry = "contoso.azurecr.io";
-        const string SourceRepo = "amd64/os";
-        const string SrcBaseTag = $"{SourceRepo}:tag";
-        const string MirroredBaseTag = "os:tag";
+        const string registryOverride = "dotnetdocker.azurecr.io";
+        const string samplesRepo = "samples";
+        const string runtimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+        const string sampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+        const string imageTag = "tag";
+        const string sourceRepoPrefix = "mirror/";
+        const string customRegistry = "contoso.azurecr.io";
+        const string sourceRepo = "amd64/os";
+        const string srcBaseTag = $"{sourceRepo}:tag";
+        const string mirroredBaseTag = "os:tag";
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-        string baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{CustomRegistry}";
+        string baseImageRepoPrefix = $"{registryOverride}/{sourceRepoPrefix}{customRegistry}";
 
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
-            new($"{baseImageRepoPrefix}/{MirroredBaseTag}", $"{baseImageRepoPrefix}/{MirroredBaseTag}@{RuntimeDigest}"),
-            new($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", $"{RegistryOverride}/{SamplesRepo}@{SampleDigest}"),
+            new($"{baseImageRepoPrefix}/{mirroredBaseTag}", $"{baseImageRepoPrefix}/{mirroredBaseTag}@{runtimeDigest}"),
+            new($"{registryOverride}/{samplesRepo}:{imageTag}", $"{registryOverride}/{samplesRepo}@{sampleDigest}"),
         ], []);
 
         const string dockerfileCommitSha = "mycommit";
@@ -3703,19 +3703,19 @@ public class BuildCommandTests(TestContext testContext)
         command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
         command.Options.IsPushEnabled = true;
         command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-        command.Options.RegistryOverride = RegistryOverride;
-        command.Options.SourceRepoPrefix = SourceRepoPrefix;
+        command.Options.RegistryOverride = registryOverride;
+        command.Options.SourceRepoPrefix = sourceRepoPrefix;
         command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(.*)";
-        command.Options.BaseImageOverrideOptions.Substitution = $"{CustomRegistry}/$1";
+        command.Options.BaseImageOverrideOptions.Substitution = $"{customRegistry}/$1";
 
         Manifest manifest = CreateManifest(
-            CreateRepo(SamplesRepo,
+            CreateRepo(samplesRepo,
                 CreateImage(
                     [
                         CreatePlatform(
                             DockerfileHelper.CreateDockerfile(
-                                "1.0/samples/os", tempFolderContext, SrcBaseTag),
-                            [ImageTag])
+                                "1.0/samples/os", tempFolderContext, srcBaseTag),
+                            [imageTag])
                     ],
                     productVersion: "1.0.1"))
         );
@@ -3746,17 +3746,17 @@ public class BuildCommandTests(TestContext testContext)
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "noble",
-                                        Digest = $"{manifest.Registry}/{SamplesRepo}@{SampleDigest}",
+                                        Digest = $"{manifest.Registry}/{samplesRepo}@{sampleDigest}",
 
                                         // This is the key change. The digest should be referring to the image from the
                                         // override, not what's defined in the Dockerfile.
-                                        BaseImageDigest = $"{CustomRegistry}/os@{RuntimeDigest}",
+                                        BaseImageDigest = $"{customRegistry}/os@{runtimeDigest}",
 
                                         Created = DateTime.MinValue.ToUniversalTime(),
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/1.0/samples/os/Dockerfile",
                                         SimpleTags =
                                         {
-                                            ImageTag
+                                            imageTag
                                         },
                                     }
                                 }
@@ -3784,18 +3784,18 @@ public class BuildCommandTests(TestContext testContext)
                 It.IsAny<bool>(),
                 It.IsAny<bool>(), It.IsAny<CancellationToken>()));
         dockerServiceMock.Verify(
-            o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
+            o => o.GetImageSize($"{registryOverride}/{samplesRepo}:{imageTag}", false, It.IsAny<CancellationToken>()));
 
-        dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
-        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{mirroredBaseTag}", "linux/amd64", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{mirroredBaseTag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{registryOverride}/{samplesRepo}:{imageTag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.PushImage($"{registryOverride}/{samplesRepo}:{imageTag}", false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetCreatedDate($"{registryOverride}/{samplesRepo}:{imageTag}", false, It.IsAny<CancellationToken>()));
+        manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{registryOverride}/{samplesRepo}:{imageTag}", false, It.IsAny<CancellationToken>()));
 
         dockerServiceMock.Verify(o =>
-            o.CreateTag($"{baseImageRepoPrefix}/{MirroredBaseTag}", SrcBaseTag, false, It.IsAny<CancellationToken>()));
-        dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{MirroredBaseTag}", false, It.IsAny<CancellationToken>()));
+            o.CreateTag($"{baseImageRepoPrefix}/{mirroredBaseTag}", srcBaseTag, false, It.IsAny<CancellationToken>()));
+        dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{mirroredBaseTag}", false, It.IsAny<CancellationToken>()));
 
         dockerServiceMock.VerifyNoOtherCalls();
     }

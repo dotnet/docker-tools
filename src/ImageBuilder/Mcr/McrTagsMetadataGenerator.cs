@@ -29,7 +29,7 @@ public class McrTagsMetadataGenerator
     private List<ImageDocumentationInfo> _imageDocInfos;
     private bool _generateGitHubLinks;
 
-    private static readonly Dictionary<Architecture, int> s_archSortKeys = new() {
+    private static readonly Dictionary<Architecture, int> ArchSortKeys = new() {
         { Architecture.AMD64, 0 },
         { Architecture.ARM64, 1 },
         { Architecture.ARM, 2 }
@@ -199,7 +199,7 @@ public class McrTagsMetadataGenerator
                 matchingSharedTags = matchingSharedTags
                     .Distinct()
                     .OrderBy(docInfo =>
-                        s_archSortKeys.GetValueOrDefault(docInfo.Platform.Model.Architecture, int.MaxValue));
+                        ArchSortKeys.GetValueOrDefault(docInfo.Platform.Model.Architecture, int.MaxValue));
 
                 List<IGrouping<string, ImageDocumentationInfo>> platformGroups = matchingSharedTags
                     .GroupBy(imageDocInfo => imageDocInfo.Platform.GetUniqueKey(imageDocInfo.Image))

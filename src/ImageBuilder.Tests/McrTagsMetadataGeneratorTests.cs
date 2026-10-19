@@ -42,21 +42,21 @@ public class McrTagsMetadataGeneratorTests
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        const string SourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
-        const string RepoName = "repo";
-        const string TagName = "tag";
+        const string sourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
+        const string repoName = "repo";
+        const string tagName = "tag";
 
         // Create Dockerfile
-        string DockerfileDir = $"1.0/{RepoName}/os";
-        Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, DockerfileDir));
-        string dockerfileRelativePath = DockerfileDir + '/' + "Dockerfile";
+        string dockerfileDir = $"1.0/{repoName}/os";
+        Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, dockerfileDir));
+        string dockerfileRelativePath = dockerfileDir + '/' + "Dockerfile";
         string dockerfileFullPath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
         File.WriteAllText(dockerfileFullPath, "FROM base:tag");
 
         // Create MCR tags metadata template file
         StringBuilder tagsMetadataTemplateBuilder = new StringBuilder();
-        tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{RepoName})");
-        tagsMetadataTemplateBuilder.Append($"$(McrTagsYmlTagGroup:{TagName})");
+        tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{repoName})");
+        tagsMetadataTemplateBuilder.Append($"$(McrTagsYmlTagGroup:{tagName})");
         string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
         File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
 
@@ -66,10 +66,10 @@ public class McrTagsMetadataGeneratorTests
 
         // Create manifest
         Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo(RepoName,
+            ManifestHelper.CreateRepo(repoName,
                 [
                     ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, [TagName]))
+                        ManifestHelper.CreatePlatform(dockerfileRelativePath, [tagName]))
                 ],
                 readme: emptyFileName,
                 readmeTemplate: emptyFileName,
@@ -84,13 +84,13 @@ public class McrTagsMetadataGeneratorTests
         RepoInfo repo = manifestInfo.AllRepos.First();
 
         Mock<IGitService> gitServiceMock = new Mock<IGitService>();
-        const string DockerfileSha = "random_sha";
+        const string dockerfileSha = "random_sha";
 
         if (sourceRepoBranch == null)
         {
             gitServiceMock
                 .Setup(o => o.GetCommitSha(dockerfileFullPath, true))
-                .Returns(DockerfileSha);
+                .Returns(dockerfileSha);
         }
 
         // Execute generator
@@ -99,7 +99,7 @@ public class McrTagsMetadataGeneratorTests
             repo,
             generateGitHubLinks: generateGitHubLinks,
             gitService: gitServiceMock.Object,
-            sourceRepoUrl: SourceRepoUrl,
+            sourceRepoUrl: sourceRepoUrl,
             sourceBranch: sourceRepoBranch);
 
         TagsMetadata tagsMetadata = new DeserializerBuilder()
@@ -107,10 +107,10 @@ public class McrTagsMetadataGeneratorTests
             .Build()
             .Deserialize<TagsMetadata>(result);
 
-        string branchOrSha = sourceRepoBranch ?? DockerfileSha;
+        string branchOrSha = sourceRepoBranch ?? dockerfileSha;
 
         string expectedUrl = generateGitHubLinks
-            ? $"{SourceRepoUrl}/blob/{branchOrSha}/{DockerfileDir}/Dockerfile"
+            ? $"{sourceRepoUrl}/blob/{branchOrSha}/{dockerfileDir}/Dockerfile"
             : dockerfileRelativePath;
 
         tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe(expectedUrl);
@@ -127,13 +127,13 @@ public class McrTagsMetadataGeneratorTests
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        const string SourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
-        const string RepoName = "repo";
-        const string SourceBranch = "branch";
+        const string sourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
+        const string repoName = "repo";
+        const string sourceBranch = "branch";
 
         // Create MCR tags metadata template file
         StringBuilder tagsMetadataTemplateBuilder = new StringBuilder();
-        tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{RepoName})");
+        tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{repoName})");
         tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlTagGroup:tag1a)");
         string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
         File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
@@ -143,7 +143,7 @@ public class McrTagsMetadataGeneratorTests
         File.WriteAllText(emptyFilePath, string.Empty);
 
         Platform platform = ManifestHelper.CreatePlatform(
-            DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
+            DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os", tempFolderContext),
             []);
         platform.Tags = new Dictionary<string, Tag>
         {
@@ -160,12 +160,12 @@ public class McrTagsMetadataGeneratorTests
 
         // Create manifest
         Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo(RepoName,
+            ManifestHelper.CreateRepo(repoName,
                 [
                     image = ManifestHelper.CreateImage(
                         platform,
                         ManifestHelper.CreatePlatform(
-                            DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os2", tempFolderContext),
+                            DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os2", tempFolderContext),
                             ["tag1a", "tag1b"]))
                 ],
                 readme: emptyFileName,
@@ -201,8 +201,8 @@ public class McrTagsMetadataGeneratorTests
             repo,
             generateGitHubLinks: true,
             gitService: gitServiceMock.Object,
-            sourceRepoUrl: SourceRepoUrl,
-            sourceBranch: SourceBranch);
+            sourceRepoUrl: sourceRepoUrl,
+            sourceBranch: sourceBranch);
 
         TagsMetadata tagsMetadata = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -211,7 +211,7 @@ public class McrTagsMetadataGeneratorTests
 
         // Verify the output only contains the platform with the documented tag
         tagsMetadata.Repos[0].TagGroups.ShouldHaveSingleItem();
-        tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile");
+        tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{sourceRepoUrl}/blob/{sourceBranch}/1.0/{repoName}/os2/Dockerfile");
 
         List<string> expectedTags =
         [
@@ -235,13 +235,13 @@ public class McrTagsMetadataGeneratorTests
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        const string SourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
-        const string RepoName = "repo";
-        const string SourceBranch = "branch";
+        const string sourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
+        const string repoName = "repo";
+        const string sourceBranch = "branch";
 
         // Create MCR tags metadata template file
         StringBuilder tagsMetadataTemplateBuilder = new StringBuilder();
-        tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{RepoName})");
+        tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{repoName})");
         tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlTagGroup:concreteTagA)");
         string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
         File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
@@ -252,12 +252,12 @@ public class McrTagsMetadataGeneratorTests
 
         // Create manifest
         Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo(RepoName,
+            ManifestHelper.CreateRepo(repoName,
                 [
                     ManifestHelper.CreateImage(
                         [
                             ManifestHelper.CreatePlatform(
-                                DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
+                                DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os", tempFolderContext),
                                 ["concreteTagZ", "concreteTagA"])
                         ],
                         sharedTags: new Dictionary<string, Tag>
@@ -268,7 +268,7 @@ public class McrTagsMetadataGeneratorTests
                     ManifestHelper.CreateImage(
                         [
                             ManifestHelper.CreatePlatform(
-                                DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
+                                DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os", tempFolderContext),
                                 [])
                         ],
                         sharedTags: new Dictionary<string, Tag>
@@ -297,8 +297,8 @@ public class McrTagsMetadataGeneratorTests
             repo,
             generateGitHubLinks: true,
             gitService: gitServiceMock.Object,
-            sourceRepoUrl: SourceRepoUrl,
-            sourceBranch: SourceBranch);
+            sourceRepoUrl: sourceRepoUrl,
+            sourceBranch: sourceBranch);
 
 
         TagsMetadata tagsMetadata = new DeserializerBuilder()
@@ -308,7 +308,7 @@ public class McrTagsMetadataGeneratorTests
 
         // Verify the output only contains the platform with the documented tag
         tagsMetadata.Repos[0].TagGroups.ShouldHaveSingleItem();
-        tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os/Dockerfile");
+        tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{sourceRepoUrl}/blob/{sourceBranch}/1.0/{repoName}/os/Dockerfile");
 
         List<string> expectedTags =
         [

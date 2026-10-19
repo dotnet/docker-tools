@@ -297,11 +297,11 @@ public class CreateManifestListCommandTests
     [TestMethod]
     public async Task ExecuteAsync_PortsMissingPlatformsAndPublishesCompleteSharedTagManifestList()
     {
-        const string PreviousLinuxDigestSha = "sha256:previous-linux";
-        const string NewSharedTagDigestSha = "sha256:new-shared";
-        const string SourceRegistry = "source.example.com";
-        const string StagingRegistry = "staging.example.com";
-        const string StagingRepoPrefix = "build-staging/123456/";
+        const string previousLinuxDigestSha = "sha256:previous-linux";
+        const string newSharedTagDigestSha = "sha256:new-shared";
+        const string sourceRegistry = "source.example.com";
+        const string stagingRegistry = "staging.example.com";
+        const string stagingRepoPrefix = "build-staging/123456/";
 
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
@@ -311,25 +311,25 @@ public class CreateManifestListCommandTests
         manifestServiceMock
             .Setup(o => o.GetManifestAsync(
                 It.Is<ImageName>(n =>
-                    n.Registry == SourceRegistry
+                    n.Registry == sourceRegistry
                     && n.Repo == "samples"
                     && n.Tag == "app-linux"),
                 It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ManifestQueryResult(PreviousLinuxDigestSha, []));
+            .ReturnsAsync(new ManifestQueryResult(previousLinuxDigestSha, []));
 
         // Digest returned for the freshly-published shared tag (used when the command
         // records the new manifest list digest into image-info).
         manifestServiceMock
             .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(NewSharedTagDigestSha);
+            .ReturnsAsync(newSharedTagDigestSha);
 
         Mock<IDockerService> dockerServiceMock = new();
         Mock<ICopyImageService> copyImageServiceMock = new();
 
         CreateManifestListCommand command = CreateCommand(
             manifestServiceFactory, dockerServiceMock, copyImageServiceMock, Mock.Of<IDateTimeService>());
-        command.Options.RegistryOverride = StagingRegistry;
-        command.Options.RepoPrefix = StagingRepoPrefix;
+        command.Options.RegistryOverride = stagingRegistry;
+        command.Options.RepoPrefix = stagingRepoPrefix;
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -350,7 +350,7 @@ public class CreateManifestListCommandTests
                         ["app-nanoserver"],
                         os: OS.Windows,
                         osVersion: "nanoserver-ltsc2022"))));
-        manifest.Registry = SourceRegistry;
+        manifest.Registry = sourceRegistry;
 
         // Simulate an incomplete image-info.json - the kind produced by a path-filtered
         // official build where only a subset of an image's platforms actually got built.
@@ -373,12 +373,12 @@ public class CreateManifestListCommandTests
         // The Linux platform should have been imported (by digest) from the source
         // registry into the scoped staging repo at its declared simple tag.
         copyImageServiceMock.Verify(o => o.ImportImageAsync(
-            It.Is<string[]>(tags => tags.Contains($"{StagingRepoPrefix}samples:app-linux")),
-            StagingRegistry,
-            $"samples@{PreviousLinuxDigestSha}",
+            It.Is<string[]>(tags => tags.Contains($"{stagingRepoPrefix}samples:app-linux")),
+            stagingRegistry,
+            $"samples@{previousLinuxDigestSha}",
             true,
             It.IsAny<CancellationToken>(),
-            SourceRegistry,
+            sourceRegistry,
             null,
             false));
 
@@ -388,13 +388,13 @@ public class CreateManifestListCommandTests
         // a subset of platforms.
         foreach (string sharedTagName in new[] { "app", "latest" })
         {
-            string sharedTagRef = $"{StagingRegistry}/{StagingRepoPrefix}samples:{sharedTagName}";
+            string sharedTagRef = $"{stagingRegistry}/{stagingRepoPrefix}samples:{sharedTagName}";
 
             dockerServiceMock.Verify(o => o.CreateManifestList(
                 sharedTagRef,
                 It.Is<IEnumerable<string>>(refs =>
-                    refs.Contains($"{StagingRegistry}/{StagingRepoPrefix}samples:app-nanoserver") &&
-                    refs.Contains($"{StagingRegistry}/{StagingRepoPrefix}samples:app-linux")),
+                    refs.Contains($"{stagingRegistry}/{stagingRepoPrefix}samples:app-nanoserver") &&
+                    refs.Contains($"{stagingRegistry}/{stagingRepoPrefix}samples:app-linux")),
                 false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o => o.PushManifestList(sharedTagRef, false, It.IsAny<CancellationToken>()));
         }
@@ -416,9 +416,9 @@ public class CreateManifestListCommandTests
     [TestMethod]
     public async Task ExecuteAsync_DoesNotPortImagesThatAreAbsentFromImageInfo()
     {
-        const string SourceRegistry = "source.example.com";
-        const string StagingRegistry = "staging.example.com";
-        const string StagingRepoPrefix = "build-staging/123456/";
+        const string sourceRegistry = "source.example.com";
+        const string stagingRegistry = "staging.example.com";
+        const string stagingRepoPrefix = "build-staging/123456/";
 
         Mock<IManifestService> manifestServiceMock = new(MockBehavior.Strict);
         manifestServiceMock
@@ -433,8 +433,8 @@ public class CreateManifestListCommandTests
             dockerServiceMock,
             copyImageServiceMock,
             Mock.Of<IDateTimeService>());
-        command.Options.RegistryOverride = StagingRegistry;
-        command.Options.RepoPrefix = StagingRepoPrefix;
+        command.Options.RegistryOverride = stagingRegistry;
+        command.Options.RepoPrefix = stagingRepoPrefix;
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -449,7 +449,7 @@ public class CreateManifestListCommandTests
                 CreateImage(
                     ["untouched"],
                     CreatePlatform(untouchedDockerfile, ["untouched-linux"]))));
-        manifest.Registry = SourceRegistry;
+        manifest.Registry = sourceRegistry;
 
         ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
             CreateRepoData("samples",
@@ -472,7 +472,7 @@ public class CreateManifestListCommandTests
                 It.IsAny<bool>()),
             Times.Never);
         dockerServiceMock.Verify(o => o.CreateManifestList(
-                $"{StagingRegistry}/{StagingRepoPrefix}samples:untouched",
+                $"{stagingRegistry}/{stagingRepoPrefix}samples:untouched",
                 It.IsAny<IEnumerable<string>>(),
                 It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -547,9 +547,9 @@ public class CreateManifestListCommandTests
     [TestMethod]
     public async Task ExecuteAsync_Throws_WhenSourceTagDoesNotExist()
     {
-        const string SourceRegistry = "source.example.com";
-        const string StagingRegistry = "staging.example.com";
-        const string StagingRepoPrefix = "build-staging/123456/";
+        const string sourceRegistry = "source.example.com";
+        const string stagingRegistry = "staging.example.com";
+        const string stagingRepoPrefix = "build-staging/123456/";
 
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
 
@@ -569,8 +569,8 @@ public class CreateManifestListCommandTests
             CreateManifestServiceFactoryMock(manifestServiceMock);
         CreateManifestListCommand command = CreateCommand(
             manifestServiceFactory, dockerServiceMock, copyImageServiceMock, Mock.Of<IDateTimeService>());
-        command.Options.RegistryOverride = StagingRegistry;
-        command.Options.RepoPrefix = StagingRepoPrefix;
+        command.Options.RegistryOverride = stagingRegistry;
+        command.Options.RepoPrefix = stagingRepoPrefix;
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         string linuxDockerfile = CreateDockerfile("samples/app", tempFolderContext);
@@ -587,7 +587,7 @@ public class CreateManifestListCommandTests
                         ["app-nanoserver"],
                         os: OS.Windows,
                         osVersion: "nanoserver-ltsc2022"))));
-        manifest.Registry = SourceRegistry;
+        manifest.Registry = sourceRegistry;
 
         // Only Windows in image-info; Linux is missing and its source tag won't be found.
         ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(

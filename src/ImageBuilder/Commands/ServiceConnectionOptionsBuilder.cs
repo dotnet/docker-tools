@@ -15,15 +15,15 @@ public class ServiceConnectionOptionsBuilder
     /// </summary>
     public Option<ServiceConnection?> GetCliOption(string optionName, string description = "")
     {
-        const string FormatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
+        const string formatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
 
         if (!string.IsNullOrEmpty(description))
         {
-            description += " " + FormatDescription;
+            description += " " + formatDescription;
         }
         else
         {
-            description = FormatDescription;
+            description = formatDescription;
         }
 
         return new Option<ServiceConnection?>(optionName)

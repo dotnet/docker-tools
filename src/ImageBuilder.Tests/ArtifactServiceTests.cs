@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class ArtifactServiceTests
 {
-    private static readonly string s_outputRoot = Path.Combine(Path.GetTempPath(), "artifacts");
+    private static readonly string OutputRoot = Path.Combine(Path.GetTempPath(), "artifacts");
 
     [TestMethod]
     public void ResolvePath_RelativePath_ResolvesUnderArtifactStagingDirectory()
@@ -23,7 +23,7 @@ public class ArtifactServiceTests
 
         string path = service.ResolvePath(Path.Combine("image-info", "input.json"));
 
-        path.ShouldBe(Path.Combine(s_outputRoot, "image-info", "input.json"));
+        path.ShouldBe(Path.Combine(OutputRoot, "image-info", "input.json"));
     }
 
     [TestMethod]
@@ -31,7 +31,7 @@ public class ArtifactServiceTests
     {
         InMemoryFileSystem fileSystem = new InMemoryFileSystem();
         ArtifactService service = CreateService(fileSystem);
-        string expectedPath = Path.Combine(s_outputRoot, "image-info", "output.json");
+        string expectedPath = Path.Combine(OutputRoot, "image-info", "output.json");
 
         service.WriteAllText(Path.Combine("image-info", "output.json"), "contents");
 
@@ -67,6 +67,6 @@ public class ArtifactServiceTests
             Options.Create(
                 new BuildConfiguration
                 {
-                    ArtifactStagingDirectory = s_outputRoot
+                    ArtifactStagingDirectory = OutputRoot
                 }));
 }

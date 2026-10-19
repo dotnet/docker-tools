@@ -88,17 +88,17 @@ public class CopyBaseImagesCommandTests
             ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
         ];
 
-        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) in expectedTagInfos)
+        foreach ((string sourceImage, string targetTag, string registry, string username, string password) in expectedTagInfos)
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
-                        new string[] { TargetTag },
+                        new string[] { targetTag },
                         manifest.Registry,
-                        SourceImage,
+                        sourceImage,
                         false,
                         It.IsAny<CancellationToken>(),
-                        Registry,
-                        It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == Username && creds.Password == Password),
+                        registry,
+                        It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == username && creds.Password == password),
                         false));
         }
 
@@ -119,7 +119,7 @@ public class CopyBaseImagesCommandTests
     [TestMethod]
     public async Task OverridenBaseTag()
     {
-        const string CustomRegistry = "contoso.azurecr.io";
+        const string customRegistry = "contoso.azurecr.io";
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -134,7 +134,7 @@ public class CopyBaseImagesCommandTests
         command.Options.RepoPrefix = "custom-repo/";
         command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
         command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(os:.*)";
-        command.Options.BaseImageOverrideOptions.Substitution = $"{CustomRegistry}/$1";
+        command.Options.BaseImageOverrideOptions.Substitution = $"{customRegistry}/$1";
 
         const string runtimeRelativeDir = "1.0/runtime/os";
         Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -160,21 +160,21 @@ public class CopyBaseImagesCommandTests
 
         (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos =
         [
-            ( $"os:tag", $"{command.Options.RepoPrefix}{CustomRegistry}/os:tag", CustomRegistry, null, null),
+            ( $"os:tag", $"{command.Options.RepoPrefix}{customRegistry}/os:tag", customRegistry, null, null),
             ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
         ];
 
-        foreach ((string SourceImage, string TargetTag, string Registry, string Username, string Password) in expectedTagInfos)
+        foreach ((string sourceImage, string targetTag, string registry, string username, string password) in expectedTagInfos)
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
-                        new string[] { TargetTag },
+                        new string[] { targetTag },
                         manifest.Registry,
-                        SourceImage,
+                        sourceImage,
                         false,
                         It.IsAny<CancellationToken>(),
-                        Registry,
-                        It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && Username == null) || (creds.Username == Username && creds.Password == Password)),
+                        registry,
+                        It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && username == null) || (creds.Username == username && creds.Password == password)),
                         false));
         }
     }

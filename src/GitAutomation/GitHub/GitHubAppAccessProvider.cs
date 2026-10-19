@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.GitAutomation.GitHub;
 /// </summary>
 public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
 {
-    private static readonly ProductHeaderValue s_productHeaderValue = new("Microsoft.DotNet.GitAutomation");
+    private static readonly ProductHeaderValue ProductHeaderValue = new("Microsoft.DotNet.GitAutomation");
 
     private readonly GitHubClient _appClient;
     private readonly ConcurrentDictionary<GitHubRepo, long> _repoToInstallationId = [];
@@ -33,7 +33,7 @@ public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
         ArgumentNullException.ThrowIfNull(cryptographyClient);
-        _appClient = new(s_productHeaderValue, new GitHubAppCredentialStore(clientId, cryptographyClient));
+        _appClient = new(ProductHeaderValue, new GitHubAppCredentialStore(clientId, cryptographyClient));
     }
 
     /// <inheritdoc/>
@@ -70,7 +70,7 @@ public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
             }
 
             GitHubAppInstallationCredentialStore credentials = new GitHubAppInstallationCredentialStore(_appClient, installationId);
-            GitHubClient installationClient = new GitHubClient(s_productHeaderValue, credentials);
+            GitHubClient installationClient = new GitHubClient(ProductHeaderValue, credentials);
 
             AutomationIdentity identity = await GetIdentityAsync(installationClient, cancellationToken);
 

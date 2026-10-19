@@ -214,19 +214,19 @@ public class GenerateBuildMatrixCommandTests
         string leg3ExpectedPaths = null,
         string inputPathFilters = "*runtime* *sdk*")
     {
-        const string Standalone1RelativeDir = "1.0/standalone/os/amd64";
+        const string standalone1RelativeDir = "1.0/standalone/os/amd64";
         string dockerfileStandalone1Path;
-        const string Standalone2RelativeDir = "2.0/standalone/os/amd64";
+        const string standalone2RelativeDir = "2.0/standalone/os/amd64";
         string dockerfileStandalone2Path;
 
-        const string Runtime1RelativeDir = "1.0/runtime/os/amd64";
+        const string runtime1RelativeDir = "1.0/runtime/os/amd64";
         string dockerfileRuntime1Path;
-        const string Runtime2RelativeDir = "2.0/runtime/os/amd64";
+        const string runtime2RelativeDir = "2.0/runtime/os/amd64";
         string dockerfileRuntime2Path;
 
-        const string Sdk1RelativeDir = "1.0/sdk/os/amd64";
+        const string sdk1RelativeDir = "1.0/sdk/os/amd64";
         string dockerfileSdk1Path;
-        const string Sdk2RelativeDir = "2.0/sdk/os/amd64";
+        const string sdk2RelativeDir = "2.0/sdk/os/amd64";
         string dockerfileSdk2Path;
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -234,21 +234,21 @@ public class GenerateBuildMatrixCommandTests
         Manifest manifest = CreateManifest(
             CreateRepo("standalone",
                 CreateImage(
-                    CreatePlatform(dockerfileStandalone1Path = CreateDockerfile(Standalone1RelativeDir, tempFolderContext), ["1.0"])),
+                    CreatePlatform(dockerfileStandalone1Path = CreateDockerfile(standalone1RelativeDir, tempFolderContext), ["1.0"])),
                 CreateImage(
                     // This image will not be included in the image info file. It is intended to be a newly added Dockerfile that hasn't
                     // been published yet.
-                    CreatePlatform(dockerfileStandalone2Path = CreateDockerfile(Standalone2RelativeDir, tempFolderContext), ["2.0"]))),
+                    CreatePlatform(dockerfileStandalone2Path = CreateDockerfile(standalone2RelativeDir, tempFolderContext), ["2.0"]))),
             CreateRepo("runtime",
                 CreateImage(
-                    CreatePlatform(dockerfileRuntime1Path = CreateDockerfile(Runtime1RelativeDir, tempFolderContext, "base"), ["1.0"])),
+                    CreatePlatform(dockerfileRuntime1Path = CreateDockerfile(runtime1RelativeDir, tempFolderContext, "base"), ["1.0"])),
                 CreateImage(
-                    CreatePlatform(dockerfileRuntime2Path = CreateDockerfile(Runtime2RelativeDir, tempFolderContext, "base"), ["2.0"]))),
+                    CreatePlatform(dockerfileRuntime2Path = CreateDockerfile(runtime2RelativeDir, tempFolderContext, "base"), ["2.0"]))),
             CreateRepo("sdk",
                 CreateImage(
-                    CreatePlatform(dockerfileSdk1Path = CreateDockerfile(Sdk1RelativeDir, tempFolderContext, "runtime:1.0"), ["1.0"])),
+                    CreatePlatform(dockerfileSdk1Path = CreateDockerfile(sdk1RelativeDir, tempFolderContext, "runtime:1.0"), ["1.0"])),
                 CreateImage(
-                    CreatePlatform(dockerfileSdk2Path = CreateDockerfile(Sdk2RelativeDir, tempFolderContext, "runtime:2.0"), ["2.0"])))
+                    CreatePlatform(dockerfileSdk2Path = CreateDockerfile(sdk2RelativeDir, tempFolderContext, "runtime:2.0"), ["2.0"])))
         );
 
         Mock<IImageCacheService> imageCacheServiceMock = new();
@@ -369,14 +369,14 @@ public class GenerateBuildMatrixCommandTests
     [TestMethod]
     public async Task GenerateBuildMatrixCommand_CustomMatrixOsVersion()
     {
-        const string CustomMatrixOsVersion = "custom";
+        const string customMatrixOsVersion = "custom";
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         GenerateBuildMatrixCommand command = CreateCommand();
         command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
         command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
         command.Options.DistinctMatrixOsVersions =
         [
-            CustomMatrixOsVersion
+            customMatrixOsVersion
         ];
 
         Manifest manifest = CreateManifest(
@@ -389,7 +389,7 @@ public class GenerateBuildMatrixCommandTests
                     CreatePlatform(
                         CreateDockerfile("1.0/aspnet/os2/amd64", tempFolderContext),
                         ["os2"],
-                        osVersion: CustomMatrixOsVersion))),
+                        osVersion: customMatrixOsVersion))),
             CreateRepo("sdk",
                 CreateImage(
                     CreatePlatform(
@@ -399,7 +399,7 @@ public class GenerateBuildMatrixCommandTests
                     CreatePlatform(
                         CreateDockerfile("1.0/sdk/os2/amd64", tempFolderContext, "aspnet:os2"),
                         ["tag2"],
-                        osVersion: CustomMatrixOsVersion)))
+                        osVersion: customMatrixOsVersion)))
         );
 
         File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -409,7 +409,7 @@ public class GenerateBuildMatrixCommandTests
         matrixInfos.Count().ShouldBe(2);
 
         BuildMatrixInfo matrixInfo = matrixInfos.ElementAt(0);
-        matrixInfo.Name.ShouldBe($"{CustomMatrixOsVersion}Amd64");
+        matrixInfo.Name.ShouldBe($"{customMatrixOsVersion}Amd64");
         matrixInfo.Legs.ShouldHaveSingleItem();
         matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value.ShouldBe("--path 1.0/aspnet/os2/amd64/Dockerfile --path 1.0/sdk/os2/amd64/Dockerfile");
 

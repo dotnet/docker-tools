@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.GitAutomation.GitHub;
 /// <param name="identity">The git identity represented by the token.</param>
 public sealed class StaticGitHubAccessProvider(string token, AutomationIdentity identity) : IGitHubAccessProvider
 {
-    private static readonly ProductHeaderValue s_productHeaderValue = new("Microsoft.DotNet.GitAutomation");
+    private static readonly ProductHeaderValue ProductHeaderValue = new("Microsoft.DotNet.GitAutomation");
     private readonly GitHubAccess _access = CreateAccess(token, identity);
 
     /// <inheritdoc/>
@@ -24,6 +24,6 @@ public sealed class StaticGitHubAccessProvider(string token, AutomationIdentity 
     private static GitHubAccess CreateAccess(string token, AutomationIdentity identity)
     {
         InMemoryCredentialStore credentials = new InMemoryCredentialStore(new Credentials(token));
-        return new(credentials, identity, new GitHubClient(s_productHeaderValue, credentials));
+        return new(credentials, identity, new GitHubClient(ProductHeaderValue, credentials));
     }
 }

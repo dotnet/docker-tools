@@ -50,9 +50,9 @@ public class GetBaseImageStatusCommand(IManifestJsonService manifestJsonService,
             .ToList();
 
         _logger.LogInformation("PULLING LATEST BASE IMAGES");
-        foreach ((string Tag, string Platform) in platformTags)
+        foreach ((string tag, string platform) in platformTags)
         {
-            _dockerService.PullImage(Tag, Platform, Options.IsDryRun, cancellationToken);
+            _dockerService.PullImage(tag, platform, Options.IsDryRun, cancellationToken);
         }
 
         _logger.LogInformation("QUERYING STATUS");

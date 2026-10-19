@@ -17,7 +17,7 @@ public class VariableHelper
     public const string RepoVariableTypeId = "Repo";
     private const string VariableGroupName = "variable";
 
-    private static readonly string s_tagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.| ]+)\\)";
+    private static readonly string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.| ]+)\\)";
 
     private Func<string, RepoInfo> GetRepoById { get; set; }
     private Manifest Manifest { get; set; }
@@ -64,7 +64,7 @@ public class VariableHelper
             return null;
         }
 
-        foreach (Match match in Regex.Matches(expression, s_tagVariablePattern))
+        foreach (Match match in Regex.Matches(expression, TagVariablePattern))
         {
             string? variableValue;
             string variableName = match.Groups[VariableGroupName].Value;

@@ -89,11 +89,11 @@ public class PublishMcrDocsCommandTests
 
         string readme1 = RepoReadmePath;
         string readme2 = Path.Combine("dir", RepoReadmePath);
-        const string ReadmeContents = "Readme Contents";
-        const string readme2Content = ReadmeContents + "-readme2";
+        const string readmeContents = "Readme Contents";
+        const string readme2Content = readmeContents + "-readme2";
 
         CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
-        CreateFile(readme1, tempFolderContext, ReadmeContents);
+        CreateFile(readme1, tempFolderContext, readmeContents);
         CreateFile(readme2, tempFolderContext, readme2Content);
         CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
         CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
@@ -159,18 +159,18 @@ public class PublishMcrDocsCommandTests
 
         string dotnetReadmePath = Path.Combine("dotnet", "README.portal.md");
         string aspireReadmePath = Path.Combine("aspire", "README.portal.md");
-        const string DotnetTagsMetadataPath = "runtime-tags.yml";
-        const string AspireTagsMetadataPath = "aspire-dashboard-tags.yml";
+        const string dotnetTagsMetadataPath = "runtime-tags.yml";
+        const string aspireTagsMetadataPath = "aspire-dashboard-tags.yml";
 
         CreateFile(dotnetReadmePath, tempFolderContext, DefaultReadme);
         CreateFile(aspireReadmePath, tempFolderContext, DefaultReadme);
         CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
         CreateFile(
-            DotnetTagsMetadataPath,
+            dotnetTagsMetadataPath,
             tempFolderContext,
             "$(McrTagsYmlRepo:runtime)\n$(McrTagsYmlTagGroup:runtime-tag)");
         CreateFile(
-            AspireTagsMetadataPath,
+            aspireTagsMetadataPath,
             tempFolderContext,
             "$(McrTagsYmlRepo:aspire-dashboard)\n$(McrTagsYmlTagGroup:aspire-tag)");
 
@@ -184,7 +184,7 @@ public class PublishMcrDocsCommandTests
             ],
             dotnetReadmePath,
             ReadmeTemplatePath,
-            DotnetTagsMetadataPath);
+            dotnetTagsMetadataPath);
         runtimeRepo.Id = "runtime";
 
         Repo aspireRepo = CreateRepo(
@@ -197,7 +197,7 @@ public class PublishMcrDocsCommandTests
             ],
             aspireReadmePath,
             ReadmeTemplatePath,
-            AspireTagsMetadataPath);
+            aspireTagsMetadataPath);
         aspireRepo.Id = "aspire-dashboard";
 
         Manifest manifest = CreateManifest(runtimeRepo, aspireRepo);
@@ -238,11 +238,11 @@ public class PublishMcrDocsCommandTests
 
         string readme1 = RepoReadmePath;
         string readme2 = Path.Combine("dir", RepoReadmePath);
-        const string ReadmeContents = "Readme Contents";
-        const string readme2Content = ReadmeContents + "-readme2";
+        const string readmeContents = "Readme Contents";
+        const string readme2Content = readmeContents + "-readme2";
 
         CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
-        CreateFile(readme1, tempFolderContext, ReadmeContents);
+        CreateFile(readme1, tempFolderContext, readmeContents);
         CreateFile(readme2, tempFolderContext, readme2Content);
         CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
         CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);

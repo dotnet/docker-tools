@@ -14,9 +14,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Notary;
 /// </summary>
 public sealed record Payload(Descriptor TargetArtifact)
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public string ToJson() => JsonSerializer.Serialize(this, s_jsonOptions);
+    public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
 
-    public static Payload FromJson(string json) => JsonSerializer.Deserialize<Payload>(json, s_jsonOptions);
+    public static Payload FromJson(string json) => JsonSerializer.Deserialize<Payload>(json, JsonOptions);
 }

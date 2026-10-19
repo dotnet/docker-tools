@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctokitClientFactory
 {
-    private static readonly ProductHeaderValue s_productHeaderValue =
+    private static readonly ProductHeaderValue ProductHeaderValue =
         new(name: Assembly.GetExecutingAssembly().GetName().Name);
 
     private readonly ILogger<OctokitClientFactory> _logger = logger;
@@ -92,7 +92,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
     {
         Credentials credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
-        Connection connection = new Connection(s_productHeaderValue)
+        Connection connection = new Connection(ProductHeaderValue)
         {
             Credentials = credentials
         };
@@ -127,7 +127,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     /// <param name="credentials"></param>
     /// <returns></returns>
     private static GitHubClient CreateClient(Credentials credentials) =>
-        new GitHubClient(s_productHeaderValue)
+        new GitHubClient(ProductHeaderValue)
         {
             Credentials = credentials
         };
@@ -152,12 +152,12 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
         GitHubApp CurrentApp,
         IReadOnlyList<Installation> Installations)
     {
-        private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
+        private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
         public override string ToString()
         {
-            string appInfoText = JsonSerializer.Serialize(CurrentApp, s_jsonOptions);
-            string installationsText = JsonSerializer.Serialize(Installations, s_jsonOptions);
+            string appInfoText = JsonSerializer.Serialize(CurrentApp, JsonOptions);
+            string installationsText = JsonSerializer.Serialize(Installations, JsonOptions);
 
             return $"""
 

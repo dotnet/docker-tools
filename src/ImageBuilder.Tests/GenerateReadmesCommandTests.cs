@@ -68,18 +68,18 @@ Referenced Template Content";
     [TestMethod]
     public async Task GenerateReadmesCommand_StringReplace()
     {
-        const string Template = """
+        const string template = """
             {{replace("Hello world!", "world", ".NET")}}
             """;
-        const string Expected = "Hello .NET!";
+        const string expected = "Hello .NET!";
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, Template);
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, template);
 
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
         string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
-        generatedReadme.ShouldBe(Expected);
+        generatedReadme.ShouldBe(expected);
     }
 
     [TestMethod]
@@ -166,10 +166,10 @@ ABC-123";
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
 
-        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) = isManifest
+        (IReadOnlyDictionary<Value, Value> symbols, string _) = isManifest
             ? command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default)
             : command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
-        Value actualSymbolValue = Symbols[symbol];
+        Value actualSymbolValue = symbols[symbol];
         Value expectedSymbolValue = actualSymbolValue.Type == ValueContent.Boolean
             ? Value.FromBoolean(bool.Parse(expectedValue))
             : Value.FromString(expectedValue);

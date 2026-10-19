@@ -26,7 +26,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
     private readonly IEnvironmentService _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
     private readonly List<string> _invalidTemplates = [];
     private readonly List<string> _outOfSyncArtifacts = [];
-    private readonly Dictionary<string, string> generatedArtifacts = [];
+    private readonly Dictionary<string, string> _generatedArtifacts = [];
 
     private TimeSpan _documentGenerationTime = TimeSpan.Zero;
     private TimeSpan _artifactGenerationTime = TimeSpan.Zero;
@@ -67,7 +67,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
             // There may be some artifact files which are referenced more than once in different contexts. Since we can only
             // generate the artifact once, we take the approach of first-one-wins. Once an artifact has been generated once,
             // it doesn't get generated again during the running of this command.
-            if (generatedArtifacts.TryGetValue(artifactPath, out string originalTemplatePath))
+            if (_generatedArtifacts.TryGetValue(artifactPath, out string originalTemplatePath))
             {
                 if (originalTemplatePath != templatePath)
                 {
@@ -80,7 +80,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
             }
 
             await GenerateArtifactAsync(templatePath, artifactPath, context, getState, artifactName, postProcess, cancellationToken);
-            generatedArtifacts.Add(artifactPath, templatePath);
+            _generatedArtifacts.Add(artifactPath, templatePath);
         }
 
         long allArtifactsEndTime = Stopwatch.GetTimestamp();
@@ -193,16 +193,16 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
 
         // Indents for nested templates are cumulative. Pass the current indent value and the result will contain
         // the new indent value to use for the nested template.
-        (IReadOnlyDictionary<Value, Value> Symbols, string Indent) = getTemplateState(context, templatePath, currentIndent);
-        IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(Symbols)
+        (IReadOnlyDictionary<Value, Value> baseSymbols, string indent) = getTemplateState(context, templatePath, currentIndent);
+        IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(baseSymbols)
         {
             { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) },
-            { "INDENT", Indent }
+            { "INDENT", indent }
         };
 
-        Indent ??= "";
+        indent ??= "";
         // Indents all the lines except the first one
-        template = template.Replace("\n", $"\n{Indent}");
+        template = template.Replace("\n", $"\n{indent}");
 
         if (Options.IsVerbose)
         {
@@ -233,7 +233,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
             // Furthermore, ParseException's "LocationStart" is actually the end of the error.
             // Calculate text position ourselves given the template and the character index of the error,
             // compensating for the indent length and error properties.
-            int indentLength = Indent.Length;
+            int indentLength = indent.Length;
             (int startLine, int startColumn) = GetTextLocationFromIndex(template, e.LocationStart - e.LocationLength, indentLength);
             (int endLine, int endColumn) = GetTextLocationFromIndex(template, e.LocationStart, indentLength);
 

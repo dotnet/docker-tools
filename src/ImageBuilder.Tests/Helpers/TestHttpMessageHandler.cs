@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 /// </summary>
 public class TestHttpMessageHandler(IDictionary<string, HttpResponseMessage> responses) : HttpMessageHandler
 {
-    private readonly IDictionary<string, HttpResponseMessage> responses = responses ?? throw new ArgumentNullException(nameof(responses));
+    private readonly IDictionary<string, HttpResponseMessage> _responses = responses ?? throw new ArgumentNullException(nameof(responses));
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(responses[request.RequestUri.ToString()]);
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(_responses[request.RequestUri.ToString()]);
 }

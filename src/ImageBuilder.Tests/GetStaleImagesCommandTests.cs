@@ -949,20 +949,20 @@ public class GetStaleImagesCommandTests
     [TestMethod]
     public async Task GetStaleImagesCommand_DependencyGraph_TwoRoots()
     {
-        const string RuntimeDepsRepo = "runtime-deps";
-        const string RuntimeRepo = "runtime";
-        const string AspnetRepo = "aspnet";
-        const string SdkRepo = "sdk";
-        const string MonitorRepo = "monitor";
+        const string runtimeDepsRepo = "runtime-deps";
+        const string runtimeRepo = "runtime";
+        const string aspnetRepo = "aspnet";
+        const string sdkRepo = "sdk";
+        const string monitorRepo = "monitor";
 
-        const string JammyRuntimeDepsDockerfilePath = "runtime-deps/jammy/Dockerfile";
-        const string JammyRuntimeDockerfilePath = "runtime/jammy/Dockerfile";
-        const string JammyAspnetDockerfilePath = "aspnet/jammy/Dockerfile";
-        const string JammySdkDockerfilePath = "sdk/jammy/Dockerfile";
-        const string JammyChiseledRuntimeDepsDockerfilePath = "runtime-deps/jammy-chiseled/Dockerfile";
-        const string JammyChiseledRuntimeDockerfilePath = "runtime/jammy-chiseled/Dockerfile";
-        const string JammyChiseledAspnetDockerfilePath = "aspnet/jammy-chiseled/Dockerfile";
-        const string JammyChiseledMonitorDockerfilePath = "monitor/jammy-chiseled/Dockerfile";
+        const string jammyRuntimeDepsDockerfilePath = "runtime-deps/jammy/Dockerfile";
+        const string jammyRuntimeDockerfilePath = "runtime/jammy/Dockerfile";
+        const string jammyAspnetDockerfilePath = "aspnet/jammy/Dockerfile";
+        const string jammySdkDockerfilePath = "sdk/jammy/Dockerfile";
+        const string jammyChiseledRuntimeDepsDockerfilePath = "runtime-deps/jammy-chiseled/Dockerfile";
+        const string jammyChiseledRuntimeDockerfilePath = "runtime/jammy-chiseled/Dockerfile";
+        const string jammyChiseledAspnetDockerfilePath = "aspnet/jammy-chiseled/Dockerfile";
+        const string jammyChiseledMonitorDockerfilePath = "monitor/jammy-chiseled/Dockerfile";
 
         const string baseImage = "base1";
         const string baseImageDigest = "base1digest";
@@ -973,38 +973,38 @@ public class GetStaleImagesCommandTests
                 CreateSubscription("repo1"),
                 CreateManifest(
                     CreateRepo(
-                        RuntimeDepsRepo,
+                        runtimeDepsRepo,
                         CreateImage(
-                            CreatePlatform(JammyRuntimeDepsDockerfilePath, ["jammy"])),
+                            CreatePlatform(jammyRuntimeDepsDockerfilePath, ["jammy"])),
                         CreateImage(
-                            CreatePlatform(JammyChiseledRuntimeDepsDockerfilePath, ["jammy-chiseled"]))),
+                            CreatePlatform(jammyChiseledRuntimeDepsDockerfilePath, ["jammy-chiseled"]))),
                     CreateRepo(
-                        RuntimeRepo,
+                        runtimeRepo,
                         CreateImage(
-                            CreatePlatform(JammyRuntimeDockerfilePath, ["jammy"])),
+                            CreatePlatform(jammyRuntimeDockerfilePath, ["jammy"])),
                         CreateImage(
-                            CreatePlatform(JammyChiseledRuntimeDockerfilePath, ["jammy-chiseled"]))),
+                            CreatePlatform(jammyChiseledRuntimeDockerfilePath, ["jammy-chiseled"]))),
                     CreateRepo(
-                        AspnetRepo,
+                        aspnetRepo,
                         CreateImage(
-                            CreatePlatform(JammyAspnetDockerfilePath, ["jammy"])),
+                            CreatePlatform(jammyAspnetDockerfilePath, ["jammy"])),
                         CreateImage(
-                            CreatePlatform(JammyChiseledAspnetDockerfilePath, ["jammy-chiseled"]))),
+                            CreatePlatform(jammyChiseledAspnetDockerfilePath, ["jammy-chiseled"]))),
                     CreateRepo(
-                        SdkRepo,
+                        sdkRepo,
                         CreateImage(
-                            CreatePlatform(JammySdkDockerfilePath, ["jammy"]))),
+                            CreatePlatform(jammySdkDockerfilePath, ["jammy"]))),
                     CreateRepo(
-                        MonitorRepo,
+                        monitorRepo,
                         CreateImage(
-                            CreatePlatform(JammyChiseledMonitorDockerfilePath, ["jammy-chiseled"])))),
+                            CreatePlatform(jammyChiseledMonitorDockerfilePath, ["jammy-chiseled"])))),
                 new ImageArtifactDetails
                 {
                     Repos =
                     {
                         new RepoData
                         {
-                            Repo = RuntimeDepsRepo,
+                            Repo = runtimeDepsRepo,
                             Images =
                             {
                                 new ImageData
@@ -1012,7 +1012,7 @@ public class GetStaleImagesCommandTests
                                     Platforms =
                                     {
                                         CreatePlatform(
-                                            JammyRuntimeDepsDockerfilePath,
+                                            jammyRuntimeDepsDockerfilePath,
                                             baseImageDigest: $"{baseImage}@{baseImageDigest}-diff",
                                             simpleTags: ["tag1"])
                                     }
@@ -1021,19 +1021,19 @@ public class GetStaleImagesCommandTests
                         },
                         new RepoData
                         {
-                            Repo = RuntimeRepo
+                            Repo = runtimeRepo
                         },
                         new RepoData
                         {
-                            Repo = AspnetRepo
+                            Repo = aspnetRepo
                         },
                         new RepoData
                         {
-                            Repo = SdkRepo
+                            Repo = sdkRepo
                         },
                         new RepoData
                         {
-                            Repo = MonitorRepo
+                            Repo = monitorRepo
                         }
                     }
                 }
@@ -1047,16 +1047,16 @@ public class GetStaleImagesCommandTests
                 subscriptionInfos[0].Subscription.Manifest,
                 new List<DockerfileInfo>
                 {
-                    new DockerfileInfo(JammyRuntimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
-                    new DockerfileInfo(JammyChiseledRuntimeDepsDockerfilePath, new FromImageInfo("scratch", null)),
-                    new DockerfileInfo(JammyRuntimeDockerfilePath, new FromImageInfo($"{RuntimeDepsRepo}:jammy", null)),
-                    new DockerfileInfo(JammyChiseledRuntimeDockerfilePath, new FromImageInfo($"{RuntimeDepsRepo}:jammy-chiseled", null)),
-                    new DockerfileInfo(JammyAspnetDockerfilePath, new FromImageInfo($"{RuntimeRepo}:jammy", null)),
-                    new DockerfileInfo(JammyChiseledAspnetDockerfilePath, new FromImageInfo($"{RuntimeRepo}:jammy-chiseled", null)),
-                    new DockerfileInfo(JammySdkDockerfilePath, new FromImageInfo($"{AspnetRepo}:jammy", null)),
-                    new DockerfileInfo(JammyChiseledMonitorDockerfilePath,
-                        new FromImageInfo($"{SdkRepo}:jammy", null),
-                        new FromImageInfo($"{AspnetRepo}:jammy-chiseled", null)),
+                    new DockerfileInfo(jammyRuntimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
+                    new DockerfileInfo(jammyChiseledRuntimeDepsDockerfilePath, new FromImageInfo("scratch", null)),
+                    new DockerfileInfo(jammyRuntimeDockerfilePath, new FromImageInfo($"{runtimeDepsRepo}:jammy", null)),
+                    new DockerfileInfo(jammyChiseledRuntimeDockerfilePath, new FromImageInfo($"{runtimeDepsRepo}:jammy-chiseled", null)),
+                    new DockerfileInfo(jammyAspnetDockerfilePath, new FromImageInfo($"{runtimeRepo}:jammy", null)),
+                    new DockerfileInfo(jammyChiseledAspnetDockerfilePath, new FromImageInfo($"{runtimeRepo}:jammy-chiseled", null)),
+                    new DockerfileInfo(jammySdkDockerfilePath, new FromImageInfo($"{aspnetRepo}:jammy", null)),
+                    new DockerfileInfo(jammyChiseledMonitorDockerfilePath,
+                        new FromImageInfo($"{sdkRepo}:jammy", null),
+                        new FromImageInfo($"{aspnetRepo}:jammy-chiseled", null)),
                 }
             }
         };
@@ -1072,14 +1072,14 @@ public class GetStaleImagesCommandTests
                     subscriptionInfos[0].Subscription,
                     new List<string>
                     {
-                        JammyRuntimeDepsDockerfilePath,
-                        JammyRuntimeDockerfilePath,
-                        JammyAspnetDockerfilePath,
-                        JammySdkDockerfilePath,
-                        JammyChiseledMonitorDockerfilePath,
-                        JammyChiseledAspnetDockerfilePath,
-                        JammyChiseledRuntimeDockerfilePath,
-                        JammyChiseledRuntimeDepsDockerfilePath,
+                        jammyRuntimeDepsDockerfilePath,
+                        jammyRuntimeDockerfilePath,
+                        jammyAspnetDockerfilePath,
+                        jammySdkDockerfilePath,
+                        jammyChiseledMonitorDockerfilePath,
+                        jammyChiseledAspnetDockerfilePath,
+                        jammyChiseledRuntimeDockerfilePath,
+                        jammyChiseledRuntimeDepsDockerfilePath,
                     }
                 }
         };
@@ -1502,7 +1502,7 @@ public class GetStaleImagesCommandTests
         const string repo1 = "test-repo";
         const string dockerfile1Path = "dockerfile1/Dockerfile";
         const string dockerfile2Path = "dockerfile2/Dockerfile";
-        const string CustomRegistry = "my-registry.io";
+        const string customRegistry = "my-registry.io";
 
         SubscriptionInfo[] subscriptionInfos =
         [
@@ -1529,11 +1529,11 @@ public class GetStaleImagesCommandTests
                                     {
                                         CreatePlatform(
                                             dockerfile1Path,
-                                            baseImageDigest: $"{CustomRegistry}/base1@base1digest",
+                                            baseImageDigest: $"{customRegistry}/base1@base1digest",
                                             simpleTags: ["tag1"]),
                                         CreatePlatform(
                                             dockerfile2Path,
-                                            baseImageDigest: $"{CustomRegistry}/base2@alternate-base2digest",
+                                            baseImageDigest: $"{customRegistry}/base2@alternate-base2digest",
                                             simpleTags: ["tag2"])
                                     }
                                 }
@@ -1557,8 +1557,8 @@ public class GetStaleImagesCommandTests
         };
 
         using TestFixture fixture = new(subscriptionInfos, dockerfileInfos);
-        fixture.ImageDigests.Add($"{CustomRegistry}/base1", "alternate-base1digest");
-        fixture.ImageDigests.Add($"{CustomRegistry}/base2", "alternate-base2digest");
+        fixture.ImageDigests.Add($"{customRegistry}/base1", "alternate-base1digest");
+        fixture.ImageDigests.Add($"{customRegistry}/base2", "alternate-base2digest");
 
         // Override the image tags to target a custom registry
         fixture.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
@@ -1627,14 +1627,14 @@ public class GetStaleImagesCommandTests
     /// </summary>
     private class TestFixture : IDisposable
     {
-        private readonly List<string> filesToCleanup = [];
-        private readonly List<string> foldersToCleanup = [];
-        private readonly Dictionary<string, string> imageDigests = [];
-        private readonly string subscriptionsPath;
-        private readonly Mock<ILogger<GetStaleImagesCommand>> loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
-        private readonly string osType;
-        private readonly IOctokitClientFactory octokitClientFactory;
-        private readonly IGitService gitService;
+        private readonly List<string> _filesToCleanup = [];
+        private readonly List<string> _foldersToCleanup = [];
+        private readonly Dictionary<string, string> _imageDigests = [];
+        private readonly string _subscriptionsPath;
+        private readonly Mock<ILogger<GetStaleImagesCommand>> _loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
+        private readonly string _osType;
+        private readonly IOctokitClientFactory _octokitClientFactory;
+        private readonly IGitService _gitService;
 
         private const string VariableName = "my-var";
 
@@ -1644,7 +1644,7 @@ public class GetStaleImagesCommandTests
 
         public GetStaleImagesCommand Command { get; }
 
-        public IDictionary<string, string> ImageDigests => imageDigests;
+        public IDictionary<string, string> ImageDigests => _imageDigests;
 
         /// <summary>
         /// Initializes a new instance of <see cref="TestFixture"/>.
@@ -1657,8 +1657,8 @@ public class GetStaleImagesCommandTests
             Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos,
             string osType = "*")
         {
-            this.osType = osType;
-            subscriptionsPath = SerializeJsonObjectToTempFile(
+            _osType = osType;
+            _subscriptionsPath = SerializeJsonObjectToTempFile(
                 subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
             // Cache image digests lookup
@@ -1669,7 +1669,7 @@ public class GetStaleImagesCommandTests
                 {
                     // Normalize the key using ImageName.Parse to match how the mock receives ImageName
                     string normalizedName = ImageName.Parse(fromImage.Name, autoResolveImpliedNames: true).ToString();
-                    imageDigests[normalizedName] = fromImage.Digest;
+                    _imageDigests[normalizedName] = fromImage.Digest;
                 }
             }
 
@@ -1678,8 +1678,8 @@ public class GetStaleImagesCommandTests
                 Id = Guid.NewGuid()
             };
 
-            gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
-            octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
+            _gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
+            _octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
             (ManifestServiceFactoryMock, ManifestServiceMock) = CreateManifestServiceMocks();
 
@@ -1693,7 +1693,7 @@ public class GetStaleImagesCommandTests
         /// </summary>
         public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
         {
-            IInvocation invocation = loggerServiceMock.Invocations
+            IInvocation invocation = _loggerServiceMock.Invocations
                 .First(invocation => invocation.Method.Name == nameof(ILogger.Log) &&
                     invocation.Arguments[2]?.ToString()?.StartsWith("##vso") == true);
 
@@ -1722,17 +1722,17 @@ public class GetStaleImagesCommandTests
         {
             string path = Path.GetTempFileName();
             File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-            filesToCleanup.Add(path);
+            _filesToCleanup.Add(path);
             return path;
         }
 
         private GetStaleImagesCommand CreateCommand()
         {
             GetStaleImagesCommand command = new(
-                ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), loggerServiceMock.Object, octokitClientFactory, gitService);
-            command.Options.SubscriptionOptions.SubscriptionsPath = subscriptionsPath;
+                ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), _loggerServiceMock.Object, _octokitClientFactory, _gitService);
+            command.Options.SubscriptionOptions.SubscriptionsPath = _subscriptionsPath;
             command.Options.VariableName = VariableName;
-            command.Options.FilterOptions.Platform.OsType = osType;
+            command.Options.FilterOptions.Platform.OsType = _osType;
             command.Options.GitOptions.Email = "test";
             command.Options.GitOptions.Username = "test";
             command.Options.GitOptions.GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "test");
@@ -1888,7 +1888,7 @@ public class GetStaleImagesCommandTests
             manifestServiceMock
                 .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ImageName image, bool isDryRun, CancellationToken _) =>
-                    new ManifestQueryResult(imageDigests[image], []));
+                    new ManifestQueryResult(_imageDigests[image], []));
 
             Mock<IManifestServiceFactory> manifestServiceFactoryMock =
                 ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock.Object);
@@ -1928,12 +1928,12 @@ public class GetStaleImagesCommandTests
 
         public void Dispose()
         {
-            foreach (string file in filesToCleanup)
+            foreach (string file in _filesToCleanup)
             {
                 File.Delete(file);
             }
 
-            foreach (string folder in foldersToCleanup)
+            foreach (string folder in _foldersToCleanup)
             {
                 Directory.Delete(folder, true);
             }

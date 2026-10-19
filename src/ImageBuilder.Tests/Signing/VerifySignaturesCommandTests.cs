@@ -27,8 +27,8 @@ public class VerifySignaturesCommandTests
     private const string PlatformDigestB = "registry.io/repo@sha256:bbb";
     private const string ManifestDigest = "registry.io/repo@sha256:ccc";
 
-    private static readonly string s_certPath = Path.Combine(TrustBasePath, "certs", TrustStoreName, "root-ca.crt");
-    private static readonly string s_policyPath = Path.Combine(TrustBasePath, "policies", $"{TrustStoreName}.json");
+    private static readonly string CertPath = Path.Combine(TrustBasePath, "certs", TrustStoreName, "root-ca.crt");
+    private static readonly string PolicyPath = Path.Combine(TrustBasePath, "policies", $"{TrustStoreName}.json");
 
     /// <summary>Creates a default enabled signing configuration for tests.</summary>
     private static SigningConfiguration CreateDefaultSigningConfig()
@@ -43,7 +43,7 @@ public class VerifySignaturesCommandTests
     /// <summary>
     /// Image-info JSON with two platform digests and one manifest list digest.
     /// </summary>
-    private static readonly string s_imageInfoJson = $$"""
+    private static readonly string ImageInfoJson = $$"""
         {
           "repos": [
             {
@@ -86,7 +86,7 @@ public class VerifySignaturesCommandTests
     /// <summary>
     /// Image-info JSON where all platform digests are empty, used to test the no-digests early exit.
     /// </summary>
-    private static readonly string s_emptyDigestsImageInfoJson = """
+    private static readonly string EmptyDigestsImageInfoJson = """
         {
           "repos": [
             {
@@ -230,7 +230,7 @@ public class VerifySignaturesCommandTests
     public async Task VerifySignatures_SkipsWhenNoDigests()
     {
         InMemoryFileSystem fileSystem = new InMemoryFileSystem();
-        fileSystem.AddFile(ImageInfoPath, s_emptyDigestsImageInfoJson);
+        fileSystem.AddFile(ImageInfoPath, EmptyDigestsImageInfoJson);
         SeedTrustMaterials(fileSystem);
 
         Mock<INotationClient> notationClientMock = new Mock<INotationClient>();
@@ -325,7 +325,7 @@ public class VerifySignaturesCommandTests
     /// Seeds the image-info.json file into the in-memory file system.
     /// </summary>
     private static void SeedImageInfoFile(InMemoryFileSystem fileSystem) =>
-        fileSystem.AddFile(ImageInfoPath, s_imageInfoJson);
+        fileSystem.AddFile(ImageInfoPath, ImageInfoJson);
 
     /// <summary>
     /// Seeds the trust materials (root CA certificate and trust policy) into the in-memory file system.
@@ -338,11 +338,11 @@ public class VerifySignaturesCommandTests
 
     /// <summary>Seeds the root CA certificate into the in-memory file system.</summary>
     private static void SeedCert(InMemoryFileSystem fileSystem) =>
-        fileSystem.AddFile(s_certPath, "fake-cert-data");
+        fileSystem.AddFile(CertPath, "fake-cert-data");
 
     /// <summary>Seeds the trust policy file into the in-memory file system.</summary>
     private static void SeedPolicy(InMemoryFileSystem fileSystem) =>
-        fileSystem.AddFile(s_policyPath, """{"version":"1.0","trustPolicies":[]}""");
+        fileSystem.AddFile(PolicyPath, """{"version":"1.0","trustPolicies":[]}""");
 
     /// <summary>
     /// Holds the command under test and its mocked dependencies for assertion.

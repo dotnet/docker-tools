@@ -17,13 +17,13 @@ public class WaitForMcrDocIngestionOptions : Options
 
     public ServiceConnection? MarServiceConnection { get; set; }
 
-    private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
-    private static readonly ServiceConnectionOptionsBuilder s_serviceConnectionOptionsBuilder = new();
+    private static readonly ServiceConnectionOptionsBuilder ServiceConnectionOptionsBuilder = new();
 
     private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
-        s_serviceConnectionOptionsBuilder.GetCliOption("--mar-service-connection");
+        ServiceConnectionOptionsBuilder.GetCliOption("--mar-service-connection");
 
     private static readonly Argument<string> CommitDigestArgument = new(nameof(CommitDigest))
     {
@@ -41,7 +41,7 @@ public class WaitForMcrDocIngestionOptions : Options
         [
             ..base.GetCliOptions(),
             MarServiceConnectionOption,
-            ..IngestionOptions.GetCliOptions(s_defaultTimeout, s_defaultRequeryDelay),
+            ..IngestionOptions.GetCliOptions(DefaultTimeout, DefaultRequeryDelay),
         ];
 
     public override void Bind(ParseResult result)

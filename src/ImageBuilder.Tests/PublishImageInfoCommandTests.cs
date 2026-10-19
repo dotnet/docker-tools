@@ -29,11 +29,11 @@ public class PublishImageInfoCommandTests : IDisposable
 
     #nullable disable annotations
 
-    private readonly List<string> foldersToDelete = [];
+    private readonly List<string> _foldersToDelete = [];
 
     public void Dispose()
     {
-        foldersToDelete
+        _foldersToDelete
             .Where(folder => Directory.Exists(folder))
             .ForEach(folder => Directory.Delete(folder, recursive: true));
     }
@@ -230,7 +230,7 @@ public class PublishImageInfoCommandTests : IDisposable
             {
                 Directory.CreateDirectory(workdirPath);
                 File.WriteAllText(Path.Combine(workdirPath, imageInfoPath), string.Empty);
-                foldersToDelete.Add(workdirPath);
+                _foldersToDelete.Add(workdirPath);
             })
             .Returns(repository);
         return gitServiceMock;

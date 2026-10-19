@@ -108,7 +108,7 @@ public static class ExecuteHelper
             StartInfo = info
         };
 
-        DataReceivedEventHandler getDataReceivedHandler(StringBuilder stringBuilder, TextWriter outputWriter)
+        DataReceivedEventHandler GetDataReceivedHandler(StringBuilder stringBuilder, TextWriter outputWriter)
         {
             return new DataReceivedEventHandler((sender, e) =>
             {
@@ -122,10 +122,10 @@ public static class ExecuteHelper
         }
 
         StringBuilder stdOutput = new StringBuilder();
-        process.OutputDataReceived += getDataReceivedHandler(stdOutput, Console.Out);
+        process.OutputDataReceived += GetDataReceivedHandler(stdOutput, Console.Out);
 
         StringBuilder stdError = new StringBuilder();
-        process.ErrorDataReceived += getDataReceivedHandler(stdError, Console.Error);
+        process.ErrorDataReceived += GetDataReceivedHandler(stdError, Console.Error);
 
         if (cancellationToken.IsCancellationRequested)
         {

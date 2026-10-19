@@ -24,19 +24,19 @@ public static class InfrastructureContent
     /// </summary>
     private const string ResourcePrefix = "Content/";
 
-    private static readonly Assembly s_assembly = typeof(InfrastructureContent).Assembly;
+    private static readonly Assembly Assembly = typeof(InfrastructureContent).Assembly;
 
     /// <summary>
     /// Maps each content file's path (relative to the embedded content root, using '/' separators)
     /// to its underlying manifest resource name.
     /// </summary>
-    private static readonly IReadOnlyDictionary<string, string> s_resourceNamesByPath = BuildIndex();
+    private static readonly IReadOnlyDictionary<string, string> ResourceNamesByPath = BuildIndex();
 
     /// <summary>
     /// Gets the paths of all embedded content files, relative to the content root and using
     /// '/' as the directory separator (for example, <c>templates/jobs/build-images.yml</c>).
     /// </summary>
-    public static IReadOnlyList<string> GetRelativePaths() => [.. s_resourceNamesByPath.Keys];
+    public static IReadOnlyList<string> GetRelativePaths() => [.. ResourceNamesByPath.Keys];
 
     /// <summary>
     /// Opens a stream over the raw bytes of an embedded content file. The caller owns the returned
@@ -51,12 +51,12 @@ public static class InfrastructureContent
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
 
-        if (!s_resourceNamesByPath.TryGetValue(relativePath, out string? resourceName))
+        if (!ResourceNamesByPath.TryGetValue(relativePath, out string? resourceName))
         {
             throw new KeyNotFoundException($"No embedded infrastructure content found for path '{relativePath}'.");
         }
 
-        return s_assembly.GetManifestResourceStream(resourceName)
+        return Assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' could not be opened.");
     }
 
@@ -68,7 +68,7 @@ public static class InfrastructureContent
         // (embedded resources are preserved by the trimmer), so this is intentionally AOT compatible. Don't
         // "fix" it by switching to a source generator without a concrete reason - it would only add an analyzer
         // project and a Roslyn dependency for no AOT benefit.
-        foreach (string resourceName in s_assembly.GetManifestResourceNames())
+        foreach (string resourceName in Assembly.GetManifestResourceNames())
         {
             // Resource names use the build OS directory separator, so normalize before matching.
             string normalizedName = resourceName.Replace('\\', '/');

@@ -17,11 +17,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class ManifestInfoTests
 {
-    private static readonly string s_dockerfilePath = "testDockerfile";
-    private static readonly string s_repoJson =
+    private static readonly string DockerfilePath = "testDockerfile";
+    private static readonly string RepoJson =
 $@"
   ""repos"": [
-    {CreateRepo("testRepo", s_dockerfilePath)}
+    {CreateRepo("testRepo", DockerfilePath)}
   ]
 ";
 
@@ -42,7 +42,7 @@ $@"
   ""variables"": {{
       ""{variableOneName}"": ""{variableOneValue}""
   }},
-{s_repoJson}
+{RepoJson}
 }}";
         string includeManifest =
 $@"
@@ -67,7 +67,7 @@ $@"
   ""includes"": [
     ""invalid.json""
   ],
-{s_repoJson}
+{RepoJson}
 }}";
 
         Should.Throw<FileNotFoundException>(() => LoadManifestInfo(manifest));
@@ -87,7 +87,7 @@ $@"
   ""variables"": {{
       {duplicateVariable}
   }},
-{s_repoJson}
+{RepoJson}
 }}";
         string includeManifest =
 $@"
@@ -118,8 +118,8 @@ $@"
 $@"
 {{
   ""repos"": [
-    {CreateRepo("testRepo1", s_dockerfilePath, "testTag1")},
-    {CreateRepo("testRepo2", s_dockerfilePath)}
+    {CreateRepo("testRepo1", DockerfilePath, "testTag1")},
+    {CreateRepo("testRepo2", DockerfilePath)}
   ]
 }}";
 
@@ -127,8 +127,8 @@ $@"
 $@"
 {{
   ""repos"": [
-    {CreateRepo("testRepo1", s_dockerfilePath, "testTag2")},
-    {CreateRepo("testRepo3", s_dockerfilePath)}
+    {CreateRepo("testRepo1", DockerfilePath, "testTag2")},
+    {CreateRepo("testRepo3", DockerfilePath)}
   ]
 }}";
 
@@ -140,7 +140,7 @@ $@"
         File.WriteAllText(Path.Combine(tempFolderContext.Path, includeManifestPath1), includeManifest1);
         File.WriteAllText(Path.Combine(tempFolderContext.Path, includeManifestPath2), includeManifest2);
 
-        DockerfileHelper.CreateDockerfile(s_dockerfilePath, tempFolderContext);
+        DockerfileHelper.CreateDockerfile(DockerfilePath, tempFolderContext);
 
         IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
         ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
@@ -168,7 +168,7 @@ $@"
             File.WriteAllText(fullIncludeManifestPath, includeManifest);
         }
 
-        DockerfileHelper.CreateDockerfile(s_dockerfilePath, tempFolderContext);
+        DockerfileHelper.CreateDockerfile(DockerfilePath, tempFolderContext);
 
         IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
         Mock.Get(manifestOptions).SetupGet(options => options.Variables).Returns(new Dictionary<string, string>());
@@ -187,7 +187,7 @@ $@"
                 "images": [{
                   "syndication": "$(destination)",
                   "platforms": [{
-                    "dockerfile": "{{s_dockerfilePath}}",
+                    "dockerfile": "{{DockerfilePath}}",
                     "os": "linux",
                     "osVersion": "trixie",
                     "tags": { "tag": {}, }
@@ -215,7 +215,7 @@ $@"
                 "images": [{
                   "syndication": "{{destination}}",
                   "platforms": [{
-                    "dockerfile": "{{s_dockerfilePath}}",
+                    "dockerfile": "{{DockerfilePath}}",
                     "os": "linux",
                     "osVersion": "trixie",
                     "tags": { "tag": {} }
@@ -248,7 +248,7 @@ $@"
                     "shared": {{sharedTagMetadata}}
                   },
                   "platforms": [{
-                    "dockerfile": "{{s_dockerfilePath}}",
+                    "dockerfile": "{{DockerfilePath}}",
                     "os": "linux",
                     "osVersion": "trixie",
                     "tags": {

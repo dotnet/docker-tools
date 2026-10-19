@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image;
 
 public class ImageArtifactDetails
 {
-    private static readonly JsonSerializerSettings s_jsonSettings = new()
+    private static readonly JsonSerializerSettings JsonSettings = new()
     {
         Converters =
         [
@@ -28,7 +28,7 @@ public class ImageArtifactDetails
     public static ImageArtifactDetails FromJson(string json)
     {
         ImageArtifactDetails imageArtifactDetails =
-            JsonConvert.DeserializeObject<ImageArtifactDetails>(json, s_jsonSettings)
+            JsonConvert.DeserializeObject<ImageArtifactDetails>(json, JsonSettings)
                 ?? throw new SerializationException(
                     $"""
                     Failed to deserialize {nameof(ImageArtifactDetails)} from content:
@@ -40,7 +40,7 @@ public class ImageArtifactDetails
 
     private class SchemaVersion2LayerConverter : JsonConverter
     {
-        private static readonly JsonSerializer s_jsonSerializer =
+        private static readonly JsonSerializer JsonSerializer =
             JsonSerializer.Create(JsonHelper.JsonSerializerSettings);
 
         // We do not want to handle writing at all. We only want to convert
@@ -63,7 +63,7 @@ public class ImageArtifactDetails
                 // We can't use the JsonSerializer passed into the method since
                 // it contains this converter. Doing so would cause a stack
                 // overflow since this method would be called again recursively.
-                JTokenType.Object => token.ToObject<Layer>(s_jsonSerializer),
+                JTokenType.Object => token.ToObject<Layer>(JsonSerializer),
 
                 // If we encounter a string, we want to convert it to the Layer
                 // object defined in schema version 2. Assume a size of 0. The

@@ -19,18 +19,18 @@ public class LifecycleMetadataOptions : Options
     public MarIngestionOptions IngestionOptions { get; set; } = new();
     public ServiceConnection? MarServiceConnection { get; set; }
 
-    private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
-    private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
+    private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
-    private static readonly Option<bool> s_waitForIngestionOption = new("--wait-for-ingestion")
+    private static readonly Option<bool> WaitForIngestionOption = new("--wait-for-ingestion")
     {
         Description = "Wait for the created annotations to be ingested by MAR"
     };
 
-    private static readonly Option<ServiceConnection?> s_marServiceConnectionOption =
+    private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
         new ServiceConnectionOptionsBuilder().GetCliOption("--mar-service-connection");
 
-    private static readonly Option<bool> s_markAsInternalOption = new("--mark-as-internal")
+    private static readonly Option<bool> MarkAsInternalOption = new("--mark-as-internal")
     {
         Description = "Mark lifecycle metadata as internal-only so it is never copied when publishing"
     };
@@ -38,19 +38,19 @@ public class LifecycleMetadataOptions : Options
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        s_markAsInternalOption,
-        s_waitForIngestionOption,
-        ..IngestionOptions.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
-        s_marServiceConnectionOption,
+        MarkAsInternalOption,
+        WaitForIngestionOption,
+        ..IngestionOptions.GetCliOptions(DefaultWaitTimeout, DefaultRequeryDelay),
+        MarServiceConnectionOption,
     ];
 
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        MarkAsInternal = result.GetValue(s_markAsInternalOption);
-        WaitForIngestion = result.GetValue(s_waitForIngestionOption);
+        MarkAsInternal = result.GetValue(MarkAsInternalOption);
+        WaitForIngestion = result.GetValue(WaitForIngestionOption);
         IngestionOptions.Bind(result);
-        MarServiceConnection = result.GetValue(s_marServiceConnectionOption);
+        MarServiceConnection = result.GetValue(MarServiceConnectionOption);
     }
 }
 
@@ -78,12 +78,12 @@ public class FileLifecycleMetadataOptions : LifecycleMetadataOptions
     public string EolDigestsListPath { get; set; } = string.Empty;
     public bool StopOnConflict { get; set; }
 
-    private static readonly Argument<string> s_eolDigestsListPathArgument = new(nameof(EolDigestsListPath))
+    private static readonly Argument<string> EolDigestsListPathArgument = new(nameof(EolDigestsListPath))
     {
         Description = "JSON file containing fully-qualified image digests and their EOL dates"
     };
 
-    private static readonly Option<bool> s_stopOnConflictOption = new("--stop-on-conflict")
+    private static readonly Option<bool> StopOnConflictOption = new("--stop-on-conflict")
     {
         Description = "Fail when existing lifecycle metadata has a different EOL date instead of skipping the image"
     };
@@ -91,20 +91,20 @@ public class FileLifecycleMetadataOptions : LifecycleMetadataOptions
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        s_eolDigestsListPathArgument,
+        EolDigestsListPathArgument,
     ];
 
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        s_stopOnConflictOption,
+        StopOnConflictOption,
     ];
 
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        EolDigestsListPath = result.GetValue(s_eolDigestsListPathArgument) ?? string.Empty;
-        StopOnConflict = result.GetValue(s_stopOnConflictOption);
+        EolDigestsListPath = result.GetValue(EolDigestsListPathArgument) ?? string.Empty;
+        StopOnConflict = result.GetValue(StopOnConflictOption);
     }
 }
 
@@ -113,12 +113,12 @@ public class UnsupportedLifecycleMetadataOptions : RegistryLifecycleMetadataOpti
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;
 
-    private static readonly Argument<string> s_oldImageInfoPathArgument = new(nameof(OldImageInfoPath))
+    private static readonly Argument<string> OldImageInfoPathArgument = new(nameof(OldImageInfoPath))
     {
         Description = "Previously published image info file"
     };
 
-    private static readonly Argument<string> s_newImageInfoPathArgument = new(nameof(NewImageInfoPath))
+    private static readonly Argument<string> NewImageInfoPathArgument = new(nameof(NewImageInfoPath))
     {
         Description = "Image info file describing the currently supported images"
     };
@@ -126,14 +126,14 @@ public class UnsupportedLifecycleMetadataOptions : RegistryLifecycleMetadataOpti
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        s_oldImageInfoPathArgument,
-        s_newImageInfoPathArgument,
+        OldImageInfoPathArgument,
+        NewImageInfoPathArgument,
     ];
 
     public override void Bind(ParseResult result)
     {
         base.Bind(result);
-        OldImageInfoPath = result.GetValue(s_oldImageInfoPathArgument) ?? string.Empty;
-        NewImageInfoPath = result.GetValue(s_newImageInfoPathArgument) ?? string.Empty;
+        OldImageInfoPath = result.GetValue(OldImageInfoPathArgument) ?? string.Empty;
+        NewImageInfoPath = result.GetValue(NewImageInfoPathArgument) ?? string.Empty;
     }
 }

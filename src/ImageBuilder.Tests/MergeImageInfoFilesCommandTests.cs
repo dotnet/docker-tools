@@ -323,9 +323,9 @@ public class MergeImageInfoFilesCommandTests
     [TestMethod]
     public async Task MergeImageInfoFilesCommand_DuplicateDockerfilePaths()
     {
-        const string OsType = "Linux";
-        const string Os1 = "bionic";
-        const string Os2 = "noble";
+        const string osType = "Linux";
+        const string os1 = "bionic";
+        const string os2 = "noble";
 
         using TempFolderContext context = TestHelper.UseTempFolder();
         string dockerfile1 = CreateDockerfile("1.0/repo1/os1", context);
@@ -349,8 +349,8 @@ public class MergeImageInfoFilesCommandTests
                                         new PlatformData
                                         {
                                             Architecture = "arm32",
-                                            OsVersion = Os1,
-                                            OsType = OsType,
+                                            OsVersion = os1,
+                                            OsType = osType,
                                             Digest = "digest1",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
@@ -362,8 +362,8 @@ public class MergeImageInfoFilesCommandTests
                                         new PlatformData
                                         {
                                             Architecture = "arm64",
-                                            OsVersion = Os1,
-                                            OsType = OsType,
+                                            OsVersion = os1,
+                                            OsType = osType,
                                             Digest = "digest2",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
@@ -381,8 +381,8 @@ public class MergeImageInfoFilesCommandTests
                                         new PlatformData
                                         {
                                             Architecture = "arm32",
-                                            OsVersion = Os2,
-                                            OsType = OsType,
+                                            OsVersion = os2,
+                                            OsType = osType,
                                             Digest = "digest4",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
@@ -413,8 +413,8 @@ public class MergeImageInfoFilesCommandTests
                                         new PlatformData
                                         {
                                             Architecture = "arm64",
-                                            OsVersion = Os1,
-                                            OsType = OsType,
+                                            OsVersion = os1,
+                                            OsType = osType,
                                             Digest = "digest2-new",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
@@ -447,8 +447,8 @@ public class MergeImageInfoFilesCommandTests
                                         {
                                             Architecture = "amd64",
                                             Digest = "digest3",
-                                            OsVersion = Os1,
-                                            OsType = OsType,
+                                            OsVersion = os1,
+                                            OsType = osType,
                                             Dockerfile = dockerfile2,
                                             SimpleTags =
                                             {
@@ -465,8 +465,8 @@ public class MergeImageInfoFilesCommandTests
                                         new PlatformData
                                         {
                                             Architecture = "arm32",
-                                            OsVersion = Os2,
-                                            OsType = OsType,
+                                            OsVersion = os2,
+                                            OsType = osType,
                                             Digest = "digest4-new",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
@@ -499,18 +499,18 @@ public class MergeImageInfoFilesCommandTests
             CreateRepo("repo1",
                 CreateImage(
                     [
-                            CreatePlatform(dockerfile1, ["tag1"], osVersion: Os1, architecture: Architecture.ARM),
-                            CreatePlatform(dockerfile1, ["tag2"], osVersion: Os1, architecture: Architecture.ARM64)
+                            CreatePlatform(dockerfile1, ["tag1"], osVersion: os1, architecture: Architecture.ARM),
+                            CreatePlatform(dockerfile1, ["tag2"], osVersion: os1, architecture: Architecture.ARM64)
                     ],
                     productVersion: "1.0"),
                 CreateImage(
                     [
-                            CreatePlatform(dockerfile1, ["tag3"], osVersion: Os2, architecture: Architecture.ARM)
+                            CreatePlatform(dockerfile1, ["tag3"], osVersion: os2, architecture: Architecture.ARM)
                     ],
                     productVersion: "1.0"),
                 CreateImage(
                     [
-                            CreatePlatform(dockerfile2, ["tag4"], osVersion: Os1)
+                            CreatePlatform(dockerfile2, ["tag4"], osVersion: os1)
                     ],
                     productVersion: "1.0"))
         );
@@ -538,8 +538,8 @@ public class MergeImageInfoFilesCommandTests
                                     new PlatformData
                                     {
                                         Architecture = "arm32",
-                                        OsVersion = Os1,
-                                        OsType = OsType,
+                                        OsVersion = os1,
+                                        OsType = osType,
                                         Digest = "digest1",
                                         Dockerfile = dockerfile1,
                                         SimpleTags =
@@ -551,8 +551,8 @@ public class MergeImageInfoFilesCommandTests
                                     new PlatformData
                                     {
                                         Architecture = "arm64",
-                                        OsVersion = Os1,
-                                        OsType = OsType,
+                                        OsVersion = os1,
+                                        OsType = osType,
                                         Digest = "digest2-new",
                                         Dockerfile = dockerfile1,
                                         SimpleTags =
@@ -571,8 +571,8 @@ public class MergeImageInfoFilesCommandTests
                                     new PlatformData
                                     {
                                         Architecture = "arm32",
-                                        OsVersion = Os2,
-                                        OsType = OsType,
+                                        OsVersion = os2,
+                                        OsType = osType,
                                         Digest = "digest4-new",
                                         Dockerfile = dockerfile1,
                                         SimpleTags =
@@ -592,8 +592,8 @@ public class MergeImageInfoFilesCommandTests
                                     {
                                         Architecture = "amd64",
                                         Digest = "digest3",
-                                        OsVersion = Os1,
-                                        OsType = OsType,
+                                        OsVersion = os1,
+                                        OsType = osType,
                                         Dockerfile = dockerfile2,
                                         SimpleTags =
                                         {
@@ -993,22 +993,22 @@ public class MergeImageInfoFilesCommandTests
         // - static - is not updated, and should not have its commit URL overridden
         // - initial/updated - is updated, and should have its commit URL overridden with NewCommit
 
-        const string StaticDigest = "sha256:static_digest";
-        const string InitialDigest = "sha256:initial_digest";
-        const string NewDigest = "sha256:new_digest";
+        const string staticDigest = "sha256:static_digest";
+        const string initialDigest = "sha256:initial_digest";
+        const string newDigest = "sha256:new_digest";
 
-        const string StaticCommit = "0000000000000000000000000000000000000000";
-        const string InitialCommit = "1111111111111111111111111111111111111111";
-        const string NewCommit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        const string CommitOverride = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        const string staticCommit = "0000000000000000000000000000000000000000";
+        const string initialCommit = "1111111111111111111111111111111111111111";
+        const string newCommit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const string commitOverride = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-        const string StaticDockerfilePath = "path/to/static";
-        const string ChangingDockerfilePath = "path/to/changing";
+        const string staticDockerfilePath = "path/to/static";
+        const string changingDockerfilePath = "path/to/changing";
 
-        string staticDockerfile = CreateDockerfile(StaticDockerfilePath, context);
-        string changingDockerfile = CreateDockerfile(ChangingDockerfilePath, context);
+        string staticDockerfile = CreateDockerfile(staticDockerfilePath, context);
+        string changingDockerfile = CreateDockerfile(changingDockerfilePath, context);
 
-        string createCommitUrl(string path, string commit) => $"https://github.com/dotnet/dotnet-docker/blob/{commit}/src/{path}/Dockerfile";
+        static string CreateCommitUrl(string path, string commit) => $"https://github.com/dotnet/dotnet-docker/blob/{commit}/src/{path}/Dockerfile";
 
         string manifestFile = Path.Combine(context.Path, "manifest.json");
         Manifest manifest = CreateManifest(
@@ -1036,29 +1036,29 @@ public class MergeImageInfoFilesCommandTests
         // Create initial image info with existing platform
         PlatformData staticPlatform = CreatePlatform(
             dockerfile: staticDockerfile,
-            digest: StaticDigest,
+            digest: staticDigest,
             architecture: "amd64",
             osType: "Linux",
             osVersion: "noble",
-            commitUrl: createCommitUrl(StaticDockerfilePath, StaticCommit)
+            commitUrl: CreateCommitUrl(staticDockerfilePath, staticCommit)
         );
 
         PlatformData initialPlatform = CreatePlatform(
             dockerfile: changingDockerfile,
-            digest: InitialDigest,
+            digest: initialDigest,
             architecture: "amd64",
             osType: "Linux",
             osVersion: "noble",
-            commitUrl: createCommitUrl(ChangingDockerfilePath, InitialCommit)
+            commitUrl: CreateCommitUrl(changingDockerfilePath, initialCommit)
         );
 
         PlatformData updatedPlatform = CreatePlatform(
             dockerfile: changingDockerfile,
-            digest: NewDigest,
+            digest: newDigest,
             architecture: "amd64",
             osType: "Linux",
             osVersion: "noble",
-            commitUrl: createCommitUrl(ChangingDockerfilePath, NewCommit)
+            commitUrl: CreateCommitUrl(changingDockerfilePath, newCommit)
         );
 
         // Leave source image info dir empty for now.
@@ -1116,7 +1116,7 @@ public class MergeImageInfoFilesCommandTests
         command.Options.SourceImageInfoFolderPath = sourceImageInfoDir;
         command.Options.DestinationImageInfoPath = outputImageInfoFile;
         command.Options.InitialImageInfoPath = initialImageInfoFile;
-        command.Options.CommitOverride = CommitOverride;
+        command.Options.CommitOverride = commitOverride;
         command.Options.Manifest = manifestFile;
         command.LoadManifest();
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
@@ -1139,14 +1139,14 @@ public class MergeImageInfoFilesCommandTests
         MatchCollection shaMatches = MergeImageInfoCommand.CommitShaRegex.Matches(staticPlatformResult.CommitUrl);
         shaMatches.ShouldHaveSingleItem();
         string staticCommitResult = shaMatches[0].Value;
-        staticCommitResult.ShouldBe(StaticCommit);
+        staticCommitResult.ShouldBe(staticCommit);
 
         // Verify that the initial platform has the overridden commit
         PlatformData initialPlatformResult = platforms.FirstOrDefault(p => p.Dockerfile == changingDockerfile);
         MatchCollection initialShaMatches = MergeImageInfoCommand.CommitShaRegex.Matches(initialPlatformResult.CommitUrl);
         initialShaMatches.ShouldHaveSingleItem();
         string initialCommitResult = initialShaMatches[0].Value;
-        initialCommitResult.ShouldBe(CommitOverride);
+        initialCommitResult.ShouldBe(commitOverride);
     }
 
     private static MergeImageInfoCommand CreateCommand(string artifactStagingDirectory) =>

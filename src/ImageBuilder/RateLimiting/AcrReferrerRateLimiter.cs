@@ -30,7 +30,7 @@ public sealed class AcrReferrerRateLimiter : IDisposable
     /// </summary>
     public const int DefaultReferrerRequestsPerMinute = 250;
 
-    private static readonly TimeSpan s_window = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan Window = TimeSpan.FromSeconds(60);
 
     private readonly Func<string, RateLimiter> _limiterFactory;
     private readonly ConcurrentDictionary<string, Lazy<RateLimiter>> _limiters =
@@ -81,7 +81,7 @@ public sealed class AcrReferrerRateLimiter : IDisposable
         new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
         {
             PermitLimit = permitLimit,
-            Window = s_window,
+            Window = Window,
             SegmentsPerWindow = 6,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = int.MaxValue,

@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// </summary>
 public static class SerializationHelper
 {
-    private static readonly JsonSerializerSettings s_serializerSettings = new()
+    private static readonly JsonSerializerSettings SerializerSettings = new()
     {
         ContractResolver = JsonHelper.JsonSerializerSettings.ContractResolver,
         Formatting = Formatting.Indented,
@@ -108,7 +108,7 @@ public static class SerializationHelper
     public static void AssertSerializationFails<T>(T obj, string propertyName)
     {
         JsonSerializationException exception = Should.Throw<JsonSerializationException>(
-            () => JsonConvert.SerializeObject(obj, s_serializerSettings));
+            () => JsonConvert.SerializeObject(obj, SerializerSettings));
 
         // Newtonsoft.Json error messages use the format: "Cannot write a null value for property 'name'..."
         // Note: property name is lowercase in serialization error messages
@@ -126,7 +126,7 @@ public static class SerializationHelper
     /// <typeparam name="T">The type of object to serialize.</typeparam>
     /// <param name="obj">The object to serialize.</param>
     /// <returns>The JSON string representation.</returns>
-    private static string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj, s_serializerSettings);
+    private static string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj, SerializerSettings);
 
     /// <summary>
     /// Deserializes a JSON string to an object using test settings (with StringEnumConverter).
@@ -137,7 +137,7 @@ public static class SerializationHelper
     /// <exception cref="InvalidOperationException">Thrown when deserialization returns null.</exception>
     private static T Deserialize<T>(string json)
     {
-        return JsonConvert.DeserializeObject<T>(json, s_serializerSettings)
+        return JsonConvert.DeserializeObject<T>(json, SerializerSettings)
             ?? throw new InvalidOperationException($"Deserialization of {typeof(T).Name} returned null.");
     }
 }

@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// </remarks>
 public class UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger) : Command<UpdateOptions>
 {
-    private static readonly string s_outputRelativePath = PathHelper.SafeCombine("eng", "docker-tools");
+    private static readonly string OutputRelativePath = PathHelper.SafeCombine("eng", "docker-tools");
     // InfrastructureContent.GetRelativePaths always returns '/'-separated paths, so this is kept in
     // the same form to compare directly without re-normalizing per file.
     private const string DockerImagesRelativePath = "templates/variables/docker-images.yml";
@@ -34,7 +34,7 @@ public class UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger
     // Used when no reference is supplied. Mirrors the published image's 'latest' shared tag.
     private const string DefaultImageBuilderRef = "mcr.microsoft.com/dotnet-buildtools/image-builder:latest";
 
-    private static readonly DocumentConfiguration s_templateConfiguration = CottleDocumentConfiguration.Create();
+    private static readonly DocumentConfiguration TemplateConfiguration = CottleDocumentConfiguration.Create();
 
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<UpdateCommand> _logger = logger;
@@ -55,7 +55,7 @@ public class UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger
 
         // Ensure we are running inside a repo that actually uses docker-tools.
         // Require --init to skip this check / onboard a new repo.
-        string outputPath = PathHelper.SafeCombine(currentDirectory, s_outputRelativePath);
+        string outputPath = PathHelper.SafeCombine(currentDirectory, OutputRelativePath);
         if (!Options.Init && !_fileSystem.DirectoryExists(outputPath))
         {
             throw new InvalidOperationException(
@@ -135,7 +135,7 @@ public class UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger
         using StreamReader reader = new(source);
         string template = reader.ReadToEnd();
 
-        IDocument document = Document.CreateDefault(template, s_templateConfiguration).DocumentOrThrow;
+        IDocument document = Document.CreateDefault(template, TemplateConfiguration).DocumentOrThrow;
         Dictionary<Value, Value> symbols = new()
         {
             [ImageBuilderRefTemplateVariableName] = imageBuilderRef

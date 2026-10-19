@@ -12,11 +12,11 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public static class DockerHelper
 {
-    private static readonly Lazy<Architecture> s_architecture = new(GetArchitecture);
-    private static readonly Lazy<OS> s_os = new(GetOS);
+    private static readonly Lazy<Architecture> LazyArchitecture = new(GetArchitecture);
+    private static readonly Lazy<OS> LazyOs = new(GetOS);
 
-    public static Architecture Architecture => s_architecture.Value;
-    public static OS OS => s_os.Value;
+    public static Architecture Architecture => LazyArchitecture.Value;
+    public static OS OS => LazyOs.Value;
 
     public const string DockerHubRegistry = "docker.io";
     public const string DockerHubApiRegistry = "registry-1.docker.io";

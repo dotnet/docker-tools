@@ -89,7 +89,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
         IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.QualifiedName).ToArray();
         foreach (PlatformInfo? platform in manifestInfo.GetAllPlatforms())
         {
-            platform.Initialize(repoNames, manifestInfo.Registry);
+            platform.Initialize(repoNames);
         }
 
         IEnumerable<Repo> filteredRepoModels = manifestFilter.GetRepos(manifestInfo.Model);

@@ -43,7 +43,6 @@ public class GenerateDockerfilesCommand(IManifestJsonService manifestJsonService
             platform,
             (platform, templatePath, currentIndent) =>
                 GetTemplateState(platform, templatePath, currentIndent + indent, cancellationToken),
-            indent,
             cancellationToken);
         symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
         symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();

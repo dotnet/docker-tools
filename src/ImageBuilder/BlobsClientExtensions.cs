@@ -14,8 +14,7 @@ public static class BlobsClientExtensions
         this IBlobsClient blobsClient,
         string repoOwner,
         string repoName,
-        string fileSha,
-        CancellationToken cancellationToken)
+        string fileSha)
     {
         Blob fileBlob = await blobsClient.Get(repoOwner, repoName, fileSha);
 

@@ -68,7 +68,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
             string jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
             Credentials appCredentials = CreateCredentials(jwt);
             GitHubClient appClient = CreateClient(appCredentials);
-            GitHubAppInfoResult appInfo = await GetCurrentAppInfoAsync(appClient.Credentials, cancellationToken);
+            GitHubAppInfoResult appInfo = await GetCurrentAppInfoAsync(appClient.Credentials);
 
             Installation appInstallation = authOptions.InstallationId is string providedId
                 ? appInfo.Installations
@@ -140,7 +140,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     private static Credentials CreateCredentials(string token) =>
         new Credentials(token, AuthenticationType.Bearer);
 
-    private static async Task<GitHubAppInfoResult> GetCurrentAppInfoAsync(Credentials credentials, CancellationToken cancellationToken)
+    private static async Task<GitHubAppInfoResult> GetCurrentAppInfoAsync(Credentials credentials)
     {
         GitHubClient client = CreateClient(credentials);
         GitHubApp currentApp = await client.GitHubApps.GetCurrent();

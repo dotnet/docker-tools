@@ -92,7 +92,7 @@ public partial class PlatformInfo
             variableHelper,
             baseDirectory);
 
-    public void Initialize(IEnumerable<string> internalRepos, string registry)
+    public void Initialize(IEnumerable<string> internalRepos)
     {
         _internalRepos = internalRepos;
         InitializeBuildArgs();

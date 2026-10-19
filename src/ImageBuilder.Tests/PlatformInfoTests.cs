@@ -64,7 +64,7 @@ public class PlatformInfoTests
         VariableHelper variableHelper = new(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
         PlatformInfo platformInfo = PlatformInfo.Create(
             platform, "", "test", variableHelper, tempFolderContext.Path);
-        platformInfo.Initialize([], "test.azurecr.io");
+        platformInfo.Initialize([]);
 
         platformInfo.ExternalFromImages.ShouldContain(expectedFromImage);
     }

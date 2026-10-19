@@ -108,7 +108,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
         string indent,
         CancellationToken cancellationToken)
     {
-        Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getState, indent, cancellationToken);
+        Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getState, cancellationToken);
         symbols["IS_PRODUCT_FAMILY"] = context is ManifestInfo;
 
         return (symbols, indent);

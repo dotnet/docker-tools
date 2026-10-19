@@ -212,11 +212,10 @@ public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
             subscription.ImageInfo.Owner,
             subscription.ImageInfo.Repo,
             subscription.ImageInfo.Branch,
-            subscription.ImageInfo.Path,
-            cancellationToken);
+            subscription.ImageInfo.Path);
 
         IBlobsClient blobsClient = await _octokitClientFactory.CreateBlobsClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
-        string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha, cancellationToken);
+        string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
 
         return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
     }

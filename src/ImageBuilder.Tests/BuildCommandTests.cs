@@ -631,7 +631,6 @@ public class BuildCommandTests(TestContext testContext)
 
         VerifyImportImage(
             copyImageServiceMock,
-            command,
             expectedTags,
             DockerHelper.TrimRegistry(sourceDigest),
             registryOverride,
@@ -1178,7 +1177,7 @@ public class BuildCommandTests(TestContext testContext)
             o => o.GetImageSize(It.IsAny<string>(), false, It.IsAny<CancellationToken>()),
             Times.Never);
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
                 [$"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared"],
                 runtimeDepsDigest,
                 destRegistryName: null,
@@ -1587,7 +1586,7 @@ public class BuildCommandTests(TestContext testContext)
 
         if (isRuntimeDepsCached)
         {
-            VerifyImportImage(copyImageServiceMock, command,
+            VerifyImportImage(copyImageServiceMock,
                 [$"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared"],
                 DockerHelper.TrimRegistry(runtimeDepsDigest),
                 registryOverride,
@@ -1596,7 +1595,7 @@ public class BuildCommandTests(TestContext testContext)
 
         if (isRuntimeCached)
         {
-            VerifyImportImage(copyImageServiceMock, command,
+            VerifyImportImage(copyImageServiceMock,
                 [$"{repoPrefixOverride}{runtimeRepo}:{tag}"],
                 DockerHelper.TrimRegistry(runtimeDigest),
                 registryOverride,
@@ -1901,19 +1900,19 @@ public class BuildCommandTests(TestContext testContext)
 
         dockerServiceMock.VerifyNoOtherCalls();
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{runtimeDepsRepo}:{linuxTag}", $"{runtimeDepsRepo}:shared"],
             runtimeDepsLinuxDigest,
             destRegistryName: null,
             srcRegistryName: null);
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{runtimeDeps2Repo}:{linuxTag}"],
             runtimeDepsLinuxDigest,
             destRegistryName: null,
             srcRegistryName: null);
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{runtimeDepsRepo}:{windowsTag}", $"{runtimeDepsRepo}:shared"],
             runtimeDepsWindowsDigest,
             destRegistryName: null,
@@ -2214,12 +2213,12 @@ public class BuildCommandTests(TestContext testContext)
 
         dockerServiceMock.VerifyNoOtherCalls();
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{runtimeDepsRepo}:{tag}"],
             runtimeDepsDigest,
             destRegistryName: null,
             srcRegistryName: null);
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{runtimeDeps2Repo}:{tag}"],
             runtimeDepsDigest,
             destRegistryName: null,
@@ -2880,7 +2879,7 @@ public class BuildCommandTests(TestContext testContext)
 
         dockerServiceMock.VerifyNoOtherCalls();
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared"],
             runtimeDepsDigest,
             destRegistryName: null,
@@ -3136,12 +3135,12 @@ public class BuildCommandTests(TestContext testContext)
 
         dockerServiceMock.VerifyNoOtherCalls();
 
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared"],
             runtimeDepsLinuxDigest,
             destRegistryName: registryOverride,
             srcRegistryName: registry);
-        VerifyImportImage(copyImageServiceMock, command,
+        VerifyImportImage(copyImageServiceMock,
             [$"{repoPrefixOverride}{runtimeDeps2Repo}:{tag}", $"{repoPrefixOverride}{runtimeDeps2Repo}:{newTag}"],
             runtimeDepsLinuxDigest,
             destRegistryName: registryOverride,
@@ -3498,7 +3497,7 @@ public class BuildCommandTests(TestContext testContext)
             dockerServiceMock.Verify(o => o.PullImage($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}@{runtimeDepsDigest}", null, false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o => o.CreateTag($"{registryOverride}/{repoPrefix}{runtimeDepsRepo}@{runtimeDepsDigest}", $"{registryOverride}/{repoPrefix}{runtimeDepsRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-            VerifyImportImage(copyImageServiceMock, command,
+            VerifyImportImage(copyImageServiceMock,
                 [$"{repoPrefix}{runtimeDepsRepo}:{tag}"],
                 $"{runtimeDepsRepo}@{runtimeDepsDigest}",
                 registryOverride,
@@ -3507,7 +3506,7 @@ public class BuildCommandTests(TestContext testContext)
             dockerServiceMock.Verify(o => o.PullImage($"{registryOverride}/{repoPrefix}{runtimeRepo}@{runtimeDigest}", null, false, It.IsAny<CancellationToken>()));
             dockerServiceMock.Verify(o => o.CreateTag($"{registryOverride}/{repoPrefix}{runtimeRepo}@{runtimeDigest}", $"{registryOverride}/{repoPrefix}{runtimeRepo}:{tag}", false, It.IsAny<CancellationToken>()));
 
-            VerifyImportImage(copyImageServiceMock, command,
+            VerifyImportImage(copyImageServiceMock,
                 [$"{repoPrefix}{runtimeRepo}:{tag}"],
                 $"{runtimeRepo}@{runtimeDigest}",
                 registryOverride,
@@ -3857,7 +3856,7 @@ public class BuildCommandTests(TestContext testContext)
         return dockerServiceMock;
     }
 
-    private static void VerifyImportImage(Mock<ICopyImageService> copyImageServiceMock, BuildCommand command,
+    private static void VerifyImportImage(Mock<ICopyImageService> copyImageServiceMock,
         string[] destTagNames, string srcTagName, string destRegistryName, string srcRegistryName)
     {
         copyImageServiceMock.Verify(o =>

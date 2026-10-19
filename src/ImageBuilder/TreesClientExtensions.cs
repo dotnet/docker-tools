@@ -17,8 +17,7 @@ public static class TreesClientExtensions
         string repoOwner,
         string repoName,
         string branch,
-        string path,
-        CancellationToken cancellationToken)
+        string path)
     {
         string? dirPath = Path.GetDirectoryName(path)?.Replace("\\", "/");
         TreeResponse treeResponse = await treesClient.Get(repoOwner, repoName, HttpUtility.UrlEncode($"{branch}:{dirPath}"));

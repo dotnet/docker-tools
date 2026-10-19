@@ -48,7 +48,7 @@ internal class KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAzureToke
                 RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _logger));
 
         IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
-            ct => IngestFromStreamAsync(csv, client, properties, sourceOptions, ct),
+            _ => IngestFromStreamAsync(csv, client, properties, sourceOptions),
             cancellationToken);
 
         IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
@@ -75,8 +75,7 @@ internal class KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAzureToke
         string csv,
         IKustoIngestClient client,
         KustoIngestionProperties properties,
-        StreamSourceOptions sourceOptions,
-        CancellationToken cancellationToken)
+        StreamSourceOptions sourceOptions)
     {
         _logger.LogInformation(
             $"Ingesting {csv.Length} bytes of data to Kusto (source ID: {sourceOptions.SourceId})");

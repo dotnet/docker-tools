@@ -138,7 +138,6 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
         string sourceTemplatePath,
         TContext context,
         GetTemplateState<TContext> getTemplateState,
-        string indent,
         CancellationToken cancellationToken)
     {
         return new Dictionary<Value, Value>

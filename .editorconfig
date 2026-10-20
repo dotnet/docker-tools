@@ -121,6 +121,12 @@ dotnet_diagnostic.JSON001.severity = warning
 # - src/ImageBuilder/McrStatusClient.cs
 dotnet_diagnostic.CA1001.severity = none
 
+# TODO: Remove IComparable and use separate merge matching and ordering logic in:
+# - src/ImageBuilder/Models/Image/ImageData.cs
+# - src/ImageBuilder/Models/Image/PlatformData.cs
+# - src/ImageBuilder/Models/Image/RepoData.cs
+dotnet_diagnostic.CA1036.severity = none
+
 # Field preferences
 dotnet_style_readonly_field = true:warning
 

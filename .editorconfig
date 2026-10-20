@@ -85,8 +85,16 @@ dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
 dotnet_style_prefer_non_hidden_explicit_cast_in_source = true:warning
 dotnet_style_prefer_simplified_boolean_expressions = true:warning
 dotnet_style_prefer_simplified_interpolation = true:warning
+# Simplify type names in declarations and expressions
+dotnet_diagnostic.IDE0001.severity = warning
+# Simplify static member access
+dotnet_diagnostic.IDE0002.severity = warning
 # Remove unnecessary casts
 dotnet_diagnostic.IDE0004.severity = warning
+# Do not require switch statements with a default label to list every enum member
+dotnet_diagnostic.IDE0010.severity = silent
+# Validate composite format strings
+dotnet_diagnostic.IDE0043.severity = warning
 # Remove unused private members
 dotnet_diagnostic.IDE0051.severity = warning
 # Remove unread private members
@@ -99,6 +107,10 @@ dotnet_diagnostic.IDE0100.severity = warning
 dotnet_diagnostic.IDE0120.severity = warning
 # Simplify LINQ type check and cast
 dotnet_diagnostic.IDE0121.severity = warning
+# Validate regular expression patterns
+dotnet_diagnostic.RE0001.severity = warning
+# Validate JSON strings
+dotnet_diagnostic.JSON001.severity = warning
 
 # Field preferences
 dotnet_style_readonly_field = true:warning
@@ -110,6 +122,12 @@ dotnet_diagnostic.IDE0280.severity = warning
 
 # Suppression preferences
 dotnet_remove_unnecessary_suppression_exclusions = none
+# Remove invalid global SuppressMessage attributes
+dotnet_diagnostic.IDE0076.severity = warning
+# Avoid legacy target format in global SuppressMessage attributes
+dotnet_diagnostic.IDE0077.severity = warning
+# Remove unnecessary pragma and SuppressMessage suppressions
+dotnet_diagnostic.IDE0079.severity = warning
 # Remove unnecessary nullable warning suppressions
 dotnet_diagnostic.IDE0370.severity = warning
 
@@ -152,6 +170,8 @@ csharp_prefer_static_local_function = true:warning
 csharp_preferred_modifier_order = public,private,protected,internal,file,const,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
 csharp_style_prefer_readonly_struct = true:warning
 csharp_style_prefer_readonly_struct_member = true:warning
+# Make readonly struct fields writable when struct assigns to this
+dotnet_diagnostic.IDE0064.severity = warning
 # Remove unnecessary unsafe modifiers
 dotnet_diagnostic.IDE0380.severity = warning
 # Make methods without await synchronous
@@ -186,6 +206,8 @@ csharp_style_prefer_utf8_string_literals = true:warning
 csharp_style_throw_expression = true:warning
 csharp_style_unused_value_assignment_preference = discard_variable:warning
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
+# Do not require switch expressions with a discard arm to list every enum member
+dotnet_diagnostic.IDE0072.severity = silent
 # Remove unnecessary suppression operators on is expressions
 dotnet_diagnostic.IDE0080.severity = warning
 # Remove unnecessary discards
@@ -206,6 +228,9 @@ csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false:w
 csharp_style_allow_embedded_statements_on_same_line_experimental = false:warning
 
 #### C# Formatting Rules ####
+
+# Enforce whitespace, indentation, and formatting rules on build
+dotnet_diagnostic.IDE0055.severity = warning
 
 # New line preferences
 csharp_new_line_before_catch = true

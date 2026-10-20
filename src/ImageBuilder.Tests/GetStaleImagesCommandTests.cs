@@ -1607,9 +1607,9 @@ public class GetStaleImagesCommandTests
             ImageInfo = new GitFile
             {
 
-                Owner = GetStaleImagesCommandTests.GitHubOwner,
-                Repo = GetStaleImagesCommandTests.GitHubRepo,
-                Branch = GetStaleImagesCommandTests.GitHubBranch,
+                Owner = GitHubOwner,
+                Repo = GitHubRepo,
+                Branch = GitHubBranch,
                 Path = "docker/image-info.json"
             },
             OsType = osType
@@ -1934,7 +1934,7 @@ public class GetStaleImagesCommandTests
         }
     }
 
-    private class DockerfileInfo(string dockerfilePath, params GetStaleImagesCommandTests.FromImageInfo[] fromImages)
+    private class DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
     {
         public string DockerfilePath { get; } = dockerfilePath;
         public FromImageInfo[] FromImages { get; } = fromImages;

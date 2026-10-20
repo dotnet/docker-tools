@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 /// <summary>
 /// Tests that <see cref="PublishConfiguration"/> binds correctly from JSON
-/// via <see cref="Microsoft.Extensions.Configuration"/>.
+/// via <see cref="Extensions.Configuration"/>.
 /// </summary>
 [TestClass]
 public class PublishConfigurationBindingTests

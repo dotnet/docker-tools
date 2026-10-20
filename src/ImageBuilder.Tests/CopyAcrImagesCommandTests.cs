@@ -48,10 +48,10 @@ public class CopyAcrImagesCommandTests
         string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
         File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-        Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo("runtime",
-                ManifestHelper.CreateImage(
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag1", "tag2"])))
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    CreatePlatform(dockerfileRelativePath, ["tag1", "tag2"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -138,11 +138,11 @@ public class CopyAcrImagesCommandTests
         string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
         File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-        Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo("runtime",
-                ManifestHelper.CreateImage(
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag1a", "tag1b"], osVersion: "alpine3.10"),
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag2a"], osVersion: "alpine3.11")))
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    CreatePlatform(dockerfileRelativePath, ["tag1a", "tag1b"], osVersion: "alpine3.10"),
+                    CreatePlatform(dockerfileRelativePath, ["tag2a"], osVersion: "alpine3.11")))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -358,10 +358,10 @@ public class CopyAcrImagesCommandTests
         string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
         File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-        Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo("runtime",
-                ManifestHelper.CreateImage(
-                    ManifestHelper.CreatePlatform(dockerfileRelativePath, ["tag1-$(stamp)", "tag2", "tag3"])))
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    CreatePlatform(dockerfileRelativePath, ["tag1-$(stamp)", "tag2", "tag3"])))
         );
         manifest.Registry = DestinationRegistry;
 
@@ -680,12 +680,12 @@ public class CopyAcrImagesCommandTests
 
         Image syndicatedImage = CreateImage(
             ["shared"],
-            ManifestHelper.CreatePlatform(dockerfile1, ["amd64"]),
-            ManifestHelper.CreatePlatform(dockerfile2, ["arm64"], architecture: Architecture.ARM64));
+            CreatePlatform(dockerfile1, ["amd64"]),
+            CreatePlatform(dockerfile2, ["arm64"], architecture: Architecture.ARM64));
         syndicatedImage.Syndication = "syndicated";
 
         Manifest manifest = CreateManifest(CreateRepo(
-            "repo", syndicatedImage, CreateImage(ManifestHelper.CreatePlatform(dockerfile3, ["other"]))));
+            "repo", syndicatedImage, CreateImage(CreatePlatform(dockerfile3, ["other"]))));
         manifest.Registry = DestinationRegistry;
 
         ImageArtifactDetails imageInfo = CreateImageArtifactDetails(CreateRepoData(

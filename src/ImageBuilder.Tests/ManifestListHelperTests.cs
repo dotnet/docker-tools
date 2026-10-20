@@ -554,7 +554,7 @@ public class ManifestListHelperTests
         string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
         File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
 
-        IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+        IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
         IManifestJsonService manifestJsonService = TestHelper.CreateManifestJsonService();
         return manifestJsonService.Load(manifestOptions);
     }

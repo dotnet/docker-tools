@@ -64,11 +64,11 @@ public class McrTagsMetadataGeneratorTests
         File.WriteAllText(emptyFilePath, string.Empty);
 
         // Create manifest
-        Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo(repoName,
+        Manifest manifest = CreateManifest(
+            CreateRepo(repoName,
                 [
-                    ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, [tagName]))
+                    CreateImage(
+                        CreatePlatform(dockerfileRelativePath, [tagName]))
                 ],
                 readme: emptyFileName,
                 readmeTemplate: emptyFileName,
@@ -78,7 +78,7 @@ public class McrTagsMetadataGeneratorTests
         File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
         // Load manifest
-        IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+        IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
         ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
         RepoInfo repo = manifestInfo.AllRepos.First();
 
@@ -141,7 +141,7 @@ public class McrTagsMetadataGeneratorTests
         string emptyFilePath = Path.Combine(tempFolderContext.Path, emptyFileName);
         File.WriteAllText(emptyFilePath, string.Empty);
 
-        Platform platform = ManifestHelper.CreatePlatform(
+        Platform platform = CreatePlatform(
             DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os", tempFolderContext),
             []);
         platform.Tags = new Dictionary<string, Tag>
@@ -158,12 +158,12 @@ public class McrTagsMetadataGeneratorTests
         Image image;
 
         // Create manifest
-        Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo(repoName,
+        Manifest manifest = CreateManifest(
+            CreateRepo(repoName,
                 [
-                    image = ManifestHelper.CreateImage(
+                    image = CreateImage(
                         platform,
-                        ManifestHelper.CreatePlatform(
+                        CreatePlatform(
                             DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os2", tempFolderContext),
                             ["tag1a", "tag1b"]))
                 ],
@@ -188,7 +188,7 @@ public class McrTagsMetadataGeneratorTests
         File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
         // Load manifest
-        IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+        IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
         ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
         RepoInfo repo = manifestInfo.AllRepos.First();
 
@@ -250,12 +250,12 @@ public class McrTagsMetadataGeneratorTests
         File.WriteAllText(emptyFilePath, string.Empty);
 
         // Create manifest
-        Manifest manifest = ManifestHelper.CreateManifest(
-            ManifestHelper.CreateRepo(repoName,
+        Manifest manifest = CreateManifest(
+            CreateRepo(repoName,
                 [
-                    ManifestHelper.CreateImage(
+                    CreateImage(
                         [
-                            ManifestHelper.CreatePlatform(
+                            CreatePlatform(
                                 DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os", tempFolderContext),
                                 ["concreteTagZ", "concreteTagA"])
                         ],
@@ -264,9 +264,9 @@ public class McrTagsMetadataGeneratorTests
                             { "shared1", new Tag() },
                             { "latest", new Tag() },
                         }),
-                    ManifestHelper.CreateImage(
+                    CreateImage(
                         [
-                            ManifestHelper.CreatePlatform(
+                            CreatePlatform(
                                 DockerfileHelper.CreateDockerfile($"1.0/{repoName}/os", tempFolderContext),
                                 [])
                         ],
@@ -284,7 +284,7 @@ public class McrTagsMetadataGeneratorTests
         File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
         // Load manifest
-        IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+        IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
         ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
         RepoInfo repo = manifestInfo.AllRepos.First();
 

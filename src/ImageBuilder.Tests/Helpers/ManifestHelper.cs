@@ -96,7 +96,7 @@ public static class ManifestHelper
 
     public static Platform CreatePlatformWithRepoBuildArg(string dockerfilePath, string repo, string[] tags, OS os = OS.Linux)
     {
-        Platform platform = ManifestHelper.CreatePlatform(dockerfilePath, tags, os);
+        Platform platform = CreatePlatform(dockerfilePath, tags, os);
         platform.BuildArgs = new Dictionary<string, string>
         {
             { "REPO", repo }

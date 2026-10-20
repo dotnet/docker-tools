@@ -189,7 +189,7 @@ public class ImageSigningService(
     /// </summary>
     private static ImageSigningRequest ConstructSigningRequest(string imageDigest, OrasDescriptor descriptor)
     {
-        Descriptor ociDescriptor = new Models.Oci.Descriptor(
+        Descriptor ociDescriptor = new Descriptor(
             MediaType: descriptor.MediaType,
             Digest: descriptor.Digest,
             Size: descriptor.Size);

@@ -45,10 +45,10 @@ public class PublishMcrDocsCommandTests
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        DockerfileHelper.CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
-        DockerfileHelper.CreateFile(RepoReadmePath, tempFolderContext, DefaultReadme);
-        DockerfileHelper.CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
-        DockerfileHelper.CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
+        CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
+        CreateFile(RepoReadmePath, tempFolderContext, DefaultReadme);
+        CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
+        CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
 
         string tagsMetadataTemplatePath = CreateMcrTagsMetadataTemplateFile(tempFolderContext);
 

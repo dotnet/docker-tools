@@ -52,7 +52,7 @@ public class PostPublishNotificationCommand(
             using IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient();
             using IBuildHttpClient buildClient = connection.GetBuildHttpClient();
             TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project, cancellationToken);
-            TeamFoundation.Build.WebApi.Build build = await buildClient.GetBuildAsync(project.Id, Options.BuildId, cancellationToken);
+            Build build = await buildClient.GetBuildAsync(project.Id, Options.BuildId, cancellationToken);
             buildUrl = build.GetWebLink();
             buildReason = build.Reason;
 

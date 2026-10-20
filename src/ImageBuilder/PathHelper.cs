@@ -75,5 +75,5 @@ public static class PathHelper
         return result;
     }
 
-    public static string GetNormalizedDirectory(string path) => PathHelper.NormalizePath(Path.GetDirectoryName(path));
+    public static string GetNormalizedDirectory(string path) => NormalizePath(Path.GetDirectoryName(path));
 }

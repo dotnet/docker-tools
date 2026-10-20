@@ -12,7 +12,7 @@ public class RegistryCredentialsOptions : IRegistryCredentialsHost
         new Dictionary<string, RegistryCredentials>();
 
     private static readonly Option<Dictionary<string, RegistryCredentials>> CredentialsOption =
-        CliHelper.CreateDictionaryOption<RegistryCredentials>(
+        CliHelper.CreateDictionaryOption(
             "--registry-creds",
             "Named credentials that map to a registry (<registry>=<username>;<password>)",
             val =>

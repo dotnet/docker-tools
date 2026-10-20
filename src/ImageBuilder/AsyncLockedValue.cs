@@ -38,7 +38,7 @@ public class AsyncLockedValue<T> : IDisposable
 
     public async Task<T> GetValueAsync(Func<CancellationToken, Task<T>> valueInitializer, CancellationToken cancellationToken)
     {
-        return await _semaphore.DoubleCheckedLockAsync<T>(
+        return await _semaphore.DoubleCheckedLockAsync(
             () => _value,
             val => val is null,
             async ct => _value = await valueInitializer(ct),

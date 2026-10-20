@@ -487,11 +487,11 @@ public class GenerateBuildMatrixCommandTests
         command.Options.ProductVersionComponents = 2;
         command.Options.CustomBuildLegGroups = [customBuildLegGroup];
 
-        string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
-        string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
+        string dockerfileRuntimeDepsFullPath = CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
+        string dockerfileRuntimePath = CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
 
-        string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("2.0/runtime/os2", tempFolderContext);
-        string dockerfileSdk2FullPath = DockerfileHelper.CreateDockerfile("2.0/sdk/os2", tempFolderContext, "runtime2:tag");
+        string dockerfileRuntime2FullPath = CreateDockerfile("2.0/runtime/os2", tempFolderContext);
+        string dockerfileSdk2FullPath = CreateDockerfile("2.0/sdk/os2", tempFolderContext, "runtime2:tag");
 
         Manifest manifest = CreateManifest(
             CreateRepo("runtime-deps",
@@ -569,7 +569,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/runtime/nanoserver-1909", tempFolderContext),
+                            CreateDockerfile("1.0/runtime/nanoserver-1909", tempFolderContext),
                             ["nanoserver-1909"],
                             os: OS.Windows,
                             osVersion: "nanoserver-1909")
@@ -578,7 +578,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/runtime/windowsservercore-1909", tempFolderContext),
+                            CreateDockerfile("1.0/runtime/windowsservercore-1909", tempFolderContext),
                             ["windowsservercore-1909"],
                             os: OS.Windows,
                             osVersion: "windowsservercore-1909")
@@ -588,7 +588,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/aspnet/nanoserver-1909", tempFolderContext, "runtime:nanoserver-1909"),
+                            CreateDockerfile("1.0/aspnet/nanoserver-1909", tempFolderContext, "runtime:nanoserver-1909"),
                             ["nanoserver-1909"],
                             os: OS.Windows,
                             osVersion: "nanoserver-1909")
@@ -597,7 +597,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/aspnet/windowsservercore-1909", tempFolderContext, "runtime:windowsservercore-1909"),
+                            CreateDockerfile("1.0/aspnet/windowsservercore-1909", tempFolderContext, "runtime:windowsservercore-1909"),
                             ["windowsservercore-1909"],
                             os: OS.Windows,
                             osVersion: "windowsservercore-1909",
@@ -644,11 +644,11 @@ public class GenerateBuildMatrixCommandTests
         command.Options.MatrixType = MatrixType.PlatformVersionedOs;
         command.Options.ProductVersionComponents = 2;
 
-        string dockerfileRuntimeFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-        string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
+        string dockerfileRuntimeFullPath = CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string dockerfileRuntime2FullPath = CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
 
-        string dockerfileRuntime3FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
-        string dockerfileSdk3FullPath = DockerfileHelper.CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
+        string dockerfileRuntime3FullPath = CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
+        string dockerfileSdk3FullPath = CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
 
         Manifest manifest = CreateManifest(
             // Define a Dockerfile that has the same OS version and product version as runtime2 but no actual dependency to
@@ -717,7 +717,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/repo1/os", tempFolderContext),
+                            CreateDockerfile("1.0/repo1/os", tempFolderContext),
                             ["tag"],
                             osVersion: "bionic")
                     ],
@@ -726,7 +726,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/repo2/os", tempFolderContext),
+                            CreateDockerfile("1.0/repo2/os", tempFolderContext),
                             ["tag"],
                             osVersion: "noble",
                             customBuildLegGroups:
@@ -747,7 +747,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/repo3/os", tempFolderContext),
+                            CreateDockerfile("1.0/repo3/os", tempFolderContext),
                             ["tag"],
                             osVersion: "trixie")
                     ],
@@ -756,7 +756,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("1.0/repo4/os", tempFolderContext),
+                            CreateDockerfile("1.0/repo4/os", tempFolderContext),
                             ["tag"],
                             osVersion: "bullseye",
                             customBuildLegGroups:
@@ -818,7 +818,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext),
+                            runtimeDockerfilePath = CreateDockerfile("1.0/runtime/os", tempFolderContext),
                             ["tag"])
                     ],
                     productVersion: "1.0")),
@@ -826,7 +826,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                           CreatePlatform(
-                              aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
+                              aspnetDockerfilePath = CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
                               ["tag"])
                     ],
                     productVersion: "1.0")),
@@ -834,7 +834,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                           CreatePlatform(
-                              sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
+                              sdkDockerfilePath = CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
                               ["tag"])
                     ],
                     productVersion: "1.0"))
@@ -945,7 +945,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            runtimeDepsDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext),
+                            runtimeDepsDockerfilePath = CreateDockerfile("1.0/runtime-deps/os", tempFolderContext),
                             ["tag"])
                     ],
                     productVersion: "1.0")),
@@ -953,7 +953,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
+                            runtimeDockerfilePath = CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
                             ["tag"])
                     ],
                     productVersion: "1.0")),
@@ -962,14 +962,14 @@ public class GenerateBuildMatrixCommandTests
                     CreateImage(
                         [
                             CreatePlatform(
-                                aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
+                                aspnetDockerfilePath = CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
                                 ["tag"])
                         ],
                         productVersion: "1.0"),
                 CreateImage(
                     [
                           CreatePlatform(
-                              aspnetCompositeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os-composite", tempFolderContext, "runtime-deps:tag"),
+                              aspnetCompositeDockerfilePath = CreateDockerfile("1.0/aspnet/os-composite", tempFolderContext, "runtime-deps:tag"),
                               ["tag-composite"])
                     ],
                     productVersion: "1.0")
@@ -978,7 +978,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
+                            sdkDockerfilePath = CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
                             ["tag"])
                     ],
                     productVersion: "1.0"))
@@ -1147,7 +1147,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
+                            CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
                             ["tag"])
                     ],
                     productVersion: "3.1")),
@@ -1155,7 +1155,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext, "core/runtime-deps:tag"),
+                            CreateDockerfile("3.1/runtime/os", tempFolderContext, "core/runtime-deps:tag"),
                             ["tag"])
                     ],
                     productVersion: "3.1")),
@@ -1171,7 +1171,7 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("5.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
+                            CreateDockerfile("5.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
                             ["tag"])
                     ],
                     productVersion: "5.0"))
@@ -1269,14 +1269,14 @@ public class GenerateBuildMatrixCommandTests
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
+                            CreateDockerfile("3.1/runtime/os", tempFolderContext),
                             ["tag"])
                     ],
                     productVersion: "3.1"),
                 CreateImage(
                     [
                         CreatePlatform(
-                            DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
+                            CreateDockerfile("3.1/runtime/os", tempFolderContext),
                             [])
                     ],
                     productVersion: "3.1")));

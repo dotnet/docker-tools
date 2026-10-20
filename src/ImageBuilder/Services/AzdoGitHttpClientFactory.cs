@@ -16,7 +16,7 @@ public class AzdoGitHttpClientFactory(ILoggerFactory loggerFactory) : IAzdoGitHt
     public IAzdoGitHttpClient GetClient(Uri baseUrl, VssCredentials credentials) =>
         new GitHttpClientWrapper(_loggerFactory.CreateLogger<GitHttpClientWrapper>(), new GitHttpClient(baseUrl, credentials));
 
-    private class GitHttpClientWrapper(ILogger<AzdoGitHttpClientFactory.GitHttpClientWrapper> logger, GitHttpClient gitHttpClient) : IAzdoGitHttpClient
+    private class GitHttpClientWrapper(ILogger<GitHttpClientWrapper> logger, GitHttpClient gitHttpClient) : IAzdoGitHttpClient
     {
         private readonly ILogger<GitHttpClientWrapper> _logger = logger;
         private readonly GitHttpClient _gitHttpClient = gitHttpClient;

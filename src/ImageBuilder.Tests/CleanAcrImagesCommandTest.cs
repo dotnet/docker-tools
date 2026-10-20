@@ -399,7 +399,7 @@ public class CleanAcrImagesCommandTest
 
     private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)
     {
-        DateOnly dateToday = DateOnly.FromDateTime(DateTime.Now);
+        DateOnly dateToday = DateOnly.FromDateTime(DateTime.UtcNow);
         Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
         SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest1", true, dateToday.AddDays(-age - 1));
         SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest2", false, dateToday);

@@ -16,6 +16,7 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using OrasProject.Oras.Oci;
+using Polly.Timeout;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Oras;
@@ -166,6 +167,90 @@ public class OrasDotNetServiceTests
         handler.Requests.Count(r => r.StartsWith("PUT /v2/repo/manifests/")).ShouldBe(2);
     }
 
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(2)]
+    public async Task AttachArtifactAsync_RetriesManifestPushTimeout(int timeoutCount)
+    {
+        int failuresRemaining = timeoutCount;
+        RecordingHandler handler = new()
+        {
+            ManifestPushFailure = () => failuresRemaining-- > 0 ? new TimeoutRejectedException() : null
+        };
+        OrasDotNetService service = CreateService(httpClientFactory: CreateHttpClientFactory(handler));
+        Dictionary<string, string> annotations = new()
+        {
+            ["org.opencontainers.image.created"] = "2026-10-19T00:00:00Z",
+            ["vnd.microsoft.artifact.lifecycle.end-of-life.date"] = "2026-10-19"
+        };
+
+        string digest = await service.AttachArtifactAsync(
+            $"registry.io/repo@{SubjectDigest}", ReferrerArtifactType, annotations,
+            TestContext?.CancellationToken ?? default);
+
+        handler.ManifestPushContents.Count.ShouldBe(timeoutCount + 1);
+        handler.ManifestPushContents.Distinct().ShouldHaveSingleItem();
+        handler.Requests.Count(r => r.StartsWith("POST /v2/repo/blobs/uploads/")).ShouldBe(1);
+        digest.ShouldBe(handler.Requests.Last(r => r.StartsWith("PUT /v2/repo/manifests/"))
+            ["PUT /v2/repo/manifests/".Length..]);
+    }
+
+    [TestMethod]
+    public async Task AttachArtifactAsync_ThrowsAfterManifestPushRetriesAreExhausted()
+    {
+        RecordingHandler handler = new()
+        {
+            ManifestPushFailure = () => new TimeoutRejectedException()
+        };
+        OrasDotNetService service = CreateService(httpClientFactory: CreateHttpClientFactory(handler));
+
+        await Should.ThrowAsync<TimeoutRejectedException>(() => service.AttachArtifactAsync(
+            $"registry.io/repo@{SubjectDigest}", ReferrerArtifactType, new Dictionary<string, string>(),
+            TestContext?.CancellationToken ?? default));
+
+        handler.ManifestPushContents.Count.ShouldBe(3);
+    }
+
+    [TestMethod]
+    public async Task AttachArtifactAsync_DoesNotRetryOtherPushFailures()
+    {
+        HttpRequestException expectedException = new("Registry rejected the artifact.", null, HttpStatusCode.Forbidden);
+        RecordingHandler handler = new()
+        {
+            ManifestPushFailure = () => expectedException
+        };
+        OrasDotNetService service = CreateService(httpClientFactory: CreateHttpClientFactory(handler));
+
+        HttpRequestException exception = await Should.ThrowAsync<HttpRequestException>(() => service.AttachArtifactAsync(
+            $"registry.io/repo@{SubjectDigest}", ReferrerArtifactType, new Dictionary<string, string>(),
+            TestContext?.CancellationToken ?? default));
+
+        exception.ShouldBeSameAs(expectedException);
+        handler.ManifestPushContents.ShouldHaveSingleItem();
+    }
+
+    [TestMethod]
+    public async Task AttachArtifactAsync_DoesNotRetryAfterCancellation()
+    {
+        using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext?.CancellationToken ?? default);
+        RecordingHandler handler = new()
+        {
+            ManifestPushFailure = () =>
+            {
+                cancellation.Cancel();
+                return new TimeoutRejectedException();
+            }
+        };
+        OrasDotNetService service = CreateService(httpClientFactory: CreateHttpClientFactory(handler));
+
+        await Should.ThrowAsync<OperationCanceledException>(() => service.AttachArtifactAsync(
+            $"registry.io/repo@{SubjectDigest}", ReferrerArtifactType, new Dictionary<string, string>(),
+            cancellation.Token));
+
+        handler.ManifestPushContents.ShouldHaveSingleItem();
+    }
+
     private const string SubjectDigest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
     private const string ReferrerArtifactType = "application/vnd.test";
 
@@ -205,8 +290,10 @@ public class OrasDotNetServiceTests
         private const string UploadPath = "/v2/repo/blobs/uploads/session";
 
         public List<string> Requests { get; } = [];
+        public List<string> ManifestPushContents { get; } = [];
+        public Func<Exception?>? ManifestPushFailure { get; init; }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             string path = request.RequestUri!.AbsolutePath;
@@ -235,6 +322,14 @@ public class OrasDotNetServiceTests
             }
             else if (request.Method == HttpMethod.Put && path.StartsWith("/v2/repo/manifests/"))
             {
+                HttpContent content = request.Content
+                    ?? throw new InvalidOperationException("A manifest push must include content.");
+                ManifestPushContents.Add(await content.ReadAsStringAsync(cancellationToken));
+                if (ManifestPushFailure?.Invoke() is Exception exception)
+                {
+                    throw exception;
+                }
+
                 response.StatusCode = HttpStatusCode.Created;
                 response.Headers.Add("Docker-Content-Digest", path["/v2/repo/manifests/".Length..]);
 
@@ -265,7 +360,7 @@ public class OrasDotNetServiceTests
                 response.StatusCode = HttpStatusCode.InternalServerError;
             }
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

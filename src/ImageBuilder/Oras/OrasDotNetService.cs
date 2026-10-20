@@ -44,7 +44,7 @@ public class OrasDotNetService(
     /// </summary>
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
-    private const int PushSignatureMaxRetryAttempts = 2;
+    private const int PushMaxRetryAttempts = 2;
 
     private readonly ConcurrentDictionary<string, byte> _repositoriesWithEmptyBlob = new();
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
@@ -53,7 +53,8 @@ public class OrasDotNetService(
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
 
-    private readonly ResiliencePipeline _pushSignatureRetryPipeline = CreatePushSignatureRetryPipeline(logger);
+    private readonly ResiliencePipeline _pushSignatureRetryPipeline = CreatePushRetryPipeline(logger, "signature");
+    private readonly ResiliencePipeline _pushArtifactRetryPipeline = CreatePushRetryPipeline(logger, "artifact");
 
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken)
@@ -233,11 +234,13 @@ public class OrasDotNetService(
         };
 
         Descriptor artifactDescriptor =
-            await Packer.PackManifestAsync(
-                pusher: repository,
-                version: Packer.ManifestVersion.Version1_1,
-                artifactType: artifactType,
-                options: options,
+            await _pushArtifactRetryPipeline.ExecuteAsync(
+                async ct => await Packer.PackManifestAsync(
+                    pusher: repository,
+                    version: Packer.ManifestVersion.Version1_1,
+                    artifactType: artifactType,
+                    options: options,
+                    ct),
                 cancellationToken);
 
         TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
@@ -295,14 +298,13 @@ public class OrasDotNetService(
         return repository;
     }
 
-    private static ResiliencePipeline CreatePushSignatureRetryPipeline(ILogger<OrasDotNetService> logger) =>
+    private static ResiliencePipeline CreatePushRetryPipeline(ILogger<OrasDotNetService> logger, string artifactKind) =>
         new ResiliencePipelineBuilder()
             .AddRetry(
                 new RetryStrategyOptions
                 {
-                    // Targeted fix for https://github.com/dotnet/docker-tools/issue/2168
                     ShouldHandle = new PredicateBuilder().Handle<TimeoutRejectedException>(),
-                    MaxRetryAttempts = PushSignatureMaxRetryAttempts,
+                    MaxRetryAttempts = PushMaxRetryAttempts,
                     BackoffType = DelayBackoffType.Exponential,
                     Delay = TimeSpan.FromSeconds(3),
                     UseJitter = true,
@@ -310,10 +312,11 @@ public class OrasDotNetService(
                     {
                         logger.LogWarning(
                             args.Outcome.Exception,
-                            "Retrying signature push in {RetryDelay} (Attempt {RetryAttempt} of {MaxRetryAttempts})",
+                            "Retrying {ArtifactKind} push in {RetryDelay} (Attempt {RetryAttempt} of {MaxRetryAttempts})",
+                            artifactKind,
                             args.RetryDelay,
                             args.AttemptNumber + 1,
-                            PushSignatureMaxRetryAttempts
+                            PushMaxRetryAttempts
                         );
                         return default;
                     },

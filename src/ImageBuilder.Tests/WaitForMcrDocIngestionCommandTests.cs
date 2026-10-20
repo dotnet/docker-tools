@@ -94,7 +94,7 @@ public class WaitForMcrDocIngestionCommandTests
 
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
         statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(4));
     }
 
@@ -170,7 +170,7 @@ public class WaitForMcrDocIngestionCommandTests
         Mock<IEnvironmentService> environmentServiceMock = new();
         Exception exitException = new();
         environmentServiceMock
-            .Setup(o => o.Exit(1))
+            .Setup(o => o.ExitProcess(1))
             .Throws(exitException);
 
         WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
@@ -283,7 +283,7 @@ public class WaitForMcrDocIngestionCommandTests
 
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
         statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
@@ -361,7 +361,7 @@ public class WaitForMcrDocIngestionCommandTests
         Mock<IEnvironmentService> environmentServiceMock = new();
         Exception exitException = new();
         environmentServiceMock
-            .Setup(o => o.Exit(1))
+            .Setup(o => o.ExitProcess(1))
             .Throws(exitException);
 
         WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
@@ -375,7 +375,7 @@ public class WaitForMcrDocIngestionCommandTests
         Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
         actualException.ShouldBeSameAs(exitException);
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Once);
         statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest, It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
@@ -413,7 +413,7 @@ public class WaitForMcrDocIngestionCommandTests
         command.Options.CommitDigest = commitDigest;
         command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
 
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
         await Should.ThrowAsync<TimeoutException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
     }
 }

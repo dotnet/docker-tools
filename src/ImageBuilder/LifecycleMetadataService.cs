@@ -13,7 +13,7 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
 {
     public async Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
         string digest,
-        DateOnly date,
+        DateOnly endOfLifeDate,
         bool markAsInternal,
         bool stopOnConflict,
         CancellationToken cancellationToken)
@@ -23,7 +23,7 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
 
         if (existingArtifact is not null)
         {
-            if (existingArtifact.EndOfLifeDate == date)
+            if (existingArtifact.EndOfLifeDate == endOfLifeDate)
             {
                 return new LifecycleMetadataAttachmentResult.AlreadyMatching(existingArtifact);
             }
@@ -36,10 +36,14 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
             throw new InvalidOperationException(
                 $"Cannot attach lifecycle metadata to '{digest}': existing artifact"
                 + $" '{existingArtifact.Referrer.Digest}' has EOL date '{existingArtifact.EndOfLifeDate}',"
-                + $" which conflicts with requested date '{date}'.");
+                + $" which conflicts with requested date '{endOfLifeDate}'.");
         }
 
-        LifecycleArtifact artifact = await AttachLifecycleArtifactAsync(digest, date, markAsInternal, cancellationToken);
+        LifecycleArtifact artifact = await AttachLifecycleArtifactAsync(
+            digest,
+            endOfLifeDate,
+            markAsInternal,
+            cancellationToken);
         return new LifecycleMetadataAttachmentResult.Attached(artifact);
     }
 
@@ -66,14 +70,15 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
 
     private async Task<LifecycleArtifact> AttachLifecycleArtifactAsync(
         string digest,
-        DateOnly date,
+        DateOnly endOfLifeDate,
         bool markAsInternal,
         CancellationToken cancellationToken)
     {
         // Set the creation time explicitly so the returned artifact matches what was pushed.
         Dictionary<string, string> annotations = new()
         {
-            [LifecycleAnnotations.EndOfLife] = date.ToString(LifecycleAnnotations.EndOfLifeDateFormat),
+            [LifecycleAnnotations.EndOfLife] =
+                endOfLifeDate.ToString(LifecycleAnnotations.EndOfLifeDateFormat),
             [OciAnnotations.ImageCreated] = DateTimeOffset.UtcNow.ToString("o")
         };
 

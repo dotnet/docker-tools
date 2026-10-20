@@ -248,7 +248,7 @@ public class MarImageIngestionReporter(
                     _logger.LogInformation(string.Empty);
                 }
 
-                _environmentService.Exit(1);
+                _environmentService.ExitProcess(1);
             }
         }
 

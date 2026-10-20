@@ -15,7 +15,7 @@ public interface ILifecycleMetadataService
     /// </summary>
     Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
         string digest,
-        DateOnly date,
+        DateOnly endOfLifeDate,
         bool markAsInternal,
         bool stopOnConflict,
         CancellationToken cancellationToken);

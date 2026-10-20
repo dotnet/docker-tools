@@ -81,7 +81,7 @@ public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptio
             if (commitResult.Value.All(status => status.OverallStatus == StageStatus.Failed))
             {
                 _logger.LogError("Doc ingestion failed.");
-                _environmentService.Exit(1);
+                _environmentService.ExitProcess(1);
             }
 
             if (DateTime.Now - startTime >= Options.IngestionOptions.WaitTimeout)

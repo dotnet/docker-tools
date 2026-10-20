@@ -260,7 +260,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
                 _logger.LogError($"Invalid Templates:{Environment.NewLine}{templateList}");
             }
 
-            _environmentService.Exit(1);
+            _environmentService.ExitProcess(1);
         }
     }
 

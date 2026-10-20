@@ -63,7 +63,7 @@ ENV TEST2 Value1";
         Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
         actualException.ShouldBeSameAs(_exitException);
-        _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
+        _environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Once);
     }
 
     [TestMethod]
@@ -131,7 +131,7 @@ ENV TEST2 Value1";
 
         await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-        _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        _environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
     }
 
     [TestMethod]
@@ -143,7 +143,7 @@ ENV TEST2 Value1";
         Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
 
         actualException.ShouldBeSameAs(_exitException);
-        _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
+        _environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Once);
         // Validate Dockerfile remains unmodified
         File.ReadAllText(Path.Combine(tempFolderContext.Path, DockerfilePath)).ShouldBe(DefaultDockerfile);
     }
@@ -253,7 +253,7 @@ ENV TEST2 Value1";
 
         _environmentServiceMock = new Mock<IEnvironmentService>();
         _environmentServiceMock
-            .Setup(o => o.Exit(1))
+            .Setup(o => o.ExitProcess(1))
             .Throws(_exitException);
 
         GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(TestHelper.CreateManifestJsonService(), _environmentServiceMock.Object, Mock.Of<ILogger<GenerateDockerfilesCommand>>());

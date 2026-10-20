@@ -7,7 +7,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal class EnvironmentService : IEnvironmentService
 {
-    public void Exit(int exitCode) => Environment.Exit(exitCode);
+    public void ExitProcess(int exitCode) => Environment.Exit(exitCode);
 
     public int ExitCode
     {

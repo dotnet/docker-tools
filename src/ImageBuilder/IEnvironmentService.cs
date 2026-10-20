@@ -5,7 +5,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IEnvironmentService
 {
-    void Exit(int exitCode);
+    void ExitProcess(int exitCode);
 
     /// <summary>
     /// Gets or sets the exit code for the process, allowing graceful shutdown.

@@ -217,7 +217,7 @@ public class MarImageIngestionReporterTests
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1), It.IsAny<CancellationToken>()), Times.Exactly(4));
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(2));
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest2), It.IsAny<CancellationToken>()), Times.Exactly(2));
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
     }
 
     [TestMethod]
@@ -302,7 +302,7 @@ public class MarImageIngestionReporterTests
             baselineTime, TestContext?.CancellationToken ?? default);
 
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest), It.IsAny<CancellationToken>()), Times.Exactly(3));
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
     }
 
     [TestMethod]
@@ -396,7 +396,7 @@ public class MarImageIngestionReporterTests
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest), It.IsAny<CancellationToken>()), Times.Exactly(2));
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), onboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), It.Is<string>(val => val != onboardingRequestId), It.IsAny<CancellationToken>()), Times.Never);
-        environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
+        environmentServiceMock.Verify(o => o.ExitProcess(1), Times.Once);
     }
 
     [TestMethod]
@@ -561,7 +561,7 @@ public class MarImageIngestionReporterTests
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(manifestDigest1), onboardingRequestId1, It.IsAny<CancellationToken>()), Times.Once);
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), onboardingRequestId2, It.IsAny<CancellationToken>()), Times.Once);
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), It.Is<string>(val => val != onboardingRequestId2), It.IsAny<CancellationToken>()), Times.Never);
-        environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
+        environmentServiceMock.Verify(o => o.ExitProcess(1), Times.Once);
     }
 
     /// <summary>
@@ -656,7 +656,7 @@ public class MarImageIngestionReporterTests
             baselineTime, TestContext?.CancellationToken ?? default);
 
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(2));
-        environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
     }
 
     /// <summary>
@@ -790,7 +790,7 @@ public class MarImageIngestionReporterTests
         statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1), It.IsAny<CancellationToken>()), Times.Exactly(3));
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1aOnboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
         statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1bOnboardingRequestId, It.IsAny<CancellationToken>()), Times.Once);
-        environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
+        environmentServiceMock.Verify(o => o.ExitProcess(1), Times.Once);
     }
 
     /// <summary>

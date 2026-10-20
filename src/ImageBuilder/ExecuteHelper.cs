@@ -126,10 +126,7 @@ public static class ExecuteHelper
         StringBuilder stdError = new StringBuilder();
         process.ErrorDataReceived += GetDataReceivedHandler(stdError, Console.Error);
 
-        if (cancellationToken.IsCancellationRequested)
-        {
-            throw new OperationCanceledException(cancellationToken);
-        }
+        cancellationToken.ThrowIfCancellationRequested();
 
         process.Start();
         using CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(() =>
@@ -155,10 +152,7 @@ public static class ExecuteHelper
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
-        if (cancellationToken.IsCancellationRequested)
-        {
-            throw new OperationCanceledException(cancellationToken);
-        }
+        cancellationToken.ThrowIfCancellationRequested();
 
         return new ProcessResult(process, stdOutput.ToString().Trim(), stdError.ToString().Trim());
     }

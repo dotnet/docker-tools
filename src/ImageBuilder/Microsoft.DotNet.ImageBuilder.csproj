@@ -5,6 +5,7 @@
     <PublishTrimmed>False</PublishTrimmed>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Explicit Nullable setting required for Docker builds from src/ context (won't see root Directory.Build.props).

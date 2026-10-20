@@ -26,12 +26,12 @@ public sealed partial record PullRequestDefinition(
     public string Key
     {
         get;
-        init => field = ValidateKey(value);
-    } = ValidateKey(Key);
+        init => field = ValidateKey(value, nameof(Key));
+    } = ValidateKey(Key, nameof(Key));
 
-    private static string ValidateKey(string key)
+    private static string ValidateKey(string key, string paramName)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(key, nameof(Key));
+        ArgumentException.ThrowIfNullOrWhiteSpace(key, paramName);
 
         bool hasValidComponents = key
             .Split('/')
@@ -45,7 +45,7 @@ public sealed partial record PullRequestDefinition(
                 $"'{key}' is not a valid pull request key. Use slash-separated components containing " +
                 "ASCII letters, digits, underscores, dashes, and periods. Periods must separate non-empty " +
                 "groups, components cannot end in '.lock', and the key cannot start with a dash.",
-                nameof(Key));
+                paramName);
         }
 
         return key;

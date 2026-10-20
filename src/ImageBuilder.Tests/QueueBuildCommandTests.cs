@@ -26,10 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class QueueBuildCommandTests
 {
-#nullable enable annotations
-    public TestContext? TestContext { get; set; }
-
-#nullable disable annotations
+    public TestContext TestContext { get; set; }
 
     /// <summary>
     /// Verifies that no build is queued if a build is currently in progress.
@@ -691,9 +688,9 @@ public class QueueBuildCommandTests
         }
 
         /// <summary>
-        /// Returns a value indicating whether the <see cref="Build"/> object contains the expected state.
+        /// Returns a value indicating whether the <see cref="WebApi.Build"/> object contains the expected state.
         /// </summary>
-        /// <param name="build">The <see cref="Build"/> to validate.</param>
+        /// <param name="build">The <see cref="WebApi.Build"/> to validate.</param>
         /// <param name="subscription">Subscription object that contains metadata to compare against the <paramref name="build"/>.</param>
         /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
         private static bool FilterBuildToSubscription(WebApi.Build build, Subscription subscription, IList<string> expectedPaths)
@@ -706,7 +703,7 @@ public class QueueBuildCommandTests
         /// <summary>
         /// Returns a value indicating whether <paramref name="buildParametersJson"/> matches the expected results.
         /// </summary>
-        /// <param name="buildParametersJson">The raw JSON parameters value that was provided to a <see cref="Build"/>.</param>
+        /// <param name="buildParametersJson">The raw JSON parameters value that was provided to a <see cref="WebApi.Build"/>.</param>
         /// <param name="pathVariable">Name of the path variable that the arguments are assigned to.</param>
         /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
         private static bool FilterBuildToParameters(string buildParametersJson, string pathVariable, IList<string> expectedPaths)

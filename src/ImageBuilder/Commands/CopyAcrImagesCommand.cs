@@ -16,7 +16,7 @@ public class CopyAcrImagesCommand(
     IManifestJsonService manifestJsonService,
     ICopyImageService copyImageService,
     ILogger<CopyAcrImagesCommand> logger,
-    IArtifactService artifactService) : CopyImagesCommand<CopyAcrImagesOptions>(manifestJsonService, copyImageService, logger)
+    IArtifactService artifactService) : CopyImagesCommand<CopyAcrImagesOptions>(manifestJsonService, copyImageService)
 {
     private readonly ILogger _logger = logger;
     private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));

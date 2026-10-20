@@ -43,7 +43,7 @@ public class Options : IOptions
     /// Optional delegates for performing additional validation of arguments and options.
     /// </summary>
     /// <remarks>
-    /// Validators should call <see cref="CommandResult.AddError"/> to report errors.
+    /// Validators should call <see cref="SymbolResult.AddError"/> to report errors.
     /// Validation failures will manifest the same way as any other command line parsing errors.
     /// </remarks>
     public virtual IEnumerable<System.Action<CommandResult>> GetValidators() => [];

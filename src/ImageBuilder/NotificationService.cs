@@ -81,7 +81,7 @@ public class NotificationService(ILogger<NotificationService> logger, IOctokitCl
         // Immediately close issues which aren't failures, since open issues should represent actionable items.
         // Retry with backoff to handle GitHub's eventual consistency - the issue may not be fully
         // propagated across GitHub's backend services immediately after creation.
-        if (!labels.Where(l => l.Contains(Commands.NotificationLabels.Failure)).Any())
+        if (!labels.Any(l => l.Contains(Commands.NotificationLabels.Failure)))
         {
             _logger.LogInformation("No failure label found in the notification labels.");
             await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)

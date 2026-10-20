@@ -65,6 +65,7 @@ public interface IFileSystem
     /// <summary>
     /// Deletes the specified directory, throwing if it does not exist (mirrors <see cref="Directory.Delete(string, bool)"/>).
     /// </summary>
+    /// <param name="path">The name of the directory to remove.</param>
     /// <param name="recursive">
     /// <c>true</c> to delete the directory, its subdirectories, and all files; otherwise <c>false</c>.
     /// </param>

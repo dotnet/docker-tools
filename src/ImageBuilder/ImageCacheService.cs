@@ -34,6 +34,7 @@ public interface IImageCacheService
     /// <param name="sourceRepoUrl">URL of the source repository containing the Dockerfiles.</param>
     /// <param name="isLocalBaseImageExpected">Whether the base image is expected to exist locally rather than in a remote registry.</param>
     /// <param name="isDryRun">Whether this is a dry run that should skip actual registry calls.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     Task<ImageCacheResult> CheckForCachedImageAsync(
         ImageData? srcImageData,
         PlatformData platformData,

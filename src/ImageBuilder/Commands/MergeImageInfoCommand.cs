@@ -105,7 +105,7 @@ public partial class MergeImageInfoCommand(
     /// </summary>
     /// <param name="current">
     /// The current merged image artifact details containing all platforms.
-    /// This instance will be modified with the <see cref="commitOverride"/>
+    /// This instance will be modified with the <paramref name="commitOverride"/>
     /// </param>
     /// <param name="initial">
     /// The initial image artifact details used for comparison to detect

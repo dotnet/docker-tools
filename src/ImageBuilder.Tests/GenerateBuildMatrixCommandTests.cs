@@ -23,10 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class GenerateBuildMatrixCommandTests
 {
-#nullable enable annotations
-    public TestContext? TestContext { get; set; }
-
-#nullable disable annotations
+    public TestContext TestContext { get; set; }
 
     /// <summary>
     /// Verifies the platformVersionedOs matrix type.
@@ -96,7 +93,7 @@ public class GenerateBuildMatrixCommandTests
     /// Verifies the PlatformDependencyGraph matrix type.
     /// </summary>
     /// <remarks>
-    /// Test uses a dependency graph of runtimedeps <- sdk <- sample
+    /// Test uses a dependency graph of runtimedeps &lt;- sdk &lt;- sample
     /// </remarks>
     [TestMethod]
     [DataRow(null, "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]

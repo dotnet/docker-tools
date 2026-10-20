@@ -8,13 +8,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public abstract class CopyImagesCommand<TOptions>(
     IManifestJsonService manifestJsonService,
-    ICopyImageService copyImageService,
-    ILogger logger)
+    ICopyImageService copyImageService)
     : ManifestCommand<TOptions>(manifestJsonService)
         where TOptions : CopyImagesOptions, new()
 {
     private readonly ICopyImageService _copyImageService = copyImageService;
-    private readonly ILogger _logger = logger;
 
     protected Task ImportImageAsync(
         string destTagName,

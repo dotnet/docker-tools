@@ -8,7 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel;
 
 public class TagInfo
 {
-    private string BuildContextPath { get; set; }
     public string FullyQualifiedName { get; private set; }
     public Tag Model { get; private set; }
     public string Name { get; private set; }
@@ -21,13 +20,11 @@ public class TagInfo
         string name,
         Tag model,
         string repoName,
-        VariableHelper variableHelper,
-        string buildContextPath = null)
+        VariableHelper variableHelper)
     {
         TagInfo tagInfo = new TagInfo()
         {
             Model = model,
-            BuildContextPath = buildContextPath,
             Name = variableHelper.SubstituteValues(name),
         };
 

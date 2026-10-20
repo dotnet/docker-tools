@@ -16,9 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public static class GitHelper
 {
-    private const int DefaultMaxTries = 10;
-    private const int DefaultRetryMillisecondsDelay = 5000;
-
     public static string GetCommitSha(string filePath, bool useFullHash = false)
     {
         // Don't make the assumption that the current working directory is a Git repository

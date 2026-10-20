@@ -34,6 +34,8 @@ public class RegistryCredentialsProvider(
     ///     3. Return null if there are no credentials to be found.
     /// </summary>
     /// <param name="registry">The container registry to get credentials for.</param>
+    /// <param name="credsHost">Optional host providing CLI credential overrides.</param>
+    /// <param name="ct">Token to monitor for cancellation requests.</param>
     /// <returns>Registry credentials</returns>
     public async ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,

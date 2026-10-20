@@ -17,8 +17,7 @@ public class CopyBaseImagesCommand(
     IGitService gitService)
     : CopyImagesCommand<CopyBaseImagesOptions>(
         manifestJsonService,
-        copyImageService,
-        logger)
+        copyImageService)
 {
     private readonly IManifestJsonService _manifestJsonService = manifestJsonService;
     private readonly ILogger _logger = logger;

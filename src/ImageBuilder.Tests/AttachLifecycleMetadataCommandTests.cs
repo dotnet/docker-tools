@@ -25,10 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class AttachLifecycleMetadataCommandTests
 {
-#nullable enable annotations
-    public TestContext? TestContext { get; set; }
-
-#nullable disable annotations
+    public TestContext TestContext { get; set; }
 
     private const string DefaultRepoPrefix = "public/";
     private const string AcrName = "myacr.azurecr.io";
@@ -1461,16 +1458,4 @@ public class AttachLifecycleMetadataCommandTests
                 },
             ],
         };
-
-    private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>
-        CreateAcrContentClientFactory(
-            AcrName,
-            [
-                CreateAcrContentClientMock(
-                    repo,
-                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                    {
-                        { digest, new ManifestQueryResult(string.Empty, []) },
-                    }),
-            ]);
 }

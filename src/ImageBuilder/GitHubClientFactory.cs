@@ -11,13 +11,10 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 namespace Microsoft.DotNet.ImageBuilder;
 
 internal class GitHubClientFactory(
-    ILogger<GitHubClientFactory> logger,
     ILoggerFactory loggerFactory,
     IOctokitClientFactory octokitClientFactory)
     : IGitHubClientFactory
 {
-    private readonly ILogger<GitHubClientFactory> _logger = logger
-        ?? throw new ArgumentNullException(nameof(logger));
     private readonly ILoggerFactory _loggerFactory = loggerFactory
         ?? throw new ArgumentNullException(nameof(loggerFactory));
 

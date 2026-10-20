@@ -18,7 +18,6 @@ public class BuildCommand : ManifestCommand<BuildOptions>
     private readonly IDockerService _dockerService;
     private readonly ILogger<BuildCommand> _logger;
     private readonly IGitService _gitService;
-    private readonly IProcessService _processService;
     private readonly ICopyImageService _copyImageService;
     private readonly Lazy<IManifestService> _manifestService;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
@@ -43,7 +42,6 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         IDockerService dockerService,
         ILogger<BuildCommand> logger,
         IGitService gitService,
-        IProcessService processService,
         ICopyImageService copyImageService,
         IManifestServiceFactory manifestServiceFactory,
         IRegistryCredentialsProvider registryCredentialsProvider,
@@ -53,7 +51,6 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-        _processService = processService ?? throw new ArgumentNullException(nameof(processService));
         _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
         _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));

@@ -62,6 +62,6 @@ public class PathHelperTests
     {
         string basePath = $"{Path.DirectorySeparatorChar}repo";
 
-        Should.Throw<ArgumentException>(() => PathHelper.SafeCombine(basePath, segment!));
+        Should.Throw<ArgumentException>(() => PathHelper.SafeCombine(basePath, segment));
     }
 }

@@ -49,7 +49,7 @@ public static class ManifestHelper
     }
 
     public static Image CreateImage(params IEnumerable<Platform> platforms) =>
-        CreateImage(platforms, (IDictionary<string, Tag>)null);
+        CreateImage(platforms, null);
 
     public static Image CreateImage(IEnumerable<string> sharedTags, params IEnumerable<Platform> platforms) =>
         CreateImage(

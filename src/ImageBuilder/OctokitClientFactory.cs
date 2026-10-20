@@ -47,6 +47,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     /// the private key and client ID of the GitHub App.
     /// </remarks>
     /// <param name="authOptions"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns>
     /// A GitHub token created according to the authentication options.
     /// </returns>
@@ -57,13 +58,13 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     {
         if (authOptions.IsGitHubAppAuth)
         {
-            /**
+            /*
                 Basic steps for GitHub App authentication:
                 1. Create a JWT token using the private key and client ID of the GitHub App.
                 2. Use the JWT token to authenticate as the GitHub App. This only allows you to query basic
                    information about the App itself.
                 3. Use the GitHub App client to get an token for a specific App installation.
-            **/
+            */
             string jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
             Credentials appCredentials = CreateCredentials(jwt);
             GitHubClient appClient = CreateClient(appCredentials);

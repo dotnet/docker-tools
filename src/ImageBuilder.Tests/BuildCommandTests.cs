@@ -34,7 +34,6 @@ public class BuildCommandTests(TestContext testContext)
     [TestMethod]
     public async Task BuildCommand_ImageInfoOutput_Basic()
     {
-        const string getInstalledPackagesScriptPath = "get-pkgs.sh";
         const string runtimeDepsRepo = "runtime-deps";
         const string runtimeRepo = "runtime";
         const string aspnetRepo = "aspnet";
@@ -83,38 +82,6 @@ public class BuildCommandTests(TestContext testContext)
                     new($"{aspnetRepo}:{tag}", aspnetLayers),
             ]);
 
-        string[] runtimeDepsInstalledPackages =
-        [
-                "DEB,pkg1=1.0.0"
-            ];
-
-        string[] runtimeInstalledPackages =
-        [
-                "DEB,pkg1=1.0.0",
-                "DEB,pkg2=1.1.0"
-            ];
-
-        string[] aspnetInstalledPackages =
-        [
-                "DEB,pkg1=1.0.0",
-                "DEB,pkg2=1.1.0",
-                "DEB,pkg3=2.0.0",
-            ];
-
-        Mock<IProcessService> processServiceMock = new();
-
-        processServiceMock
-            .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(string.Join(Environment.NewLine, runtimeDepsInstalledPackages));
-
-        processServiceMock
-            .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(string.Join(Environment.NewLine, runtimeInstalledPackages));
-
-        processServiceMock
-            .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{aspnetRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(string.Join(Environment.NewLine, aspnetInstalledPackages));
-
         DateTime createdDate = DateTime.Now;
 
         Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -152,7 +119,6 @@ public class BuildCommandTests(TestContext testContext)
         BuildCommand command = CreateBuildCommand(
             dockerService: dockerServiceMock.Object,
             gitService: gitServiceMock.Object,
-            processService: processServiceMock.Object,
             copyImageService: Mock.Of<ICopyImageService>(),
             manifestServiceFactory: manifestServiceFactoryMock.Object,
             imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
@@ -3795,7 +3761,6 @@ public class BuildCommandTests(TestContext testContext)
         IDockerService? dockerService = null,
         ILogger<BuildCommand>? loggerService = null,
         IGitService? gitService = null,
-        IProcessService? processService = null,
         ICopyImageService? copyImageService = null,
         IManifestServiceFactory? manifestServiceFactory = null,
         IRegistryCredentialsProvider? registryCredentialsProvider = null,
@@ -3807,7 +3772,6 @@ public class BuildCommandTests(TestContext testContext)
             dockerService ?? Mock.Of<IDockerService>(),
             loggerService ?? Mock.Of<ILogger<BuildCommand>>(),
             gitService ?? Mock.Of<IGitService>(),
-            processService ?? Mock.Of<IProcessService>(),
             copyImageService ?? Mock.Of<ICopyImageService>(),
             manifestServiceFactory ?? Mock.Of<IManifestServiceFactory>(),
             registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),

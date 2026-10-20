@@ -85,15 +85,33 @@ dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
 dotnet_style_prefer_non_hidden_explicit_cast_in_source = true:warning
 dotnet_style_prefer_simplified_boolean_expressions = true:warning
 dotnet_style_prefer_simplified_interpolation = true:warning
+# Remove unnecessary casts
+dotnet_diagnostic.IDE0004.severity = warning
+# Remove unused private members
+dotnet_diagnostic.IDE0051.severity = warning
+# Remove unread private members
+dotnet_diagnostic.IDE0052.severity = warning
+# Convert typeof to nameof
+dotnet_diagnostic.IDE0082.severity = warning
+# Remove unnecessary equality operators
+dotnet_diagnostic.IDE0100.severity = warning
+# Simplify LINQ expressions
+dotnet_diagnostic.IDE0120.severity = warning
+# Simplify LINQ type check and cast
+dotnet_diagnostic.IDE0121.severity = warning
 
 # Field preferences
 dotnet_style_readonly_field = true:warning
 
 # Parameter preferences
 dotnet_code_quality_unused_parameters = all:warning
+# Use nameof in attributes
+dotnet_diagnostic.IDE0280.severity = warning
 
 # Suppression preferences
 dotnet_remove_unnecessary_suppression_exclusions = none
+# Remove unnecessary nullable warning suppressions
+dotnet_diagnostic.IDE0370.severity = warning
 
 # New line preferences
 dotnet_style_allow_multiple_blank_lines_experimental = false:warning
@@ -134,6 +152,12 @@ csharp_prefer_static_local_function = true:warning
 csharp_preferred_modifier_order = public,private,protected,internal,file,const,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
 csharp_style_prefer_readonly_struct = true:warning
 csharp_style_prefer_readonly_struct_member = true:warning
+# Remove unnecessary unsafe modifiers
+dotnet_diagnostic.IDE0380.severity = warning
+# Make methods without await synchronous
+dotnet_diagnostic.IDE0390.severity = warning
+# Make overridden or interface methods without await synchronous
+dotnet_diagnostic.IDE0391.severity = warning
 
 # Code-block preferences
 csharp_prefer_braces = true:warning
@@ -162,6 +186,14 @@ csharp_style_prefer_utf8_string_literals = true:warning
 csharp_style_throw_expression = true:warning
 csharp_style_unused_value_assignment_preference = discard_variable:warning
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
+# Remove unnecessary suppression operators on is expressions
+dotnet_diagnostic.IDE0080.severity = warning
+# Remove unnecessary discards
+dotnet_diagnostic.IDE0110.severity = warning
+# Remove redundant nullable directives
+dotnet_diagnostic.IDE0240.severity = warning
+# Remove unnecessary nullable directives
+dotnet_diagnostic.IDE0241.severity = warning
 
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace:warning

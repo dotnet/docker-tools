@@ -20,10 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class GenerateDockerfilesCommandTests
 {
-#nullable enable annotations
-    public TestContext? TestContext { get; set; }
-
-#nullable disable annotations
+    public TestContext TestContext { get; set; }
 
     private const string DockerfilePath = "1.0/sdk/os/Dockerfile";
     private const string DefaultDockerfile = "FROM Base";

@@ -19,6 +19,7 @@ public interface IAcrImageImporter
     /// <param name="destAcrName">Destination ACR hostname used to resolve credentials.</param>
     /// <param name="destResourceId">ARM resource identifier for the destination registry.</param>
     /// <param name="importContent">Import parameters including source, tags, and mode.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     Task ImportImageAsync(
         string destAcrName,
         ResourceIdentifier destResourceId,

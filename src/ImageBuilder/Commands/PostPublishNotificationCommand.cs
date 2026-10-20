@@ -282,8 +282,6 @@ public class PostPublishNotificationCommand(
         return imagesMarkdown;
     }
 
-    private static IEnumerable<string> GetTags(IEnumerable<string> tags) => tags.Select(DockerHelper.GetTagName);
-
     private static void WriteTaskStatusesMarkdown(Dictionary<string, TaskResult?> taskStatuses, StringBuilder notificationMarkdown)
     {
         notificationMarkdown.AppendLine("## Task Results");

@@ -23,10 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class PublishImageInfoCommandTests : IDisposable
 {
-#nullable enable annotations
-    public TestContext? TestContext { get; set; }
-
-#nullable disable annotations
+    public TestContext TestContext { get; set; }
 
     private readonly List<string> _foldersToDelete = [];
 

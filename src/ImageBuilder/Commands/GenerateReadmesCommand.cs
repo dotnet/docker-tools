@@ -66,16 +66,20 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     /// <summary>
     /// Builds template state for product family readmes, recursively resolving nested template includes.
     /// </summary>
+    /// <param name="manifest">The manifest info for the product family.</param>
     /// <param name="templatePath">Must be a valid path to an existing Cottle template file.</param>
     /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(ManifestInfo manifest, string templatePath, string indent, CancellationToken cancellationToken) =>
         GetCommonTemplateState(templatePath, manifest, (manifest, templatePath, currentIndent) => GetTemplateState(manifest, templatePath, currentIndent + indent, cancellationToken), indent, cancellationToken);
 
     /// <summary>
     /// Builds template state for repo-specific readmes, adding repo-specific symbols like FULL_REPO and SHORT_REPO.
     /// </summary>
+    /// <param name="repo">The repository info to build template state for.</param>
     /// <param name="templatePath">Must be a valid path to an existing Cottle template file.</param>
     /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent, CancellationToken cancellationToken)
     {
         (IReadOnlyDictionary<Value, Value> baseSymbols, string nextIndent) = GetCommonTemplateState(
@@ -193,7 +197,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
                     .SelectMany(g => g);
                 IEnumerable<TagsTable> subSections = subGroups
                     .Where(g => !string.IsNullOrEmpty(g.Key))
-                    .Select(subGroup => new TagsTable(subGroup.Key!, tags: subGroup));
+                    .Select(subGroup => new TagsTable(subGroup.Key, tags: subGroup));
 
                 yield return new TagsTable(title, mainTags, subSections);
             }
@@ -236,6 +240,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
         /// Appends this section and all nested sub-tables to the builder,
         /// incrementing heading depth for each nesting level.
         /// </summary>
+        /// <param name="builder">The string builder to append markdown output to.</param>
         /// <param name="headingLevel">
         /// Must be between 1-6 per markdown spec; exceeding 6 renders as plain text.
         /// </param>

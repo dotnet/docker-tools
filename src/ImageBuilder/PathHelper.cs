@@ -13,7 +13,7 @@ public static class PathHelper
     public static string NormalizePath(string path) => path.Replace(@"\", "/");
 
     /// <summary>
-    /// Combines two strings into a path. Same as <see cref="Path.Combine"/> but protects against path traversal.
+    /// Combines two strings into a path. Same as <see cref="Path.Combine(string[])"/> but protects against path traversal.
     /// </summary>
     /// <param name="basePath">The base path that the result will remain under.</param>
     /// <param name="paths">Relative segments to append, in order.</param>

@@ -12,25 +12,16 @@ using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services;
 
-internal class VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILoggerFactory loggerFactory) : IVssConnectionFactory
+internal class VssConnectionFactory(ILoggerFactory loggerFactory) : IVssConnectionFactory
 {
-    private readonly ILogger<VssConnectionFactory> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
     public IVssConnection Create(Uri baseUrl, VssCredentials credentials) => new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
 
-    private class VssConnectionWrapper : IVssConnection
+    private class VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner) : IVssConnection
     {
-        private readonly ILogger<VssConnectionWrapper> _logger;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly VssConnection _inner;
-
-        public VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner)
-        {
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = _loggerFactory.CreateLogger<VssConnectionWrapper>();
-            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-        }
+        private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        private readonly VssConnection _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
         public void Dispose() => _inner.Dispose();
 

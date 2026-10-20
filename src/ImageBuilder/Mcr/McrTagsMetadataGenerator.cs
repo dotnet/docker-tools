@@ -43,7 +43,7 @@ public class McrTagsMetadataGenerator
         string sourceBranch = null)
     {
         // Generating GitHub permalinks requires gitService
-        if (generateGitHubLinks == true)
+        if (generateGitHubLinks)
         {
             ArgumentNullException.ThrowIfNull(gitService);
         }
@@ -284,5 +284,4 @@ public class McrTagsMetadataGenerator
             tag.Model.DocType == TagDocumentationType.PlatformDocumented
                 && documentedPlatformTags?.Any() == true;
     }
-#nullable disable
 }

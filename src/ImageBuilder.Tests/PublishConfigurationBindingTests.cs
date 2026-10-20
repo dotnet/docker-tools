@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -235,7 +233,7 @@ public class PublishConfigurationBindingTests
 
     /// <summary>
     /// Helper method that builds a <see cref="PublishConfiguration"/> from JSON
-    /// using the actual <see cref="ConfigurationExtensions.AddPublishConfiguration"/> method.
+    /// using the actual <see cref="Configuration.ConfigurationExtensions.AddPublishConfiguration"/> method.
     /// </summary>
     private static PublishConfiguration BuildConfiguration(string json)
     {

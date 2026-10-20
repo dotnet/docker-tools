@@ -71,7 +71,7 @@ public partial class PlatformInfo
         }
 
         Tags = model.Tags
-            .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, BuildContextPath))
+            .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper))
             .ToArray();
 
         string platformArchLabel = Model.Architecture.ToString();

@@ -34,6 +34,8 @@ public class AsyncLockedValue<T> : IDisposable
         {
             _semaphore.Dispose();
         }
+
+        GC.SuppressFinalize(this);
     }
 
     public async Task<T> GetValueAsync(Func<CancellationToken, Task<T>> valueInitializer, CancellationToken cancellationToken)

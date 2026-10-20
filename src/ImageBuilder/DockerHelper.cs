@@ -22,7 +22,7 @@ public static class DockerHelper
 
     public static string FormatAcrName(string acrName)
     {
-        if (!acrName.EndsWith(AcrDomain))
+        if (!acrName.EndsWith(AcrDomain, StringComparison.OrdinalIgnoreCase))
         {
             acrName = $"{acrName}{AcrDomain}";
         }
@@ -164,7 +164,7 @@ public static class DockerHelper
 
     public static string TrimRegistry(string tag, string? registry) => tag.TrimStartString($"{registry}/");
 
-    public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
+    public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry, StringComparison.OrdinalIgnoreCase);
 
     public static string? GetRegistry(string imageName)
     {

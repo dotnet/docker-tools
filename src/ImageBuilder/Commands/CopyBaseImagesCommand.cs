@@ -75,7 +75,7 @@ public class CopyBaseImagesCommand(
     private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
         manifest.GetExternalFromImages()
             .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
-            .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
+            .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry, StringComparison.OrdinalIgnoreCase));
 
     private Task CopyImageAsync(string fromImage, string destinationRegistryName, CancellationToken cancellationToken)
     {

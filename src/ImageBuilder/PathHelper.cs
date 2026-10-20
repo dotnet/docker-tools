@@ -10,6 +10,11 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public static class PathHelper
 {
+    internal static StringComparison PathComparison =>
+        OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
     public static string NormalizePath(string path) => path.Replace(@"\", "/");
 
     /// <summary>
@@ -61,7 +66,7 @@ public static class PathHelper
     /// <param name="path">The path to be trimmed.</param>
     public static string TrimPath(string trimPath, string path)
     {
-        if (!NormalizePath(path).StartsWith(NormalizePath(trimPath)))
+        if (!NormalizePath(path).StartsWith(NormalizePath(trimPath), PathComparison))
         {
             throw new InvalidOperationException($"'{path}' must start with '{trimPath}'");
         }

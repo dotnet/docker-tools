@@ -75,7 +75,8 @@ public class PublishMcrDocsCommand(
     }
 
     private bool PathIsValid(Readme readme) =>
-        Options.RootPath is null || Path.GetFullPath(readme.Path).StartsWith(Path.GetFullPath(Options.RootPath));
+        Options.RootPath is null || Path.GetFullPath(readme.Path).StartsWith(
+            Path.GetFullPath(Options.RootPath), PathHelper.PathComparison);
 
     private void ValidateReadmeFilenames(ManifestInfo manifest)
     {

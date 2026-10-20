@@ -35,12 +35,12 @@ public class RegistryCredentialsProvider(
     /// </summary>
     /// <param name="registry">The container registry to get credentials for.</param>
     /// <param name="credsHost">Optional host providing CLI credential overrides.</param>
-    /// <param name="ct">Token to monitor for cancellation requests.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     /// <returns>Registry credentials</returns>
     public async ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,
         IRegistryCredentialsHost? credsHost,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         RegistryInfo registryInfo = registryResolver.Resolve(registry, credsHost);
 
@@ -49,7 +49,10 @@ public class RegistryCredentialsProvider(
             // If we're here, we have authentication configured with a service
             // connection we can use for authentication.
             Acr acr = Acr.Parse(registryInfo.EffectiveRegistry);
-            CachedRefreshToken refreshToken = await GetRefreshTokenAsync(acr, serviceConnection, ct);
+            CachedRefreshToken refreshToken = await GetRefreshTokenAsync(
+                acr,
+                serviceConnection,
+                cancellationToken);
 
             // ACR login is an empty GUID as the username with the ACR refresh token as the password.
             return new RegistryCredentials(Guid.Empty.ToString(), refreshToken.RefreshToken);

@@ -19,21 +19,25 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
     private const string RegistryApiVersionPathSegment = "v2";
     private const string ReferrersPathSegment = "referrers";
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
     {
         if (!IsAcrReferrerLookup(request))
         {
-            return await base.SendAsync(request, ct);
+            return await base.SendAsync(request, cancellationToken);
         }
 
-        using RateLimitLease lease = await rateLimiter.AcquireAsync(request.RequestUri!.Host, ct);
+        using RateLimitLease lease = await rateLimiter.AcquireAsync(
+            request.RequestUri!.Host,
+            cancellationToken);
 
         if (!lease.IsAcquired)
         {
             throw new InvalidOperationException("Unable to acquire a permit from the ACR referrer rate limiter.");
         }
 
-        return await base.SendAsync(request, ct);
+        return await base.SendAsync(request, cancellationToken);
     }
 
     private static bool IsAcrReferrerLookup(HttpRequestMessage request)

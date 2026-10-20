@@ -143,7 +143,7 @@ public class CleanAcrImagesCommand(
                 break;
 
             case CleanAcrImagesAction.Delete:
-                ContainerRepositoryProperties repoProperties = repository.GetProperties().Value;
+                ContainerRepositoryProperties repoProperties = repository.GetProperties(cancellationToken).Value;
                 bool isDeleting = IsExpired(repoProperties.LastUpdatedOn, Options.Age);
                 _logger.LogInformation(
                     "Repository {RepositoryName}: CreatedOn={CreatedOn}, LastUpdatedOn={LastUpdatedOn}, ManifestCount={ManifestCount}, Deleting={Deleting}, Reason={Reason}",

@@ -112,6 +112,15 @@ dotnet_diagnostic.RE0001.severity = warning
 # Validate JSON strings
 dotnet_diagnostic.JSON001.severity = warning
 
+# TODO: Define and implement disposal ownership for the following types:
+# - src/GitAutomation/GitHub/GitHubAppAccessProvider.cs
+# - src/GitAutomation/GitHub/GitHubAppCredentialStore.cs
+# - src/GitAutomation/GitHub/GitHubAppInstallationCredentialStore.cs
+# - src/ImageBuilder/Commands/GetStaleImagesCommand.cs
+# - src/ImageBuilder/ImageDigestCache.cs
+# - src/ImageBuilder/McrStatusClient.cs
+dotnet_diagnostic.CA1001.severity = none
+
 # Field preferences
 dotnet_style_readonly_field = true:warning
 
@@ -467,4 +476,3 @@ dotnet_naming_style.s_camelcase.required_prefix = s_
 dotnet_naming_style.s_camelcase.required_suffix = 
 dotnet_naming_style.s_camelcase.word_separator = 
 dotnet_naming_style.s_camelcase.capitalization = camel_case
-

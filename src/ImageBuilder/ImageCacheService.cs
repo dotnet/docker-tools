@@ -90,7 +90,7 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
 
         if (platformData.PlatformInfo is null)
         {
-            throw new Exception("Expected platform info to be set");
+            throw new InvalidOperationException("Expected platform info to be set");
         }
 
         string cacheKey = GetBuildCacheKey(platformData.PlatformInfo);

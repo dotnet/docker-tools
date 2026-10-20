@@ -22,7 +22,7 @@ public static class AuthHelper
 
         if (!tenants.Any())
         {
-            throw new Exception("Found no tenants for given credential.");
+            throw new InvalidOperationException("Found no tenants for given credential.");
         }
 
         if (tenants.Count() > 1)

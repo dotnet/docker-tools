@@ -22,6 +22,8 @@ metadata starts at `src/ImageBuilder/Models/Image/ImageArtifactDetails.cs`.
 
 - Build, test, and pack on Windows: `build.cmd`
 - Build, test, and pack on Linux or macOS: `./build.sh`
+- Format code: `.dotnet/dotnet format` (use `.dotnet/dotnet.exe` on Windows)
+- Verify formatting without modifying files: `.dotnet/dotnet format --verify-no-changes`
 - Run ImageBuilder locally after building:
   `.dotnet/dotnet run --project src/ImageBuilder -- --help` (use `.dotnet/dotnet.exe` on Windows).
 

@@ -62,6 +62,14 @@ try {
         throw "Failed to restore toolset"
     }
 
+    $formatCmd = "$dotnetInstallDir/dotnet format $repoRoot --verify-no-changes"
+
+    Write-Output "Executing '$formatCmd'"
+    Invoke-Expression $formatCmd
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed: '$formatCmd'"
+    }
+
     $cmd = "$dotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
 
     Write-Output "Executing '$cmd'"

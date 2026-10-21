@@ -782,7 +782,7 @@ public class GenerateBuildMatrixCommandTests
         matrixInfos.ShouldHaveSingleItem();
 
         BuildMatrixInfo matrixInfo = matrixInfos.First();
-        matrixInfo.Legs.Count().ShouldBe(2);
+        matrixInfo.Legs.Count.ShouldBe(2);
         BuildLegInfo leg = matrixInfo.Legs.ElementAt(0);
         string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
         imageBuilderPaths.ShouldBe("--path 1.0/repo1/os/Dockerfile --path 1.0/repo2/os/Dockerfile");

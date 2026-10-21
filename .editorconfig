@@ -127,6 +127,10 @@ dotnet_diagnostic.CA1001.severity = none
 # - src/ImageBuilder/Models/Image/RepoData.cs
 dotnet_diagnostic.CA1036.severity = none
 
+# ImageBuilder is an I/O-bound CLI; generated logging delegates would add substantial
+# declaration overhead without a meaningful runtime benefit.
+dotnet_diagnostic.CA1848.severity = none
+
 # Field preferences
 dotnet_style_readonly_field = true:warning
 

@@ -1690,7 +1690,7 @@ public class GetStaleImagesCommandTests
         {
             IInvocation invocation = _loggerServiceMock.Invocations
                 .First(invocation => invocation.Method.Name == nameof(ILogger.Log) &&
-                    invocation.Arguments[2]?.ToString()?.StartsWith("##vso") == true);
+                    invocation.Arguments[2]?.ToString()?.StartsWith("##vso", StringComparison.Ordinal) == true);
 
             string message = invocation.Arguments[2].ToString();
             int variableNameStartIndex = message.IndexOf('=') + 1;

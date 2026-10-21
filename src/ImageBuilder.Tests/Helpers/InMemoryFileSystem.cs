@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -160,7 +161,9 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public string GetCurrentDirectory() => CurrentDirectory;
 
     private static bool IsUnder(string directory, string candidate) =>
-        candidate.StartsWith(directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
+        candidate.StartsWith(
+            directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     private void SetFile(string path, byte[] bytes)
     {

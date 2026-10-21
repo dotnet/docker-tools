@@ -82,7 +82,8 @@ public class GenerateBuildMatrixCommandTests
             matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
-            BuildLegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith(verificationLegName));
+            BuildLegInfo leg = matrixInfo.Legs.First(
+                leg => leg.Name.StartsWith(verificationLegName, StringComparison.Ordinal));
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
             imageBuilderPaths.ShouldBe(expectedPaths);

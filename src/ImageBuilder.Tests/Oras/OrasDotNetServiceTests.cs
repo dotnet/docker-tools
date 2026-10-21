@@ -163,8 +163,10 @@ public class OrasDotNetServiceTests
             reference, ReferrerArtifactType, new Dictionary<string, string> { ["a"] = "2" },
             TestContext?.CancellationToken ?? default);
 
-        handler.Requests.Count(r => r.StartsWith("POST /v2/repo/blobs/uploads/")).ShouldBe(1);
-        handler.Requests.Count(r => r.StartsWith("PUT /v2/repo/manifests/")).ShouldBe(2);
+        handler.Requests.Count(
+            r => r.StartsWith("POST /v2/repo/blobs/uploads/", StringComparison.Ordinal)).ShouldBe(1);
+        handler.Requests.Count(
+            r => r.StartsWith("PUT /v2/repo/manifests/", StringComparison.Ordinal)).ShouldBe(2);
     }
 
     [TestMethod]
@@ -190,8 +192,10 @@ public class OrasDotNetServiceTests
 
         handler.ManifestPushContents.Count.ShouldBe(timeoutCount + 1);
         handler.ManifestPushContents.Distinct().ShouldHaveSingleItem();
-        handler.Requests.Count(r => r.StartsWith("POST /v2/repo/blobs/uploads/")).ShouldBe(1);
-        digest.ShouldBe(handler.Requests.Last(r => r.StartsWith("PUT /v2/repo/manifests/"))
+        handler.Requests.Count(
+            r => r.StartsWith("POST /v2/repo/blobs/uploads/", StringComparison.Ordinal)).ShouldBe(1);
+        digest.ShouldBe(handler.Requests.Last(
+            r => r.StartsWith("PUT /v2/repo/manifests/", StringComparison.Ordinal))
             ["PUT /v2/repo/manifests/".Length..]);
     }
 
@@ -305,7 +309,8 @@ public class OrasDotNetServiceTests
                 Content = new ByteArrayContent([])
             };
 
-            if (request.Method == HttpMethod.Head && path.StartsWith("/v2/repo/manifests/"))
+            if (request.Method == HttpMethod.Head &&
+                path.StartsWith("/v2/repo/manifests/", StringComparison.Ordinal))
             {
                 response.Content.Headers.ContentType = new MediaTypeHeaderValue(ManifestMediaType);
                 response.Content.Headers.ContentLength = 123;
@@ -320,7 +325,8 @@ public class OrasDotNetServiceTests
             {
                 response.StatusCode = HttpStatusCode.Created;
             }
-            else if (request.Method == HttpMethod.Put && path.StartsWith("/v2/repo/manifests/"))
+            else if (request.Method == HttpMethod.Put &&
+                path.StartsWith("/v2/repo/manifests/", StringComparison.Ordinal))
             {
                 HttpContent content = request.Content
                     ?? throw new InvalidOperationException("A manifest push must include content.");

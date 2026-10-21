@@ -287,7 +287,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         NotificationLabels.AutoBuilder,
                         NotificationLabels.GetRepoLocationLabel(subscription.Manifest.Repo, subscription.Manifest.Branch)
-                    }.AppendIf(NotificationLabels.Failure, () => exception is not null),
+                    }.AppendIf(NotificationLabels.Failure, () => category == "Failed"),
                     Options.GitOptions.Owner,
                     Options.GitOptions.Repo,
                     Options.GitOptions.GitHubAuthOptions,

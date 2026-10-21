@@ -37,7 +37,7 @@ public class PullImagesCommand(IManifestJsonService manifestJsonService, IDocker
                 .SelectMany(image => image.Platforms)
                 // If the platform doesn't have an associated manifest instance, it means the manifest filter
                 // options had filtered out the platform. In that case, it doesn't apply and shouldn't be pulled.
-                .Where(platform => platform.PlatformInfo is not null && platform.SimpleTags.Any())
+                .Where(platform => platform.PlatformInfo is not null && platform.SimpleTags.Count > 0)
                 .Select(platform => (
                     TagInfo.GetFullyQualifiedName(platform.PlatformInfo!.FullRepoModelName, platform.SimpleTags.First()),
                     platform.PlatformInfo!.PlatformLabel));

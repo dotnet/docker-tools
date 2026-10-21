@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
@@ -65,13 +64,13 @@ public class TrimUnchangedPlatformsCommand(
                     }
                 }
 
-                if (!image.Platforms.Any())
+                if (image.Platforms.Count == 0)
                 {
                     repo.Images.Remove(image);
                 }
             }
 
-            if (!repo.Images.Any())
+            if (repo.Images.Count == 0)
             {
                 imageArtifactDetails.Repos.Remove(repo);
             }

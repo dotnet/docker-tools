@@ -39,7 +39,7 @@ public class QueueBuildCommand(
             ?? throw new InvalidOperationException("Failed to deserialize subscriptions file.");
         IEnumerable<SubscriptionImagePaths> imagePathsBySubscription = GetAllSubscriptionImagePaths();
 
-        if (imagePathsBySubscription.Any())
+        if (imagePathsBySubscription.Count > 0)
         {
             await Task.WhenAll(
                 imagePathsBySubscription.Select(kvp =>

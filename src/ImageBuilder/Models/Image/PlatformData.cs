@@ -105,7 +105,7 @@ public class PlatformData : IComparable<PlatformData>
         };
 
     private static bool IsNullOrEmpty<T>(List<T>? list) =>
-        list is null || !list.Any();
+        list is null || list.Count == 0;
 
     private string? GetMajorMinorVersion()
     {

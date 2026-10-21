@@ -214,7 +214,7 @@ public class MarImageIngestionReporter(
                 failedStatusTasks.AddRange(resultFailedStatusTasks);
             }
 
-            if (failedStatusTasks.Any())
+            if (failedStatusTasks.Count > 0)
             {
                 _logger.LogInformation(string.Empty);
                 _logger.LogInformation("Querying details of failed results...");
@@ -223,7 +223,7 @@ public class MarImageIngestionReporter(
                 await Task.WhenAll(failedStatusTasks);
             }
 
-            if (successfulResults.Any())
+            if (successfulResults.Count > 0)
             {
                 _logger.LogInformation("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
@@ -238,7 +238,7 @@ public class MarImageIngestionReporter(
                 }
             }
 
-            if (failedStatusTasks.Any())
+            if (failedStatusTasks.Count > 0)
             {
                 _logger.LogInformation("Failed results");
 

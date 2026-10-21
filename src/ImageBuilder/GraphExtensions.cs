@@ -15,7 +15,7 @@ public static class GraphExtensions
         List<T[]> subgraphs = [];
 
         List<Node<T>> nodes = CreateNodeList(source, getParents);
-        while (nodes.Any())
+        while (nodes.Count > 0)
         {
             HashSet<Node<T>> subgraph = [];
             AddSubgraphNode(subgraph, nodes.First(), nodes);

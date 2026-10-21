@@ -246,15 +246,15 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
 
     protected void ValidateArtifacts()
     {
-        if (_outOfSyncArtifacts.Any() || _invalidTemplates.Any())
+        if (_outOfSyncArtifacts.Count > 0 || _invalidTemplates.Count > 0)
         {
-            if (_outOfSyncArtifacts.Any())
+            if (_outOfSyncArtifacts.Count > 0)
             {
                 string artifacts = string.Join(Environment.NewLine, _outOfSyncArtifacts);
                 _logger.LogError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
             }
 
-            if (_invalidTemplates.Any())
+            if (_invalidTemplates.Count > 0)
             {
                 string templateList = string.Join(Environment.NewLine, _invalidTemplates);
                 _logger.LogError($"Invalid Templates:{Environment.NewLine}{templateList}");

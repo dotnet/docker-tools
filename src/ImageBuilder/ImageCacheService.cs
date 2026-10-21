@@ -67,7 +67,7 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
         {
             lock (_cachedPlatformsLock)
             {
-                return _cachedPlatforms.Any();
+                return _cachedPlatforms.Count > 0;
             }
         }
     }

@@ -40,7 +40,7 @@ public partial class MergeImageInfoCommand(
                                     skipManifestValidation: Options.IsPublishScenario)))
             .ToList();
 
-        if (!srcImageArtifactDetailsList.Any())
+        if (srcImageArtifactDetailsList.Count == 0)
         {
             throw new InvalidOperationException(
                 $"No JSON files found in source folder '{sourceImageInfoFolderPath}'");

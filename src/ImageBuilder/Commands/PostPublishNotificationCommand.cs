@@ -201,7 +201,7 @@ public class PostPublishNotificationCommand(
 
     private static void WriteBuildParameters(Dictionary<string, string> buildParameters, StringBuilder notificationMarkdown)
     {
-        if (!buildParameters.Any())
+        if (buildParameters.Count == 0)
         {
             return;
         }

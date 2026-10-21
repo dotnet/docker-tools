@@ -541,7 +541,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
                 .Select(grouping => grouping.Key)
                 .ToList();
 
-            if (duplicateLegNames.Any())
+            if (duplicateLegNames.Count > 0)
             {
                 throw new InvalidOperationException(
                     $"Duplicate leg name(s) found in matrix '{matrix.Name}': {string.Join(", ", duplicateLegNames)}");

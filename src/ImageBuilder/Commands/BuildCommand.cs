@@ -260,7 +260,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
 
     private async Task SetPlatformDataLayersAsync(PlatformData platform, string tag, CancellationToken cancellationToken)
     {
-        if (platform.Layers == null || !platform.Layers.Any())
+        if (platform.Layers == null || platform.Layers.Count == 0)
         {
             platform.Layers = (await _manifestService.Value.GetImageLayersAsync(tag, Options.IsDryRun, cancellationToken)).ToList();
         }
@@ -376,7 +376,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
                 }
             }
 
-            if (repoData?.Images.Any() == true)
+            if (repoData?.Images.Count > 0)
             {
                 _imageArtifactDetails?.Repos.Add(repoData);
             }

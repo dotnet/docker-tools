@@ -46,7 +46,7 @@ public class HttpPolicyBuilder
 
     public AsyncPolicy<HttpResponseMessage>? Build()
     {
-        if (!_policies.Any())
+        if (_policies.Count == 0)
         {
             return null;
         }

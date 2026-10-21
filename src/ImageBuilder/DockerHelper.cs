@@ -172,7 +172,7 @@ public static class DockerHelper
         if (separatorIndex >= 0)
         {
             string firstSegment = imageName[..separatorIndex];
-            if (firstSegment.Contains(".") || firstSegment.Contains(":"))
+            if (firstSegment.Contains('.') || firstSegment.Contains(':'))
             {
                 return firstSegment;
             }

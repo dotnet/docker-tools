@@ -206,7 +206,7 @@ public static class DockerHelper
     private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun, CancellationToken cancellationToken)
     {
         string output = ExecuteCommand(
-            $"{Enum.GetName(typeof(ManagementType), type)?.ToLowerInvariant()} ls -a -q {filterArg}",
+            $"{Enum.GetName(type)?.ToLowerInvariant()} ls -a -q {filterArg}",
             "Failed to find resource",
             cancellationToken,
             isDryRun: isDryRun);

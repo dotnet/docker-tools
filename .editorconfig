@@ -482,3 +482,7 @@ dotnet_naming_style.s_camelcase.required_prefix = s_
 dotnet_naming_style.s_camelcase.required_suffix = 
 dotnet_naming_style.s_camelcase.word_separator = 
 dotnet_naming_style.s_camelcase.capitalization = camel_case
+
+# Test arguments should remain isolated instead of sharing mutable arrays between parallel tests.
+[src/*.Tests/**.cs]
+dotnet_diagnostic.CA1861.severity = none

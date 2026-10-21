@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -31,7 +29,7 @@ public sealed class AcrReferrerRateLimiter : IDisposable
     /// </summary>
     public const int DefaultReferrerRequestsPerMinute = 250;
 
-    private static readonly TimeSpan s_window = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan Window = TimeSpan.FromSeconds(60);
 
     private readonly Func<string, RateLimiter> _limiterFactory;
     private readonly ConcurrentDictionary<string, Lazy<RateLimiter>> _limiters =
@@ -78,11 +76,11 @@ public sealed class AcrReferrerRateLimiter : IDisposable
     private Lazy<RateLimiter> CreateLazyLimiter(string host) =>
         new(() => _limiterFactory(host), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private static RateLimiter CreateSlidingWindowLimiter(int permitLimit) =>
+    private static SlidingWindowRateLimiter CreateSlidingWindowLimiter(int permitLimit) =>
         new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
         {
             PermitLimit = permitLimit,
-            Window = s_window,
+            Window = Window,
             SegmentsPerWindow = 6,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = int.MaxValue,

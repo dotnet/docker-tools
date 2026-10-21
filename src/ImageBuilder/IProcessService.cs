@@ -3,12 +3,11 @@
 
 using System.Diagnostics;
 
-namespace Microsoft.DotNet.ImageBuilder
-{
-    public interface IProcessService
-    {
-        string? Execute(string fileName, string args, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null);
+namespace Microsoft.DotNet.ImageBuilder;
 
-        string? Execute(ProcessStartInfo info, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null);
-    }
+public interface IProcessService
+{
+    string? Execute(string fileName, string args, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null);
+
+    string? Execute(ProcessStartInfo info, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null);
 }

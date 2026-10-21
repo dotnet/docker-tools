@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -27,24 +26,16 @@ public interface ICopyImageService
         bool isDryRun = false);
 }
 
-public class CopyImageService : ICopyImageService
+public class CopyImageService(
+    ILogger<CopyImageService> logger,
+    IAcrImageImporter acrRegistryImporter,
+    IOrasService orasService,
+    IOptions<PublishConfiguration> publishConfigOptions) : ICopyImageService
 {
-    private readonly ILogger<CopyImageService> _logger;
-    private readonly IAcrImageImporter _acrRegistryImporter;
-    private readonly IOrasService _orasService;
-    private readonly PublishConfiguration _publishConfig;
-
-    public CopyImageService(
-        ILogger<CopyImageService> logger,
-        IAcrImageImporter acrRegistryImporter,
-        IOrasService orasService,
-        IOptions<PublishConfiguration> publishConfigOptions)
-    {
-        _logger = logger;
-        _acrRegistryImporter = acrRegistryImporter;
-        _orasService = orasService;
-        _publishConfig = publishConfigOptions.Value;
-    }
+    private readonly ILogger<CopyImageService> _logger = logger;
+    private readonly IAcrImageImporter _acrRegistryImporter = acrRegistryImporter;
+    private readonly IOrasService _orasService = orasService;
+    private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
 
     public async Task ImportImageAsync(
         string[] destTagNames,
@@ -86,7 +77,7 @@ public class CopyImageService : ICopyImageService
             referrers.Add(referrer);
         }
 
-        var destinationImageNames =
+        List<string> destinationImageNames =
             destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
 

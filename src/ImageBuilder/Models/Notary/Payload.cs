@@ -1,7 +1,6 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text.Json;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
@@ -14,15 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Notary;
 /// </summary>
 public sealed record Payload(Descriptor TargetArtifact)
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public string ToJson()
-    {
-        return JsonSerializer.Serialize(this, s_jsonOptions);
-    }
+    public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
 
-    public static Payload FromJson(string json)
-    {
-        return JsonSerializer.Deserialize<Payload>(json, s_jsonOptions);
-    }
+    public static Payload FromJson(string json) => JsonSerializer.Deserialize<Payload>(json, JsonOptions);
 }

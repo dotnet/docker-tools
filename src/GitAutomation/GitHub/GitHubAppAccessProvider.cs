@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using Azure.Security.KeyVault.Keys.Cryptography;
@@ -13,7 +12,7 @@ namespace Microsoft.DotNet.GitAutomation.GitHub;
 /// </summary>
 public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
 {
-    private static readonly ProductHeaderValue s_productHeaderValue = new("Microsoft.DotNet.GitAutomation");
+    private static readonly ProductHeaderValue ProductHeaderValue = new("Microsoft.DotNet.GitAutomation");
 
     private readonly GitHubClient _appClient;
     private readonly ConcurrentDictionary<GitHubRepo, long> _repoToInstallationId = [];
@@ -33,7 +32,7 @@ public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
         ArgumentNullException.ThrowIfNull(cryptographyClient);
-        _appClient = new(s_productHeaderValue, new GitHubAppCredentialStore(clientId, cryptographyClient));
+        _appClient = new(ProductHeaderValue, new GitHubAppCredentialStore(clientId, cryptographyClient));
     }
 
     /// <inheritdoc/>
@@ -69,8 +68,8 @@ public sealed class GitHubAppAccessProvider : IGitHubAccessProvider
                 return access;
             }
 
-            var credentials = new GitHubAppInstallationCredentialStore(_appClient, installationId);
-            var installationClient = new GitHubClient(s_productHeaderValue, credentials);
+            GitHubAppInstallationCredentialStore credentials = new GitHubAppInstallationCredentialStore(_appClient, installationId);
+            GitHubClient installationClient = new GitHubClient(ProductHeaderValue, credentials);
 
             AutomationIdentity identity = await GetIdentityAsync(installationClient, cancellationToken);
 

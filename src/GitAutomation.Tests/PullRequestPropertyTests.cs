@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using CsCheck;
 
@@ -49,7 +48,7 @@ public sealed class PullRequestPlannerTests
 
     private static readonly Gen<CommitInfo[]> GenRandomCommits = GenRandomCommit.Array[1, 3];
 
-    private static Gen<CommitInfo[]> GenCommitsGuaranteedForeign =
+    private static readonly Gen<CommitInfo[]> GenCommitsGuaranteedForeign =
         from foreign in GenForeignCommit
         from rest in GenRandomCommit.Array[0, 2]
         from commits in Gen.Shuffle((CommitInfo[])[foreign, .. rest])
@@ -85,7 +84,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ChangesWithNoPR_CreatesNewPR()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from targetBranch in GenTargetBranchState
             from updateStrategy in GenUpdateStrategy
@@ -107,12 +106,13 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ChangesWithNoPR_ResetsExistingBranch()
     {
-        var scenario =
+        // Collision between desiredState.TreeHash and targetBranch.TreeHash should be very unlikely,
+        // but filter it out anyways.
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from targetBranch in GenTargetBranchState
             from updateStrategy in GenUpdateStrategy
             from onForeignCommits in GenForeignCommitPolicy
-            // Collision should be very unlikely, but filter it out anyways
             where desiredState.TreeHash != targetBranch.TreeHash
             select new PullRequestScenario(
                 DesiredState: desiredState,
@@ -129,7 +129,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void NoChanges_NoOp()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from prNumber in GenPullRequestNumber
             from existingCommits in GenRandomCommits
@@ -151,15 +151,15 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void NoChanges_DoesNotPush()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             // 20% of scenarios will have no existing pull request
             from existingPullRequest in Gen.Null(GenExistingPullRequest, 0.2)
             from targetTree in GenSha1
             from updateStrategy in GenUpdateStrategy
-            // The base tree is the existing PR's head, or the target branch when none exists.
-            // Pin the desired tree to it so there is no content diff to push.
             select new PullRequestScenario(
+                // The base tree is the existing PR's head, or the target branch when none exists.
+                // Pin the desired tree to it so there is no content diff to push.
                 desiredState with { TreeHash = existingPullRequest?.Content.TreeHash ?? targetTree },
                 new TargetBranchState(targetTree),
                 existingPullRequest,
@@ -174,7 +174,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ExistingPR_DoesNotCreateNewPR()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from existingPullRequest in GenExistingPullRequest
             from targetBranch in GenTargetBranchState
@@ -195,7 +195,7 @@ public sealed class PullRequestPlannerTests
     [TestMethod]
     public void ExistingPR_StopsOnForeignCommits()
     {
-        var scenario =
+        Gen<PullRequestScenario> scenario =
             from desiredState in GenPullRequestState
             from existingState in GenPullRequestState
             from prNumber in GenPullRequestNumber

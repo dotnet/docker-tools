@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,83 +8,80 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
+namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+
+public static class TestHelper
 {
-    public static class TestHelper
+    /// <summary>
+    /// Creates a real <see cref="ManifestJsonService"/> for use in tests that load
+    /// manifest JSON files from the filesystem (e.g., temp folder-based tests).
+    /// </summary>
+    public static IManifestJsonService CreateManifestJsonService() =>
+        new ManifestJsonService(
+            fileSystem: new FileSystem(),
+            logger: new LoggerFactory().CreateLogger<ManifestJsonService>());
+
+    public static IArtifactService CreateArtifactService(string artifactStagingDirectory)
     {
-        /// <summary>
-        /// Creates a real <see cref="ManifestJsonService"/> for use in tests that load
-        /// manifest JSON files from the filesystem (e.g., temp folder-based tests).
-        /// </summary>
-        public static IManifestJsonService CreateManifestJsonService() =>
-            new ManifestJsonService(
-                fileSystem: new FileSystem(),
-                logger: new LoggerFactory().CreateLogger<ManifestJsonService>());
-
-        public static IArtifactService CreateArtifactService(string artifactStagingDirectory)
+        BuildConfiguration buildConfiguration = new()
         {
-            BuildConfiguration buildConfiguration = new()
-            {
-                ArtifactStagingDirectory = artifactStagingDirectory
-            };
+            ArtifactStagingDirectory = artifactStagingDirectory
+        };
 
-            return new ArtifactService(new FileSystem(), Options.Create(buildConfiguration));
+        return new ArtifactService(new FileSystem(), Options.Create(buildConfiguration));
+    }
+
+    public static TempFolderContext UseTempFolder() => new TempFolderContext();
+
+    /// <summary>
+    /// Returns a value indicating whether the two lists are equivalent (order does not matter).
+    /// </summary>
+    public static bool CompareLists(IList<string> expectedItems, IList<string> items)
+    {
+        if (items.Count != expectedItems.Count)
+        {
+            return false;
         }
 
-        public static TempFolderContext UseTempFolder()
-        {
-            return new TempFolderContext();
-        }
+        items = items
+            .OrderBy(p => p)
+            .ToList();
+        expectedItems = expectedItems
+            .OrderBy(p => p)
+            .ToList();
 
-        /// <summary>
-        /// Returns a value indicating whether the two lists are equivalent (order does not matter).
-        /// </summary>
-        public static bool CompareLists(IList<string> expectedItems, IList<string> items)
+        for (int i = 0; i < items.Count; i++)
         {
-            if (items.Count != expectedItems.Count)
+            if (items[i] != expectedItems[i])
             {
                 return false;
             }
-
-            items = items
-                .OrderBy(p => p)
-                .ToList();
-            expectedItems = expectedItems
-                .OrderBy(p => p)
-                .ToList();
-
-            for (int i = 0; i < items.Count; i++)
-            {
-                if (items[i] != expectedItems[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
+
+        return true;
+    }
+}
+
+public class TempFolderContext : IDisposable
+{
+    public TempFolderContext()
+    {
+        do
+        {
+            Path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                Guid.NewGuid().ToString());
+        }
+        while (Directory.Exists(Path));
+
+        Directory.CreateDirectory(Path);
     }
 
-    public class TempFolderContext : IDisposable
+    public string Path { get; }
+
+    public void Dispose()
     {
-        public TempFolderContext()
-        {
-            do
-            {
-                Path = System.IO.Path.Combine(
-                    System.IO.Path.GetTempPath(),
-                    Guid.NewGuid().ToString());
-            }
-            while (Directory.Exists(Path));
-
-            Directory.CreateDirectory(Path);
-        }
-
-        public string Path { get; }
-
-        public void Dispose()
-        {
-            Directory.Delete(Path, true);
-        }
+        Directory.Delete(Path, true);
+        GC.SuppressFinalize(this);
     }
 }

@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -35,6 +34,7 @@ public interface IImageCacheService
     /// <param name="sourceRepoUrl">URL of the source repository containing the Dockerfiles.</param>
     /// <param name="isLocalBaseImageExpected">Whether the base image is expected to exist locally rather than in a remote registry.</param>
     /// <param name="isDryRun">Whether this is a dry run that should skip actual registry calls.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     Task<ImageCacheResult> CheckForCachedImageAsync(
         ImageData? srcImageData,
         PlatformData platformData,
@@ -47,24 +47,18 @@ public interface IImageCacheService
 }
 
 /// <inheritdoc/>
-public class ImageCacheService : IImageCacheService
+public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gitService) : IImageCacheService
 {
-    private readonly ILogger<ImageCacheService> _logger;
-    private readonly IGitService _gitService;
+    private readonly ILogger<ImageCacheService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IGitService _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
 
-    private readonly object _cachedPlatformsLock = new();
+    private readonly Lock _cachedPlatformsLock = new();
 
     /// <summary>
     /// Metadata about Dockerfiles whose images have been retrieved from the cache.
     /// Keyed by the build cache key derived from the platform's Dockerfile path and build args.
     /// </summary>
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
-
-    public ImageCacheService(ILogger<ImageCacheService> logger, IGitService gitService)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-    }
 
     /// <inheritdoc/>
     public bool HasAnyCachedPlatforms
@@ -73,7 +67,7 @@ public class ImageCacheService : IImageCacheService
         {
             lock (_cachedPlatformsLock)
             {
-                return _cachedPlatforms.Any();
+                return _cachedPlatforms.Count > 0;
             }
         }
     }
@@ -96,7 +90,7 @@ public class ImageCacheService : IImageCacheService
 
         if (platformData.PlatformInfo is null)
         {
-            throw new Exception("Expected platform info to be set");
+            throw new InvalidOperationException("Expected platform info to be set");
         }
 
         string cacheKey = GetBuildCacheKey(platformData.PlatformInfo);
@@ -110,6 +104,7 @@ public class ImageCacheService : IImageCacheService
                 {
                     cacheState = ImageCacheState.CachedWithMissingTags;
                 }
+
                 return new ImageCacheResult(cacheState, isNewCacheHit, cachedPlatform);
             }
         }
@@ -135,6 +130,7 @@ public class ImageCacheService : IImageCacheService
                 {
                     cacheState = ImageCacheState.CachedWithMissingTags;
                 }
+
                 lock (_cachedPlatformsLock)
                 {
                     _cachedPlatforms[cacheKey] = srcPlatformData;
@@ -185,7 +181,6 @@ public class ImageCacheService : IImageCacheService
         }
 
         _logger.LogInformation("CACHE MISS");
-        _logger.LogInformation(string.Empty);
 
         return false;
     }
@@ -203,8 +198,6 @@ public class ImageCacheService : IImageCacheService
         bool isDryRun,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation(string.Empty);
-
         if (platform.FinalStageFromImage is null)
         {
             _logger.LogInformation("Image does not have a base image. By default, it is considered up-to-date.");
@@ -240,9 +233,9 @@ public class ImageCacheService : IImageCacheService
             }
         }
 
-        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
-            DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
-            null;
+        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null
+            ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)
+            : null;
 
         bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
@@ -265,7 +258,6 @@ public class ImageCacheService : IImageCacheService
             commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
         }
 
-        _logger.LogInformation(string.Empty);
         _logger.LogInformation("Image info's Dockerfile commit: {CommitUrl}", srcPlatformData.CommitUrl);
         _logger.LogInformation("Latest Dockerfile commit: {CurrentCommitUrl}", currentCommitUrl);
         _logger.LogInformation("Dockerfile commits match: {CommitShaMatches}", commitShaMatches);
@@ -285,8 +277,8 @@ public class ImageCacheService : IImageCacheService
     /// indicating the image does not exist in the registry.
     /// </summary>
     private static bool IsImageNotFoundException(Exception ex) =>
-        (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound }) ||
-        (ex is RequestFailedException { Status: 404 });
+        ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound } or
+        RequestFailedException { Status: 404 };
 }
 
 [Flags]

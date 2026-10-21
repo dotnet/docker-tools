@@ -9,6 +9,7 @@ pr:
     - eng/pipelines/templates/*
     - eng/docker-tools/templates/*
     - src/*
+    - .editorconfig
 
 trigger: none
 

@@ -1,181 +1,143 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class ExecuteHelper
 {
-    public static class ExecuteHelper
+    public static string Execute(
+        string fileName,
+        string args,
+        bool isDryRun,
+        CancellationToken cancellationToken,
+        string? errorMessage = null,
+        string? executeMessageOverride = null) => Execute(new ProcessStartInfo(fileName, args), isDryRun, cancellationToken, errorMessage, executeMessageOverride);
+
+    public static string Execute(
+        ProcessStartInfo info,
+        bool isDryRun,
+        CancellationToken cancellationToken,
+        string? errorMessage = null,
+        string? executeMessageOverride = null) => Execute(info, info => ExecuteProcess(info, cancellationToken), isDryRun, errorMessage, executeMessageOverride);
+
+    public static string ExecuteWithRetry(
+        string fileName,
+        string args,
+        bool isDryRun,
+        CancellationToken cancellationToken,
+        string? errorMessage = null,
+        string? executeMessageOverride = null)
     {
-        public static string Execute(
-            string fileName,
-            string args,
-            bool isDryRun,
-            CancellationToken cancellationToken,
-            string? errorMessage = null,
-            string? executeMessageOverride = null)
+        return ExecuteWithRetry(
+            new ProcessStartInfo(fileName, args),
+            isDryRun: isDryRun,
+            errorMessage: errorMessage,
+            executeMessageOverride: executeMessageOverride,
+            cancellationToken: cancellationToken);
+    }
+
+    public static string ExecuteWithRetry(
+        ProcessStartInfo info,
+        CancellationToken cancellationToken,
+        Action<Process>? processStartedCallback = null,
+        bool isDryRun = false,
+        string? errorMessage = null,
+        string? executeMessageOverride = null)
+    {
+        return Execute(
+            info,
+            startInfo => ExecuteWithRetry(startInfo, info => ExecuteProcess(info, cancellationToken, processStartedCallback), cancellationToken),
+            isDryRun,
+            errorMessage,
+            executeMessageOverride);
+    }
+
+    private static string Execute(
+        ProcessStartInfo info,
+        Func<ProcessStartInfo, ProcessResult> executor,
+        bool isDryRun,
+        string? errorMessage = null,
+        string? executeMessageOverride = null)
+    {
+        ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
+        info.RedirectStandardError = true;
+        executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
+        string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
+        logger.LogInformation("{ExecutionPrefix}: {ExecutionCommand}", prefix, executeMessageOverride);
+
+        if (isDryRun)
         {
-            return Execute(new ProcessStartInfo(fileName, args), isDryRun, cancellationToken, errorMessage, executeMessageOverride);
+            return string.Empty;
         }
 
-        public static string Execute(
-            ProcessStartInfo info,
-            bool isDryRun,
-            CancellationToken cancellationToken,
-            string? errorMessage = null,
-            string? executeMessageOverride = null)
+        Stopwatch stopwatch = new();
+        stopwatch.Start();
+        ProcessResult processResult = executor(info);
+        stopwatch.Stop();
+        logger.LogInformation("EXECUTION ELAPSED TIME: {ElapsedTime}", stopwatch.Elapsed);
+
+        if (processResult.Process.ExitCode != 0)
         {
-            return Execute(info, info => ExecuteProcess(info, cancellationToken), isDryRun, errorMessage, executeMessageOverride);
-        }
-
-        public static string ExecuteWithRetry(
-            string fileName,
-            string args,
-            bool isDryRun,
-            CancellationToken cancellationToken,
-            string? errorMessage = null,
-            string? executeMessageOverride = null)
-        {
-            return ExecuteWithRetry(
-                new ProcessStartInfo(fileName, args),
-                isDryRun: isDryRun,
-                errorMessage: errorMessage,
-                executeMessageOverride: executeMessageOverride,
-                cancellationToken: cancellationToken);
-        }
-
-        public static string ExecuteWithRetry(
-            ProcessStartInfo info,
-            CancellationToken cancellationToken,
-            Action<Process>? processStartedCallback = null,
-            bool isDryRun = false,
-            string? errorMessage = null,
-            string? executeMessageOverride = null)
-        {
-            return Execute(
-                info,
-                startInfo => ExecuteWithRetry(startInfo, info => ExecuteProcess(info, cancellationToken, processStartedCallback), cancellationToken),
-                isDryRun,
-                errorMessage,
-                executeMessageOverride);
-        }
-
-        private static string Execute(
-            ProcessStartInfo info,
-            Func<ProcessStartInfo, ProcessResult> executor,
-            bool isDryRun,
-            string? errorMessage = null,
-            string? executeMessageOverride = null)
-        {
-            ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
-            info.RedirectStandardError = true;
-            executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
-            string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
-            logger.LogInformation($"{prefix}: {executeMessageOverride}");
-
-            if (isDryRun)
-            {
-                return string.Empty;
-            }
-
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            ProcessResult processResult = executor(info);
-            stopwatch.Stop();
-            logger.LogInformation($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
-
-            if (processResult.Process.ExitCode != 0)
-            {
-                string exceptionMsg = errorMessage ?? $@"Failed to execute {info.FileName} {info.Arguments}
+            string exceptionMsg = errorMessage ?? $@"Failed to execute {info.FileName} {info.Arguments}
 
                 {processResult.StandardError}";
 
-                throw new InvalidOperationException(exceptionMsg);
-            }
-
-            return processResult.StandardOutput;
+            throw new InvalidOperationException(exceptionMsg);
         }
 
-        private static ProcessResult ExecuteProcess(ProcessStartInfo info, CancellationToken cancellationToken, Action<Process>? processStartedCallback = null)
+        return processResult.StandardOutput;
+    }
+
+    private static ProcessResult ExecuteProcess(ProcessStartInfo info, CancellationToken cancellationToken, Action<Process>? processStartedCallback = null)
+    {
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = true;
+
+        Process process = new Process
         {
-            info.RedirectStandardOutput = true;
-            info.RedirectStandardError = true;
+            EnableRaisingEvents = true,
+            StartInfo = info
+        };
 
-            Process process = new Process
+        DataReceivedEventHandler GetDataReceivedHandler(StringBuilder stringBuilder, TextWriter outputWriter)
+        {
+            return new DataReceivedEventHandler((sender, e) =>
             {
-                EnableRaisingEvents = true,
-                StartInfo = info
-            };
-
-            DataReceivedEventHandler getDataReceivedHandler(StringBuilder stringBuilder, TextWriter outputWriter)
-            {
-                return new DataReceivedEventHandler((sender, e) =>
+                string? line = e.Data;
+                if (line != null)
                 {
-                    string? line = e.Data;
-                    if (line != null)
-                    {
-                        stringBuilder.AppendLine(line);
-                        outputWriter.WriteLine(line);
-                    }
-                });
-            }
-
-            StringBuilder stdOutput = new StringBuilder();
-            process.OutputDataReceived += getDataReceivedHandler(stdOutput, Console.Out);
-
-            StringBuilder stdError = new StringBuilder();
-            process.ErrorDataReceived += getDataReceivedHandler(stdError, Console.Error);
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw new OperationCanceledException(cancellationToken);
-            }
-
-            process.Start();
-            using CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(() =>
-            {
-                try
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-                catch (NotSupportedException)
-                {
-                    TryKillProcess(process);
-                }
-                catch (InvalidOperationException)
-                {
-                    // The process exited before cancellation was observed.
-                }
-                catch (Win32Exception)
-                {
-                    // The process exited or could not be terminated before cancellation was observed.
+                    stringBuilder.AppendLine(line);
+                    outputWriter.WriteLine(line);
                 }
             });
-            processStartedCallback?.Invoke(process);
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw new OperationCanceledException(cancellationToken);
-            }
-
-            return new ProcessResult(process, stdOutput.ToString().Trim(), stdError.ToString().Trim());
         }
 
-        private static void TryKillProcess(Process process)
+        StringBuilder stdOutput = new StringBuilder();
+        process.OutputDataReceived += GetDataReceivedHandler(stdOutput, Console.Out);
+
+        StringBuilder stdError = new StringBuilder();
+        process.ErrorDataReceived += GetDataReceivedHandler(stdError, Console.Error);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        process.Start();
+        using CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(() =>
         {
             try
             {
-                process.Kill();
+                process.Kill(entireProcessTree: true);
+            }
+            catch (NotSupportedException)
+            {
+                TryKillProcess(process);
             }
             catch (InvalidOperationException)
             {
@@ -185,33 +147,49 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 // The process exited or could not be terminated before cancellation was observed.
             }
-        }
+        });
+        processStartedCallback?.Invoke(process);
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.WaitForExit();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        private static ProcessResult ExecuteWithRetry(ProcessStartInfo info, Func<ProcessStartInfo, ProcessResult> executor, CancellationToken cancellationToken)
+        return new ProcessResult(process, stdOutput.ToString().Trim(), stdError.ToString().Trim());
+    }
+
+    private static void TryKillProcess(Process process)
+    {
+        try
         {
-            ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
-            ProcessResult processResult = Policy
-                .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
-                .WaitAndRetry(
-                    Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
-                    RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, logger))
-                .Execute((_, _) => executor(info), new Context(), cancellationToken);
-
-            return processResult;
+            process.Kill();
         }
-
-        private class ProcessResult
+        catch (InvalidOperationException)
         {
-            public ProcessResult(Process process, string standardOutput, string standardError)
-            {
-                Process = process;
-                StandardOutput = standardOutput;
-                StandardError = standardError;
-            }
-
-            public Process Process { get; }
-            public string StandardOutput { get; }
-            public string StandardError { get; }
+            // The process exited before cancellation was observed.
         }
+        catch (Win32Exception)
+        {
+            // The process exited or could not be terminated before cancellation was observed.
+        }
+    }
+
+    private static ProcessResult ExecuteWithRetry(ProcessStartInfo info, Func<ProcessStartInfo, ProcessResult> executor, CancellationToken cancellationToken)
+    {
+        ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
+        ProcessResult processResult = Policy
+            .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
+            .WaitAndRetry(
+                Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
+                RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, logger))
+            .Execute((_, _) => executor(info), [], cancellationToken);
+
+        return processResult;
+    }
+
+    private sealed class ProcessResult(Process process, string standardOutput, string standardError)
+    {
+        public Process Process { get; } = process;
+        public string StandardOutput { get; } = standardOutput;
+        public string StandardError { get; } = standardError;
     }
 }

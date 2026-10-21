@@ -20,11 +20,11 @@ public class CertificateChainCalculatorTests
         byte[] cert1 = [0x30, 0x82, 0x01, 0x00];
         byte[] cert2 = [0x30, 0x82, 0x02, 0x00];
 
-        var (fileSystem, filePath) = WriteCoseSign1(cert1, cert2, includeTextKey: false);
+        (InMemoryFileSystem? fileSystem, string? filePath) = WriteCoseSign1(cert1, cert2, includeTextKey: false);
 
-        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
+        string result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
 
-        var thumbprints = JsonSerializer.Deserialize<string[]>(result);
+        string[]? thumbprints = JsonSerializer.Deserialize<string[]>(result);
         thumbprints.ShouldNotBeNull();
         thumbprints.Length.ShouldBe(2);
         thumbprints[0].ShouldBe(ComputeSha256Hex(cert1));
@@ -36,11 +36,11 @@ public class CertificateChainCalculatorTests
     {
         byte[] cert = [0x30, 0x82, 0x03, 0x00];
 
-        var (fileSystem, filePath) = WriteCoseSign1(cert, includeTextKey: true);
+        (InMemoryFileSystem? fileSystem, string? filePath) = WriteCoseSign1(cert, includeTextKey: true);
 
-        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
+        string result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
 
-        var thumbprints = JsonSerializer.Deserialize<string[]>(result);
+        string[]? thumbprints = JsonSerializer.Deserialize<string[]>(result);
         thumbprints.ShouldNotBeNull();
         thumbprints.Length.ShouldBe(1);
         thumbprints[0].ShouldBe(ComputeSha256Hex(cert));
@@ -51,11 +51,11 @@ public class CertificateChainCalculatorTests
     {
         byte[] cert = [0x30, 0x82, 0x04, 0x00];
 
-        var (fileSystem, filePath) = WriteCoseSign1SingleCert(cert);
+        (InMemoryFileSystem? fileSystem, string? filePath) = WriteCoseSign1SingleCert(cert);
 
-        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
+        string result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
 
-        var thumbprints = JsonSerializer.Deserialize<string[]>(result);
+        string[]? thumbprints = JsonSerializer.Deserialize<string[]>(result);
         thumbprints.ShouldNotBeNull();
         thumbprints.Length.ShouldBe(1);
         thumbprints[0].ShouldBe(ComputeSha256Hex(cert));
@@ -64,7 +64,7 @@ public class CertificateChainCalculatorTests
     [TestMethod]
     public void CalculateCertificateChainThumbprints_MissingX5Chain_ThrowsException()
     {
-        var (fileSystem, filePath) = WriteCoseSign1WithoutX5Chain();
+        (InMemoryFileSystem? fileSystem, string? filePath) = WriteCoseSign1WithoutX5Chain();
 
         Should.Throw<InvalidOperationException>(
             () => CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem))
@@ -78,7 +78,7 @@ public class CertificateChainCalculatorTests
     private static (InMemoryFileSystem FileSystem, string FilePath) WriteCoseSign1(
         byte[] cert1, byte[]? cert2 = null, bool includeTextKey = false)
     {
-        var writer = new CborWriter();
+        CborWriter writer = new CborWriter();
         writer.WriteTag((CborTag)18); // COSE_Sign1
 
         writer.WriteStartArray(4);
@@ -87,7 +87,7 @@ public class CertificateChainCalculatorTests
         writer.WriteByteString([]);
 
         // [1] Unprotected header map
-        var mapEntries = 1 + (includeTextKey ? 1 : 0);
+        int mapEntries = 1 + (includeTextKey ? 1 : 0);
         writer.WriteStartMap(mapEntries);
 
         if (includeTextKey)
@@ -98,12 +98,13 @@ public class CertificateChainCalculatorTests
 
         // x5chain key = 33
         writer.WriteInt32(33);
-        var certs = cert2 is not null ? new[] { cert1, cert2 } : new[] { cert1 };
+        byte[][] certs = cert2 is not null ? [cert1, cert2] : [cert1];
         writer.WriteStartArray(certs.Length);
-        foreach (var cert in certs)
+        foreach (byte[]? cert in certs)
         {
             writer.WriteByteString(cert);
         }
+
         writer.WriteEndArray();
 
         writer.WriteEndMap();
@@ -116,8 +117,8 @@ public class CertificateChainCalculatorTests
 
         writer.WriteEndArray();
 
-        var fileSystem = new InMemoryFileSystem();
-        var filePath = "/test/payload.cose";
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
+        string filePath = "/test/payload.cose";
         fileSystem.AddFile(filePath, writer.Encode());
         return (fileSystem, filePath);
     }
@@ -127,7 +128,7 @@ public class CertificateChainCalculatorTests
     /// </summary>
     private static (InMemoryFileSystem FileSystem, string FilePath) WriteCoseSign1SingleCert(byte[] cert)
     {
-        var writer = new CborWriter();
+        CborWriter writer = new CborWriter();
         writer.WriteTag((CborTag)18);
 
         writer.WriteStartArray(4);
@@ -142,8 +143,8 @@ public class CertificateChainCalculatorTests
         writer.WriteByteString([0xFF, 0xFE]);
         writer.WriteEndArray();
 
-        var fileSystem = new InMemoryFileSystem();
-        var filePath = "/test/payload.cose";
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
+        string filePath = "/test/payload.cose";
         fileSystem.AddFile(filePath, writer.Encode());
         return (fileSystem, filePath);
     }
@@ -153,7 +154,7 @@ public class CertificateChainCalculatorTests
     /// </summary>
     private static (InMemoryFileSystem FileSystem, string FilePath) WriteCoseSign1WithoutX5Chain()
     {
-        var writer = new CborWriter();
+        CborWriter writer = new CborWriter();
         writer.WriteTag((CborTag)18);
 
         writer.WriteStartArray(4);
@@ -168,8 +169,8 @@ public class CertificateChainCalculatorTests
         writer.WriteByteString([0xFF, 0xFE]);
         writer.WriteEndArray();
 
-        var fileSystem = new InMemoryFileSystem();
-        var filePath = "/test/payload.cose";
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
+        string filePath = "/test/payload.cose";
         fileSystem.AddFile(filePath, writer.Encode());
         return (fileSystem, filePath);
     }

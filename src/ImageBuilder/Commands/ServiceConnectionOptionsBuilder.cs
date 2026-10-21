@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System.CommandLine;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -13,17 +12,17 @@ public class ServiceConnectionOptionsBuilder
     /// <summary>
     /// Creates a single CLI option that parses a service connection string.
     /// </summary>
-    public Option<ServiceConnection?> GetCliOption(string optionName, string description = "")
+    public static Option<ServiceConnection?> GetCliOption(string optionName, string description = "")
     {
-        const string FormatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
+        const string formatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
 
         if (!string.IsNullOrEmpty(description))
         {
-            description += " " + FormatDescription;
+            description += " " + formatDescription;
         }
         else
         {
-            description = FormatDescription;
+            description = formatDescription;
         }
 
         return new Option<ServiceConnection?>(optionName)

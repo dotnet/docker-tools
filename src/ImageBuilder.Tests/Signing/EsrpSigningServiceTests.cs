@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -10,7 +9,6 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
@@ -26,8 +24,8 @@ public class EsrpSigningServiceTests
     [TestMethod]
     public async Task SignFilesAsync_EmptyFileList_ReturnsWithoutSigning()
     {
-        var mockProcess = new Mock<IProcessService>();
-        var service = CreateService(mockProcess: mockProcess);
+        Mock<IProcessService> mockProcess = new Mock<IProcessService>();
+        EsrpSigningService service = CreateService(mockProcess: mockProcess);
 
         await service.SignFilesAsync([], signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
@@ -39,12 +37,12 @@ public class EsrpSigningServiceTests
     [TestMethod]
     public async Task SignFilesAsync_MissingMbSignAppFolder_ThrowsInvalidOperation()
     {
-        var mockEnv = new Mock<IEnvironmentService>();
+        Mock<IEnvironmentService> mockEnv = new Mock<IEnvironmentService>();
         mockEnv.Setup(e => e.GetEnvironmentVariable(MBSignAppFolderEnv)).Returns((string?)null);
 
-        var service = CreateService(mockEnv: mockEnv);
+        EsrpSigningService service = CreateService(mockEnv: mockEnv);
 
-        var ex = await Should.ThrowAsync<InvalidOperationException>(
+        InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(
             () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default));
 
         ex.Message.ShouldContain(MBSignAppFolderEnv);
@@ -53,10 +51,10 @@ public class EsrpSigningServiceTests
     [TestMethod]
     public async Task SignFilesAsync_InvokesProcessWithCorrectArgs()
     {
-        var mockProcess = new Mock<IProcessService>();
-        var mockEnv = CreateEnvironmentWithRequiredVars();
+        Mock<IProcessService> mockProcess = new Mock<IProcessService>();
+        Mock<IEnvironmentService> mockEnv = CreateEnvironmentWithRequiredVars();
 
-        var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv);
+        EsrpSigningService service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv);
 
         await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 42, TestContext?.CancellationToken ?? default);
 
@@ -77,10 +75,10 @@ public class EsrpSigningServiceTests
     [TestMethod]
     public async Task SignFilesAsync_CleansUpTempFileAfterSigning()
     {
-        var mockEnv = CreateEnvironmentWithRequiredVars();
-        var fileSystem = new InMemoryFileSystem();
+        Mock<IEnvironmentService> mockEnv = CreateEnvironmentWithRequiredVars();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
 
-        var service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
+        EsrpSigningService service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
 
         await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
@@ -93,15 +91,15 @@ public class EsrpSigningServiceTests
     [TestMethod]
     public async Task SignFilesAsync_CleansUpTempFileOnFailure()
     {
-        var mockEnv = CreateEnvironmentWithRequiredVars();
-        var mockProcess = new Mock<IProcessService>();
+        Mock<IEnvironmentService> mockEnv = CreateEnvironmentWithRequiredVars();
+        Mock<IProcessService> mockProcess = new Mock<IProcessService>();
         mockProcess
             .Setup(p => p.Execute(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<string>(), It.IsAny<string>()))
             .Throws(new InvalidOperationException("signing failed"));
 
-        var fileSystem = new InMemoryFileSystem();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
 
-        var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv, fileSystem: fileSystem);
+        EsrpSigningService service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv, fileSystem: fileSystem);
 
         await Should.ThrowAsync<InvalidOperationException>(
             () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default));
@@ -112,15 +110,15 @@ public class EsrpSigningServiceTests
     [TestMethod]
     public async Task SignFilesAsync_WritesSignListJson()
     {
-        var mockEnv = CreateEnvironmentWithRequiredVars();
-        var fileSystem = new InMemoryFileSystem();
+        Mock<IEnvironmentService> mockEnv = CreateEnvironmentWithRequiredVars();
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
 
-        var service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
+        EsrpSigningService service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
 
         await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100, TestContext?.CancellationToken ?? default);
 
         fileSystem.FilesWritten.Count.ShouldBe(1);
-        var signListPath = fileSystem.FilesWritten.First();
+        string signListPath = fileSystem.FilesWritten.First();
         signListPath.ShouldContain("SignList_");
         signListPath.ShouldEndWith(".json");
 
@@ -130,7 +128,7 @@ public class EsrpSigningServiceTests
 
     private static Mock<IEnvironmentService> CreateEnvironmentWithRequiredVars()
     {
-        var mockEnv = new Mock<IEnvironmentService>();
+        Mock<IEnvironmentService> mockEnv = new Mock<IEnvironmentService>();
         mockEnv.Setup(e => e.GetEnvironmentVariable(MBSignAppFolderEnv)).Returns("/opt/mbsign");
         mockEnv.Setup(e => e.GetEnvironmentVariable(VsEngEsrpSslEnv)).Returns("base64cert");
         return mockEnv;
@@ -143,7 +141,7 @@ public class EsrpSigningServiceTests
         SigningConfiguration? signingConfig = null)
     {
         signingConfig ??= new SigningConfiguration { Enabled = true, SignType = "test" };
-        var publishConfig = new PublishConfiguration { Signing = signingConfig };
+        PublishConfiguration publishConfig = new PublishConfiguration { Signing = signingConfig };
 
         mockEnv ??= CreateEnvironmentWithRequiredVars();
 

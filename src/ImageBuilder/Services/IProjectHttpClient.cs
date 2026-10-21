@@ -1,15 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading.Tasks;
 using Microsoft.TeamFoundation.Core.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public interface IProjectHttpClient : IDisposable
 {
-    public interface IProjectHttpClient : IDisposable
-    {
-        Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken);
-    }
+    Task<TeamProject> GetProjectAsync(string projectId, CancellationToken cancellationToken);
 }

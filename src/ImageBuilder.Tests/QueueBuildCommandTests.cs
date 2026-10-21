@@ -1,802 +1,769 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Shouldly;
+using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class QueueBuildCommandTests
 {
-    [TestClass]
-    public class QueueBuildCommandTests
+    public TestContext TestContext { get; set; }
+
+    /// <summary>
+    /// Verifies that no build is queued if a build is currently in progress.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_BuildInProgress()
     {
-        #nullable enable annotations
-        public TestContext? TestContext { get; set; }
+        const string path1 = "path1";
 
-        #nullable disable annotations
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
 
-        /// <summary>
-        /// Verifies that no build is queued if a build is currently in progress.
-        /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_BuildInProgress()
-        {
-            const string path1 = "path1";
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription("repo1")
-            };
-
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-            {
-                new List<SubscriptionImagePaths>
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
                 {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path1
-                        }
-                    }
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path1
+                    ]
                 }
-            };
+            ]
+        ];
 
-            PagedList<WebApi.Build> inProgressBuilds = new()
-            {
-                CreateBuild("http://contoso")
-            };
+        PagedList<WebApi.Build> inProgressBuilds = new()
+        {
+            CreateBuild("http://contoso")
+        };
 
-            using (TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
-            {
-                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>());
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-                // Normally this state would cause a build to be queued but since
-                // a build is marked as in progress, it doesn't.
+        // Normally this state would cause a build to be queued but since
+        // a build is marked as in progress, it doesn't.
 
-                fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
-            }
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
+    }
+
+    /// <summary>
+    /// Verifies that no build is queued if there are too many recent failed builds.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_RecentFailedBuilds_MaxFailed()
+    {
+        const string path1 = "path1";
+
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
+
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path1
+                    ]
+                }
+            ]
+        ];
+
+        PagedList<WebApi.Build> allBuilds = new();
+
+        for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
+        {
+            WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+            failedBuild.Status = WebApi.BuildStatus.Completed;
+            failedBuild.Result = WebApi.BuildResult.Failed;
+            allBuilds.Add(failedBuild);
         }
 
-        /// <summary>
-        /// Verifies that no build is queued if there are too many recent failed builds.
-        /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_RecentFailedBuilds_MaxFailed()
-        {
-            const string path1 = "path1";
+        using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription("repo1")
-            };
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
+    }
 
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-            {
-                new List<SubscriptionImagePaths>
+    /// <summary>
+    /// Verifies that a build is queued even if there are recent failed builds but not enough to meet the threshold.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_RecentFailedBuilds_PartialFailed()
+    {
+        const string path1 = "path1";
+
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
+
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
                 {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path1
-                        }
-                    }
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path1
+                    ]
                 }
-            };
+            ]
+        ];
 
-            PagedList<WebApi.Build> allBuilds = new();
+        PagedList<WebApi.Build> allBuilds = new();
 
-            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
-            {
-                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
-                failedBuild.Status = WebApi.BuildStatus.Completed;
-                failedBuild.Result = WebApi.BuildResult.Failed;
-                allBuilds.Add(failedBuild);
-            }
-
-            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
-
-            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
+        for (int i = 0; i < QueueBuildCommand.BuildFailureLimit - 1; i++)
+        {
+            WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+            failedBuild.Status = WebApi.BuildStatus.Completed;
+            failedBuild.Result = WebApi.BuildResult.Failed;
+            allBuilds.Add(failedBuild);
         }
 
-        /// <summary>
-        /// Verifies that a build is queued even if there are recent failed builds but not enough to meet the threshold.
-        /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_RecentFailedBuilds_PartialFailed()
+        using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
         {
-            const string path1 = "path1";
-
-            Subscription[] subscriptions = new Subscription[]
             {
-                CreateSubscription("repo1")
-            };
-
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-            {
-                new List<SubscriptionImagePaths>
+                subscriptions[0],
+                new List<string>
                 {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path1
-                        }
-                    }
+                    path1
                 }
-            };
-
-            PagedList<WebApi.Build> allBuilds = new();
-
-            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit - 1; i++)
-            {
-                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
-                failedBuild.Status = WebApi.BuildStatus.Completed;
-                failedBuild.Result = WebApi.BuildResult.Failed;
-                allBuilds.Add(failedBuild);
             }
+        };
 
-            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+    }
 
+    /// <summary>
+    /// Verifies that a build is queued when the set of recent builds consist of some recently succeeded builds.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_RecentFailedBuilds_SucceededAndFailed()
+    {
+        const string path1 = "path1";
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
+
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path1
+                    ]
+                }
+            ]
+        ];
+
+        PagedList<WebApi.Build> allBuilds = new();
+
+        DateTime queueTime = DateTime.UtcNow;
+        WebApi.Build succeeded = CreateBuild("https://succeededbuild");
+        succeeded.QueueTime = queueTime;
+        succeeded.Status = WebApi.BuildStatus.Completed;
+        succeeded.Result = WebApi.BuildResult.Succeeded;
+        allBuilds.Add(succeeded);
+
+        for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
+        {
+            WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+            failedBuild.QueueTime = queueTime.AddMinutes(-(i + 1));
+            failedBuild.Status = WebApi.BuildStatus.Completed;
+            failedBuild.Result = WebApi.BuildResult.Failed;
+            allBuilds.Add(failedBuild);
+        }
+
+        using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
+        {
             {
+                subscriptions[0],
+                new List<string>
+                {
+                    path1
+                }
+            }
+        };
+
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+    }
+
+    /// <summary>
+    /// Verifies the correct path arguments are passed to the queued builds for two
+    /// subscriptions that have image paths.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_MultiSubscription()
+    {
+        const string path1 = "path1";
+        const string path2 = "path2";
+        const string path3 = "path3";
+
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1"),
+            CreateSubscription("repo2")
+        ];
+
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path1
+                    ]
+                },
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[1].Id,
+                    ImagePaths =
+                    [
+                        path2
+                    ]
+                }
+            ],
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[1].Id,
+                    ImagePaths =
+                    [
+                        path3
+                    ]
+                }
+            ]
+        ];
+
+        using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptions[0],
                     new List<string>
                     {
                         path1
                     }
-                }
-            };
-
-            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
-        }
-
-        /// <summary>
-        /// Verifies that a build is queued when the set of recent builds consist of some recently succeeded builds.
-        /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_RecentFailedBuilds_SucceededAndFailed()
-        {
-            const string path1 = "path1";
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription("repo1")
-            };
-
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
-            {
-                new List<SubscriptionImagePaths>
+                },
                 {
-                    new SubscriptionImagePaths
+                    subscriptions[1],
+                    new List<string>
                     {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path1
-                        }
+                        path2,
+                        path3
                     }
                 }
-            };
+        };
 
-            PagedList<WebApi.Build> allBuilds = new();
+        fixture.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
+    }
 
-            DateTime queueTime = DateTime.UtcNow;
-            WebApi.Build succeeded = CreateBuild("https://succeededbuild");
-            succeeded.QueueTime = queueTime;
-            succeeded.Status = WebApi.BuildStatus.Completed;
-            succeeded.Result = WebApi.BuildResult.Succeeded;
-            allBuilds.Add(succeeded);
+    /// <summary>
+    /// Verifies that no build will be queued if no paths are specified.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_NoBaseImageChange()
+    {
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
 
-            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
-            {
-                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
-                failedBuild.QueueTime = queueTime.AddMinutes(-(i + 1));
-                failedBuild.Status = WebApi.BuildStatus.Completed;
-                failedBuild.Result = WebApi.BuildResult.Failed;
-                allBuilds.Add(failedBuild);
-            }
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths = []
+                }
+            ],
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths = []
+                }
+            ]
+        ];
 
-            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+        using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
 
-            Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
-            {
+        fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
+    }
+
+    [TestMethod]
+    public async Task QueueBuildCommand_CancellationDoesNotNotifyFailure()
+    {
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
+
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths = ["path1"]
+                }
+            ]
+        ];
+
+        using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths);
+        using CancellationTokenSource cancellationTokenSource = new();
+        fixture.CancelWhenGettingProject(cancellationTokenSource);
+
+        await Should.ThrowAsync<OperationCanceledException>(
+            () => fixture.ExecuteCommandAsync(cancellationTokenSource.Token));
+
+        fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
+    }
+
+    /// <summary>
+    /// Verifies the correct path arguments are passed to the queued build a subscription is spread
+    /// across multiple path sets.
+    /// </summary>
+    [TestMethod]
+    public async Task QueueBuildCommand_Subscription_MultiSet()
+    {
+        const string path1 = "path1";
+        const string path2 = "path2";
+        const string path3 = "path3";
+
+        Subscription[] subscriptions =
+        [
+            CreateSubscription("repo1")
+        ];
+
+        List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
+        [
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path1,
+                        path2
+                    ]
+                }
+            ],
+            [
+                new SubscriptionImagePaths
+                {
+                    SubscriptionId = subscriptions[0].Id,
+                    ImagePaths =
+                    [
+                        path3
+                    ]
+                }
+            ]
+        ];
+
+        using TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths);
+        await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+
+        Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+            new Dictionary<Subscription, IList<string>>
+        {
                 {
                     subscriptions[0],
                     new List<string>
                     {
-                        path1
+                        path1,
+                        path2,
+                        path3
                     }
                 }
-            };
+        };
 
-            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+        fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+    }
+
+    /// <summary>
+    /// Use this method to generate a unique repo owner name for the tests. This ensures that each test
+    /// uses a different name and prevents collisions when running the tests in parallel. This is because
+    /// the <see cref="QueueBuildCommand"/> generates temp folders partially based on the name of
+    /// the repo owner.
+    /// </summary>
+    private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null) => testMethodName + suffix;
+
+    private static Subscription CreateSubscription(
+        string repoName,
+        int index = 0,
+        [CallerMemberName] string testMethodName = null)
+    {
+        return new Subscription
+        {
+            PipelineTrigger = new PipelineTrigger
+            {
+                Id = 1,
+                PathVariable = "--my-path"
+            },
+            Manifest = new SubscriptionManifest
+            {
+                Branch = "testBranch" + index,
+                Repo = repoName,
+                Owner = GetRepoOwner(testMethodName, index.ToString(CultureInfo.InvariantCulture)),
+                Path = "testmanifest.json"
+            },
+            ImageInfo = new GitFile
+            {
+                Owner = "dotnetOwner",
+                Repo = "versionsRepo",
+                Branch = "mainBranch",
+                Path = "docker/image-info.json"
+            }
+        };
+    }
+
+    private static WebApi.Build CreateBuild(string url)
+    {
+        WebApi.Build build = new() { Uri = new Uri(url) };
+        build.Links.AddLink("web", $"{url}/web");
+        return build;
+    }
+
+    /// <summary>
+    /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
+    /// </summary>
+    private sealed class TestFixture : IDisposable
+    {
+        private readonly PagedList<WebApi.Build> _inProgressBuilds;
+        private readonly PagedList<WebApi.Build> _allBuilds;
+        private readonly List<string> _filesToCleanup = [];
+        private readonly List<string> _foldersToCleanup = [];
+        private readonly string _subscriptionsPath;
+        private readonly Mock<IBuildHttpClient> _buildHttpClientMock;
+        private readonly Mock<IProjectHttpClient> _projectHttpClientMock;
+        private readonly QueueBuildCommand _command;
+        private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> _allSubscriptionImagePaths;
+        private readonly Mock<INotificationService> _notificationServiceMock;
+
+        private const string BuildOrganization = "testOrg";
+        private const string GitOwner = "git-owner";
+        private const string GitRepo = "git-repo";
+        private const string GitAccessToken = "git-pat";
+
+        private static readonly GitHubAuthOptions GitHubAuthOptions = new(AuthToken: GitAccessToken);
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="TestFixture"/>.
+        /// </summary>
+        /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
+        /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
+        public TestFixture(
+            Subscription[] subscriptions,
+            IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths)
+            : this(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), new PagedList<WebApi.Build>())
+        {
         }
 
         /// <summary>
-        /// Verifies the correct path arguments are passed to the queued builds for two
-        /// subscriptions that have image paths.
+        /// Initializes a new instance of <see cref="TestFixture"/>.
         /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_MultiSubscription()
+        /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
+        /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
+        /// <param name="inProgressBuilds">The set of in-progress builds that should be configured.</param>
+        /// <param name="allBuilds">The set of failed builds that should be configured.</param>
+        public TestFixture(
+            Subscription[] subscriptions,
+            IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
+            PagedList<WebApi.Build> inProgressBuilds,
+            PagedList<WebApi.Build> allBuilds)
         {
-            const string path1 = "path1";
-            const string path2 = "path2";
-            const string path3 = "path3";
+            _allSubscriptionImagePaths = allSubscriptionImagePaths;
+            _inProgressBuilds = inProgressBuilds;
+            _allBuilds = allBuilds;
 
-            Subscription[] subscriptions = new Subscription[]
+            _subscriptionsPath = SerializeJsonObjectToTempFile(subscriptions);
+
+            TeamProject project = new TeamProject
             {
-                CreateSubscription("repo1"),
-                CreateSubscription("repo2")
+                Id = Guid.NewGuid()
             };
 
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
-            {
-                new List<SubscriptionImagePaths>
-                {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path1
-                        }
-                    },
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[1].Id,
-                        ImagePaths = new string[]
-                        {
-                            path2
-                        }
-                    }
-                },
-                new List<SubscriptionImagePaths>
-                {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[1].Id,
-                        ImagePaths = new string[]
-                        {
-                            path3
-                        }
-                    }
-                }
-            };
+            _projectHttpClientMock = CreateProjectHttpClientMock(project);
+            _buildHttpClientMock = CreateBuildHttpClientMock(project, _inProgressBuilds, _allBuilds);
+            Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
+                _projectHttpClientMock, _buildHttpClientMock);
 
-            using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
-            {
-                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
+            _notificationServiceMock = new Mock<INotificationService>();
 
-                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                    new Dictionary<Subscription, IList<string>>
-                {
-                    {
-                        subscriptions[0],
-                        new List<string>
-                        {
-                            path1
-                        }
-                    },
-                    {
-                        subscriptions[1],
-                        new List<string>
-                        {
-                            path2,
-                            path3
-                        }
-                    }
-                };
+            _command = CreateCommand(connectionFactoryMock);
+        }
 
-                fixture.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
-            }
+        public Task ExecuteCommandAsync(CancellationToken cancellationToken) => _command.ExecuteAsync(cancellationToken);
+
+        public void CancelWhenGettingProject(CancellationTokenSource cancellationTokenSource)
+        {
+            _projectHttpClientMock
+                .Setup(o => o.GetProjectAsync(It.IsAny<string>(), cancellationTokenSource.Token))
+                .Callback(cancellationTokenSource.Cancel)
+                .ThrowsAsync(new OperationCanceledException(cancellationTokenSource.Token));
         }
 
         /// <summary>
-        /// Verifies that no build will be queued if no paths are specified.
+        /// Verifies the test execution to ensure the results match the expected state.
         /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_NoBaseImageChange()
+        /// <param name="notificationPostCallCount">
+        /// Number of times a post to notify the GitHub repo is expected.
+        /// </param>
+        /// <param name="isQueuedBuildExpected">
+        /// Indicates whether a build was expected to be queued.
+        /// </param>
+        /// <param name="expectedPathsBySubscription">
+        /// A mapping of subscription metadata to the list of expected path args passed to the queued build, if any.
+        /// </param>
+        public void Verify(int notificationPostCallCount, bool isQueuedBuildExpected, IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
         {
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription("repo1")
-            };
+            _notificationServiceMock
+                .Verify(o => o.PostAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<IEnumerable<string>>(),
+                        GitOwner,
+                        GitRepo,
+                        GitHubAuthOptions,
+                        It.IsAny<bool>(),
+                        It.IsAny<CancellationToken>(),
+                        It.IsAny<IEnumerable<string>>()),
+                    Times.Exactly(notificationPostCallCount));
 
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
+            if (!isQueuedBuildExpected)
             {
-                new List<SubscriptionImagePaths>
+                _buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
+            }
+            else
+            {
+                ArgumentNullException.ThrowIfNull(expectedPathsBySubscription);
+
+                foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
                 {
-                    new SubscriptionImagePaths
+                    if (kvp.Value.Any())
                     {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = Array.Empty<string>()
-                    }
-                },
-                new List<SubscriptionImagePaths>
-                {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = Array.Empty<string>()
+                        _buildHttpClientMock
+                            .Verify(o =>
+                                o.QueueBuildAsync(
+                                    It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value)),
+                                    It.IsAny<CancellationToken>()));
                     }
                 }
-            };
-
-            using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
-            {
-                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
-
-                fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
             }
         }
 
-        [TestMethod]
-        public async Task QueueBuildCommand_CancellationDoesNotNotifyFailure()
+        private string SerializeJsonObjectToTempFile(object jsonObject)
         {
-            Subscription[] subscriptions =
-            [
-                CreateSubscription("repo1")
-            ];
+            string path = Path.GetTempFileName();
+            File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
+            _filesToCleanup.Add(path);
+            return path;
+        }
 
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths =
-            [
-                [
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = ["path1"]
-                    }
-                ]
-            ];
+        private QueueBuildCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
+        {
+            Mock<ILogger<QueueBuildCommand>> loggerServiceMock = new();
 
-            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths);
-            using CancellationTokenSource cancellationTokenSource = new();
-            fixture.CancelWhenGettingProject(cancellationTokenSource);
+            QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
+            command.Options.AzdoOptions.Organization = BuildOrganization;
+            command.Options.AzdoOptions.AccessToken = "testToken";
+            command.Options.SubscriptionsPath = _subscriptionsPath;
+            command.Options.AllSubscriptionImagePaths = _allSubscriptionImagePaths
+                .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
 
-            await Should.ThrowAsync<OperationCanceledException>(
-                () => fixture.ExecuteCommandAsync(cancellationTokenSource.Token));
+            command.Options.GitOptions.Owner = GitOwner;
+            command.Options.GitOptions.Repo = GitRepo;
+            command.Options.GitOptions.GitHubAuthOptions = GitHubAuthOptions;
 
-            fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
+            return command;
+        }
+
+        private static Mock<IVssConnectionFactory> CreateVssConnectionFactoryMock(
+            Mock<IProjectHttpClient> projectHttpClientMock,
+            Mock<IBuildHttpClient> buildHttpClientMock)
+        {
+            Mock<IVssConnection> connectionMock = CreateVssConnectionMock(projectHttpClientMock, buildHttpClientMock);
+
+            Mock<IVssConnectionFactory> connectionFactoryMock = new Mock<IVssConnectionFactory>();
+            connectionFactoryMock
+                .Setup(o => o.Create(
+                    It.Is<Uri>(uri => uri.ToString() == $"https://dev.azure.com/{BuildOrganization}"),
+                    It.IsAny<VssCredentials>()))
+                .Returns(connectionMock.Object);
+            return connectionFactoryMock;
+        }
+
+        private static Mock<IVssConnection> CreateVssConnectionMock(Mock<IProjectHttpClient> projectHttpClientMock,
+            Mock<IBuildHttpClient> buildHttpClientMock)
+        {
+            Mock<IVssConnection> connectionMock = new Mock<IVssConnection>();
+            connectionMock
+                .Setup(o => o.GetProjectHttpClient())
+                .Returns(projectHttpClientMock.Object);
+            connectionMock
+                .Setup(o => o.GetBuildHttpClient())
+                .Returns(buildHttpClientMock.Object);
+            return connectionMock;
+        }
+
+        private static Mock<IProjectHttpClient> CreateProjectHttpClientMock(TeamProject project)
+        {
+            Mock<IProjectHttpClient> projectHttpClientMock = new Mock<IProjectHttpClient>();
+            projectHttpClientMock
+                .Setup(o => o.GetProjectAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(project);
+            return projectHttpClientMock;
+        }
+
+        private static Mock<IBuildHttpClient> CreateBuildHttpClientMock(TeamProject project,
+            PagedList<WebApi.Build> inProgressBuilds, PagedList<WebApi.Build> failedBuilds)
+        {
+            WebApi.Build build = CreateBuild("https://contoso");
+
+            Mock<IBuildHttpClient> buildHttpClientMock = new();
+            buildHttpClientMock
+                .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<CancellationToken>(), It.IsAny<IEnumerable<int>>(), WebApi.BuildStatus.InProgress))
+                .ReturnsAsync(inProgressBuilds);
+
+            buildHttpClientMock
+                .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<CancellationToken>(), It.IsAny<IEnumerable<int>>(), null))
+                .ReturnsAsync(failedBuilds);
+
+            buildHttpClientMock
+                .Setup(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(build);
+
+            return buildHttpClientMock;
         }
 
         /// <summary>
-        /// Verifies the correct path arguments are passed to the queued build a subscription is spread
-        /// across multiple path sets.
+        /// Returns a value indicating whether the <see cref="WebApi.Build"/> object contains the expected state.
         /// </summary>
-        [TestMethod]
-        public async Task QueueBuildCommand_Subscription_MultiSet()
+        /// <param name="build">The <see cref="WebApi.Build"/> to validate.</param>
+        /// <param name="subscription">Subscription object that contains metadata to compare against the <paramref name="build"/>.</param>
+        /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
+        private static bool FilterBuildToSubscription(WebApi.Build build, Subscription subscription, IList<string> expectedPaths)
         {
-            const string path1 = "path1";
-            const string path2 = "path2";
-            const string path3 = "path3";
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription("repo1")
-            };
-
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
-            {
-                new List<SubscriptionImagePaths>
-                {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path1,
-                            path2
-                        }
-                    }
-                },
-                new List<SubscriptionImagePaths>
-                {
-                    new SubscriptionImagePaths
-                    {
-                        SubscriptionId = subscriptions[0].Id,
-                        ImagePaths = new string[]
-                        {
-                            path3
-                        }
-                    }
-                }
-            };
-
-            using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
-            {
-                await fixture.ExecuteCommandAsync(TestContext?.CancellationToken ?? default);
-
-                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                    new Dictionary<Subscription, IList<string>>
-                {
-                    {
-                        subscriptions[0],
-                        new List<string>
-                        {
-                            path1,
-                            path2,
-                            path3
-                        }
-                    }
-                };
-
-                fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
-            }
+            return build.Definition.Id == subscription.PipelineTrigger.Id &&
+                build.SourceBranch == subscription.Manifest.Branch &&
+                FilterBuildToParameters(build.Parameters, subscription.PipelineTrigger.PathVariable, expectedPaths);
         }
 
         /// <summary>
-        /// Use this method to generate a unique repo owner name for the tests. This ensures that each test
-        /// uses a different name and prevents collisions when running the tests in parallel. This is because
-        /// the <see cref="QueueBuildCommand"/> generates temp folders partially based on the name of
-        /// the repo owner.
+        /// Returns a value indicating whether <paramref name="buildParametersJson"/> matches the expected results.
         /// </summary>
-        private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null)
+        /// <param name="buildParametersJson">The raw JSON parameters value that was provided to a <see cref="WebApi.Build"/>.</param>
+        /// <param name="pathVariable">Name of the path variable that the arguments are assigned to.</param>
+        /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
+        private static bool FilterBuildToParameters(string buildParametersJson, string pathVariable, IList<string> expectedPaths)
         {
-            return testMethodName + suffix;
-        }
-
-        private static Subscription CreateSubscription(
-            string repoName,
-            int index = 0,
-            [CallerMemberName] string testMethodName = null)
-        {
-            return new Subscription
-            {
-                PipelineTrigger = new PipelineTrigger
-                {
-                    Id = 1,
-                    PathVariable = "--my-path"
-                },
-                Manifest = new SubscriptionManifest
-                {
-                    Branch = "testBranch" + index,
-                    Repo = repoName,
-                    Owner = GetRepoOwner(testMethodName, index.ToString()),
-                    Path = "testmanifest.json"
-                },
-                ImageInfo = new GitFile
-                {
-                    Owner = "dotnetOwner",
-                    Repo = "versionsRepo",
-                    Branch = "mainBranch",
-                    Path = "docker/image-info.json"
-                }
-            };
-        }
-
-        private static WebApi.Build CreateBuild(string url)
-        {
-            WebApi.Build build = new() { Uri = new Uri(url) };
-            build.Links.AddLink("web", $"{url}/web");
-            return build;
+            JObject buildParameters = JsonConvert.DeserializeObject<JObject>(buildParametersJson);
+            string pathString = buildParameters[pathVariable].ToString();
+            IList<string> paths = pathString
+                .Split(" ", StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim().Trim('\''))
+                .Except([$"--{DockerfileFilterOptions.PathOptionName}"])
+                .ToList();
+            return CompareLists(expectedPaths, paths);
         }
 
         /// <summary>
-        /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
+        /// Returns a value indicating whether the two lists are equivalent (order does not matter).
         /// </summary>
-        private class TestFixture : IDisposable
+        private static bool CompareLists(IList<string> expectedPaths, IList<string> paths)
         {
-            private readonly PagedList<WebApi.Build> inProgressBuilds;
-            private readonly PagedList<WebApi.Build> allBuilds;
-            private readonly List<string> filesToCleanup = new List<string>();
-            private readonly List<string> foldersToCleanup = new List<string>();
-            private readonly string subscriptionsPath;
-            private readonly Mock<IBuildHttpClient> buildHttpClientMock;
-            private readonly Mock<IProjectHttpClient> projectHttpClientMock;
-            private readonly QueueBuildCommand command;
-            private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths;
-            private readonly Mock<INotificationService> _notificationServiceMock;
-
-            private const string BuildOrganization = "testOrg";
-            private const string GitOwner = "git-owner";
-            private const string GitRepo = "git-repo";
-            private const string GitAccessToken = "git-pat";
-
-            private static readonly GitHubAuthOptions s_gitHubAuthOptions = new(AuthToken: GitAccessToken);
-
-            /// <summary>
-            /// Initializes a new instance of <see cref="TestFixture"/>.
-            /// </summary>
-            /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
-            /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
-            public TestFixture(
-                Subscription[] subscriptions,
-                IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths)
-                : this(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), new PagedList<WebApi.Build>())
+            if (paths.Count != expectedPaths.Count)
             {
+                return false;
             }
 
-            /// <summary>
-            /// Initializes a new instance of <see cref="TestFixture"/>.
-            /// </summary>
-            /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
-            /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
-            /// <param name="inProgressBuilds">The set of in-progress builds that should be configured.</param>
-            /// <param name="allBuilds">The set of failed builds that should be configured.</param>
-            public TestFixture(
-                Subscription[] subscriptions,
-                IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
-                PagedList<WebApi.Build> inProgressBuilds,
-                PagedList<WebApi.Build> allBuilds)
+            paths = paths
+                .OrderBy(p => p)
+                .ToList();
+            expectedPaths = expectedPaths
+                .OrderBy(p => p)
+                .ToList();
+
+            for (int i = 0; i < paths.Count; i++)
             {
-                this.allSubscriptionImagePaths = allSubscriptionImagePaths;
-                this.inProgressBuilds = inProgressBuilds;
-                this.allBuilds = allBuilds;
-
-                this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
-
-                TeamProject project = new TeamProject
-                {
-                    Id = Guid.NewGuid()
-                };
-
-                this.projectHttpClientMock = CreateProjectHttpClientMock(project);
-                this.buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
-                Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
-                    this.projectHttpClientMock, this.buildHttpClientMock);
-
-                _notificationServiceMock = new Mock<INotificationService>();
-
-                this.command = this.CreateCommand(connectionFactoryMock);
-            }
-
-            public Task ExecuteCommandAsync(CancellationToken cancellationToken)
-            {
-                return this.command.ExecuteAsync(cancellationToken);
-            }
-
-            public void CancelWhenGettingProject(CancellationTokenSource cancellationTokenSource)
-            {
-                this.projectHttpClientMock
-                    .Setup(o => o.GetProjectAsync(It.IsAny<string>(), cancellationTokenSource.Token))
-                    .Callback(cancellationTokenSource.Cancel)
-                    .ThrowsAsync(new OperationCanceledException(cancellationTokenSource.Token));
-            }
-
-            /// <summary>
-            /// Verifies the test execution to ensure the results match the expected state.
-            /// </summary>
-            /// <param name="notificationPostCallCount">
-            /// Number of times a post to notify the GitHub repo is expected.
-            /// </param>
-            /// <param name="isQueuedBuildExpected">
-            /// Indicates whether a build was expected to be queued.
-            /// </param>
-            /// <param name="expectedPathsBySubscription">
-            /// A mapping of subscription metadata to the list of expected path args passed to the queued build, if any.
-            /// </param>
-            public void Verify(int notificationPostCallCount, bool isQueuedBuildExpected, IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
-            {
-                _notificationServiceMock
-                    .Verify(o => o.PostAsync(
-                            It.IsAny<string>(),
-                            It.IsAny<string>(),
-                            It.IsAny<IEnumerable<string>>(),
-                            GitOwner,
-                            GitRepo,
-                            s_gitHubAuthOptions,
-                            It.IsAny<bool>(),
-                            It.IsAny<CancellationToken>(),
-                            It.IsAny<IEnumerable<string>>()),
-                        Times.Exactly(notificationPostCallCount));
-
-                if (!isQueuedBuildExpected)
-                {
-                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()), Times.Never);
-                }
-                else
-                {
-                    if (expectedPathsBySubscription == null)
-                    {
-                        throw new ArgumentNullException(nameof(expectedPathsBySubscription));
-                    }
-
-                    foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
-                    {
-                        if (kvp.Value.Any())
-                        {
-                            this.buildHttpClientMock
-                                .Verify(o =>
-                                    o.QueueBuildAsync(
-                                        It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value)),
-                                        It.IsAny<CancellationToken>()));
-                        }
-                    }
-                }
-            }
-
-            private string SerializeJsonObjectToTempFile(object jsonObject)
-            {
-                string path = Path.GetTempFileName();
-                File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-                this.filesToCleanup.Add(path);
-                return path;
-            }
-
-            private QueueBuildCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
-            {
-                Mock<ILogger<QueueBuildCommand>> loggerServiceMock = new();
-
-                QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
-                command.Options.AzdoOptions.Organization = BuildOrganization;
-                command.Options.AzdoOptions.AccessToken = "testToken";
-                command.Options.SubscriptionsPath = this.subscriptionsPath;
-                command.Options.AllSubscriptionImagePaths = this.allSubscriptionImagePaths
-                    .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
-
-                command.Options.GitOptions.Owner = GitOwner;
-                command.Options.GitOptions.Repo = GitRepo;
-                command.Options.GitOptions.GitHubAuthOptions = s_gitHubAuthOptions;
-
-                return command;
-            }
-
-            private static Mock<IVssConnectionFactory> CreateVssConnectionFactoryMock(
-                Mock<IProjectHttpClient> projectHttpClientMock,
-                Mock<IBuildHttpClient> buildHttpClientMock)
-            {
-                Mock<IVssConnection> connectionMock = CreateVssConnectionMock(projectHttpClientMock, buildHttpClientMock);
-
-                Mock<IVssConnectionFactory> connectionFactoryMock = new Mock<IVssConnectionFactory>();
-                connectionFactoryMock
-                    .Setup(o => o.Create(
-                        It.Is<Uri>(uri => uri.ToString() == $"https://dev.azure.com/{BuildOrganization}"),
-                        It.IsAny<VssCredentials>()))
-                    .Returns(connectionMock.Object);
-                return connectionFactoryMock;
-            }
-
-            private static Mock<IVssConnection> CreateVssConnectionMock(Mock<IProjectHttpClient> projectHttpClientMock,
-                Mock<IBuildHttpClient> buildHttpClientMock)
-            {
-                Mock<IVssConnection> connectionMock = new Mock<IVssConnection>();
-                connectionMock
-                    .Setup(o => o.GetProjectHttpClient())
-                    .Returns(projectHttpClientMock.Object);
-                connectionMock
-                    .Setup(o => o.GetBuildHttpClient())
-                    .Returns(buildHttpClientMock.Object);
-                return connectionMock;
-            }
-
-            private static Mock<IProjectHttpClient> CreateProjectHttpClientMock(TeamProject project)
-            {
-                Mock<IProjectHttpClient> projectHttpClientMock = new Mock<IProjectHttpClient>();
-                projectHttpClientMock
-                    .Setup(o => o.GetProjectAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(project);
-                return projectHttpClientMock;
-            }
-
-            private static Mock<IBuildHttpClient> CreateBuildHttpClientMock(TeamProject project,
-                PagedList<WebApi.Build> inProgressBuilds, PagedList<WebApi.Build> failedBuilds)
-            {
-                WebApi.Build build = CreateBuild("https://contoso");
-
-                Mock<IBuildHttpClient> buildHttpClientMock = new();
-                buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<CancellationToken>(), It.IsAny<IEnumerable<int>>(), WebApi.BuildStatus.InProgress))
-                    .ReturnsAsync(inProgressBuilds);
-
-                buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<CancellationToken>(), It.IsAny<IEnumerable<int>>(), null))
-                    .ReturnsAsync(failedBuilds);
-
-                buildHttpClientMock
-                    .Setup(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(build);
-
-                return buildHttpClientMock;
-            }
-
-            /// <summary>
-            /// Returns a value indicating whether the <see cref="Build"/> object contains the expected state.
-            /// </summary>
-            /// <param name="build">The <see cref="Build"/> to validate.</param>
-            /// <param name="subscription">Subscription object that contains metadata to compare against the <paramref name="build"/>.</param>
-            /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
-            private static bool FilterBuildToSubscription(WebApi.Build build, Subscription subscription, IList<string> expectedPaths)
-            {
-                return build.Definition.Id == subscription.PipelineTrigger.Id &&
-                    build.SourceBranch == subscription.Manifest.Branch &&
-                    FilterBuildToParameters(build.Parameters, subscription.PipelineTrigger.PathVariable, expectedPaths);
-            }
-
-            /// <summary>
-            /// Returns a value indicating whether <paramref name="buildParametersJson"/> matches the expected results.
-            /// </summary>
-            /// <param name="buildParametersJson">The raw JSON parameters value that was provided to a <see cref="Build"/>.</param>
-            /// <param name="pathVariable">Name of the path variable that the arguments are assigned to.</param>
-            /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
-            private static bool FilterBuildToParameters(string buildParametersJson, string pathVariable, IList<string> expectedPaths)
-            {
-                JObject buildParameters = JsonConvert.DeserializeObject<JObject>(buildParametersJson);
-                string pathString = buildParameters[pathVariable].ToString();
-                IList<string> paths = pathString
-                    .Split(" ", StringSplitOptions.RemoveEmptyEntries)
-                    .Select(p => p.Trim().Trim('\''))
-                    .Except([$"--{DockerfileFilterOptions.PathOptionName}"])
-                    .ToList();
-                return CompareLists(expectedPaths, paths);
-            }
-
-            /// <summary>
-            /// Returns a value indicating whether the two lists are equivalent (order does not matter).
-            /// </summary>
-            private static bool CompareLists(IList<string> expectedPaths, IList<string> paths)
-            {
-                if (paths.Count != expectedPaths.Count)
+                if (paths[i] != expectedPaths[i])
                 {
                     return false;
                 }
-
-                paths = paths
-                    .OrderBy(p => p)
-                    .ToList();
-                expectedPaths = expectedPaths
-                    .OrderBy(p => p)
-                    .ToList();
-
-                for (int i = 0; i < paths.Count; i++)
-                {
-                    if (paths[i] != expectedPaths[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
             }
 
-            public void Dispose()
-            {
-                foreach (string file in this.filesToCleanup)
-                {
-                    File.Delete(file);
-                }
-
-                foreach (string folder in this.foldersToCleanup)
-                {
-                    Directory.Delete(folder, true);
-                }
-            }
+            return true;
         }
 
-        private class PagedList<T> : List<T>, IPagedList<T>
+        public void Dispose()
         {
-            public string ContinuationToken
+            foreach (string file in _filesToCleanup)
             {
-                get => throw new NotImplementedException();
-                set => throw new NotImplementedException();
+                File.Delete(file);
             }
+
+            foreach (string folder in _foldersToCleanup)
+            {
+                Directory.Delete(folder, true);
+            }
+        }
+    }
+
+    private sealed class PagedList<T> : List<T>, IPagedList<T>
+    {
+        public string ContinuationToken
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
         }
     }
 }

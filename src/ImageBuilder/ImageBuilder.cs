@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -14,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
-using Microsoft.Extensions.Logging;
 using Polly;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
@@ -24,7 +21,7 @@ public static class ImageBuilder
 {
     public static IHost CreateAppHost()
     {
-        var builder = Host.CreateApplicationBuilder();
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
         // Configuration
         builder.AddPublishConfiguration();
@@ -65,7 +62,7 @@ public static class ImageBuilder
 
         builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
         {
-            var retryOptions = new HttpRetryStrategyOptions()
+            HttpRetryStrategyOptions retryOptions = new HttpRetryStrategyOptions()
             {
                 MaxRetryAttempts = 5,
                 BackoffType = DelayBackoffType.Exponential,
@@ -83,11 +80,9 @@ public static class ImageBuilder
         });
 
         builder.Services.AddHttpClient(nameof(OrasDotNetService), httpClient =>
-        {
             // ORAS referrer lookups can intentionally wait in the rate-limiter queue longer
             // than HttpClient's 100s default timeout.
-            httpClient.Timeout = Timeout.InfiniteTimeSpan;
-        })
+            httpClient.Timeout = Timeout.InfiniteTimeSpan)
             // Referrer-lookup rate limiting must be per-retry-attempt, otherwise retries would
             // eat up rate limited requests without acquiring additional rate limiting leases.
             .AddHttpMessageHandler<AcrReferrerRateLimitingHandler>()
@@ -108,8 +103,8 @@ public static class ImageBuilder
         builder.Services.AddSingleton<INotificationService, NotificationService>();
         builder.Services.AddSingleton<Notation.INotationClient, Notation.NotationClient>();
         builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
-        builder.Services.AddSingleton<Oras.IOrasService, Oras.OrasDotNetService>();
-        builder.Services.AddSingleton<Oras.IOrasServiceFactory, Oras.OrasServiceFactory>();
+        builder.Services.AddSingleton<IOrasService, OrasDotNetService>();
+        builder.Services.AddSingleton<IOrasServiceFactory, OrasServiceFactory>();
         builder.Services.AddSingleton<IProcessService, ProcessService>();
         builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
         builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();

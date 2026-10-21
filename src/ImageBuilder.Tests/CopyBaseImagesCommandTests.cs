@@ -1,185 +1,175 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class CopyBaseImagesCommandTests
 {
-    [TestClass]
-    public class CopyBaseImagesCommandTests
+    public TestContext TestContext { get; set; }
+
+    private const string DestinationRegistry = "mcr.microsoft.com";
+
+    [TestMethod]
+    public async Task MultipleBaseTags()
     {
-        #nullable enable annotations
-        public TestContext? TestContext { get; set; }
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        Mock<ICopyImageService> copyImageServiceMock = new();
 
-        #nullable disable annotations
+        CopyBaseImagesCommand command = new(
+            TestHelper.CreateManifestJsonService(),
+            copyImageServiceMock.Object,
+            Mock.Of<ILogger<CopyBaseImagesCommand>>(),
+            Mock.Of<IGitService>());
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        command.Options.RepoPrefix = "custom-repo/";
+        command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
+        command.Options.CredentialsOptions.Credentials.Add("my-registry.com", new RegistryCredentials("me", "secret"));
 
-        private const string SubscriptionId = "my subscription";
-        private const string ResourceGroup = "my resource group";
-        private const string DestinationRegistry = "mcr.microsoft.com";
+        const string runtimeRelativeDir = "1.0/runtime/os";
+        Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+        string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-        [TestMethod]
-        public async Task MultipleBaseTags()
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    CreatePlatform(
+                        CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/base:tag"),
+                        ["arm32v7"]),
+                    CreatePlatform(
+                        CreateDockerfile("1.0/runtime/os/amd64", tempFolderContext, "base:tag"),
+                        ["amd64"]))),
+            CreateRepo("aspnet",
+                CreateImage(
+                    CreatePlatformWithRepoBuildArg(
+                        CreateDockerfile("1.0/aspnet/os/arm32v7", tempFolderContext, "$REPO:arm32v7"),
+                        $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
+                        ["arm32v7"]),
+                    CreatePlatformWithRepoBuildArg(
+                        CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext, "$REPO:amd64"),
+                        $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
+                        ["amd64"]))),
+            CreateRepo("test",
+                CreateImage(
+                    CreatePlatform(
+                        CreateDockerfile("1.0/test/os/amd64", tempFolderContext, "my-registry.com/repo:tag"),
+                        ["amd64"])))
+        );
+        manifest.Registry = DestinationRegistry;
+
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos =
+        [
+            ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag", "docker.io", "user", "pass" ),
+            ( "library/base:tag", $"{command.Options.RepoPrefix}library/base:tag", "docker.io", "user", "pass" ),
+            ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
+        ];
+
+        foreach ((string sourceImage, string targetTag, string registry, string username, string password) in expectedTagInfos)
         {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<ICopyImageService> copyImageServiceMock = new();
-
-            CopyBaseImagesCommand command = new(
-                TestHelper.CreateManifestJsonService(),
-                copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyBaseImagesCommand>>(),
-                Mock.Of<IGitService>());
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.RepoPrefix = "custom-repo/";
-            command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
-            command.Options.CredentialsOptions.Credentials.Add("my-registry.com", new RegistryCredentials("me", "secret"));
-
-            const string runtimeRelativeDir = "1.0/runtime/os";
-            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime",
-                    CreateImage(
-                        CreatePlatform(
-                            CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/base:tag"),
-                            new string[] { "arm32v7" }),
-                        CreatePlatform(
-                            CreateDockerfile("1.0/runtime/os/amd64", tempFolderContext, "base:tag"),
-                            new string[] { "amd64" }))),
-                CreateRepo("aspnet",
-                    CreateImage(
-                        CreatePlatformWithRepoBuildArg(
-                            CreateDockerfile("1.0/aspnet/os/arm32v7", tempFolderContext, "$REPO:arm32v7"),
-                            $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
-                            new string[] { "arm32v7" }),
-                        CreatePlatformWithRepoBuildArg(
-                            CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext, "$REPO:amd64"),
-                            $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
-                            new string[] { "amd64" }))),
-                CreateRepo("test",
-                    CreateImage(
-                        CreatePlatform(
-                            CreateDockerfile("1.0/test/os/amd64", tempFolderContext, "my-registry.com/repo:tag"),
-                            new string[] { "amd64" })))
-            );
-            manifest.Registry = DestinationRegistry;
-
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            var expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
-            {
-                ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag", "docker.io", "user", "pass" ),
-                ( "library/base:tag", $"{command.Options.RepoPrefix}library/base:tag", "docker.io", "user", "pass" ),
-                ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
-            };
-
-            foreach (var expectedTagInfo in expectedTagInfos)
-            {
-                copyImageServiceMock.Verify(o =>
-                        o.ImportImageAsync(
-                            new string[] { expectedTagInfo.TargetTag },
-                            manifest.Registry,
-                            expectedTagInfo.SourceImage,
-                            false,
-                            It.IsAny<CancellationToken>(),
-                            expectedTagInfo.Registry,
-                            It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
-                            false));
-            }
-
-            copyImageServiceMock.VerifyNoOtherCalls();
+            copyImageServiceMock.Verify(o =>
+                    o.ImportImageAsync(
+                        new string[] { targetTag },
+                        manifest.Registry,
+                        sourceImage,
+                        false,
+                        It.IsAny<CancellationToken>(),
+                        registry,
+                        It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == username && creds.Password == password),
+                        false));
         }
 
-        /// <summary>
-        /// Verifies that we can dynamically override the base image tag that's defined in the Dockerfile with a custom one
-        /// that is used for the purposes of copying.
-        /// </summary>
-        /// <remarks>
-        /// In this test, the Dockerfiles contains:
-        ///     FROM arm32v7/os:tag
-        /// But we want to override that so we don't use that tag as the source of the copy but rather from a custom location.
-        /// So it's configured to be overriden to use contoso.azurecr.io/os:tag as the source tag. This ends up getting copied
-        /// to mcr.microsoft.com/custom-repo/contoso.azurecr.io/os:tag.
-        /// </remarks>
-        [TestMethod]
-        public async Task OverridenBaseTag()
+        copyImageServiceMock.VerifyNoOtherCalls();
+    }
+
+    /// <summary>
+    /// Verifies that we can dynamically override the base image tag that's defined in the Dockerfile with a custom one
+    /// that is used for the purposes of copying.
+    /// </summary>
+    /// <remarks>
+    /// In this test, the Dockerfiles contains:
+    ///     FROM arm32v7/os:tag
+    /// But we want to override that so we don't use that tag as the source of the copy but rather from a custom location.
+    /// So it's configured to be overriden to use contoso.azurecr.io/os:tag as the source tag. This ends up getting copied
+    /// to mcr.microsoft.com/custom-repo/contoso.azurecr.io/os:tag.
+    /// </remarks>
+    [TestMethod]
+    public async Task OverridenBaseTag()
+    {
+        const string customRegistry = "contoso.azurecr.io";
+
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        Mock<ICopyImageService> copyImageServiceMock = new();
+
+        CopyBaseImagesCommand command = new(
+            TestHelper.CreateManifestJsonService(),
+            copyImageServiceMock.Object,
+            Mock.Of<ILogger<CopyBaseImagesCommand>>(),
+            Mock.Of<IGitService>());
+        command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+        command.Options.RepoPrefix = "custom-repo/";
+        command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
+        command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(os:.*)";
+        command.Options.BaseImageOverrideOptions.Substitution = $"{customRegistry}/$1";
+
+        const string runtimeRelativeDir = "1.0/runtime/os";
+        Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+        string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("runtime",
+                CreateImage(
+                    CreatePlatform(
+                        CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/os:tag"),
+                        ["os"]),
+                    CreatePlatform(
+                        CreateDockerfile("1.0/runtime/os2/arm32v7", tempFolderContext, "arm32v7/os2:tag"),
+                        ["os2"])))
+        );
+        manifest.Registry = DestinationRegistry;
+
+        File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+        command.LoadManifest();
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        (string SourceImage, string TargetTag, string Registry, string Username, string Password)[] expectedTagInfos =
+        [
+            ( $"os:tag", $"{command.Options.RepoPrefix}{customRegistry}/os:tag", customRegistry, null, null),
+            ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
+        ];
+
+        foreach ((string sourceImage, string targetTag, string registry, string username, string password) in expectedTagInfos)
         {
-            const string CustomRegistry = "contoso.azurecr.io";
-
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-
-            Mock<ICopyImageService> copyImageServiceMock = new();
-
-            CopyBaseImagesCommand command = new(
-                TestHelper.CreateManifestJsonService(),
-                copyImageServiceMock.Object,
-                Mock.Of<ILogger<CopyBaseImagesCommand>>(),
-                Mock.Of<IGitService>());
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.RepoPrefix = "custom-repo/";
-            command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
-            command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(os:.*)";
-            command.Options.BaseImageOverrideOptions.Substitution = $"{CustomRegistry}/$1";
-
-            const string runtimeRelativeDir = "1.0/runtime/os";
-            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("runtime",
-                    CreateImage(
-                        CreatePlatform(
-                            CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/os:tag"),
-                            new string[] { "os" }),
-                        CreatePlatform(
-                            CreateDockerfile("1.0/runtime/os2/arm32v7", tempFolderContext, "arm32v7/os2:tag"),
-                            new string[] { "os2" })))
-            );
-            manifest.Registry = DestinationRegistry;
-
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            command.LoadManifest();
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
-
-            var expectedTagInfos = new(string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
-            {
-                ( $"os:tag", $"{command.Options.RepoPrefix}{CustomRegistry}/os:tag", CustomRegistry, null, null),
-                ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
-            };
-
-            foreach (var expectedTagInfo in expectedTagInfos)
-            {
-                copyImageServiceMock.Verify(o =>
-                        o.ImportImageAsync(
-                            new string[] { expectedTagInfo.TargetTag },
-                            manifest.Registry,
-                            expectedTagInfo.SourceImage,
-                            false,
-                            It.IsAny<CancellationToken>(),
-                            expectedTagInfo.Registry,
-                            It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
-                            false));
-            }
+            copyImageServiceMock.Verify(o =>
+                    o.ImportImageAsync(
+                        new string[] { targetTag },
+                        manifest.Registry,
+                        sourceImage,
+                        false,
+                        It.IsAny<CancellationToken>(),
+                        registry,
+                        It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && username == null) || (creds.Username == username && creds.Password == password)),
+                        false));
         }
     }
 }

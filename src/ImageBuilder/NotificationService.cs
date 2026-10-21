@@ -8,92 +8,86 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public class NotificationService(ILogger<NotificationService> logger, IOctokitClientFactory octokitClientFactory) : INotificationService
 {
-    public class NotificationService : INotificationService
+    private readonly ILogger<NotificationService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
+            ?? throw new ArgumentNullException(nameof(octokitClientFactory));
+
+    public async Task PostAsync(
+        string title,
+        string description,
+        IEnumerable<string> labels,
+        string repoOwner,
+        string repoName,
+        GitHubAuthOptions gitHubAuth,
+        bool isDryRun,
+        CancellationToken cancellationToken,
+        IEnumerable<string>? comments = null)
     {
-        private readonly ILogger<NotificationService> _logger;
-        private readonly IOctokitClientFactory _octokitClientFactory;
+        IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth, cancellationToken);
 
-        public NotificationService(ILogger<NotificationService> logger, IOctokitClientFactory octokitClientFactory)
+        Issue? issue = null;
+        if (!isDryRun)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _octokitClientFactory = octokitClientFactory
-                ?? throw new ArgumentNullException(nameof(octokitClientFactory));
-        }
-
-        public async Task PostAsync(
-            string title,
-            string description,
-            IEnumerable<string> labels,
-            string repoOwner,
-            string repoName,
-            GitHubAuthOptions gitHubAuth,
-            bool isDryRun,
-            CancellationToken cancellationToken,
-            IEnumerable<string>? comments = null)
-        {
-            IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth, cancellationToken);
-
-            Issue? issue = null;
-            if (!isDryRun)
+            NewIssue newIssue = new NewIssue(title) { Body = description };
+            foreach (string label in labels)
             {
-                var newIssue = new NewIssue(title) { Body = description };
-                foreach (string label in labels)
-                {
-                    newIssue.Labels.Add(label);
-                }
-
-                issue = await github.Issue.Create(repoOwner, repoName, newIssue);
-
-                if (comments != null)
-                {
-                    foreach (string comment in comments)
-                    {
-                        await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
-                            .ExecuteAsync(
-                                ct => github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment),
-                                cancellationToken);
-                    }
-                }
+                newIssue.Labels.Add(label);
             }
 
-            _logger.LogInformation("POSTED NOTIFICATION:");
-            _logger.LogInformation($"Issue URL: {issue?.HtmlUrl ?? "SKIPPED"}");
-            _logger.LogInformation($"Title: {title}");
-            _logger.LogInformation($"Labels: {string.Join(", ", labels)}");
-            _logger.LogInformation($"Description:");
-            _logger.LogInformation($"====BEGIN DESCRIPTION MARKDOWN===");
-            _logger.LogInformation(description);
-            _logger.LogInformation($"====END DESCRIPTION MARKDOWN===");
+            issue = await github.Issue.Create(repoOwner, repoName, newIssue);
 
             if (comments != null)
             {
-                _logger.LogInformation($"====BEGIN COMMENTS MARKDOWN===");
-                for (int i = 0; i < comments.Count(); i++)
+                foreach (string comment in comments)
                 {
-                    _logger.LogInformation($"====COMMENT {i + 1} MARKDOWN===");
-                    _logger.LogInformation(comments.ElementAt(i));
+                    await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
+                        .ExecuteAsync(
+                            ct => github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment),
+                            cancellationToken);
                 }
-                _logger.LogInformation($"====END COMMENTS MARKDOWN===");
+            }
+        }
+
+        _logger.LogInformation("POSTED NOTIFICATION:");
+        _logger.LogInformation("Issue URL: {IssueUrl}", issue?.HtmlUrl ?? "SKIPPED");
+        _logger.LogInformation("Title: {Title}", title);
+        _logger.LogInformation("Labels: {Labels}", string.Join(", ", labels));
+        _logger.LogInformation($"Description:");
+        _logger.LogInformation($"====BEGIN DESCRIPTION MARKDOWN===");
+        _logger.LogInformation("{Description}", description);
+        _logger.LogInformation($"====END DESCRIPTION MARKDOWN===");
+
+        if (comments != null)
+        {
+            _logger.LogInformation($"====BEGIN COMMENTS MARKDOWN===");
+            for (int i = 0; i < comments.Count(); i++)
+            {
+                _logger.LogInformation("====COMMENT {CommentNumber} MARKDOWN===", i + 1);
+                _logger.LogInformation("{Comment}", comments.ElementAt(i));
             }
 
-            if (issue is null)
-            {
-                return;
-            }
+            _logger.LogInformation($"====END COMMENTS MARKDOWN===");
+        }
 
-            // Immediately close issues which aren't failures, since open issues should represent actionable items.
-            // Retry with backoff to handle GitHub's eventual consistency - the issue may not be fully
-            // propagated across GitHub's backend services immediately after creation.
-            if (!labels.Where(l => l.Contains(Commands.NotificationLabels.Failure)).Any())
-            {
-                _logger.LogInformation("No failure label found in the notification labels.");
-                await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
-                    .ExecuteAsync(
-                        ct => github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed }),
-                        cancellationToken);
-            }
+        if (issue is null)
+        {
+            return;
+        }
+
+        // Immediately close issues which aren't failures, since open issues should represent actionable items.
+        // Retry with backoff to handle GitHub's eventual consistency - the issue may not be fully
+        // propagated across GitHub's backend services immediately after creation.
+        if (!labels.Any(l => l.Contains(NotificationLabels.Failure)))
+        {
+            _logger.LogInformation("No failure label found in the notification labels.");
+            await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
+                .ExecuteAsync(
+                    ct => github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed }),
+                    cancellationToken);
         }
     }
 }

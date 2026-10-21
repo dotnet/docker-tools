@@ -11,9 +11,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 
 internal static class ManifestServiceHelper
 {
-    public record ImageDigestResults(string Image, string Digest, int OnCallCount = 1);
+    public sealed record ImageDigestResults(string Image, string Digest, int OnCallCount = 1);
 
-    public record ImageLayersResults(string Image, IEnumerable<Layer> Layers);
+    public sealed record ImageLayersResults(string Image, IEnumerable<Layer> Layers);
 
     public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
         IEnumerable<ImageDigestResults>? localImageDigestResults = null,
@@ -48,7 +48,7 @@ internal static class ManifestServiceHelper
         // By default, have it throw an exception which indicates that the manifest was not found
         manifestServiceMock
             .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception());
+            .ThrowsAsync(new InvalidOperationException());
 
         localImageDigestResults ??= [];
         externalImageDigestResults ??= [];
@@ -65,7 +65,7 @@ internal static class ManifestServiceHelper
         {
             manifestServiceMock
                 .Setup(o => o.GetManifestDigestShaAsync(image, false, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(callIndex => callIndex >= onCallIndex ? digest : throw new Exception());
+                .ReturnsAsync(callIndex => callIndex >= onCallIndex ? digest : throw new InvalidOperationException());
         }
 
         foreach ((string image, IEnumerable<Layer> layers) in imageLayersResults)

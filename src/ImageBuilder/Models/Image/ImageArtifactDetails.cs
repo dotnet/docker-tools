@@ -1,10 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image;
 
 public class ImageArtifactDetails
 {
-    private static readonly JsonSerializerSettings s_jsonSettings = new()
+    private static readonly JsonSerializerSettings JsonSettings = new()
     {
         Converters =
         [
@@ -21,6 +20,10 @@ public class ImageArtifactDetails
         ]
     };
 
+    [SuppressMessage(
+        "Performance",
+        "CA1822:Mark members as static",
+        Justification = "This instance property is serialized as the image-info schemaVersion field.")]
     public string SchemaVersion => "2.0";
 
     public List<RepoData> Repos { get; set; } = [];
@@ -28,7 +31,7 @@ public class ImageArtifactDetails
     public static ImageArtifactDetails FromJson(string json)
     {
         ImageArtifactDetails imageArtifactDetails =
-            JsonConvert.DeserializeObject<ImageArtifactDetails>(json, s_jsonSettings)
+            JsonConvert.DeserializeObject<ImageArtifactDetails>(json, JsonSettings)
                 ?? throw new SerializationException(
                     $"""
                     Failed to deserialize {nameof(ImageArtifactDetails)} from content:
@@ -38,9 +41,9 @@ public class ImageArtifactDetails
         return imageArtifactDetails;
     }
 
-    private class SchemaVersion2LayerConverter : JsonConverter
+    private sealed class SchemaVersion2LayerConverter : JsonConverter
     {
-        private static readonly JsonSerializer s_jsonSerializer =
+        private static readonly JsonSerializer JsonSerializer =
             JsonSerializer.Create(JsonHelper.JsonSerializerSettings);
 
         // We do not want to handle writing at all. We only want to convert
@@ -48,10 +51,7 @@ public class ImageArtifactDetails
         // done using the new format (via the default conversion settings).
         public override bool CanWrite => false;
 
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(Layer);
-        }
+        public override bool CanConvert(Type objectType) => objectType == typeof(Layer);
 
         public override object? ReadJson(
             JsonReader reader,
@@ -66,7 +66,7 @@ public class ImageArtifactDetails
                 // We can't use the JsonSerializer passed into the method since
                 // it contains this converter. Doing so would cause a stack
                 // overflow since this method would be called again recursively.
-                JTokenType.Object => token.ToObject<Layer>(s_jsonSerializer),
+                JTokenType.Object => token.ToObject<Layer>(JsonSerializer),
 
                 // If we encounter a string, we want to convert it to the Layer
                 // object defined in schema version 2. Assume a size of 0. The
@@ -85,9 +85,6 @@ public class ImageArtifactDetails
             };
         }
 
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer) => throw new NotImplementedException();
     }
 }

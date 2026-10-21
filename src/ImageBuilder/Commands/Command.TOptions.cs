@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.CommandLine;
 using System.Threading.Tasks;
@@ -13,10 +12,7 @@ public abstract class Command<TOptions> : ICommand where TOptions : Options, new
 
     protected abstract string Description { get; }
 
-    public Command()
-    {
-        Options = new TOptions();
-    }
+    public Command() => Options = new TOptions();
 
     public Command GetCliCommand()
     {
@@ -33,10 +29,7 @@ public abstract class Command<TOptions> : ICommand where TOptions : Options, new
             });
     }
 
-    protected virtual void Initialize(TOptions options)
-    {
-        Options = options;
-    }
+    protected virtual void Initialize(TOptions options) => Options = options;
 
     public abstract Task ExecuteAsync(CancellationToken cancellationToken);
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -57,8 +56,9 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         if (!File.Exists(imageInfoPath))
         {
-            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping manifest list creation."));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand("Image info file not found. Skipping manifest list creation."));
             return;
         }
 
@@ -115,10 +115,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                 DateTime createdDate = _dateTimeService.UtcNow;
 
                 // Push the manifest lists, then record their digests back into image-info.
-                Parallel.ForEach(manifestLists, manifestListInfo =>
-                {
-                    _dockerService.PushManifestList(manifestListInfo.Tag, Options.IsDryRun, ct);
-                });
+                Parallel.ForEach(manifestLists, manifestListInfo => _dockerService.PushManifestList(manifestListInfo.Tag, Options.IsDryRun, ct));
 
                 WriteManifestSummary(manifestLists);
 
@@ -169,7 +166,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
                     // Log all shared tags, to avoid any ambiguity.
                     using (_logger.BeginScope(
-                            "Image {sharedTagsString}",
+                            "Image {SharedTags}",
                             imageData.ManifestImage.SharedTags.GetDisplayString()))
                     {
                         _logger.LogInformation(
@@ -177,9 +174,11 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                             builtPlatforms.Count, declaredPlatforms.Count, missingPlatforms.Count);
 
                         foreach (PlatformInfo platform in declaredPlatforms)
+                        {
                             _logger.LogDebug(
                                 "Has platform {Platform}, WasBuilt={WasBuilt}",
                                 platform.PlatformLabel, builtPlatforms.Contains(platform));
+                        }
                     }
 
                     // Finally, project to a tuple.
@@ -201,7 +200,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
             ManifestQueryResult result = await _manifestService.Value.GetManifestAsync(sourceName, isDryRun: false, cancellationToken);
 
-            var platformImportData = new PlatformImportData(
+            PlatformImportData platformImportData = new PlatformImportData(
                 Repo: imageData.ManifestRepo,
                 Image: imageData.ManifestImage,
                 Platform: platform,
@@ -242,7 +241,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
             cancellationToken: cancellationToken);
     }
 
-    private IReadOnlyList<string> GetDestinationTagsForImage(PlatformInfo platform, string sourceRepo)
+    private List<string> GetDestinationTagsForImage(PlatformInfo platform, string sourceRepo)
     {
         string prefix = Options.RepoPrefix ?? string.Empty;
         string destRepo = $"{prefix}{sourceRepo}";
@@ -305,10 +304,14 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     private void WriteManifestSummary(IReadOnlyList<ManifestListInfo> manifestLists)
     {
         foreach (ManifestListInfo manifestListInfo in manifestLists)
-            _logger.LogInformation(manifestListInfo.Tag);
+        {
+            _logger.LogInformation("{ManifestListTag}", manifestListInfo.Tag);
+        }
 
         if (manifestLists.Count == 0)
+        {
             _logger.LogInformation("No manifest lists created");
+        }
     }
 
     /// <summary>

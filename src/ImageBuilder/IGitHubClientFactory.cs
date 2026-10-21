@@ -1,15 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
-using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IGitHubClientFactory
 {
-    public interface IGitHubClientFactory
-    {
-        Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken);
-    }
+    Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken);
 }

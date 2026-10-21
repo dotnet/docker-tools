@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 
@@ -20,16 +18,16 @@ public static class JwtHelper
         string privateKey = DecodeBase64String(base64PrivateKey);
 
         RsaSecurityKey rsaSecurityKey;
-        using (var rsa = RSA.Create(4096))
+        using (RSA rsa = RSA.Create(4096))
         {
             rsa.ImportFromPem(privateKey);
             rsaSecurityKey = new RsaSecurityKey(rsa.ExportParameters(true));
-        };
+        }
 
-        var now = DateTime.UtcNow;
-        var signingCredentials = new SigningCredentials(rsaSecurityKey, SecurityAlgorithms.RsaSha256);
+        DateTime now = DateTime.UtcNow;
+        SigningCredentials signingCredentials = new SigningCredentials(rsaSecurityKey, SecurityAlgorithms.RsaSha256);
 
-        var descriptor = new SecurityTokenDescriptor
+        SecurityTokenDescriptor descriptor = new SecurityTokenDescriptor
         {
             IssuedAt = now,
             Expires = now + timeout,
@@ -37,8 +35,8 @@ public static class JwtHelper
             SigningCredentials = signingCredentials
         };
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var jwt = tokenHandler.CreateJwtSecurityToken(descriptor);
+        JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+        JwtSecurityToken jwt = tokenHandler.CreateJwtSecurityToken(descriptor);
         return tokenHandler.WriteToken(jwt);
     }
 

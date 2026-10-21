@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -43,7 +42,9 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
 
         if (options.IsVerbose)
         {
-            _logger.LogInformation(JsonConvert.SerializeObject(manifest, Formatting.Indented));
+            _logger.LogInformation(
+                "{ManifestJson}",
+                JsonConvert.SerializeObject(manifest, Formatting.Indented));
         }
 
         return manifest;
@@ -90,7 +91,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
         IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.QualifiedName).ToArray();
         foreach (PlatformInfo? platform in manifestInfo.GetAllPlatforms())
         {
-            platform.Initialize(repoNames, manifestInfo.Registry);
+            platform.Initialize(repoNames);
         }
 
         IEnumerable<Repo> filteredRepoModels = manifestFilter.GetRepos(manifestInfo.Model);
@@ -206,7 +207,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
         // non-empty, conflicting values for the other settings
         IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo)
             .GetProperties()
-            .Where(prop => prop.Name != nameof(Repo.Images) && prop.Name != nameof(Repo.Readmes));
+            .Where(prop => prop.Name is not (nameof(Repo.Images)) and not (nameof(Repo.Readmes)));
 
         foreach (PropertyInfo property in propertiesToValidate)
         {

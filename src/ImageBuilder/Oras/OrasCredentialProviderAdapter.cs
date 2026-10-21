@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using OrasProject.Oras.Registry.Remote.Auth;
 
@@ -38,9 +36,12 @@ public class OrasCredentialProviderAdapter(
         RegistryCredentials? registryCredentials =
             await _credentialsProvider.GetCredentialsAsync(lookupHost, _credentialsHost, cancellationToken);
 
-        if (registryCredentials is null) return default;
+        if (registryCredentials is null)
+        {
+            return default;
+        }
 
-        var orasCredential = new Credential(
+        Credential orasCredential = new Credential(
             Username: registryCredentials.Username,
             Password: registryCredentials.Password,
             RefreshToken: string.Empty,

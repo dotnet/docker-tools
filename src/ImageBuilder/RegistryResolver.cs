@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
 /// <summary>
 /// Implementation of <see cref="IRegistryResolver"/> that centralizes the logic
 /// for determining how to authenticate with a given container registry.
@@ -18,7 +17,7 @@ public class RegistryResolver(IOptions<PublishConfiguration> publishConfigOption
     /// <inheritdoc />
     public RegistryInfo Resolve(string registry, IRegistryCredentialsHost? credsHost)
     {
-        var explicitCreds = credsHost?.TryGetCredentials(registry);
+        RegistryCredentials? explicitCreds = credsHost?.TryGetCredentials(registry);
 
         // Docker Hub's registry has a separate host name for its API
         if (registry == DockerHelper.DockerHubRegistry)
@@ -32,7 +31,7 @@ public class RegistryResolver(IOptions<PublishConfiguration> publishConfigOption
         }
 
         // Look up the authentication in the publish configuration
-        var auth = _publishConfig.FindRegistryAuthentication(registry);
+        RegistryAuthentication? auth = _publishConfig.FindRegistryAuthentication(registry);
 
         return new RegistryInfo(
             EffectiveRegistry: registry,

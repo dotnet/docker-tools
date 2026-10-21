@@ -1,13 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IGitHubRepoRef
 {
-    public interface IGitHubRepoRef
-    {
-        public string Owner { get; set; }
+    string Owner { get; set; }
 
-        public string Repo { get; set; }
-    }
+    string Repo { get; set; }
 }

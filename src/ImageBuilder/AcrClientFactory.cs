@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Azure.Containers.ContainerRegistry;
@@ -9,7 +8,6 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
-
 
 public class AcrClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,
@@ -21,7 +19,7 @@ public class AcrClientFactory(
 
     public IAcrClient Create(string acrName)
     {
-        var auth = _publishConfig.FindRegistryAuthentication(acrName);
+        RegistryAuthentication? auth = _publishConfig.FindRegistryAuthentication(acrName);
         if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
@@ -36,7 +34,7 @@ public class AcrClientFactory(
     {
         TokenCredential credential = _tokenCredentialProvider.GetCredential(serviceConnection);
 
-        var client = new ContainerRegistryClient(DockerHelper.GetAcrUri(acrName), credential);
+        ContainerRegistryClient client = new ContainerRegistryClient(DockerHelper.GetAcrUri(acrName), credential);
         return new AcrClientWrapper(client);
     }
 }

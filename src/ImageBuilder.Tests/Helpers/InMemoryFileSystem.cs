@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -86,7 +85,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public byte[] ReadAllBytes(string path)
     {
         FilesRead.Add(path);
-        return _files.TryGetValue(path, out var bytes)
+        return _files.TryGetValue(path, out byte[]? bytes)
             ? bytes
             : throw new FileNotFoundException("File not found", path);
     }
@@ -97,7 +96,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public string ReadAllText(string path)
     {
         FilesRead.Add(path);
-        return _files.TryGetValue(path, out var bytes)
+        return _files.TryGetValue(path, out byte[]? bytes)
             ? Encoding.UTF8.GetString(bytes)
             : throw new FileNotFoundException("File not found", path);
     }
@@ -105,7 +104,7 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken)
     {
         FilesRead.Add(path);
-        return _files.TryGetValue(path, out var bytes)
+        return _files.TryGetValue(path, out byte[]? bytes)
             ? Task.FromResult(Encoding.UTF8.GetString(bytes))
             : throw new FileNotFoundException("File not found", path);
     }
@@ -162,7 +161,9 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public string GetCurrentDirectory() => CurrentDirectory;
 
     private static bool IsUnder(string directory, string candidate) =>
-        candidate.StartsWith(directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
+        candidate.StartsWith(
+            directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     private void SetFile(string path, byte[] bytes)
     {

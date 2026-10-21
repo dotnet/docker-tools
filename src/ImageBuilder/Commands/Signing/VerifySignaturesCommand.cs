@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -42,7 +41,7 @@ public class VerifySignaturesCommand(
     {
         _logger.LogInformation("VERIFYING CONTAINER IMAGE SIGNATURES");
 
-        var signingConfig = _publishConfiguration.Signing;
+        SigningConfiguration? signingConfig = _publishConfiguration.Signing;
         if (signingConfig is null || !signingConfig.Enabled)
         {
             _logger.LogInformation("Signing is not enabled. Skipping signature verification.");
@@ -65,11 +64,11 @@ public class VerifySignaturesCommand(
 
         SetupTrustConfiguration(signingConfig, cancellationToken);
 
-        var imageInfoContents = await _fileSystem.ReadAllTextAsync(Options.ImageInfoPath, cancellationToken);
-        var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
+        string imageInfoContents = await _fileSystem.ReadAllTextAsync(Options.ImageInfoPath, cancellationToken);
+        ImageArtifactDetails imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
-        var imageReferences = GetAllImageReferences(imageArtifactDetails);
+        List<string> imageReferences = GetAllImageReferences(imageArtifactDetails);
 
         if (imageReferences.Count == 0)
         {
@@ -100,10 +99,10 @@ public class VerifySignaturesCommand(
             return ValueTask.CompletedTask;
         });
 
-        if (failures.Count > 0)
+        if (!failures.IsEmpty)
         {
             _logger.LogError("Signature verification failed for {Count} image(s)", failures.Count);
-            foreach (var (reference, error) in failures)
+            foreach ((string? reference, Exception? error) in failures)
             {
                 _logger.LogError("{Reference}: {Message}", reference, error.Message);
             }
@@ -111,7 +110,7 @@ public class VerifySignaturesCommand(
             _environmentService.ExitCode = 1;
         }
 
-        var successCount = imageReferences.Count - failures.Count;
+        int successCount = imageReferences.Count - failures.Count;
         _logger.LogInformation("Verified signatures for {Success}/{Total} image(s).", successCount, imageReferences.Count);
     }
 
@@ -121,14 +120,14 @@ public class VerifySignaturesCommand(
     /// </summary>
     private async Task LoginToRegistriesAsync(List<string> imageReferences, CancellationToken cancellationToken)
     {
-        var registries = imageReferences
+        List<string> registries = imageReferences
             .Select(r => ImageName.Parse(r).Registry)
             .Distinct()
             .ToList();
 
-        foreach (var registry in registries)
+        foreach (string registry in registries)
         {
-            var credentials = await _registryCredentialsProvider.GetCredentialsAsync(registry, credsHost: null, cancellationToken);
+            RegistryCredentials? credentials = await _registryCredentialsProvider.GetCredentialsAsync(registry, credsHost: null, cancellationToken);
             if (credentials is null)
             {
                 _logger.LogInformation("No credentials found for '{Registry}'. Notation may fail if the registry requires authentication.", registry);
@@ -146,9 +145,9 @@ public class VerifySignaturesCommand(
     /// </summary>
     private void SetupTrustConfiguration(SigningConfiguration signingConfig, CancellationToken cancellationToken)
     {
-        var trustStoreName = signingConfig.TrustStoreName;
+        string trustStoreName = signingConfig.TrustStoreName;
 
-        var certPath = Path.Combine(Options.TrustMaterialsPath, "certs", trustStoreName, "root-ca.crt");
+        string certPath = Path.Combine(Options.TrustMaterialsPath, "certs", trustStoreName, "root-ca.crt");
         if (!_fileSystem.FileExists(certPath))
         {
             throw new FileNotFoundException(
@@ -159,7 +158,7 @@ public class VerifySignaturesCommand(
         _logger.LogInformation("Adding root CA certificate from '{CertPath}' to trust store '{TrustStoreName}'...", certPath, trustStoreName);
         _notationClient.AddCertificate("ca", trustStoreName, certPath, cancellationToken);
 
-        var policyPath = Path.Combine(Options.TrustMaterialsPath, "policies", $"{trustStoreName}.json");
+        string policyPath = Path.Combine(Options.TrustMaterialsPath, "policies", $"{trustStoreName}.json");
         if (!_fileSystem.FileExists(policyPath))
         {
             throw new FileNotFoundException(

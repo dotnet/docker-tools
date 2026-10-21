@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
@@ -9,13 +8,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public abstract class CopyImagesCommand<TOptions>(
     IManifestJsonService manifestJsonService,
-    ICopyImageService copyImageService,
-    ILogger logger)
+    ICopyImageService copyImageService)
     : ManifestCommand<TOptions>(manifestJsonService)
         where TOptions : CopyImagesOptions, new()
 {
     private readonly ICopyImageService _copyImageService = copyImageService;
-    private readonly ILogger _logger = logger;
 
     protected Task ImportImageAsync(
         string destTagName,

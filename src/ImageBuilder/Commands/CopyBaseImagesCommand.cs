@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,100 +8,98 @@ using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class CopyBaseImagesCommand(
+    IManifestJsonService manifestJsonService,
+    ICopyImageService copyImageService,
+    ILogger<CopyBaseImagesCommand> logger,
+    IGitService gitService)
+    : CopyImagesCommand<CopyBaseImagesOptions>(
+        manifestJsonService,
+        copyImageService)
 {
-    public class CopyBaseImagesCommand(
-        IManifestJsonService manifestJsonService,
-        ICopyImageService copyImageService,
-        ILogger<CopyBaseImagesCommand> logger,
-        IGitService gitService)
-        : CopyImagesCommand<CopyBaseImagesOptions>(
-            manifestJsonService,
-            copyImageService,
-            logger)
+    private readonly IManifestJsonService _manifestJsonService = manifestJsonService;
+    private readonly ILogger _logger = logger;
+    private readonly IGitService _gitService = gitService;
+
+    protected override string Description => "Copies external base images from their source registry to ACR";
+
+    public override void LoadManifest()
     {
-        private readonly IManifestJsonService _manifestJsonService = manifestJsonService;
-        private readonly ILogger _logger = logger;
-        private readonly IGitService _gitService = gitService;
-
-        protected override string Description => "Copies external base images from their source registry to ACR";
-
-        public override void LoadManifest()
+        // This command can be used either locally from a product repo or from an external repo that references
+        // a subscription file. If a subscription file is being used, don't attempt to load the manifest because
+        // one may not exist (it wouldn't be used even if it did exist).
+        if (Options.SubscriptionOptions.SubscriptionsPath is null)
         {
-            // This command can be used either locally from a product repo or from an external repo that references
-            // a subscription file. If a subscription file is being used, don't attempt to load the manifest because
-            // one may not exist (it wouldn't be used even if it did exist).
-            if (Options.SubscriptionOptions.SubscriptionsPath is null)
+            base.LoadManifest();
+        }
+    }
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("COPYING IMAGES");
+
+        Options.BaseImageOverrideOptions.Validate();
+
+        IEnumerable<ManifestInfo> manifests;
+        string fullRegistryName;
+        if (Options.SubscriptionOptions.SubscriptionsPath is null)
+        {
+            manifests = [Manifest];
+            fullRegistryName = Manifest.Registry;
+        }
+        else
+        {
+            if (Options.RegistryOverride is null)
             {
-                base.LoadManifest();
+                throw new InvalidOperationException($"The '{ManifestOptions.RegistryOverrideName}' option must be set.");
             }
+
+            manifests =
+                SubscriptionHelper.GetSubscriptionManifests(
+                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService,
+                    options => options.RegistryOverride = Options.RegistryOverride)
+                .Select(subscriptionManifest => subscriptionManifest.Manifest);
+            fullRegistryName = Options.RegistryOverride;
         }
 
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
+        IEnumerable<Task> copyImageTasks = manifests
+            .SelectMany(GetFromImages)
+            .Distinct()
+            .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName, cancellationToken));
+
+        await Task.WhenAll(copyImageTasks);
+    }
+
+    private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
+        manifest.GetExternalFromImages()
+            .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
+            .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry, StringComparison.OrdinalIgnoreCase));
+
+    private Task CopyImageAsync(string fromImage, string destinationRegistryName, CancellationToken cancellationToken)
+    {
+        fromImage = DockerHelper.NormalizeRepo(fromImage);
+
+        string registry = DockerHelper.GetRegistry(fromImage) ?? DockerHelper.DockerHubRegistry;
+        string srcImage = DockerHelper.TrimRegistry(fromImage, registry);
+
+        ContainerRegistryImportSourceCredentials? importSourceCreds = null;
+        if (Options.CredentialsOptions.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))
         {
-            _logger.LogInformation("COPYING IMAGES");
-
-            Options.BaseImageOverrideOptions.Validate();
-
-            IEnumerable<ManifestInfo> manifests;
-            string fullRegistryName;
-            if (Options.SubscriptionOptions.SubscriptionsPath is null)
+            importSourceCreds = new ContainerRegistryImportSourceCredentials(registryCreds.Password)
             {
-                manifests = new ManifestInfo[] { Manifest };
-                fullRegistryName = Manifest.Registry;
-            }
-            else
-            {
-                if (Options.RegistryOverride is null)
-                {
-                    throw new InvalidOperationException($"The '{ManifestOptions.RegistryOverrideName}' option must be set.");
-                }
-
-                manifests =
-                    SubscriptionHelper.GetSubscriptionManifests(
-                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService,
-                        options => options.RegistryOverride = Options.RegistryOverride)
-                    .Select(subscriptionManifest => subscriptionManifest.Manifest);
-                fullRegistryName = Options.RegistryOverride;
-            }
-
-            IEnumerable<Task> copyImageTasks = manifests
-                .SelectMany(manifest => GetFromImages(manifest))
-                .Distinct()
-                .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName, cancellationToken));
-
-            await Task.WhenAll(copyImageTasks);
+                Username = registryCreds.Username
+            };
         }
 
-        private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
-            manifest.GetExternalFromImages()
-                .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
-                .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
-
-        private Task CopyImageAsync(string fromImage, string destinationRegistryName, CancellationToken cancellationToken)
-        {
-            fromImage = DockerHelper.NormalizeRepo(fromImage);
-
-            string registry = DockerHelper.GetRegistry(fromImage) ?? DockerHelper.DockerHubRegistry;
-            string srcImage = DockerHelper.TrimRegistry(fromImage, registry);
-
-            ContainerRegistryImportSourceCredentials? importSourceCreds = null;
-            if (Options.CredentialsOptions.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))
-            {
-                importSourceCreds = new ContainerRegistryImportSourceCredentials(registryCreds.Password)
-                {
-                    Username = registryCreds.Username
-                };
-            }
-
-            return ImportImageAsync(
-                destTagName: $"{Options.RepoPrefix}{fromImage}",
-                destRegistryName: destinationRegistryName,
-                srcTagName: srcImage,
-                srcRegistryName: registry,
-                sourceCredentials: importSourceCreds,
-                copyReferrers: false,
-                cancellationToken: cancellationToken);
-        }
+        return ImportImageAsync(
+            destTagName: $"{Options.RepoPrefix}{fromImage}",
+            destRegistryName: destinationRegistryName,
+            srcTagName: srcImage,
+            srcRegistryName: registry,
+            sourceCredentials: importSourceCreds,
+            copyReferrers: false,
+            cancellationToken: cancellationToken);
     }
 }

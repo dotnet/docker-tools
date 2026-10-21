@@ -1,16 +1,13 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -19,1463 +16,1446 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class AttachLifecycleMetadataCommandTests
 {
-    [TestClass]
-    public class AttachLifecycleMetadataCommandTests
+    public TestContext TestContext { get; set; }
+
+    private const string DefaultRepoPrefix = "public/";
+    private const string AcrName = "myacr.azurecr.io";
+    private const string McrName = "mcr.microsoft.com";
+    private readonly DateOnly _globalDate = DateOnly.FromDateTime(DateTime.UtcNow);
+    private readonly ConcurrentBag<string> _annotatedDigests = [];
+    private readonly Mock<ILifecycleMetadataService> _lifecycleMetadataServiceMock = new();
+
+    [TestMethod]
+    [DataRow(true, "")]
+    [DataRow(true, DefaultRepoPrefix)]
+    [DataRow(false, "")]
+    [DataRow(false, DefaultRepoPrefix)]
+    public async Task AttachLifecycleMetadata_RepoMoved_RespectsSyndication(
+        bool syndicateToOldRepo,
+        string repoPrefix)
     {
-        #nullable enable annotations
-        public TestContext? TestContext { get; set; }
+        using TempFolderContext context = TestHelper.UseTempFolder();
+        const string oldRepo = "repo-a";
+        const string newRepo = "repo-b";
+        const string platformDigest = "sha256:platform";
+        const string manifestDigest = "sha256:manifest";
+        const string retiredDigest = "sha256:retired";
+        string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", context);
 
-        #nullable disable annotations
+        Image image = ManifestHelper.CreateImage(
+            ["shared"],
+            ManifestHelper.CreatePlatform(dockerfile, ["platform"]));
 
-        private const string DefaultRepoPrefix = "public/";
-        private const string AcrName = "myacr.azurecr.io";
-        private const string McrName = "mcr.microsoft.com";
-        private readonly DateOnly _globalDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        private readonly ConcurrentBag<string> _annotatedDigests = [];
-        private readonly Mock<ILifecycleMetadataService> _lifecycleMetadataServiceMock = new();
+        image.Syndication = syndicateToOldRepo ? oldRepo : null;
+        Manifest manifest = ManifestHelper.CreateManifest(ManifestHelper.CreateRepo(newRepo, image));
+        manifest.Registry = McrName;
+        string manifestPath = Path.Combine(context.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+        IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+        Mock.Get(manifestOptions).SetupGet(options => options.Variables).Returns(new Dictionary<string, string>());
+        ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
 
-        [TestMethod]
-        [DataRow(true, "")]
-        [DataRow(true, DefaultRepoPrefix)]
-        [DataRow(false, "")]
-        [DataRow(false, DefaultRepoPrefix)]
-        public async Task AttachLifecycleMetadata_RepoMoved_RespectsSyndication(
-            bool syndicateToOldRepo,
-            string repoPrefix)
-        {
-            using TempFolderContext context = TestHelper.UseTempFolder();
-            const string oldRepo = "repo-a";
-            const string newRepo = "repo-b";
-            const string platformDigest = "sha256:platform";
-            const string manifestDigest = "sha256:manifest";
-            const string retiredDigest = "sha256:retired";
-            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", context);
+        string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
+        File.WriteAllText(
+            oldImageInfoPath,
+            JsonHelper.SerializeObject(CreateImageInfo(dockerfile, oldRepo, platformDigest, manifestDigest)));
 
-            Image image = ManifestHelper.CreateImage(
-                ["shared"],
-                ManifestHelper.CreatePlatform(dockerfile, ["platform"]));
+        ImageArtifactDetails newImageInfo = ImageInfoHelper.LoadFromContent(
+            JsonHelper.SerializeObject(CreateImageInfo(dockerfile, newRepo, platformDigest, manifestDigest)),
+            manifestInfo);
 
-            image.Syndication = syndicateToOldRepo ? oldRepo : null;
-            Manifest manifest = ManifestHelper.CreateManifest(ManifestHelper.CreateRepo(newRepo, image));
-            manifest.Registry = McrName;
-            string manifestPath = Path.Combine(context.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
-            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            Mock.Get(manifestOptions).SetupGet(options => options.Variables).Returns(new Dictionary<string, string>());
-            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
+        newImageInfo.Repos[0].Images[0].ManifestImage.SyndicatedRepo.ShouldBe(image.Syndication);
+        newImageInfo.Repos[0].Images[0].SyndicatedRepo.ShouldBe(image.Syndication);
+        string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(newImageInfo));
 
-            string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
-            File.WriteAllText(
-                oldImageInfoPath,
-                JsonHelper.SerializeObject(CreateImageInfo(dockerfile, oldRepo, platformDigest, manifestDigest)));
+        Mock<IAcrClient> registryClient = CreateAcrClientMock([
+            CreateContainerRepository(
+                repoPrefix + oldRepo,
+                manifestProperties:
+                [
+                    CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
+                    CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
+                    CreateArtifactManifestProperties(digest: retiredDigest, tags: []),
+                ]),
+            CreateContainerRepository(
+                repoPrefix + newRepo,
+                manifestProperties:
+                [
+                    CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
+                    CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
+                ]),
+        ]);
 
-            ImageArtifactDetails newImageInfo = ImageInfoHelper.LoadFromContent(
-                JsonHelper.SerializeObject(CreateImageInfo(dockerfile, newRepo, platformDigest, manifestDigest)),
-                manifestInfo);
-
-            newImageInfo.Repos[0].Images[0].ManifestImage.SyndicatedRepo.ShouldBe(image.Syndication);
-            newImageInfo.Repos[0].Images[0].SyndicatedRepo.ShouldBe(image.Syndication);
-            string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(newImageInfo));
-
-            Mock<IAcrClient> registryClient = CreateAcrClientMock([
-                CreateContainerRepository(
+        IAcrContentClientFactory contentClientFactory = CreateAcrContentClientFactory(
+            AcrName,
+            [
+                CreateAcrContentClientMock(
                     repoPrefix + oldRepo,
-                    manifestProperties:
-                    [
-                        CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
-                        CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
-                        CreateArtifactManifestProperties(digest: retiredDigest, tags: []),
-                    ]),
-                CreateContainerRepository(
-                    repoPrefix + newRepo,
-                    manifestProperties:
-                    [
-                        CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
-                        CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
-                    ]),
-            ]);
-
-            IAcrContentClientFactory contentClientFactory = CreateAcrContentClientFactory(
-                AcrName,
-                [
-                    CreateAcrContentClientMock(
-                        repoPrefix + oldRepo,
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            [platformDigest] = new ManifestQueryResult(platformDigest, []),
-                            [manifestDigest] = new ManifestQueryResult(manifestDigest, []),
-                            [retiredDigest] = new ManifestQueryResult(retiredDigest, []),
-                        }),
-                    CreateAcrContentClientMock(repoPrefix + newRepo),
-                ]);
-
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                CreateAcrClientFactory(AcrName, registryClient.Object),
-                contentClientFactory);
-
-            UnsupportedLifecycleMetadataOptions options = CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath);
-            options.RegistryOptions.RepoPrefix = repoPrefix;
-            await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests = syndicateToOldRepo
-                ? [retiredDigest]
-                : [platformDigest, manifestDigest, retiredDigest];
-
-            _annotatedDigests.ShouldBe(
-                expectedDigests.Select(digest =>
-                    DockerHelper.GetImageName(AcrName, repoPrefix + oldRepo, digest: digest)),
-                ignoreOrder: true);
-        }
-
-        [TestMethod]
-        [DataRow("")]
-        [DataRow(DefaultRepoPrefix)]
-        public async Task AttachLifecycleMetadata_SyndicationRemoved_AnnotatesOldRepo(string repoPrefix)
-        {
-            using TempFolderContext context = TestHelper.UseTempFolder();
-            const string primaryRepo = "repo-b";
-            const string syndicatedRepo = "repo-a";
-            const string platformDigest = "sha256:platform";
-            const string manifestDigest = "sha256:manifest";
-            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", context);
-
-            string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
-            File.WriteAllText(
-                oldImageInfoPath,
-                JsonHelper.SerializeObject(
-                    CreateImageInfo(dockerfile, primaryRepo, platformDigest, manifestDigest, syndicatedRepo)));
-
-            string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
-            File.WriteAllText(
-                newImageInfoPath,
-                JsonHelper.SerializeObject(CreateImageInfo(dockerfile, primaryRepo, platformDigest, manifestDigest)));
-
-            Mock<IAcrClient> registryClient = CreateAcrClientMock([
-                CreateContainerRepository(
-                    repoPrefix + syndicatedRepo,
-                    manifestProperties:
-                    [
-                        CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
-                        CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
-                    ]),
-            ]);
-
-            IAcrContentClientFactory contentClientFactory = CreateAcrContentClientFactory(
-                AcrName,
-                [
-                    CreateAcrContentClientMock(
-                        repoPrefix + syndicatedRepo,
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            [platformDigest] = new ManifestQueryResult(platformDigest, []),
-                            [manifestDigest] = new ManifestQueryResult(manifestDigest, []),
-                        }),
-                ]);
-
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                CreateAcrClientFactory(AcrName, registryClient.Object),
-                contentClientFactory);
-
-            UnsupportedLifecycleMetadataOptions options = CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath);
-            options.RegistryOptions.RepoPrefix = repoPrefix;
-            await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
-
-            _annotatedDigests.ShouldBe(
-                new[] { platformDigest, manifestDigest }.Select(digest =>
-                    DockerHelper.GetImageName(AcrName, repoPrefix + syndicatedRepo, digest: digest)),
-                ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_RepoRemoved()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
-            string repo2Image1DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                     {
-                        Repo = "repo1",
-                        Images =
+                        [platformDigest] = new ManifestQueryResult(platformDigest, []),
+                        [manifestDigest] = new ManifestQueryResult(manifestDigest, []),
+                        [retiredDigest] = new ManifestQueryResult(retiredDigest, []),
+                    }),
+                CreateAcrContentClientMock(repoPrefix + newRepo),
+            ]);
+
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            CreateAcrClientFactory(AcrName, registryClient.Object),
+            contentClientFactory);
+
+        UnsupportedLifecycleMetadataOptions options = CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath);
+        options.RegistryOptions.RepoPrefix = repoPrefix;
+        await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests = syndicateToOldRepo
+            ? [retiredDigest]
+            : [platformDigest, manifestDigest, retiredDigest];
+
+        _annotatedDigests.ShouldBe(
+            expectedDigests.Select(digest =>
+                DockerHelper.GetImageName(AcrName, repoPrefix + oldRepo, digest: digest)),
+            ignoreOrder: true);
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow(DefaultRepoPrefix)]
+    public async Task AttachLifecycleMetadata_SyndicationRemoved_AnnotatesOldRepo(string repoPrefix)
+    {
+        using TempFolderContext context = TestHelper.UseTempFolder();
+        const string primaryRepo = "repo-b";
+        const string syndicatedRepo = "repo-a";
+        const string platformDigest = "sha256:platform";
+        const string manifestDigest = "sha256:manifest";
+        string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", context);
+
+        string oldImageInfoPath = Path.Combine(context.Path, "old-image-info.json");
+        File.WriteAllText(
+            oldImageInfoPath,
+            JsonHelper.SerializeObject(
+                CreateImageInfo(dockerfile, primaryRepo, platformDigest, manifestDigest, syndicatedRepo)));
+
+        string newImageInfoPath = Path.Combine(context.Path, "new-image-info.json");
+        File.WriteAllText(
+            newImageInfoPath,
+            JsonHelper.SerializeObject(CreateImageInfo(dockerfile, primaryRepo, platformDigest, manifestDigest)));
+
+        Mock<IAcrClient> registryClient = CreateAcrClientMock([
+            CreateContainerRepository(
+                repoPrefix + syndicatedRepo,
+                manifestProperties:
+                [
+                    CreateArtifactManifestProperties(digest: platformDigest, tags: ["platform"]),
+                    CreateArtifactManifestProperties(digest: manifestDigest, tags: ["shared"]),
+                ]),
+        ]);
+
+        IAcrContentClientFactory contentClientFactory = CreateAcrContentClientFactory(
+            AcrName,
+            [
+                CreateAcrContentClientMock(
+                    repoPrefix + syndicatedRepo,
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        [platformDigest] = new ManifestQueryResult(platformDigest, []),
+                        [manifestDigest] = new ManifestQueryResult(manifestDigest, []),
+                    }),
+            ]);
+
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            CreateAcrClientFactory(AcrName, registryClient.Object),
+            contentClientFactory);
+
+        UnsupportedLifecycleMetadataOptions options = CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath);
+        options.RegistryOptions.RepoPrefix = repoPrefix;
+        await command.AttachToUnsupportedAsync(options, TestContext?.CancellationToken ?? default);
+
+        _annotatedDigests.ShouldBe(
+            new[] { platformDigest, manifestDigest }.Select(digest =>
+                DockerHelper.GetImageName(AcrName, repoPrefix + syndicatedRepo, digest: digest)),
+            ignoreOrder: true);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_RepoRemoved()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
+        string repo2Image1DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms =
                             {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(
-                                        repo1Image1DockerfilePath,
-                                        simpleTags: ["tag"],
-                                        digest: DockerHelper.GetImageName(
-                                            McrName,
-                                            "repo1",
-                                            digest: "platformdigest101")),
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = ["1.0"],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101"),
-                                },
+                                Helpers.ImageInfoHelper.CreatePlatform(
+                                    repo1Image1DockerfilePath,
+                                    simpleTags: ["tag"],
+                                    digest: DockerHelper.GetImageName(
+                                        McrName,
+                                        "repo1",
+                                        digest: "platformdigest101")),
                             },
-                            new ImageData
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
                             {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(
-                                        repo1Image2DockerfilePath,
-                                        simpleTags: ["tag"],
-                                        digest: DockerHelper.GetImageName(
-                                            McrName,
-                                            "repo1",
-                                            digest: "platformdigest102")),
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = ["1.0"],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102"),
-                                },
+                                SharedTags = ["1.0"],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101"),
                             },
                         },
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo2",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms =
                             {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(
-                                        repo2Image1DockerfilePath,
-                                        simpleTags: ["newtag"],
-                                        digest: DockerHelper.GetImageName(
-                                            McrName,
-                                            "repo2",
-                                            digest: "platformdigest201")),
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = ["2.0"],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo2", digest: "imagedigest201"),
-                                },
+                                Helpers.ImageInfoHelper.CreatePlatform(
+                                    repo1Image2DockerfilePath,
+                                    simpleTags: ["tag"],
+                                    digest: DockerHelper.GetImageName(
+                                        McrName,
+                                        "repo1",
+                                        digest: "platformdigest102")),
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = ["1.0"],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102"),
                             },
                         },
                     },
                 },
-            };
+                new RepoData
+                {
+                    Repo = "repo2",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(
+                                    repo2Image1DockerfilePath,
+                                    simpleTags: ["newtag"],
+                                    digest: DockerHelper.GetImageName(
+                                        McrName,
+                                        "repo2",
+                                        digest: "platformdigest201")),
+                            },
+                            ProductVersion = "2.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = ["2.0"],
+                                Digest = DockerHelper.GetImageName(McrName, "repo2", digest: "imagedigest201"),
+                            },
+                        },
+                    },
+                },
+            },
+        };
 
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            // Remove 'repo1' repo, with its images
-            imageArtifactDetails.Repos.RemoveAt(0);
+        // Remove 'repo1' repo, with its images
+        imageArtifactDetails.Repos.RemoveAt(0);
 
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock([
-                CreateContainerRepository(
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock([
+            CreateContainerRepository(
+                $"{DefaultRepoPrefix}repo1",
+                manifestProperties:
+                [
+                    CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                    CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["tag"]),
+                    CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                    CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["1.0"]),
+                ]),
+            CreateContainerRepository(
+                $"{DefaultRepoPrefix}repo2",
+                manifestProperties:
+                [
+                    CreateArtifactManifestProperties(digest: "platformdigest201", tags: ["newtag"]),
+                    CreateArtifactManifestProperties(digest: "imagedigest201", tags: ["2.0"]),
+                ]),
+        ]);
+
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(AcrName, registryClientMock.Object);
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(
+            AcrName,
+            [
+                CreateAcrContentClientMock(
                     $"{DefaultRepoPrefix}repo1",
-                    manifestProperties:
-                    [
-                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
-                        CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["tag"]),
-                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                        CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["1.0"]),
-                    ]),
-                CreateContainerRepository(
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
+                    }),
+                CreateAcrContentClientMock(
                     $"{DefaultRepoPrefix}repo2",
-                    manifestProperties:
-                    [
-                        CreateArtifactManifestProperties(digest: "platformdigest201", tags: ["newtag"]),
-                        CreateArtifactManifestProperties(digest: "imagedigest201", tags: ["2.0"]),
-                    ]),
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest201", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest201", new ManifestQueryResult(string.Empty, []) },
+                    }),
             ]);
 
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(AcrName, registryClientMock.Object);
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            registryClientFactory,
+            registryContentClientFactory);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(
-                AcrName,
-                [
-                    CreateAcrContentClientMock(
-                        $"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
-                        }),
-                    CreateAcrContentClientMock(
-                        $"{DefaultRepoPrefix}repo2",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest201", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest201", new ManifestQueryResult(string.Empty, []) },
-                        }),
-                ]);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
 
-            AttachLifecycleMetadataCommand command = InitializeCommand(
+        string[] expectedDigests =
+        [
+            DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+            DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+            DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+            DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
+        ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_ImageRemoved()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
+        string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "1.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "1.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-amd64")),
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-arm64"))
+                            },
+                            ProductVersion = "2.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "2.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Remove second image from 'repo1' repo
+        imageArtifactDetails.Repos[0].Images.RemoveAt(1);
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [
+                CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                    })
+            ]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
                 registryClientFactory,
                 registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
 
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
+        string[] expectedDigests =
             [
-                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
                 DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
-                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64"),
+            ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_ExcludeDigestsThatAreAlreadyAnnotated()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
+        string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "1.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "1.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-amd64")),
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-arm64"))
+                            },
+                            ProductVersion = "2.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "2.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Remove second image from 'repo1' repo
+        imageArtifactDetails.Repos[0].Images.RemoveAt(1);
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        string armDigest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64");
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [
+                CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                    })
+            ]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory,
+                // Already annotated, so it should be skipped.
+                annotatedDigests: [armDigest]);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64"),
+            ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+
+        // An earlier EOL date on an already-annotated image must never fail the run.
+        _lifecycleMetadataServiceMock.Verify(
+            o => o.AttachLifecycleMetadataAsync(
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()),
+            Times.Never());
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_DockerfileInSeveralImages_OnlyOneUpdated()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "1.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "1.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                            }
+                        },
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
+                            },
+                            ProductVersion = "2.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "2.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Update image and platform digests in only one image that uses the shared Dockerfile
+        imageArtifactDetails.Repos[0].Images[1].Manifest.Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102-updated");
+        imageArtifactDetails.Repos[0].Images[1].Platforms[0].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-updated");
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102"),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest102"),
+                        CreateArtifactManifestProperties(digest: "imagedigest102-updated", tags: ["2.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [
+                CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest102-updated", new ManifestQueryResult(string.Empty, []) }
+                    })
+            ]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
                 DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
             ];
 
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
 
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_ImageRemoved()
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_ImageAndPlatformUpdated()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
         {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
-            string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
+            Repos =
             {
-                Repos =
+                new RepoData
                 {
-                    new RepoData
+                    Repo = "repo1",
+                    Images =
                     {
-                        Repo = "repo1",
-                        Images =
+                        new ImageData
                         {
-                            new ImageData
+                            Platforms =
                             {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
                                     [
                                         "1.0"
                                     ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
                             },
-                            new ImageData
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
                             {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-amd64")),
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-arm64"))
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
-                                }
+                                SharedTags =
+                                [
+                                    "1.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
                             }
                         }
                     }
                 }
-            };
+            }
+        };
 
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            // Remove second image from 'repo1' repo
-            imageArtifactDetails.Repos[0].Images.RemoveAt(1);
+        // Update and image and platform digests
+        imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101-updated");
+        imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101-updated");
 
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
-                        })
-                ]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64"),
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_ExcludeDigestsThatAreAlreadyAnnotated()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
-            string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-amd64")),
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-arm64"))
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Remove second image from 'repo1' repo
-            imageArtifactDetails.Repos[0].Images.RemoveAt(1);
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            string armDigest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64");
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
-                        })
-                ]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory,
-                    // Already annotated, so it should be skipped.
-                    annotatedDigests: [armDigest]);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-amd64"),
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-
-            // An earlier EOL date on an already-annotated image must never fail the run.
-            _lifecycleMetadataServiceMock.Verify(
-                o => o.AttachLifecycleMetadataAsync(
-                    It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()),
-                Times.Never());
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_DockerfileInSeveralImages_OnlyOneUpdated()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Update image and platform digests in only one image that uses the shared Dockerfile
-            imageArtifactDetails.Repos[0].Images[1].Manifest.Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102-updated");
-            imageArtifactDetails.Repos[0].Images[1].Platforms[0].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-updated");
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102"),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest102"),
-                            CreateArtifactManifestProperties(digest: "imagedigest102-updated", tags: ["2.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102-updated", new ManifestQueryResult(string.Empty, []) }
-                        })
-                ]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest102"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102"),
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_ImageAndPlatformUpdated()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Update and image and platform digests
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101-updated");
-            imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101-updated");
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101"),
-                            CreateArtifactManifestProperties(digest: "platformdigest101-updated", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101"),
-                            CreateArtifactManifestProperties(digest: "imagedigest101-updated", tags: ["1.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest101-updated", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101-updated", new ManifestQueryResult(string.Empty, []) },
-                        })
-                ]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_JustOnePlatformUpdated()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "tag"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101")),
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "tag2"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Update just one platform digest
-            imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-updated");
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102"),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["tag2"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                        })
-                ]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_DoNotReturnAnnotationDigest()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "tag"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101")),
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "tag2"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Update just one platform digest
-            imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-updated");
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102"),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["tag2"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "annotationdigest"),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            Mock<IAcrContentClient> contentClientMock = CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                {
-                    { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                    { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
-                    { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
-                    { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                    // Define a subject field in this manifest to indicate it is a referrer, not an image manifest
-                    { "annotationdigest", new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) },
-                });
-            IAcrContentClientFactory registryContentClientFactory =
-                CreateAcrContentClientFactory(AcrName, [contentClientMock]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-
-            // Supported images are filtered out before their manifests are fetched.
-            contentClientMock.Verify(
-                o => o.GetManifestAsync(
-                    It.IsIn("platformdigest101", "platformdigest102-updated", "imagedigest101"),
-                    It.IsAny<CancellationToken>()),
-                Times.Never());
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_PlatformRemoved()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
-            string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-amd64")),
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0"
-                                        ],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-arm64"))
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Remove one platform
-            imageArtifactDetails.Repos[0].Images[0].Platforms.RemoveAt(1);
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [
-                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
-                        })
-                ]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64"),
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_ManifestDeletedDuringEnumeration_Skipped()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags: ["tag"],
-                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = ["1.0"],
-                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Remove all images so everything in the registry is considered unsupported
-            imageArtifactDetails.Repos.Clear();
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Registry lists three manifests, but one will return 404 when fetched (simulating concurrent deletion)
-            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
-                [
-                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
-                        manifestProperties: [
-                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
-                            CreateArtifactManifestProperties(digest: "deleteddigest", tags: ["old"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
-                        ])
-                ]);
-            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
-                AcrName, registryClientMock.Object);
-
-            // Set up content client mock where "deleteddigest" throws a 404
-            Mock<IAcrContentClient> contentClientMock = CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
-                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                {
-                    { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
-                    { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
-                });
-            contentClientMock
-                .Setup(o => o.GetManifestAsync("deleteddigest", It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new RequestFailedException(404, "manifest not found"));
-
-            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
-                [contentClientMock]);
-
-            AttachLifecycleMetadataCommand command =
-                InitializeCommand(
-                    registryClientFactory,
-                    registryContentClientFactory);
-            await command.AttachToUnsupportedAsync(
-                CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
-                TestContext?.CancellationToken ?? default);
-
-            string[] expectedDigests =
-                [
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
-                    DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
-                ];
-
-            _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_File_ReadsPathOutsideArtifactStagingDirectory()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
-            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
-            File.WriteAllText(dataPath, $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest}}" }] }""");
-
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                Mock.Of<IAcrClientFactory>(),
-                Mock.Of<IAcrContentClientFactory>(),
-                artifactStagingDirectory: Path.Combine(tempFolderContext.Path, "artifacts"));
-            await command.AttachFromFileAsync(
-                new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
-                TestContext?.CancellationToken ?? default);
-
-            _annotatedDigests.ShouldBe([digest]);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_File_UsesGlobalAndDigestSpecificDates()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            DateOnly globalDate = new(2026, 1, 1);
-            DateOnly digestSpecificDate = new(2026, 2, 2);
-            string digest1 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
-            string digest2 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo2", digest: "digest2");
-            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
-            File.WriteAllText(
-                dataPath,
-                $$"""
-                {
-                  "eolDate": "{{globalDate:yyyy-MM-dd}}",
-                  "eolDigests": [
-                    { "digest": "{{digest1}}" },
-                    { "digest": "{{digest2}}", "eolDate": "{{digestSpecificDate:yyyy-MM-dd}}" }
-                  ]
-                }
-                """);
-
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                Mock.Of<IAcrClientFactory>(),
-                Mock.Of<IAcrContentClientFactory>());
-
-            await command.AttachFromFileAsync(
-                new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
-                TestContext?.CancellationToken ?? default);
-
-            _lifecycleMetadataServiceMock.Verify(
-                service => service.AttachLifecycleMetadataAsync(
-                    digest1, globalDate, false, false, It.IsAny<CancellationToken>()),
-                Times.Once);
-            _lifecycleMetadataServiceMock.Verify(
-                service => service.AttachLifecycleMetadataAsync(
-                    digest2, digestSpecificDate, false, false, It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_File_WithoutDate_Throws()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
-            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
-            File.WriteAllText(dataPath, $$"""{ "eolDigests": [{ "digest": "{{digest}}" }] }""");
-
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                Mock.Of<IAcrClientFactory>(),
-                Mock.Of<IAcrContentClientFactory>());
-
-            InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
-                () => command.AttachFromFileAsync(
-                    new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
-                    TestContext?.CancellationToken ?? default));
-
-            exception.Message.ShouldContain(digest);
-            _lifecycleMetadataServiceMock.Verify(
-                service => service.AttachLifecycleMetadataAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<DateOnly>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [TestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public async Task AttachLifecycleMetadata_File_PassesStopOnConflict(bool stopOnConflict)
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
-            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
-            File.WriteAllText(dataPath, $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest}}" }] }""");
-
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                Mock.Of<IAcrClientFactory>(),
-                Mock.Of<IAcrContentClientFactory>());
-
-            await command.AttachFromFileAsync(
-                new FileLifecycleMetadataOptions
-                {
-                    EolDigestsListPath = dataPath,
-                    StopOnConflict = stopOnConflict,
-                },
-                TestContext?.CancellationToken ?? default);
-
-            _lifecycleMetadataServiceMock.Verify(
-                service => service.AttachLifecycleMetadataAsync(
-                    digest, _globalDate, false, stopOnConflict, It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        [TestMethod]
-        public async Task AttachLifecycleMetadata_WaitsForIngestionOfCreatedArtifacts()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string digest1 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "sha256:digest1");
-            string digest2 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo2", digest: "sha256:digest2");
-            string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
-            File.WriteAllText(
-                dataPath,
-                $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest1}}" }, { "digest": "{{digest2}}" }] }""");
-
-            TimeSpan waitTimeout = TimeSpan.FromMinutes(5);
-            TimeSpan requeryDelay = TimeSpan.FromSeconds(1);
-            ServiceConnection marServiceConnection = new();
-            Mock<IMarImageIngestionReporter> ingestionReporter = new();
-            AttachLifecycleMetadataCommand command = InitializeCommand(
-                Mock.Of<IAcrClientFactory>(),
-                Mock.Of<IAcrContentClientFactory>(),
-                ingestionReporter: ingestionReporter.Object);
-
-            await command.AttachFromFileAsync(
-                new FileLifecycleMetadataOptions
-                {
-                    EolDigestsListPath = dataPath,
-                    WaitForIngestion = true,
-                    MarServiceConnection = marServiceConnection,
-                    IngestionOptions = new()
-                    {
-                        WaitTimeout = waitTimeout,
-                        RequeryDelay = requeryDelay,
-                    },
-                },
-                TestContext?.CancellationToken ?? default);
-
-            DigestInfo[] expectedDigests =
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
             [
-                new("sha256:digest1-lifecycle", $"{DefaultRepoPrefix}repo1", tags: []),
-                new("sha256:digest2-lifecycle", $"{DefaultRepoPrefix}repo2", tags: []),
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101"),
+                        CreateArtifactManifestProperties(digest: "platformdigest101-updated", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101"),
+                        CreateArtifactManifestProperties(digest: "imagedigest101-updated", tags: ["1.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [
+                CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest101-updated", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101-updated", new ManifestQueryResult(string.Empty, []) },
+                    })
+            ]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
             ];
 
-            ingestionReporter.Verify(
-                reporter => reporter.ReportImageStatusesAsync(
-                    marServiceConnection,
-                    It.Is<IEnumerable<DigestInfo>>(actualDigests =>
-                        actualDigests
-                            .OrderBy(digest => digest.Repo)
-                            .SequenceEqual(expectedDigests, DigestInfoEqualityComparer.Instance)),
-                    waitTimeout,
-                    requeryDelay,
-                    null,
-                    It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
 
-        private AttachLifecycleMetadataCommand InitializeCommand(
-            IAcrClientFactory registryClientFactory,
-            IAcrContentClientFactory registryContentClientFactory,
-            IEnumerable<string> annotatedDigests = null,
-            bool annotationSucceeds = true,
-            IMarImageIngestionReporter ingestionReporter = null,
-            string artifactStagingDirectory = null)
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_JustOnePlatformUpdated()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
         {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "tag"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101")),
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "tag2"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "1.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Update just one platform digest
+        imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-updated");
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102"),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["tag2"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [
+                CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                    })
+            ]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")
+            ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_DoNotReturnAnnotationDigest()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+        string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "tag"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101")),
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "tag2"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102"))
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "1.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Update just one platform digest
+        imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-updated");
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102"),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["tag2"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        CreateArtifactManifestProperties(digest: "annotationdigest"),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        Mock<IAcrContentClient> contentClientMock = CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+            imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+            {
+                { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                // Define a subject field in this manifest to indicate it is a referrer, not an image manifest
+                { "annotationdigest", new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) },
+            });
+        IAcrContentClientFactory registryContentClientFactory =
+            CreateAcrContentClientFactory(AcrName, [contentClientMock]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102")
+            ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+
+        // Supported images are filtered out before their manifests are fetched.
+        contentClientMock.Verify(
+            o => o.GetManifestAsync(
+                It.IsIn("platformdigest101", "platformdigest102-updated", "imagedigest101"),
+                It.IsAny<CancellationToken>()),
+            Times.Never());
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_PlatformRemoved()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
+        string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-amd64")),
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
+                                    simpleTags:
+                                    [
+                                        "2.0"
+                                    ],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest102-arm64"))
+                            },
+                            ProductVersion = "2.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags =
+                                [
+                                    "2.0"
+                                ],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest102")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Remove one platform
+        imageArtifactDetails.Repos[0].Images[0].Platforms.RemoveAt(1);
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [
+                CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                    imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                    {
+                        { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
+                        { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
+                        { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
+                    })
+            ]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64"),
+            ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_ManifestDeletedDuringEnumeration_Skipped()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+        ImageArtifactDetails imageArtifactDetails = new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                    simpleTags: ["tag"],
+                                    digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
+                            },
+                            ProductVersion = "1.0",
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = ["1.0"],
+                                Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+        File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Remove all images so everything in the registry is considered unsupported
+        imageArtifactDetails.Repos.Clear();
+
+        string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+        File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+        // Registry lists three manifests, but one will return 404 when fetched (simulating concurrent deletion)
+        Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+            [
+                CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                    manifestProperties: [
+                        CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                        CreateArtifactManifestProperties(digest: "deleteddigest", tags: ["old"]),
+                        CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                    ])
+            ]);
+        IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+            AcrName, registryClientMock.Object);
+
+        // Set up content client mock where "deleteddigest" throws a 404
+        Mock<IAcrContentClient> contentClientMock = CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+            imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+            {
+                { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+            });
+        contentClientMock
+            .Setup(o => o.GetManifestAsync("deleteddigest", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new RequestFailedException(404, "manifest not found"));
+
+        IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+            [contentClientMock]);
+
+        AttachLifecycleMetadataCommand command =
+            InitializeCommand(
+                registryClientFactory,
+                registryContentClientFactory);
+        await command.AttachToUnsupportedAsync(
+            CreateUnsupportedOptions(oldImageInfoPath, newImageInfoPath),
+            TestContext?.CancellationToken ?? default);
+
+        string[] expectedDigests =
+            [
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101"),
+                DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101"),
+            ];
+
+        _annotatedDigests.ShouldBe(expectedDigests, ignoreOrder: true);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_File_ReadsPathOutsideArtifactStagingDirectory()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+        string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+        File.WriteAllText(dataPath, $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest}}" }] }""");
+
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            Mock.Of<IAcrClientFactory>(),
+            Mock.Of<IAcrContentClientFactory>(),
+            artifactStagingDirectory: Path.Combine(tempFolderContext.Path, "artifacts"));
+        await command.AttachFromFileAsync(
+            new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
+            TestContext?.CancellationToken ?? default);
+
+        _annotatedDigests.ShouldBe([digest]);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_File_UsesGlobalAndDigestSpecificDates()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        DateOnly globalDate = new(2026, 1, 1);
+        DateOnly digestSpecificDate = new(2026, 2, 2);
+        string digest1 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+        string digest2 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo2", digest: "digest2");
+        string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+        File.WriteAllText(
+            dataPath,
+            $$"""
+            {
+              "eolDate": "{{globalDate:yyyy-MM-dd}}",
+              "eolDigests": [
+                { "digest": "{{digest1}}" },
+                { "digest": "{{digest2}}", "eolDate": "{{digestSpecificDate:yyyy-MM-dd}}" }
+              ]
+            }
+            """);
+
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            Mock.Of<IAcrClientFactory>(),
+            Mock.Of<IAcrContentClientFactory>());
+
+        await command.AttachFromFileAsync(
+            new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
+            TestContext?.CancellationToken ?? default);
+
+        _lifecycleMetadataServiceMock.Verify(
+            service => service.AttachLifecycleMetadataAsync(
+                digest1, globalDate, false, false, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _lifecycleMetadataServiceMock.Verify(
+            service => service.AttachLifecycleMetadataAsync(
+                digest2, digestSpecificDate, false, false, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_File_WithoutDate_Throws()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+        string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+        File.WriteAllText(dataPath, $$"""{ "eolDigests": [{ "digest": "{{digest}}" }] }""");
+
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            Mock.Of<IAcrClientFactory>(),
+            Mock.Of<IAcrContentClientFactory>());
+
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
+            () => command.AttachFromFileAsync(
+                new FileLifecycleMetadataOptions { EolDigestsListPath = dataPath },
+                TestContext?.CancellationToken ?? default));
+
+        exception.Message.ShouldContain(digest);
+        _lifecycleMetadataServiceMock.Verify(
+            service => service.AttachLifecycleMetadataAsync(
+                It.IsAny<string>(),
+                It.IsAny<DateOnly>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AttachLifecycleMetadata_File_PassesStopOnConflict(bool stopOnConflict)
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string digest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "digest1");
+        string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+        File.WriteAllText(dataPath, $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest}}" }] }""");
+
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            Mock.Of<IAcrClientFactory>(),
+            Mock.Of<IAcrContentClientFactory>());
+
+        await command.AttachFromFileAsync(
+            new FileLifecycleMetadataOptions
+            {
+                EolDigestsListPath = dataPath,
+                StopOnConflict = stopOnConflict,
+            },
+            TestContext?.CancellationToken ?? default);
+
+        _lifecycleMetadataServiceMock.Verify(
+            service => service.AttachLifecycleMetadataAsync(
+                digest, _globalDate, false, stopOnConflict, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [TestMethod]
+    public async Task AttachLifecycleMetadata_WaitsForIngestionOfCreatedArtifacts()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string digest1 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "sha256:digest1");
+        string digest2 = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo2", digest: "sha256:digest2");
+        string dataPath = Path.Combine(tempFolderContext.Path, "eol.json");
+        File.WriteAllText(
+            dataPath,
+            $$"""{ "eolDate": "{{_globalDate:yyyy-MM-dd}}", "eolDigests": [{ "digest": "{{digest1}}" }, { "digest": "{{digest2}}" }] }""");
+
+        TimeSpan waitTimeout = TimeSpan.FromMinutes(5);
+        TimeSpan requeryDelay = TimeSpan.FromSeconds(1);
+        ServiceConnection marServiceConnection = new();
+        Mock<IMarImageIngestionReporter> ingestionReporter = new();
+        AttachLifecycleMetadataCommand command = InitializeCommand(
+            Mock.Of<IAcrClientFactory>(),
+            Mock.Of<IAcrContentClientFactory>(),
+            ingestionReporter: ingestionReporter.Object);
+
+        await command.AttachFromFileAsync(
+            new FileLifecycleMetadataOptions
+            {
+                EolDigestsListPath = dataPath,
+                WaitForIngestion = true,
+                MarServiceConnection = marServiceConnection,
+                IngestionOptions = new()
+                {
+                    WaitTimeout = waitTimeout,
+                    RequeryDelay = requeryDelay,
+                },
+            },
+            TestContext?.CancellationToken ?? default);
+
+        DigestInfo[] expectedDigests =
+        [
+            new("sha256:digest1-lifecycle", $"{DefaultRepoPrefix}repo1", tags: []),
+            new("sha256:digest2-lifecycle", $"{DefaultRepoPrefix}repo2", tags: []),
+        ];
+
+        ingestionReporter.Verify(
+            reporter => reporter.ReportImageStatusesAsync(
+                marServiceConnection,
+                It.Is<IEnumerable<DigestInfo>>(actualDigests =>
+                    actualDigests
+                        .OrderBy(digest => digest.Repo)
+                        .SequenceEqual(expectedDigests, DigestInfoEqualityComparer.Instance)),
+                waitTimeout,
+                requeryDelay,
+                null,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    private AttachLifecycleMetadataCommand InitializeCommand(
+        IAcrClientFactory registryClientFactory,
+        IAcrContentClientFactory registryContentClientFactory,
+        IEnumerable<string> annotatedDigests = null,
+        bool annotationSucceeds = true,
+        IMarImageIngestionReporter ingestionReporter = null,
+        string artifactStagingDirectory = null)
+    {
+        _lifecycleMetadataServiceMock
+            .Setup(o => o.AttachLifecycleMetadataAsync(
+                It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(),
+                It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string digest, DateOnly date, bool _, bool _, CancellationToken _) =>
+            {
+                if (!annotationSucceeds)
+                {
+                    throw new InvalidOperationException($"Failed to attach lifecycle metadata to '{digest}'.");
+                }
+
+                _annotatedDigests.Add(digest);
+                return new LifecycleMetadataAttachmentResult.Attached(
+                    LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", date));
+            });
+
+        foreach (string digest in annotatedDigests ?? [])
+        {
+            // Model an image marked EOL by an earlier run, so its EOL date differs from today's.
             _lifecycleMetadataServiceMock
                 .Setup(o => o.AttachLifecycleMetadataAsync(
-                    It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<bool>(),
-                    It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((string digest, DateOnly date, bool _, bool _, CancellationToken _) =>
-                {
-                    if (!annotationSucceeds)
-                    {
-                        throw new InvalidOperationException($"Failed to attach lifecycle metadata to '{digest}'.");
-                    }
-
-                    _annotatedDigests.Add(digest);
-                    return new LifecycleMetadataAttachmentResult.Attached(
-                        LifecycleArtifactHelper.CreateLifecycleArtifact($"{digest}-lifecycle", date));
-                });
-
-            foreach (string digest in annotatedDigests ?? [])
-            {
-                // Model an image marked EOL by an earlier run, so its EOL date differs from today's.
-                _lifecycleMetadataServiceMock
-                    .Setup(o => o.AttachLifecycleMetadataAsync(
-                        digest, _globalDate, false, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new LifecycleMetadataAttachmentResult.ConflictSkipped(
-                        LifecycleArtifactHelper.CreateLifecycleArtifact(
-                            $"{digest}-lifecycle", _globalDate.AddDays(-30))));
-            }
-
-            return new AttachLifecycleMetadataCommand(
-                logger: Mock.Of<ILogger<AttachLifecycleMetadataCommand>>(),
-                acrClientFactory: registryClientFactory,
-                acrContentClientFactory: registryContentClientFactory,
-                lifecycleMetadataService: _lifecycleMetadataServiceMock.Object,
-                ingestionReporter: ingestionReporter ?? Mock.Of<IMarImageIngestionReporter>(),
-                // Image info paths are absolute, so the artifact root isn't used.
-                artifactService: TestHelper.CreateArtifactService(artifactStagingDirectory ?? Path.GetTempPath()));
+                    digest, _globalDate, false, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new LifecycleMetadataAttachmentResult.ConflictSkipped(
+                    LifecycleArtifactHelper.CreateLifecycleArtifact(
+                        $"{digest}-lifecycle", _globalDate.AddDays(-30))));
         }
 
-        private static UnsupportedLifecycleMetadataOptions CreateUnsupportedOptions(
-            string oldImageInfoPath,
-            string newImageInfoPath) =>
-            new()
-            {
-                OldImageInfoPath = oldImageInfoPath,
-                NewImageInfoPath = newImageInfoPath,
-                RegistryOptions = new() { RepoPrefix = DefaultRepoPrefix, Registry = AcrName }
-            };
-
-        private static ImageArtifactDetails CreateImageInfo(
-            string dockerfile,
-            string repo,
-            string platformDigest,
-            string manifestDigest,
-            string syndicatedRepo = null) =>
-            new()
-            {
-                Repos =
-                [
-                    new RepoData
-                    {
-                        Repo = repo,
-                        Images =
-                        [
-                            new ImageData
-                            {
-                                SyndicatedRepo = syndicatedRepo,
-                                Platforms =
-                                [
-                                    Helpers.ImageInfoHelper.CreatePlatform(
-                                        dockerfile,
-                                        simpleTags: ["platform"],
-                                        digest: DockerHelper.GetImageName(McrName, repo, digest: platformDigest)),
-                                ],
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags = ["shared"],
-                                    Digest = DockerHelper.GetImageName(McrName, repo, digest: manifestDigest),
-                                },
-                            },
-                        ],
-                    },
-                ],
-            };
-
-        private static IAcrContentClientFactory CreateSingleImageContentClientFactory(string repo, string digest) =>
-            CreateAcrContentClientFactory(
-                AcrName,
-                [
-                    CreateAcrContentClientMock(
-                        repo,
-                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
-                        {
-                            { digest, new ManifestQueryResult(string.Empty, []) },
-                        }),
-                ]);
+        return new AttachLifecycleMetadataCommand(
+            logger: Mock.Of<ILogger<AttachLifecycleMetadataCommand>>(),
+            acrClientFactory: registryClientFactory,
+            acrContentClientFactory: registryContentClientFactory,
+            lifecycleMetadataService: _lifecycleMetadataServiceMock.Object,
+            ingestionReporter: ingestionReporter ?? Mock.Of<IMarImageIngestionReporter>(),
+            // Image info paths are absolute, so the artifact root isn't used.
+            artifactService: TestHelper.CreateArtifactService(artifactStagingDirectory ?? Path.GetTempPath()));
     }
+
+    private static UnsupportedLifecycleMetadataOptions CreateUnsupportedOptions(
+        string oldImageInfoPath,
+        string newImageInfoPath) =>
+        new()
+        {
+            OldImageInfoPath = oldImageInfoPath,
+            NewImageInfoPath = newImageInfoPath,
+            RegistryOptions = new() { RepoPrefix = DefaultRepoPrefix, Registry = AcrName }
+        };
+
+    private static ImageArtifactDetails CreateImageInfo(
+        string dockerfile,
+        string repo,
+        string platformDigest,
+        string manifestDigest,
+        string syndicatedRepo = null) =>
+        new()
+        {
+            Repos =
+            [
+                new RepoData
+                {
+                    Repo = repo,
+                    Images =
+                    [
+                        new ImageData
+                        {
+                            SyndicatedRepo = syndicatedRepo,
+                            Platforms =
+                            [
+                                Helpers.ImageInfoHelper.CreatePlatform(
+                                    dockerfile,
+                                    simpleTags: ["platform"],
+                                    digest: DockerHelper.GetImageName(McrName, repo, digest: platformDigest)),
+                            ],
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = ["shared"],
+                                Digest = DockerHelper.GetImageName(McrName, repo, digest: manifestDigest),
+                            },
+                        },
+                    ],
+                },
+            ],
+        };
 }

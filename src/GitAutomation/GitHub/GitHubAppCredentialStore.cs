@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
@@ -38,13 +37,13 @@ internal sealed class GitHubAppCredentialStore(string clientId, CryptographyClie
             // GitHub's maximum expiration time is 10 minutes, stay a little under that.
             DateTimeOffset expiresAt = now.AddMinutes(9);
 
-            var header = new JwtHeader
+            JwtHeader header = new JwtHeader
             {
                 [JwtHeaderParameterNames.Alg] = SecurityAlgorithms.RsaSha256,
                 [JwtHeaderParameterNames.Typ] = "JWT",
             };
 
-            var payload = new JwtPayload(
+            JwtPayload payload = new JwtPayload(
                 issuer: clientId,
                 audience: null,
                 claims: null,

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -23,9 +22,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// target directory that ImageBuilder no longer ships are removed so the output exactly matches
 /// what is embedded.
 /// </remarks>
-public class UpdateCommand : Command<UpdateOptions>
+public class UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger) : Command<UpdateOptions>
 {
-    private static readonly string s_outputRelativePath = PathHelper.SafeCombine("eng", "docker-tools");
+    private static readonly string OutputRelativePath = PathHelper.SafeCombine("eng", "docker-tools");
     // InfrastructureContent.GetRelativePaths always returns '/'-separated paths, so this is kept in
     // the same form to compare directly without re-normalizing per file.
     private const string DockerImagesRelativePath = "templates/variables/docker-images.yml";
@@ -34,16 +33,10 @@ public class UpdateCommand : Command<UpdateOptions>
     // Used when no reference is supplied. Mirrors the published image's 'latest' shared tag.
     private const string DefaultImageBuilderRef = "mcr.microsoft.com/dotnet-buildtools/image-builder:latest";
 
-    private static readonly DocumentConfiguration s_templateConfiguration = CottleDocumentConfiguration.Create();
+    private static readonly DocumentConfiguration TemplateConfiguration = CottleDocumentConfiguration.Create();
 
-    private readonly IFileSystem _fileSystem;
-    private readonly ILogger<UpdateCommand> _logger;
-
-    public UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger)
-    {
-        _fileSystem = fileSystem;
-        _logger = logger;
-    }
+    private readonly IFileSystem _fileSystem = fileSystem;
+    private readonly ILogger<UpdateCommand> _logger = logger;
 
     protected override string Description => "Writes ImageBuilder's bundled docker-tools infrastructure files to disk";
 
@@ -61,7 +54,7 @@ public class UpdateCommand : Command<UpdateOptions>
 
         // Ensure we are running inside a repo that actually uses docker-tools.
         // Require --init to skip this check / onboard a new repo.
-        string outputPath = PathHelper.SafeCombine(currentDirectory, s_outputRelativePath);
+        string outputPath = PathHelper.SafeCombine(currentDirectory, OutputRelativePath);
         if (!Options.Init && !_fileSystem.DirectoryExists(outputPath))
         {
             throw new InvalidOperationException(
@@ -141,7 +134,7 @@ public class UpdateCommand : Command<UpdateOptions>
         using StreamReader reader = new(source);
         string template = reader.ReadToEnd();
 
-        IDocument document = Document.CreateDefault(template, s_templateConfiguration).DocumentOrThrow;
+        IDocument document = Document.CreateDefault(template, TemplateConfiguration).DocumentOrThrow;
         Dictionary<Value, Value> symbols = new()
         {
             [ImageBuilderRefTemplateVariableName] = imageBuilderRef

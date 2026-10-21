@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.CommandLine;
@@ -17,13 +16,19 @@ public static class SystemCommandLineExtensions
     public static void AddOptions(this Command command, Options options)
     {
         foreach (Argument argument in options.GetCliArguments())
+        {
             command.Add(argument);
+        }
 
         foreach (Option option in options.GetCliOptions())
+        {
             command.Add(option);
+        }
 
         foreach (Action<CommandResult> validator in options.GetValidators())
+        {
             command.Validators.Add(validator);
+        }
     }
 
     /// <summary>

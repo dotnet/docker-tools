@@ -1,7 +1,6 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,31 +8,30 @@ using System.Linq;
 using Azure.Core;
 using Azure.ResourceManager;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class AuthHelper
 {
-    public static class AuthHelper
+    public static Guid GetTenantId(ILogger logger, TokenCredential credential)
     {
-        public static Guid GetTenantId(ILogger logger, TokenCredential credential)
+        ArmClient armClient = new(credential);
+        IEnumerable<Guid> tenants = armClient.GetTenants().ToList()
+            .Select(tenantResource => tenantResource.Data.TenantId)
+            .Where(guid => guid != null)
+            .Select(guid => (Guid)guid);
+
+        if (!tenants.Any())
         {
-            ArmClient armClient = new(credential);
-            IEnumerable<Guid> tenants = armClient.GetTenants().ToList()
-                .Select(tenantResource => tenantResource.Data.TenantId)
-                .Where(guid => guid != null)
-                .Select(guid => (Guid)guid);
-
-            if (!tenants.Any())
-            {
-                throw new Exception("Found no tenants for given credential.");
-            }
-
-            if (tenants.Count() > 1)
-            {
-                string allTenantIds = string.Join(' ', tenants.Select(guid => guid.ToString()));
-                logger.LogInformation("Found more than one tenant. Selecting the first one.");
-                logger.LogInformation($"Tenants: {allTenantIds}");
-            }
-
-            return tenants.First();
+            throw new InvalidOperationException("Found no tenants for given credential.");
         }
+
+        if (tenants.Count() > 1)
+        {
+            string allTenantIds = string.Join(' ', tenants.Select(guid => guid.ToString()));
+            logger.LogInformation("Found more than one tenant. Selecting the first one.");
+            logger.LogInformation("Tenants: {TenantIds}", allTenantIds);
+        }
+
+        return tenants.First();
     }
 }

@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -67,6 +65,7 @@ public interface IFileSystem
     /// <summary>
     /// Deletes the specified directory, throwing if it does not exist (mirrors <see cref="Directory.Delete(string, bool)"/>).
     /// </summary>
+    /// <param name="path">The name of the directory to remove.</param>
     /// <param name="recursive">
     /// <c>true</c> to delete the directory, its subdirectories, and all files; otherwise <c>false</c>.
     /// </param>

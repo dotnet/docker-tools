@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ public interface IManifestService
 {
     Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken);
 
-    public async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
+    async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
         if (isDryRun)
         {
@@ -38,7 +37,7 @@ public interface IManifestService
             .Reverse();
     }
 
-    public async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
+    async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun, CancellationToken cancellationToken)
     {
         IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun, cancellationToken);
 
@@ -59,14 +58,14 @@ public interface IManifestService
         {
             throw new InvalidOperationException(
                 $"Found published digest '{digestSha}' for tag '{image}' but could not find a matching digest value from " +
-                $"the set of locally pulled digests for this tag: { string.Join(", ", digests) }. This most likely means that " +
+                $"the set of locally pulled digests for this tag: {string.Join(", ", digests)}. This most likely means that " +
                 "this tag has been updated since it was last pulled.");
         }
 
         return digest;
     }
 
-    public async Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun, CancellationToken cancellationToken)
+    async Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun, CancellationToken cancellationToken)
     {
         ManifestQueryResult manifestResult = await GetManifestAsync(tag, isDryRun, cancellationToken);
         return manifestResult.ContentDigest;

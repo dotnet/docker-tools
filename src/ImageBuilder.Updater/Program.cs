@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Azure.Identity;
 using Azure.Security.KeyVault.Keys.Cryptography;
@@ -14,6 +13,7 @@ if (args.Length != 1 || string.IsNullOrWhiteSpace(args[0]))
     Console.Error.WriteLine("Usage: ImageBuilder.Updater <image-builder-reference>");
     return 1;
 }
+
 string imageBuilderRef = args[0];
 
 // Setup services
@@ -47,7 +47,7 @@ await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", 
     (new("microsoft", "go-infra-images"), "main"),
 ];
 
-const string PullRequestTitle = "Update common Docker engineering infrastructure with latest";
+const string pullRequestTitle = "Update common Docker engineering infrastructure with latest";
 string commitMessage = $"Update common Docker engineering infrastructure from {imageBuilderRef}";
 
 List<UpdateOutcome> outcomes = [];
@@ -59,7 +59,7 @@ foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
 
     PullRequestDefinition definition = new(
         Key: $"dotnet-containers-bot/update-docker-tools-{targetBranch}",
-        Title: $"[{targetBranch}] {PullRequestTitle}",
+        Title: $"[{targetBranch}] {pullRequestTitle}",
         Body: $"Updates the common Docker engineering infrastructure from `{imageBuilderRef}`.",
         TargetBranch: targetBranch,
         ApplyChanges: async (git, ct) =>
@@ -166,18 +166,26 @@ static async Task<string> RunProcessAsync(
         cancellationToken);
 
     if (writeOutput && !string.IsNullOrWhiteSpace(result.StandardOutput))
+    {
         Console.WriteLine(result.StandardOutput.TrimEnd());
+    }
 
     if (writeOutput && !string.IsNullOrWhiteSpace(result.StandardError))
+    {
         Console.Error.WriteLine(result.StandardError.TrimEnd());
+    }
 
     if (result.ExitCode != 0)
+    {
         throw new InvalidOperationException($"Process '{fileName}' exited with code {result.ExitCode}.");
+    }
 
     string output = result.StandardOutput.Trim();
 
     if (!writeOutput && string.IsNullOrWhiteSpace(output))
+    {
         throw new InvalidOperationException($"Process '{fileName}' did not produce the expected output.");
+    }
 
     return output;
 }
@@ -203,8 +211,8 @@ static async Task<IGitHubAccessProvider> GetAccessProviderAsync(
     {
         logger.LogInformation("Using GitHub App authentication for authentication.");
         Uri appKeyUri = new(gitHubAppKeyUri);
-        var azureCredential = new AzureCliCredential();
-        var cryptographyClient = new CryptographyClient(appKeyUri, azureCredential);
+        AzureCliCredential azureCredential = new AzureCliCredential();
+        CryptographyClient cryptographyClient = new CryptographyClient(appKeyUri, azureCredential);
         return new GitHubAppAccessProvider(gitHubAppClientId, cryptographyClient);
     }
 
@@ -252,4 +260,4 @@ static string GetEnvVar(string name) => Environment.GetEnvironmentVariable(name)
     string value => value,
 };
 
-sealed record UpdateOutcome(GitHubRepo Repository, string TargetBranch, string Status, bool Succeeded);
+internal sealed record UpdateOutcome(GitHubRepo Repository, string TargetBranch, string Status, bool Succeeded);

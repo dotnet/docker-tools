@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -38,10 +36,10 @@ public class UpdateOptions : Options
     };
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [..base.GetCliOptions(), InitOption];
+        [.. base.GetCliOptions(), InitOption];
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [..base.GetCliArguments(), ImageBuilderRefArgument];
+        [.. base.GetCliArguments(), ImageBuilderRefArgument];
 
     public override void Bind(ParseResult result)
     {

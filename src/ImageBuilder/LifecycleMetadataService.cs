@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
 {
     public async Task<LifecycleMetadataAttachmentResult> AttachLifecycleMetadataAsync(
         string digest,
-        DateOnly date,
+        DateOnly endOfLifeDate,
         bool markAsInternal,
         bool stopOnConflict,
         CancellationToken cancellationToken)
@@ -24,7 +23,7 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
 
         if (existingArtifact is not null)
         {
-            if (existingArtifact.EndOfLifeDate == date)
+            if (existingArtifact.EndOfLifeDate == endOfLifeDate)
             {
                 return new LifecycleMetadataAttachmentResult.AlreadyMatching(existingArtifact);
             }
@@ -37,10 +36,14 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
             throw new InvalidOperationException(
                 $"Cannot attach lifecycle metadata to '{digest}': existing artifact"
                 + $" '{existingArtifact.Referrer.Digest}' has EOL date '{existingArtifact.EndOfLifeDate}',"
-                + $" which conflicts with requested date '{date}'.");
+                + $" which conflicts with requested date '{endOfLifeDate}'.");
         }
 
-        LifecycleArtifact artifact = await AttachLifecycleArtifactAsync(digest, date, markAsInternal, cancellationToken);
+        LifecycleArtifact artifact = await AttachLifecycleArtifactAsync(
+            digest,
+            endOfLifeDate,
+            markAsInternal,
+            cancellationToken);
         return new LifecycleMetadataAttachmentResult.Attached(artifact);
     }
 
@@ -67,14 +70,15 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
 
     private async Task<LifecycleArtifact> AttachLifecycleArtifactAsync(
         string digest,
-        DateOnly date,
+        DateOnly endOfLifeDate,
         bool markAsInternal,
         CancellationToken cancellationToken)
     {
         // Set the creation time explicitly so the returned artifact matches what was pushed.
         Dictionary<string, string> annotations = new()
         {
-            [LifecycleAnnotations.EndOfLife] = date.ToString(LifecycleAnnotations.EndOfLifeDateFormat),
+            [LifecycleAnnotations.EndOfLife] =
+                endOfLifeDate.ToString(LifecycleAnnotations.EndOfLifeDateFormat),
             [OciAnnotations.ImageCreated] = DateTimeOffset.UtcNow.ToString("o")
         };
 
@@ -102,7 +106,7 @@ public class LifecycleMetadataService(IOrasService orasService) : ILifecycleMeta
         string repository = digest[(digest.IndexOf('/') + 1)..digest.IndexOf('@')];
         string artifactReference = $"{registry}/{repository}@{artifactDigest}";
 
-        var referrerInfo = new ReferrerInfo(artifactReference, OciArtifactType.Lifecycle)
+        ReferrerInfo referrerInfo = new ReferrerInfo(artifactReference, OciArtifactType.Lifecycle)
         {
             Annotations = annotations
         };

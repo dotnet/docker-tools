@@ -1,9 +1,7 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.ComponentModel;
 using Newtonsoft.Json;
 
@@ -35,5 +33,5 @@ public class CustomBuildLegGroup
 
     [Description("The set of dependencies the image has for this scenario.")]
     [JsonProperty(Required = Required.Always)]
-    public string[] Dependencies { get; set; } = Array.Empty<string>();
+    public string[] Dependencies { get; set; } = [];
 }

@@ -1,7 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Shouldly;
@@ -32,10 +30,7 @@ public class ReadmeSerializationTests
     }
 
     [TestMethod]
-    public void DefaultReadme_RoundTrip()
-    {
-        AssertRoundTrip(new Readme(), AssertReadmesEqual);
-    }
+    public void DefaultReadme_RoundTrip() => AssertRoundTrip(new Readme(), AssertReadmesEqual);
 
     [TestMethod]
     public void FullyPopulatedReadme_Bidirectional()

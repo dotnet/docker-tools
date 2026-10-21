@@ -1,14 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-internal class ManifestService(IOrasService orasService) : IManifestService
+internal sealed class ManifestService(IOrasService orasService) : IManifestService
 {
     private readonly IOrasService _orasService = orasService;
 
@@ -16,7 +14,7 @@ internal class ManifestService(IOrasService orasService) : IManifestService
     {
         if (isDryRun)
         {
-            return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
+            return Task.FromResult(new ManifestQueryResult("", []));
         }
 
         // Use the image's logical registry (e.g., "docker.io") in the ORAS

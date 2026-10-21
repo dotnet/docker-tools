@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -35,7 +34,7 @@ public class AttachLifecycleMetadataCommand(
     IArtifactService artifactService)
     : ICommand
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
@@ -244,7 +243,7 @@ public class AttachLifecycleMetadataCommand(
         string path = options.EolDigestsListPath;
         string jsonString = await File.ReadAllTextAsync(path, cancellationToken);
 
-        EolAnnotationsData data = JsonSerializer.Deserialize<EolAnnotationsData>(jsonString, s_jsonOptions)
+        EolAnnotationsData data = JsonSerializer.Deserialize<EolAnnotationsData>(jsonString, JsonOptions)
             ?? throw new JsonException($"Unable to deserialize EOL annotation data from '{path}'.");
 
         List<EolDigestData> eolDigests = data.EolDigests

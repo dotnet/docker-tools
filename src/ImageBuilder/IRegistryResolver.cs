@@ -5,7 +5,6 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
 /// <summary>
 /// Represents the result of resolving a registry, including the effective registry endpoint,
 /// any authentication configuration, and explicit credentials from the command line.

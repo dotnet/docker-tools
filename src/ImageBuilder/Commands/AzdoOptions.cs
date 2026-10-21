@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -54,10 +53,10 @@ public class AzdoOptions
         Description = "Azure DevOps path"
     };
 
-    public IEnumerable<Argument> GetCliArguments() =>
+    public static IEnumerable<Argument> GetCliArguments() =>
         [AccessTokenArgument, OrganizationArgument, ProjectArgument];
 
-    public IEnumerable<Option> GetCliOptions() =>
+    public static IEnumerable<Option> GetCliOptions() =>
         [AzdoRepoOption, AzdoBranchOption, AzdoPathOption];
 
     public void Bind(ParseResult result)

@@ -1,16 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Azure.Containers.ContainerRegistry;
+using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
-internal class AcrContentClientFactory(
+internal sealed class AcrContentClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,
     IOptions<PublishConfiguration> publishConfigOptions)
     : IAcrContentClientFactory
@@ -20,7 +19,7 @@ internal class AcrContentClientFactory(
 
     public IAcrContentClient Create(Acr acr, string repositoryName)
     {
-        var auth = _publishConfig.FindRegistryAuthentication(acr.Server);
+        RegistryAuthentication? auth = _publishConfig.FindRegistryAuthentication(acr.Server);
         if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
@@ -33,9 +32,9 @@ internal class AcrContentClientFactory(
 
     public IAcrContentClient Create(Acr acr, string repositoryName, IServiceConnection serviceConnection)
     {
-        var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
+        TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
 
-        var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
+        ContainerRegistryContentClient client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
         return new AcrContentClientWrapper(client);
     }
 }

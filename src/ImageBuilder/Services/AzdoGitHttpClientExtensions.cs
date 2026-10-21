@@ -9,80 +9,79 @@ using System.Threading.Tasks;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public static class AzdoGitHttpClientExtensions
 {
-    public static class AzdoGitHttpClientExtensions
+    public static async Task<bool> FileExistsAsync(this IAzdoGitHttpClient gitHttpClient, Guid repositoryId, string branchName, string path, CancellationToken cancellationToken)
     {
-        public static async Task<bool> FileExistsAsync(this IAzdoGitHttpClient gitHttpClient, Guid repositoryId, string branchName, string path, CancellationToken cancellationToken)
+        try
         {
-            try
+            await gitHttpClient.GetItemAsync(repositoryId, path, cancellationToken, versionDescriptor: new GitVersionDescriptor
             {
-                await gitHttpClient.GetItemAsync(repositoryId, path, cancellationToken, versionDescriptor: new GitVersionDescriptor
-                {
-                    Version = branchName,
-                    VersionType = GitVersionType.Branch
-                });
-                return true;
-            }
-            catch (VssServiceException)
-            {
-                return false;
-            }
+                Version = branchName,
+                VersionType = GitVersionType.Branch
+            });
+            return true;
         }
-
-        public static async Task<GitPush> PushChangesAsync(this IAzdoGitHttpClient gitHttpClient, string commitMessage, Guid repositoryId, GitRef branchRef,
-            IDictionary<string, string> files, CancellationToken cancellationToken)
+        catch (VssServiceException)
         {
-            GitRefUpdate branchRefUpdate = new GitRefUpdate
+            return false;
+        }
+    }
+
+    public static async Task<GitPush> PushChangesAsync(this IAzdoGitHttpClient gitHttpClient, string commitMessage, Guid repositoryId, GitRef branchRef,
+        IDictionary<string, string> files, CancellationToken cancellationToken)
+    {
+        GitRefUpdate branchRefUpdate = new GitRefUpdate
+        {
+            Name = branchRef.Name,
+            OldObjectId = branchRef.ObjectId
+        };
+
+        string branchName = branchRef.Name[(branchRefUpdate.Name.LastIndexOf('/') + 1)..];
+
+        var fileInfos = files
+            .Select(kvp => new
             {
-                Name = branchRef.Name,
-                OldObjectId = branchRef.ObjectId
-            };
+                Exists = FileExistsAsync(gitHttpClient, repositoryId, branchName, kvp.Key, cancellationToken),
+                Path = kvp.Key,
+                FileContents = kvp.Value
+            })
+            .ToArray();
 
-            string branchName = branchRef.Name.Substring(branchRefUpdate.Name.LastIndexOf('/') + 1);
+        // Wait for all of the operations that check for file existence to complete
+        await Task.WhenAll(fileInfos.Select(info => info.Exists));
 
-            var fileInfos = files
-                .Select(kvp => new
+        GitChange[] changes = fileInfos
+            .Select(info =>
+                new GitChange
                 {
-                    Exists = FileExistsAsync(gitHttpClient, repositoryId, branchName, kvp.Key, cancellationToken),
-                    Path = kvp.Key,
-                    FileContents = kvp.Value
-                })
-                .ToArray();
-
-            // Wait for all of the operations that check for file existence to complete
-            await Task.WhenAll(fileInfos.Select(info => info.Exists));
-
-            GitChange[] changes = fileInfos
-                .Select(info =>
-                    new GitChange
+                    ChangeType = info.Exists.Result ? VersionControlChangeType.Edit : VersionControlChangeType.Add,
+                    Item = new GitItem
                     {
-                        ChangeType = info.Exists.Result ? VersionControlChangeType.Edit : VersionControlChangeType.Add,
-                        Item = new GitItem
-                        {
-                            Path = info.Path
-                        },
-                        NewContent = new ItemContent
-                        {
-                            Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(info.FileContents)),
-                            ContentType = ItemContentType.Base64Encoded
-                        }
-                    })
-                .ToArray();
+                        Path = info.Path
+                    },
+                    NewContent = new ItemContent
+                    {
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(info.FileContents)),
+                        ContentType = ItemContentType.Base64Encoded
+                    }
+                })
+            .ToArray();
 
-            GitCommitRef commitRef = new GitCommitRef
-            {
-                Comment = commitMessage,
-                Changes = changes
-            };
+        GitCommitRef commitRef = new GitCommitRef
+        {
+            Comment = commitMessage,
+            Changes = changes
+        };
 
-            GitPush push = new GitPush
-            {
-                RefUpdates = new GitRefUpdate[] { branchRefUpdate },
-                Commits = new GitCommitRef[] { commitRef }
-            };
+        GitPush push = new GitPush
+        {
+            RefUpdates = [branchRefUpdate],
+            Commits = [commitRef]
+        };
 
-            return await gitHttpClient.CreatePushAsync(push, repositoryId, cancellationToken);
-        }
+        return await gitHttpClient.CreatePushAsync(push, repositoryId, cancellationToken);
     }
 }

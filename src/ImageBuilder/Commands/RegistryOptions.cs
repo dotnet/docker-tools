@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Text;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -53,7 +51,7 @@ public class RegistryOptions
 
 public class RegistryOptionsBuilder(bool isOverride)
 {
-    private bool _isOverride = isOverride;
+    private readonly bool _isOverride = isOverride;
 
     // Choose one of either CliOptions or CliArguments - not both. Use CliArguments in the case that
     // the registry options are required. Otherwise, use CliOptions.
@@ -109,13 +107,21 @@ public class RegistryOptionsBuilder(bool isOverride)
     public void Bind(ParseResult result, RegistryOptions target)
     {
         if (_registryOption is not null)
+        {
             target.Registry = result.GetValue(_registryOption) ?? string.Empty;
+        }
         else if (_registryArgument is not null)
+        {
             target.Registry = result.GetValue(_registryArgument) ?? string.Empty;
+        }
 
         if (_repoPrefixOption is not null)
+        {
             target.RepoPrefix = result.GetValue(_repoPrefixOption) ?? string.Empty;
+        }
         else if (_repoPrefixArgument is not null)
+        {
             target.RepoPrefix = result.GetValue(_repoPrefixArgument) ?? string.Empty;
+        }
     }
 }

@@ -8,10 +8,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup Label="Build Settings">
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-  </PropertyGroup>
-
   <PropertyGroup Label="Packaging Settings">
     <IsPackable>true</IsPackable>
     <Description>Core models used by Microsoft.DotNet.ImageBuilder.</Description>

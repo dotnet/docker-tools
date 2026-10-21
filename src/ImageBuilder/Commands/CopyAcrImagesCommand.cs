@@ -1,7 +1,6 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -11,168 +10,164 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class CopyAcrImagesCommand(
+    IManifestJsonService manifestJsonService,
+    ICopyImageService copyImageService,
+    ILogger<CopyAcrImagesCommand> logger,
+    IArtifactService artifactService) : CopyImagesCommand<CopyAcrImagesOptions>(manifestJsonService, copyImageService)
 {
-    public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions>
+    private readonly ILogger _logger = logger;
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+
+    protected override string Description => "Copies the platform images and manifest lists as specified in the manifest between repositories of an ACR";
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        private readonly ILogger _logger;
-        private readonly IArtifactService _artifactService;
+        _logger.LogInformation("COPYING IMAGES");
 
-        public CopyAcrImagesCommand(
-            IManifestJsonService manifestJsonService,
-            ICopyImageService copyImageService,
-            ILogger<CopyAcrImagesCommand> logger,
-            IArtifactService artifactService)
-            : base(manifestJsonService, copyImageService, logger)
+        if (string.IsNullOrEmpty(Options.ImageInfoPath))
         {
-            _logger = logger;
-            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image copy."));
+            return;
         }
 
-        protected override string Description => "Copies the platform images and manifest lists as specified in the manifest between repositories of an ACR";
-
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
+        string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+        if (!File.Exists(imageInfoPath))
         {
-            _logger.LogInformation("COPYING IMAGES");
-
-            if (string.IsNullOrEmpty(Options.ImageInfoPath))
-            {
-                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                    "Image info file not found. Skipping image copy."));
-                return;
-            }
-
-            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
-            if (!File.Exists(imageInfoPath))
-            {
-                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                    "Image info file not found. Skipping image copy."));
-                return;
-            }
-
-            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
-            IEnumerable<Task> platformImportTasks = Manifest.FilteredRepos
-                .Select(repo =>
-                    repo.FilteredImages
-                        .SelectMany(image => image.FilteredPlatforms)
-                        .SelectMany(platform => GetPlatformTagInfos(repo, platform, imageArtifactDetails))
-                        .Select(tagInfo =>
-                            ImportImageAsync(
-                                DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
-                                Manifest.Registry,
-                                DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                                copyReferrers: true,
-                                srcRegistryName: Options.SourceRegistry,
-                                sourceCredentials: null,
-                                cancellationToken: cancellationToken)))
-                .SelectMany(tasks => tasks);
-
-            IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos(imageArtifactDetails)
-                .Select(tagInfo =>
-                    ImportImageAsync(
-                        DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
-                        Manifest.Registry,
-                        DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                        copyReferrers: true,
-                        srcRegistryName: Options.SourceRegistry,
-                        sourceCredentials: null,
-                        cancellationToken: cancellationToken));
-
-            await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image copy."));
+            return;
         }
 
-        private IEnumerable<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(
-            RepoInfo repo,
-            PlatformInfo platform,
-            ImageArtifactDetails imageArtifactDetails)
+        ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest);
+        IEnumerable<Task> platformImportTasks = Manifest.FilteredRepos
+            .Select(repo =>
+                repo.FilteredImages
+                    .SelectMany(image => image.FilteredPlatforms)
+                    .SelectMany(platform => GetPlatformTagInfos(repo, platform, imageArtifactDetails))
+                    .Select(tagInfo =>
+                        ImportImageAsync(
+                            DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
+                            Manifest.Registry,
+                            DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
+                            copyReferrers: true,
+                            srcRegistryName: Options.SourceRegistry,
+                            sourceCredentials: null,
+                            cancellationToken: cancellationToken)))
+            .SelectMany(tasks => tasks);
+
+        IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos(imageArtifactDetails)
+            .Select(tagInfo =>
+                ImportImageAsync(
+                    DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
+                    Manifest.Registry,
+                    DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
+                    copyReferrers: true,
+                    srcRegistryName: Options.SourceRegistry,
+                    sourceCredentials: null,
+                    cancellationToken: cancellationToken));
+
+        await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
+    }
+
+    private List<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(
+        RepoInfo repo,
+        PlatformInfo platform,
+        ImageArtifactDetails imageArtifactDetails)
+    {
+        List<(string SourceTag, string DestinationTag)> tags = [];
+
+        // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
+        // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
+        // of the tag for the image that was actually built rather than just generating new tag values when parsing
+        // the manifest.
+        RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
+        if (repoData != null)
         {
-            var tags = new List<(string SourceTag, string DestinationTag)>();
+            PlatformData platformData = repoData
+                .Images.SelectMany(image => image.Platforms)
+                .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
 
-            // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
-            // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
-            // of the tag for the image that was actually built rather than just generating new tag values when parsing
-            // the manifest.
-            RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
-            if (repoData != null)
+            if (platformData != null)
             {
-                PlatformData platformData = repoData
-                    .Images.SelectMany(image => image.Platforms)
-                    .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
-
-                if (platformData != null)
+                foreach (string tag in platformData.SimpleTags)
                 {
-                    foreach (string tag in platformData.SimpleTags)
+                    string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag);
+                    string sourceTag = GetSourceTag(destinationTag);
+                    tags.Add((sourceTag, destinationTag));
+
+                    if (platformData.ImageInfo?.SyndicatedRepo is string syndicatedRepo)
                     {
-                        string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag);
-                        string sourceTag = GetSourceTag(destinationTag);
+                        destinationTag = DockerHelper.GetImageName(
+                            Manifest.Registry,
+                            Options.RepoPrefix + syndicatedRepo,
+                            tag);
+
                         tags.Add((sourceTag, destinationTag));
-
-                        if (platformData.ImageInfo?.SyndicatedRepo is string syndicatedRepo)
-                        {
-                            destinationTag = DockerHelper.GetImageName(
-                                Manifest.Registry,
-                                Options.RepoPrefix + syndicatedRepo,
-                                tag);
-
-                            tags.Add((sourceTag, destinationTag));
-                        }
                     }
-                }
-                else
-                {
-                    _logger.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                 }
             }
             else
             {
-                _logger.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
+                _logger.LogInformation(
+                    "Unable to find image info data for path '{DockerfilePath}'.",
+                    platform.DockerfilePath);
             }
-
-            return tags;
+        }
+        else
+        {
+            _logger.LogInformation("Unable to find image info data for repo '{RepoName}'.", repo.Name);
         }
 
-        private IEnumerable<(string SourceTag, string DestinationTag)> GetManifestListTagInfos(
-            ImageArtifactDetails imageArtifactDetails)
-        {
-            foreach (RepoInfo repo in Manifest.FilteredRepos)
-            {
-                RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
+        return tags;
+    }
 
-                if (repoData is null)
+    private IEnumerable<(string SourceTag, string DestinationTag)> GetManifestListTagInfos(
+        ImageArtifactDetails imageArtifactDetails)
+    {
+        foreach (RepoInfo repo in Manifest.FilteredRepos)
+        {
+            RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
+
+            if (repoData is null)
+            {
+                continue;
+            }
+
+            foreach (ImageData imageData in repoData.Images)
+            {
+                if (imageData.Manifest is null)
                 {
                     continue;
                 }
 
-                foreach (ImageData imageData in repoData.Images)
+                foreach (string sharedTag in imageData.Manifest.SharedTags)
                 {
-                    if (imageData.Manifest is null)
-                    {
-                        continue;
-                    }
+                    string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, sharedTag);
+                    string sourceTag = GetSourceTag(destinationTag);
+                    yield return (sourceTag, destinationTag);
 
-                    foreach (string sharedTag in imageData.Manifest.SharedTags)
+                    if (imageData.ManifestImage?.SyndicatedRepo is string syndicatedRepo)
                     {
-                        string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, sharedTag);
-                        string sourceTag = GetSourceTag(destinationTag);
+                        destinationTag = DockerHelper.GetImageName(
+                            Manifest.Registry,
+                            Options.RepoPrefix + syndicatedRepo,
+                            sharedTag);
+
                         yield return (sourceTag, destinationTag);
-
-                        if (imageData.ManifestImage?.SyndicatedRepo is string syndicatedRepo)
-                        {
-                            destinationTag = DockerHelper.GetImageName(
-                                Manifest.Registry,
-                                Options.RepoPrefix + syndicatedRepo,
-                                sharedTag);
-
-                            yield return (sourceTag, destinationTag);
-                        }
                     }
                 }
             }
         }
-
-        private string GetSourceTag(string destinationTag) =>
-            destinationTag
-                .Replace(Manifest.Registry, Options.SourceRegistry)
-                .Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
     }
+
+    private string GetSourceTag(string destinationTag) =>
+        destinationTag
+            .Replace(Manifest.Registry, Options.SourceRegistry)
+            .Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
 }

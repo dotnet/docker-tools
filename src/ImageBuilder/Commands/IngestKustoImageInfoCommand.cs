@@ -1,7 +1,6 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -9,130 +8,130 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class IngestKustoImageInfoCommand(
+    IManifestJsonService manifestJsonService,
+    ILogger<IngestKustoImageInfoCommand> logger,
+    IKustoClient kustoClient,
+    IArtifactService artifactService) : ManifestCommand<IngestKustoImageInfoOptions>(manifestJsonService)
 {
-    public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions>
+    private readonly IKustoClient _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
+    private readonly ILogger<IngestKustoImageInfoCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+
+    protected override string Description => "Ingests image info data into Kusto";
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        private readonly IKustoClient _kustoClient;
-        private readonly ILogger<IngestKustoImageInfoCommand> _logger;
-        private readonly IArtifactService _artifactService;
+        _logger.LogInformation("INGESTING IMAGE INFO DATA INTO KUSTO");
+        string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
-        public IngestKustoImageInfoCommand(
-            IManifestJsonService manifestJsonService,
-            ILogger<IngestKustoImageInfoCommand> logger,
-            IKustoClient kustoClient,
-            IArtifactService artifactService) : base(manifestJsonService)
+        (string imageInfo, string layerInfo) = GetImageInfoCsv(imageInfoPath);
+        _logger.LogInformation(
+            "Image Info to Ingest:{NewLine}{ImageInfo}{NewLine}",
+            Environment.NewLine,
+            imageInfo,
+            Environment.NewLine);
+        _logger.LogInformation(
+            "Image Layer to Ingest:{NewLine}{LayerInfo}{NewLine}",
+            Environment.NewLine,
+            layerInfo,
+            Environment.NewLine);
+
+        if (string.IsNullOrEmpty(imageInfo))
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
-            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
-        }
-
-        protected override string Description => "Ingests image info data into Kusto";
-
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("INGESTING IMAGE INFO DATA INTO KUSTO");
-            string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
-
-            (string imageInfo, string layerInfo) = GetImageInfoCsv(imageInfoPath);
-            _logger.LogInformation($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
-            _logger.LogInformation($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
-
-            if (string.IsNullOrEmpty(imageInfo))
+            if (!string.IsNullOrEmpty(layerInfo))
             {
-                if (!string.IsNullOrEmpty(layerInfo))
-                {
-                    throw new InvalidOperationException("Unexpected layer info when image info is empty.");
-                }
-
-                _logger.LogInformation("Skipping ingestion due to empty image info data.");
-                return;
+                throw new InvalidOperationException("Unexpected layer info when image info is empty.");
             }
 
-            await IngestInfoAsync(imageInfo, Options.ImageTable, cancellationToken);
-            await IngestInfoAsync(layerInfo, Options.LayerTable, cancellationToken);
+            _logger.LogInformation("Skipping ingestion due to empty image info data.");
+            return;
         }
 
-        private (string imageInfo, string layerInfo) GetImageInfoCsv(string imageInfoPath)
+        await IngestInfoAsync(imageInfo, Options.ImageTable, cancellationToken);
+        await IngestInfoAsync(layerInfo, Options.LayerTable, cancellationToken);
+    }
+
+    private (string imageInfo, string layerInfo) GetImageInfoCsv(string imageInfoPath)
+    {
+        StringBuilder imageInfo = new();
+        StringBuilder layerInfo = new();
+
+        foreach (RepoData repo in ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest).Repos)
         {
-            StringBuilder imageInfo = new();
-            StringBuilder layerInfo = new();
-
-            foreach (RepoData repo in ImageInfoHelper.LoadFromFile(imageInfoPath, Manifest).Repos)
+            foreach (ImageData image in repo.Images)
             {
-                foreach (ImageData image in repo.Images)
+                foreach (PlatformData platform in image.Platforms)
                 {
-                    foreach (PlatformData platform in image.Platforms)
-                    {
-                        string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
-                        string sha = DockerHelper.GetDigestSha(platform.Digest);
-                        imageInfo.AppendLine(FormatImageCsv(sha, platform, image, repo.Repo, timestamp));
+                    string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
+                    string sha = DockerHelper.GetDigestSha(platform.Digest);
+                    imageInfo.AppendLine(FormatImageCsv(sha, platform, image, repo.Repo, timestamp));
 
-                        string syndicatedRepo = platform.ImageInfo?.SyndicatedRepo;
+                    string syndicatedRepo = platform.ImageInfo?.SyndicatedRepo;
+                    if (syndicatedRepo is not null)
+                    {
+                        imageInfo.AppendLine(FormatImageCsv(sha, platform, image, syndicatedRepo, timestamp));
+                    }
+
+                    foreach (string tag in platform.SimpleTags)
+                    {
+                        imageInfo.AppendLine(FormatImageCsv(tag, platform, image, repo.Repo, timestamp));
+
                         if (syndicatedRepo is not null)
                         {
-                            imageInfo.AppendLine(FormatImageCsv(sha, platform, image, syndicatedRepo, timestamp));
+                            imageInfo.AppendLine(FormatImageCsv(tag, platform, image, syndicatedRepo, timestamp));
                         }
+                    }
 
-                        foreach (string tag in platform.SimpleTags)
-                        {
-                            imageInfo.AppendLine(FormatImageCsv(tag, platform, image, repo.Repo, timestamp));
-
-                            if (syndicatedRepo is not null)
-                            {
-                                imageInfo.AppendLine(FormatImageCsv(tag, platform, image, syndicatedRepo, timestamp));
-                            }
-                        }
-
-                        for (int i = 0; i < platform.Layers.Count; i++)
-                        {
-                            layerInfo.AppendLine(
-                                FormatLayerCsv(
-                                    platform.Layers[i].Digest,
-                                    platform.Layers[i].Size,
-                                    platform.Layers.Count - i,
-                                    sha,
-                                    platform,
-                                    image,
-                                    repo.Repo,
-                                    timestamp));
-                        }
+                    for (int i = 0; i < platform.Layers.Count; i++)
+                    {
+                        layerInfo.AppendLine(
+                            FormatLayerCsv(
+                                platform.Layers[i].Digest,
+                                platform.Layers[i].Size,
+                                platform.Layers.Count - i,
+                                sha,
+                                platform,
+                                image,
+                                repo.Repo,
+                                timestamp));
                     }
                 }
             }
-
-            // Kusto ingest API does not handle an empty line, therefore the last line must be trimmed.
-            return (
-                imageInfo.ToString().TrimEndString(Environment.NewLine),
-                layerInfo.ToString().TrimEndString(Environment.NewLine));
         }
 
-        private static string FormatImageCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
-            $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.PlatformInfo?.GetOSDisplayName()}\","
-                + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo}\",\"{timestamp}\"";
+        // Kusto ingest API does not handle an empty line, therefore the last line must be trimmed.
+        return (
+            imageInfo.ToString().TrimEndString(Environment.NewLine),
+            layerInfo.ToString().TrimEndString(Environment.NewLine));
+    }
 
-        private static string FormatLayerCsv(
-            string layerDigest,
-            long size,
-            int ordinal,
-            string imageDigest,
-            PlatformData platform,
-            ImageData image,
-            string repo,
-            string timestamp) =>
-                $"\"{layerDigest}\",\"{size}\",\"{ordinal}\",{FormatImageCsv(imageDigest, platform, image, repo, timestamp)}";
+    private static string FormatImageCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
+        $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.PlatformInfo?.GetOSDisplayName()}\","
+            + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo}\",\"{timestamp}\"";
 
-        private async Task IngestInfoAsync(string info, string table, CancellationToken cancellationToken)
+    private static string FormatLayerCsv(
+        string layerDigest,
+        long size,
+        int ordinal,
+        string imageDigest,
+        PlatformData platform,
+        ImageData image,
+        string repo,
+        string timestamp) =>
+            $"\"{layerDigest}\",\"{size}\",\"{ordinal}\",{FormatImageCsv(imageDigest, platform, image, repo, timestamp)}";
+
+    private async Task IngestInfoAsync(string info, string table, CancellationToken cancellationToken)
+    {
+        if (!Options.IsDryRun)
         {
-            if (!Options.IsDryRun)
-            {
-                await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table, Options.KustoServiceConnection, cancellationToken);
-            }
-            else
-            {
-                _logger.LogInformation($"(Dry run) Skipping ingestion of data into {table}.");
-            }
+            await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table, Options.KustoServiceConnection, cancellationToken);
+        }
+        else
+        {
+            _logger.LogInformation("(Dry run) Skipping ingestion of data into {Table}.", table);
         }
     }
 }

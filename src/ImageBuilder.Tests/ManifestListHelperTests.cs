@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,7 +43,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfile1, simpleTags: ["tag-amd64"]),
                     CreatePlatform(dockerfile2, simpleTags: ["tag-arm64"], architecture: "arm64"))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -88,7 +85,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]),
                     CreatePlatform(dockerfileArm64, simpleTags: ["tag-arm64"], architecture: "arm64"))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -110,7 +106,7 @@ public class ManifestListHelperTests
         string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
 
         Image imageA = CreateImage(
-            [CreatePlatform(dockerfile, Array.Empty<string>())],
+            [CreatePlatform(dockerfile, [])],
             new Dictionary<string, Tag>
             {
                 { "sharedtag", new Tag() }
@@ -248,7 +244,6 @@ public class ManifestListHelperTests
                     ["built-sharedtag"],
                     CreatePlatform(dockerfile2, simpleTags: ["tag2"]))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -287,7 +282,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfileUnchanged, simpleTags: ["unchanged-tag"],
                         architecture: "arm64", isUnchanged: true))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -320,7 +314,6 @@ public class ManifestListHelperTests
                 CreateImageData(
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -349,7 +342,7 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfile, ["tag1", "tag2"])),
                 CreateImage(
                     ["sharedtag2"],
-                    CreatePlatform(dockerfile, Array.Empty<string>()))));
+                    CreatePlatform(dockerfile, []))));
 
         manifest.Registry = "mcr.microsoft.com";
 
@@ -362,7 +355,6 @@ public class ManifestListHelperTests
                     ["sharedtag2"],
                     CreatePlatform(dockerfile))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -401,7 +393,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -441,7 +432,6 @@ public class ManifestListHelperTests
                     CreatePlatform(dockerfile1, simpleTags: ["tag1"]),
                     CreatePlatform(dockerfile2, simpleTags: ["tag2"]))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -479,7 +469,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -515,7 +504,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"]))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -550,7 +538,6 @@ public class ManifestListHelperTests
                     ["sharedtag"],
                     CreatePlatform(dockerfile, simpleTags: ["tag1"], isUnchanged: true))));
 
-        
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
@@ -567,7 +554,7 @@ public class ManifestListHelperTests
         string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
         File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
 
-        IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+        IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
         IManifestJsonService manifestJsonService = TestHelper.CreateManifestJsonService();
         return manifestJsonService.Load(manifestOptions);
     }

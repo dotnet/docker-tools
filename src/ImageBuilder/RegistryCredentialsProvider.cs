@@ -1,11 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
-using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;
@@ -21,7 +19,7 @@ public class RegistryCredentialsProvider(
 ) : IRegistryCredentialsProvider
 {
     // Re-exchange a cached refresh token slightly before it expires so it isn't used past its lifetime.
-    private static readonly TimeSpan s_refreshBuffer = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan RefreshBuffer = TimeSpan.FromMinutes(5);
 
     // Cache refresh tokens per-registry to prevent rate limit/throttling errors from many parallel requests.
     private readonly ConcurrentDictionary<string, CachedRefreshToken> _refreshTokenCache =
@@ -36,11 +34,13 @@ public class RegistryCredentialsProvider(
     ///     3. Return null if there are no credentials to be found.
     /// </summary>
     /// <param name="registry">The container registry to get credentials for.</param>
+    /// <param name="credsHost">Optional host providing CLI credential overrides.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
     /// <returns>Registry credentials</returns>
     public async ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,
         IRegistryCredentialsHost? credsHost,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         RegistryInfo registryInfo = registryResolver.Resolve(registry, credsHost);
 
@@ -49,7 +49,10 @@ public class RegistryCredentialsProvider(
             // If we're here, we have authentication configured with a service
             // connection we can use for authentication.
             Acr acr = Acr.Parse(registryInfo.EffectiveRegistry);
-            CachedRefreshToken refreshToken = await GetRefreshTokenAsync(acr, serviceConnection, ct);
+            CachedRefreshToken refreshToken = await GetRefreshTokenAsync(
+                acr,
+                serviceConnection,
+                cancellationToken);
 
             // ACR login is an empty GUID as the username with the ACR refresh token as the password.
             return new RegistryCredentials(Guid.Empty.ToString(), refreshToken.RefreshToken);
@@ -65,7 +68,7 @@ public class RegistryCredentialsProvider(
         CancellationToken ct)
     {
         if (_refreshTokenCache.TryGetValue(acr.Server, out CachedRefreshToken? refreshToken)
-            && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
+            && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, RefreshBuffer))
         {
             return refreshToken;
         }
@@ -76,7 +79,7 @@ public class RegistryCredentialsProvider(
         try
         {
             if (_refreshTokenCache.TryGetValue(acr.Server, out refreshToken)
-                && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, s_refreshBuffer))
+                && !refreshToken.ShouldRefresh(DateTimeOffset.UtcNow, RefreshBuffer))
             {
                 return refreshToken;
             }
@@ -98,7 +101,7 @@ public class RegistryCredentialsProvider(
     {
         // Get AAD/Entra access token
         TokenCredential tokenCredential = tokenCredentialProvider.GetCredential(serviceConnection);
-        var tokenRequestContext = new TokenRequestContext([AzureScopes.Default]);
+        TokenRequestContext tokenRequestContext = new TokenRequestContext([AzureScopes.Default]);
         AccessToken accessToken = await tokenCredential.GetTokenAsync(tokenRequestContext, ct);
 
         // Exchange for ACR refresh token
@@ -118,7 +121,7 @@ public class RegistryCredentialsProvider(
     private sealed record CachedRefreshToken(string RefreshToken, DateTimeOffset Expiration)
     {
         // Used when an ACR refresh token's expiration can't be read from its JWT payload.
-        private static readonly TimeSpan s_fallbackLifetime = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan FallbackLifetime = TimeSpan.FromMinutes(30);
 
         public static CachedRefreshToken Create(string refreshToken)
         {
@@ -145,7 +148,7 @@ public class RegistryCredentialsProvider(
             }
 
             // Fall back to sane default
-            return DateTimeOffset.UtcNow + s_fallbackLifetime;
+            return DateTimeOffset.UtcNow + FallbackLifetime;
         }
     }
 }

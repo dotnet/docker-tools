@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -43,7 +42,7 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
+        List<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
             GetImagesWithBuiltPlatforms(manifest, imageArtifactDetails);
 
         return imagesWithBuiltPlatforms
@@ -88,7 +87,7 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
+        List<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
             GetImagesWithBuiltPlatforms(manifest, imageArtifactDetails);
 
         return imagesWithBuiltPlatforms
@@ -98,7 +97,7 @@ public static class ManifestListHelper
             .AsReadOnly();
     }
 
-    private static IEnumerable<(RepoInfo Repo, ImageInfo Image)> GetImagesWithBuiltPlatforms(
+    private static List<(RepoInfo Repo, ImageInfo Image)> GetImagesWithBuiltPlatforms(
         ManifestInfo manifest,
         ImageArtifactDetails imageArtifactDetails) =>
         manifest.FilteredRepos
@@ -195,16 +194,22 @@ public static class ManifestListHelper
         foreach (PlatformInfo platform in manifestImage.AllPlatforms)
         {
             if (!TryGetPlatformTagRepresentative(repo, manifestImage, platform, out _))
+            {
                 continue;
+            }
 
             hasExpectedPlatform = true;
 
             if (ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails) is null)
+            {
                 missingPlatforms.Add(GetPlatformDescription(platform));
+            }
         }
 
         if (!hasExpectedPlatform || missingPlatforms.Count == 0)
+        {
             return null;
+        }
 
         return new ManifestListPlatformValidationIssue(manifestListTag, missingPlatforms.AsReadOnly());
     }

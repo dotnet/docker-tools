@@ -10,7 +10,6 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-
 public interface IMarImageIngestionReporter
 {
     Task ReportImageStatusesAsync(
@@ -21,21 +20,14 @@ public interface IMarImageIngestionReporter
         DateTime? minimumQueueTime,
         CancellationToken cancellationToken);
 }
-public class MarImageIngestionReporter : IMarImageIngestionReporter
+public class MarImageIngestionReporter(
+    ILoggerFactory loggerFactory,
+    IMcrStatusClientFactory mcrStatusClientFactory,
+    IEnvironmentService environmentService) : IMarImageIngestionReporter
 {
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
-    private readonly IEnvironmentService _environmentService;
-
-    public MarImageIngestionReporter(
-        ILoggerFactory loggerFactory,
-        IMcrStatusClientFactory mcrStatusClientFactory,
-        IEnvironmentService environmentService)
-    {
-        _loggerFactory = loggerFactory;
-        _mcrStatusClientFactory = mcrStatusClientFactory;
-        _environmentService = environmentService;
-    }
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
+    private readonly IMcrStatusClientFactory _mcrStatusClientFactory = mcrStatusClientFactory;
+    private readonly IEnvironmentService _environmentService = environmentService;
 
     public Task ReportImageStatusesAsync(
         IServiceConnection? serviceConnection,
@@ -48,8 +40,8 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         // Authentication is required to connect to MAR status service
         ArgumentNullException.ThrowIfNull(serviceConnection, nameof(serviceConnection));
 
-        var mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
-        var reporter = new ReporterImpl(
+        IMcrStatusClient mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
+        ReporterImpl reporter = new ReporterImpl(
             _loggerFactory,
             mcrStatusClient,
             _environmentService,
@@ -60,25 +52,15 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         return reporter.ReportImageStatusesAsync(digestInfos, cancellationToken);
     }
 
-    private class ReporterImpl
+    private sealed class ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
+        TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
     {
-        private readonly ILogger<ReporterImpl> _logger;
-        private readonly IMcrStatusClient _statusClient;
-        private readonly IEnvironmentService _environmentService;
-        private readonly TimeSpan _timeout;
-        private readonly TimeSpan _requeryDelay;
-        private readonly DateTime? _minimumQueueTime;
-
-        public ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
-            TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
-        {
-            _logger = loggerFactory.CreateLogger<ReporterImpl>();
-            _statusClient = statusClient;
-            _environmentService = environmentService;
-            _timeout = timeout;
-            _requeryDelay = requeryDelay;
-            _minimumQueueTime = minimumQueueTime;
-        }
+        private readonly ILogger<ReporterImpl> _logger = loggerFactory.CreateLogger<ReporterImpl>();
+        private readonly IMcrStatusClient _statusClient = statusClient;
+        private readonly IEnvironmentService _environmentService = environmentService;
+        private readonly TimeSpan _timeout = timeout;
+        private readonly TimeSpan _requeryDelay = requeryDelay;
+        private readonly DateTime? _minimumQueueTime = minimumQueueTime;
 
         public async Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, CancellationToken cancellationToken)
         {
@@ -87,14 +69,13 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                 .ToList();
             IEnumerable<ImageResultInfo> imageResultInfos =
                 await TaskHelper.WhenAll(tasks, _timeout, cancellationToken);
-            _logger.LogInformation(string.Empty);
             await LogResults(imageResultInfos, cancellationToken);
             _logger.LogInformation("Image ingestion complete!");
         }
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo, CancellationToken cancellationToken)
         {
-            return await (await ReportImageStatusCoreAsync(digestInfo, cancellationToken)
+            return await ReportImageStatusCoreAsync(digestInfo, cancellationToken)
                 .ContinueWith(async task =>
                 {
                     if (task.IsCompletedSuccessfully)
@@ -115,7 +96,8 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
 
                     throw new NotSupportedException();
-                }, cancellationToken));
+                }, cancellationToken)
+                .Unwrap();
         }
 
         private async Task<ImageResultInfo> ReportImageStatusCoreAsync(DigestInfo digestInfo, CancellationToken cancellationToken)
@@ -126,7 +108,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             stringBuilder.AppendLine($"Querying image status for '{qualifiedDigest}'");
             stringBuilder.AppendLine("Remaining tags:");
             digestInfo.RemainingTags.ForEach(tag => stringBuilder.AppendLine(tag));
-            _logger.LogInformation(stringBuilder.ToString());
+            _logger.LogInformation("{StatusQuery}", stringBuilder.ToString());
 
             ImageResult imageResult = await _statusClient.GetImageResultAsync(digestInfo.Digest, cancellationToken);
 
@@ -173,7 +155,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
                 }
 
-                _logger.LogInformation(stringBuilder.ToString());
+                _logger.LogInformation("{StatusResults}", stringBuilder.ToString());
             }
 
             return new ImageResultInfo(imageResult, digestInfo);
@@ -204,7 +186,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         {
             _logger.LogInformation("IMAGE RESULTS");
 
-            List<Task<string>> failedStatusTasks = new List<Task<string>>();
+            List<Task<string>> failedStatusTasks = [];
 
             IEnumerable<ImageResultInfo> failedResults = imageResultInfos
                 // Find any result where all of the statuses of a given tag have failed
@@ -214,7 +196,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     .Any(statusGroup => statusGroup.All(status => status.OverallStatus == StageStatus.Failed)))
                 .OrderBy(result => result.DigestInfo.Repo)
                 .ThenBy(result => result.DigestInfo.Digest);
-            IEnumerable<ImageResultInfo> successfulResults = imageResultInfos.Except(failedResults);
+            List<ImageResultInfo> successfulResults = imageResultInfos.Except(failedResults).ToList();
 
             foreach (ImageResultInfo result in failedResults)
             {
@@ -231,41 +213,39 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                 failedStatusTasks.AddRange(resultFailedStatusTasks);
             }
 
-            if (failedStatusTasks.Any())
+            if (failedStatusTasks.Count > 0)
             {
-                _logger.LogInformation(string.Empty);
                 _logger.LogInformation("Querying details of failed results...");
-                _logger.LogInformation(string.Empty);
 
                 await Task.WhenAll(failedStatusTasks);
             }
 
-            if (successfulResults.Any())
+            if (successfulResults.Count > 0)
             {
                 _logger.LogInformation("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
                 {
-                    _logger.LogInformation(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
+                    _logger.LogInformation(
+                        "{QualifiedDigest}",
+                        GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
                     string tags = string.Join(", ",
                         imageResult.ImageResult.Value
                             .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
                             .Select(imageStatus => imageStatus.Tag));
-                    _logger.LogInformation($"\tTags: {tags}");
-                    _logger.LogInformation(string.Empty);
+                    _logger.LogInformation("\tTags: {Tags}", tags);
                 }
             }
 
-            if (failedStatusTasks.Any())
+            if (failedStatusTasks.Count > 0)
             {
                 _logger.LogInformation("Failed results");
 
                 foreach (Task<string> failedStatusTask in failedStatusTasks)
                 {
-                    _logger.LogError(failedStatusTask.Result);
-                    _logger.LogInformation(string.Empty);
+                    _logger.LogError("{FailedStatus}", failedStatusTask.Result);
                 }
 
-                _environmentService.Exit(1);
+                _environmentService.ExitProcess(1);
             }
         }
 
@@ -285,7 +265,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         }
     }
 
-    private record ImageResultInfo
+    private sealed record ImageResultInfo
     {
         public ImageResultInfo(ImageResult imageResult, DigestInfo digestInfo)
         {

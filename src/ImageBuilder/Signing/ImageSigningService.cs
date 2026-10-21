@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
+using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.Extensions.Options;
 using static Microsoft.DotNet.ImageBuilder.Signing.CertificateChainCalculator;
@@ -53,7 +52,10 @@ public class ImageSigningService(
                 .Where(digest => !string.IsNullOrEmpty(digest))
                 .ToList();
 
-        if (imageDigests.Count == 0) return [];
+        if (imageDigests.Count == 0)
+        {
+            return [];
+        }
 
         _logger.LogInformation("Checking {Count} digest(s) for existing signatures.", imageDigests.Count);
 
@@ -75,7 +77,7 @@ public class ImageSigningService(
             }
         });
 
-        if (unsignedDigests.Count == 0)
+        if (unsignedDigests.IsEmpty)
         {
             _logger.LogInformation("All {Count} digest(s) already signed. Nothing to sign.", imageDigests.Count);
             return [];
@@ -124,7 +126,10 @@ public class ImageSigningService(
         CancellationToken cancellationToken)
     {
         List<ImageSigningRequest> requestList = requests.ToList();
-        if (requestList.Count == 0) return [];
+        if (requestList.Count == 0)
+        {
+            return [];
+        }
 
         if (string.IsNullOrEmpty(_buildConfig.ArtifactStagingDirectory))
         {
@@ -163,7 +168,7 @@ public class ImageSigningService(
         await _esrpSigningService.SignFilesAsync(allPayloadFiles, signingKeyCode, cancellationToken);
 
         // Calculate certificate chains and build results
-        var results = writtenPayloads
+        List<PayloadSigningResult> results = writtenPayloads
             .Select(written => new PayloadSigningResult(
                 ImageName: written.Request.ImageName,
                 Descriptor: written.Request.Descriptor,
@@ -184,12 +189,12 @@ public class ImageSigningService(
     /// </summary>
     private static ImageSigningRequest ConstructSigningRequest(string imageDigest, OrasDescriptor descriptor)
     {
-        var ociDescriptor = new Models.Oci.Descriptor(
+        Descriptor ociDescriptor = new Descriptor(
             MediaType: descriptor.MediaType,
             Digest: descriptor.Digest,
             Size: descriptor.Size);
 
-        var payload = new Payload(TargetArtifact: ociDescriptor);
+        Payload payload = new Payload(TargetArtifact: ociDescriptor);
 
         return new ImageSigningRequest(
             ImageName: imageDigest,

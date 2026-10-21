@@ -6,21 +6,13 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public abstract class ImageNameResolver
+public abstract class ImageNameResolver(BaseImageOverrideOptions baseImageOverrideOptions, ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
 {
-    private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
-    private readonly string? _repoPrefix;
-    private readonly string? _sourceRepoPrefix;
+    private readonly BaseImageOverrideOptions _baseImageOverrideOptions = baseImageOverrideOptions;
+    private readonly string? _repoPrefix = repoPrefix;
+    private readonly string? _sourceRepoPrefix = sourceRepoPrefix;
 
-    public ImageNameResolver(BaseImageOverrideOptions baseImageOverrideOptions, ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
-    {
-        _baseImageOverrideOptions = baseImageOverrideOptions;
-        Manifest = manifest;
-        _repoPrefix = repoPrefix;
-        _sourceRepoPrefix = sourceRepoPrefix;
-    }
-
-    protected ManifestInfo Manifest { get; }
+    protected ManifestInfo Manifest { get; } = manifest;
 
     /// <summary>
     /// Returns the tag to use for interacting with the image of a FROM instruction that has been pulled or built locally.
@@ -90,26 +82,21 @@ public abstract class ImageNameResolver
     }
 
     protected string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
-        IsInInternallyOwnedRegistry(imageTag) ?
-            DockerHelper.TrimRegistry(imageTag).TrimStartString(_repoPrefix ?? string.Empty) :
-            imageTag;
+        IsInInternallyOwnedRegistry(imageTag)
+            ? DockerHelper.TrimRegistry(imageTag).TrimStartString(_repoPrefix ?? string.Empty)
+            : imageTag;
 
     private bool IsInInternallyOwnedRegistry(string imageTag) =>
         DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
         DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
 }
 
-public class ImageNameResolverForBuild : ImageNameResolver
+public class ImageNameResolverForBuild(
+    BaseImageOverrideOptions baseImageOverrideOptions,
+    ManifestInfo manifest,
+    string? repoPrefix,
+    string? sourceRepoPrefix) : ImageNameResolver(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
 {
-    public ImageNameResolverForBuild(
-        BaseImageOverrideOptions baseImageOverrideOptions,
-        ManifestInfo manifest,
-        string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
-    {
-    }
-
     public override string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
     {
         // For build scenarios, we want to query for the digest of the image according to whether it's internal or not.
@@ -130,17 +117,12 @@ public class ImageNameResolverForBuild : ImageNameResolver
     }
 }
 
-public class ImageNameResolverForMatrix : ImageNameResolver
+public class ImageNameResolverForMatrix(
+    BaseImageOverrideOptions baseImageOverrideOptions,
+    ManifestInfo manifest,
+    string? repoPrefix,
+    string? sourceRepoPrefix) : ImageNameResolver(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
 {
-    public ImageNameResolverForMatrix(
-        BaseImageOverrideOptions baseImageOverrideOptions,
-        ManifestInfo manifest,
-        string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
-    {
-    }
-
     public override string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
     {
         // For matrix generation scenarios, we want to query for the digest of the image according

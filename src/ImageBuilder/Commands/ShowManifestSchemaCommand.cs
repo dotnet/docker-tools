@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -8,32 +7,26 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Schema.Generation;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> logger) : Command<Options>
 {
-    public class ShowManifestSchemaCommand : Command<Options>
+    private readonly ILogger<ShowManifestSchemaCommand> _logger = logger;
+
+    protected override string Description => "Outputs manifest file schema";
+
+    public override Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        private readonly ILogger<ShowManifestSchemaCommand> _logger;
-
-        public ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> logger)
+        JSchemaGenerator generator = new JSchemaGenerator
         {
-            _logger = logger;
-        }
+            DefaultRequired = Required.DisallowNull
+        };
+        generator.GenerationProviders.Add(new StringEnumGenerationProvider());
 
-        protected override string Description => "Outputs manifest file schema";
+        JSchema schema = generator.Generate(typeof(Manifest));
 
-        public override Task ExecuteAsync(CancellationToken cancellationToken)
-        {
-            JSchemaGenerator generator = new JSchemaGenerator
-            {
-                DefaultRequired = Required.DisallowNull
-            };
-            generator.GenerationProviders.Add(new StringEnumGenerationProvider());
+        _logger.LogInformation("{ManifestSchema}", schema.ToString());
 
-            JSchema schema = generator.Generate(typeof(Manifest));
-
-            _logger.LogInformation(schema.ToString());
-
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

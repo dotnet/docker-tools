@@ -1,7 +1,6 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -11,230 +10,211 @@ using Cottle;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class GenerateReadmesCommandTests
 {
-    [TestClass]
-    public class GenerateReadmesCommandTests
-    {
-        #nullable enable annotations
-        public TestContext? TestContext { get; set; }
+    public TestContext TestContext { get; set; }
 
-        #nullable disable annotations
-
-        private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
-        private const string RepoReadmePath = "RepoReadme.md";
-        private const string DefaultReadme = "Default Readme Contents";
-        private const string ReadmeTemplatePath = "Readme.Template.md";
-        private const string AboutRepoTemplatePath = "About.repo.Template.md";
-        private const string AboutRepoTemplate =
+    private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
+    private const string RepoReadmePath = "RepoReadme.md";
+    private const string DefaultReadme = "Default Readme Contents";
+    private const string ReadmeTemplatePath = "Readme.Template.md";
+    private const string AboutRepoTemplatePath = "About.repo.Template.md";
+    private const string AboutRepoTemplate =
 @"Referenced Template Content";
-        private const string ReadmeTemplate =
+    private const string ReadmeTemplate =
 @"About {{if IS_PRODUCT_FAMILY:Product Family^else:{{SHORT_REPO}}}}
 {{if !IS_PRODUCT_FAMILY:{{InsertTemplate(join(filter([""About"", SHORT_REPO, ""Template"", ""md""], len), "".""))}}}}";
-        private const string ExpectedProductFamilyReadme =
+    private const string ExpectedProductFamilyReadme =
 @"About Product Family
 ";
-        private const string ExpectedRepoReadme =
+    private const string ExpectedRepoReadme =
 @"About repo
 Referenced Template Content";
 
-        private readonly Exception _exitException = new Exception();
-        private Mock<IEnvironmentService> _environmentServiceMock;
+    private readonly InvalidOperationException _exitException = new();
+    private Mock<IEnvironmentService> _environmentServiceMock;
 
-        public GenerateReadmesCommandTests()
-        {
-        }
+    public GenerateReadmesCommandTests()
+    {
+    }
 
-        [TestMethod]
-        public async Task GenerateReadmesCommand_Canonical()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
+    [TestMethod]
+    public async Task GenerateReadmesCommand_Canonical()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
 
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
-            generatedReadme.ShouldBe(ExpectedProductFamilyReadme.NormalizeLineEndings(generatedReadme));
+        string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
+        generatedReadme.ShouldBe(ExpectedProductFamilyReadme.NormalizeLineEndings(generatedReadme));
 
-            generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath));
-            generatedReadme.ShouldBe(ExpectedRepoReadme.NormalizeLineEndings(generatedReadme));
-        }
+        generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath));
+        generatedReadme.ShouldBe(ExpectedRepoReadme.NormalizeLineEndings(generatedReadme));
+    }
 
-        [TestMethod]
-        public async Task GenerateReadmesCommand_StringReplace()
-        {
-            const string Template = """
-                {{replace("Hello world!", "world", ".NET")}}
-                """;
-            const string Expected = "Hello .NET!";
+    [TestMethod]
+    public async Task GenerateReadmesCommand_StringReplace()
+    {
+        const string template = """
+            {{replace("Hello world!", "world", ".NET")}}
+            """;
+        const string expected = "Hello .NET!";
 
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, Template);
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, template);
 
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
-            generatedReadme.ShouldBe(Expected);
-        }
+        string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
+        generatedReadme.ShouldBe(expected);
+    }
 
-        [TestMethod]
-        public async Task GenerateReadmesCommand_TemplateArgs()
-        {
-            const string readmeTemplate =
+    [TestMethod]
+    public async Task GenerateReadmesCommand_TemplateArgs()
+    {
+        const string readmeTemplate =
 @"Hello World
 {{InsertTemplate(""template-with-args.md"", [ ""my-arg"": 123 ])}}";
 
-            const string templateWithArgs =
+        const string templateWithArgs =
 @"ABC-{{ARGS[""my-arg""]}}";
 
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            DockerfileHelper.CreateFile("template-with-args.md", tempFolderContext, templateWithArgs);
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, readmeTemplate);
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        DockerfileHelper.CreateFile("template-with-args.md", tempFolderContext, templateWithArgs);
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, readmeTemplate);
 
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
 
-            string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
-            string expectedReadme =
+        string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
+        string expectedReadme =
 @"Hello World
 ABC-123";
-            generatedReadme.ShouldBe(expectedReadme);
-        }
+        generatedReadme.ShouldBe(expectedReadme);
+    }
 
-        [TestMethod]
-        public async Task GenerateReadmesCommand_InvalidTemplate()
+    [TestMethod]
+    public async Task GenerateReadmesCommand_InvalidTemplate()
+    {
+        string template = "about{{if:}}";
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, template);
+
+        Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
+
+        actualException.ShouldBeSameAs(_exitException);
+        _environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Once);
+    }
+
+    [TestMethod]
+    public async Task GenerateReadmesCommand_MissingTemplate()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, null, allowOptionalTemplates: false);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
+    }
+
+    [TestMethod]
+    public async Task GenerateReadmesCommand_Validate_UpToDate()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(
+            tempFolderContext, productFamilyReadme: ExpectedProductFamilyReadme, repoReadme: ExpectedRepoReadme, validate: true);
+
+        await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+
+        _environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Never);
+    }
+
+    [TestMethod]
+    public async Task GenerateReadmesCommand_Validate_OutOfSync()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext, validate: true);
+
+        Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
+
+        actualException.ShouldBeSameAs(_exitException);
+        _environmentServiceMock.Verify(o => o.ExitProcess(It.IsAny<int>()), Times.Once);
+        // Validate readmes remain unmodified
+        File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath)).ShouldBe(DefaultReadme);
+        File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath)).ShouldBe(DefaultReadme);
+    }
+
+    [TestMethod]
+    [DataRow("IS_PRODUCT_FAMILY", "true", true)]
+    [DataRow("IS_PRODUCT_FAMILY", "false")]
+    [DataRow("FULL_REPO", "mcr.microsoft.com/dotnet/repo")]
+    [DataRow("REPO", "dotnet/repo")]
+    [DataRow("PARENT_REPO", "dotnet")]
+    [DataRow("SHORT_REPO", "repo")]
+    public void GenerateReadmesCommand_SupportedSymbols(string symbol, string expectedValue, bool isManifest = false)
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
+
+        (IReadOnlyDictionary<Value, Value> symbols, string _) = isManifest
+            ? command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default)
+            : command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
+        Value actualSymbolValue = symbols[symbol];
+        Value expectedSymbolValue = actualSymbolValue.Type == ValueContent.Boolean
+            ? Value.FromBoolean(bool.Parse(expectedValue))
+            : Value.FromString(expectedValue);
+        actualSymbolValue.ShouldBe(expectedSymbolValue);
+    }
+
+    private GenerateReadmesCommand InitializeCommand(
+        TempFolderContext tempFolderContext,
+        string readmeTemplate = ReadmeTemplate,
+        string productFamilyReadme = DefaultReadme,
+        string repoReadme = DefaultReadme,
+        bool allowOptionalTemplates = true,
+        bool validate = false)
+    {
+        DockerfileHelper.CreateFile(ProductFamilyReadmePath, tempFolderContext, productFamilyReadme);
+        DockerfileHelper.CreateFile(RepoReadmePath, tempFolderContext, repoReadme);
+
+        DockerfileHelper.CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
+
+        string templatePath = null;
+        if (readmeTemplate != null)
         {
-            string template = "about{{if:}}";
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, template);
-
-            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-
-            actualException.ShouldBeSameAs(_exitException);
-            _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
+            DockerfileHelper.CreateFile(ReadmeTemplatePath, tempFolderContext, readmeTemplate);
+            templatePath = ReadmeTemplatePath;
         }
 
-        [TestMethod]
-        public async Task GenerateReadmesCommand_MissingTemplate()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, null, allowOptionalTemplates: false);
+        Repo repo = CreateRepo("dotnet/repo");
+        repo.Readmes =
+        [
+            new Readme(RepoReadmePath, templatePath)
+        ];
+        Manifest manifest = CreateManifest(repo);
+        manifest.Registry = "mcr.microsoft.com";
+        manifest.Readme = new(ProductFamilyReadmePath, templatePath);
 
-            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-        }
+        string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-        [TestMethod]
-        public async Task GenerateReadmesCommand_Validate_UpToDate()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(
-                tempFolderContext, productFamilyReadme: ExpectedProductFamilyReadme, repoReadme: ExpectedRepoReadme, validate: true);
+        _environmentServiceMock = new Mock<IEnvironmentService>();
+        _environmentServiceMock
+            .Setup(o => o.ExitProcess(1))
+            .Throws(_exitException);
 
-            await command.ExecuteAsync(TestContext?.CancellationToken ?? default);
+        GenerateReadmesCommand command = new GenerateReadmesCommand(TestHelper.CreateManifestJsonService(), _environmentServiceMock.Object, Mock.Of<ILogger<GenerateReadmesCommand>>());
+        command.Options.Manifest = manifestPath;
+        command.Options.AllowOptionalTemplates = allowOptionalTemplates;
+        command.Options.Validate = validate;
+        command.LoadManifest();
 
-            _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-        }
-
-        [TestMethod]
-        public async Task GenerateReadmesCommand_Validate_OutOfSync()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, validate: true);
-
-            Exception actualException = await Should.ThrowAsync<Exception>(() => command.ExecuteAsync(TestContext?.CancellationToken ?? default));
-
-            actualException.ShouldBeSameAs(_exitException);
-            _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
-            // Validate readmes remain unmodified
-            File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath)).ShouldBe(DefaultReadme);
-            File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath)).ShouldBe(DefaultReadme);
-        }
-
-        [TestMethod]
-        [DataRow("IS_PRODUCT_FAMILY", "true", true)]
-        [DataRow("IS_PRODUCT_FAMILY", "false")]
-        [DataRow("FULL_REPO", "mcr.microsoft.com/dotnet/repo")]
-        [DataRow("REPO", "dotnet/repo")]
-        [DataRow("PARENT_REPO", "dotnet")]
-        [DataRow("SHORT_REPO", "repo")]
-        public void GenerateReadmesCommand_SupportedSymbols(string symbol, string expectedValue, bool isManifest = false)
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
-
-            (IReadOnlyDictionary<Value, Value> Symbols, string Indent) templateState;
-            if (isManifest)
-            {
-                templateState = command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
-            }
-            else
-            {
-                templateState = command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty, TestContext?.CancellationToken ?? default);
-            }
-
-            Value actualSymbolValue = templateState.Symbols[symbol];
-            Value expectedSymbolValue;
-            if (actualSymbolValue.Type == ValueContent.Boolean)
-            {
-                expectedSymbolValue = Value.FromBoolean(bool.Parse(expectedValue));
-            }
-            else
-            {
-                expectedSymbolValue = Value.FromString(expectedValue);
-            }
-
-            actualSymbolValue.ShouldBe(expectedSymbolValue);
-        }
-
-        private GenerateReadmesCommand InitializeCommand(
-            TempFolderContext tempFolderContext,
-            string readmeTemplate = ReadmeTemplate,
-            string productFamilyReadme = DefaultReadme,
-            string repoReadme = DefaultReadme,
-            bool allowOptionalTemplates = true,
-            bool validate = false)
-        {
-            DockerfileHelper.CreateFile(ProductFamilyReadmePath, tempFolderContext, productFamilyReadme);
-            DockerfileHelper.CreateFile(RepoReadmePath, tempFolderContext, repoReadme);
-
-            DockerfileHelper.CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
-
-            string templatePath = null;
-            if (readmeTemplate != null)
-            {
-                DockerfileHelper.CreateFile(ReadmeTemplatePath, tempFolderContext, readmeTemplate);
-                templatePath = ReadmeTemplatePath;
-            }
-
-            Repo repo = CreateRepo("dotnet/repo");
-            repo.Readmes = new[]
-            {
-                new Readme(RepoReadmePath, templatePath)
-            };
-            Manifest manifest = CreateManifest(repo);
-            manifest.Registry = "mcr.microsoft.com";
-            manifest.Readme = new(ProductFamilyReadmePath, templatePath);
-
-            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
-
-            _environmentServiceMock = new Mock<IEnvironmentService>();
-            _environmentServiceMock
-                .Setup(o => o.Exit(1))
-                .Throws(_exitException);
-
-            GenerateReadmesCommand command = new GenerateReadmesCommand(TestHelper.CreateManifestJsonService(), _environmentServiceMock.Object, Mock.Of<ILogger<GenerateReadmesCommand>>());
-            command.Options.Manifest = manifestPath;
-            command.Options.AllowOptionalTemplates = allowOptionalTemplates;
-            command.Options.Validate = validate;
-            command.LoadManifest();
-
-            return command;
-        }
+        return command;
     }
 }

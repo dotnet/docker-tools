@@ -16,7 +16,7 @@ public class AsyncPageableMock<T>(IEnumerable<T> items) : AsyncPageable<T>
     public override IAsyncEnumerable<Page<T>> AsPages(string continuationToken = null, int? pageSizeHint = null) =>
         new PageMock<T>[] { new(_items) }.ToAsyncEnumerable();
 
-    private class PageMock<TItem>(IEnumerable<TItem> items) : Page<TItem>
+    private sealed class PageMock<TItem>(IEnumerable<TItem> items) : Page<TItem>
     {
         private readonly IEnumerable<TItem> _items = items;
 

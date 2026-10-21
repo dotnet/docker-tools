@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 
@@ -21,17 +19,25 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
     private const string RegistryApiVersionPathSegment = "v2";
     private const string ReferrersPathSegment = "referrers";
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
     {
         if (!IsAcrReferrerLookup(request))
-            return await base.SendAsync(request, ct);
+        {
+            return await base.SendAsync(request, cancellationToken);
+        }
 
-        using RateLimitLease lease = await rateLimiter.AcquireAsync(request.RequestUri!.Host, ct);
+        using RateLimitLease lease = await rateLimiter.AcquireAsync(
+            request.RequestUri!.Host,
+            cancellationToken);
 
         if (!lease.IsAcquired)
+        {
             throw new InvalidOperationException("Unable to acquire a permit from the ACR referrer rate limiter.");
+        }
 
-        return await base.SendAsync(request, ct);
+        return await base.SendAsync(request, cancellationToken);
     }
 
     private static bool IsAcrReferrerLookup(HttpRequestMessage request)
@@ -41,7 +47,9 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
             && host.EndsWith(".azurecr.io", StringComparison.OrdinalIgnoreCase);
 
         if (!isAcrRequest)
+        {
             return false;
+        }
 
         string[] pathSegments =
             request.RequestUri?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries) ?? [];

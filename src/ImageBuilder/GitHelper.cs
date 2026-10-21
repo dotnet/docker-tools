@@ -1,104 +1,94 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class GitHelper
 {
-    public static class GitHelper
+    public static string GetCommitSha(string filePath, bool useFullHash = false)
     {
-        private const int DefaultMaxTries = 10;
-        private const int DefaultRetryMillisecondsDelay = 5000;
-
-        public static string GetCommitSha(string filePath, bool useFullHash = false)
+        // Don't make the assumption that the current working directory is a Git repository
+        // Find the Git repo that contains the file being checked.
+        DirectoryInfo directory = new FileInfo(filePath).Directory;
+        while (directory.GetDirectories(".git").Length == 0)
         {
-            // Don't make the assumption that the current working directory is a Git repository
-            // Find the Git repo that contains the file being checked.
-            DirectoryInfo directory = new FileInfo(filePath).Directory;
-            while (!directory.GetDirectories(".git").Any())
-            {
-                directory = directory.Parent;
-
-                if (directory is null)
-                {
-                    throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
-                }
-            }
-
-            filePath = Path.GetRelativePath(directory.FullName, filePath);
-
-            string format = useFullHash ? "H" : "h";
-            return ExecuteHelper.Execute(
-                new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}")
-                {
-                    WorkingDirectory = directory.FullName
-                },
-                false,
-                CancellationToken.None,
-                $"Unable to retrieve the latest commit SHA for {filePath}");
+            directory = directory.Parent ?? throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
         }
 
-        public static Uri GetArchiveUrl(IGitHubBranchRef branchRef) =>
-            new Uri($"https://github.com/{branchRef.Owner}/{branchRef.Repo}/archive/{branchRef.Branch}.zip");
+        filePath = Path.GetRelativePath(directory.FullName, filePath);
 
-        public static Uri GetBlobUrl(IGitHubFileRef fileRef) =>
-            new Uri($"https://github.com/{fileRef.Owner}/{fileRef.Repo}/blob/{fileRef.Branch}/{fileRef.Path}");
+        string format = useFullHash ? "H" : "h";
+        return ExecuteHelper.Execute(
+            new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}")
+            {
+                WorkingDirectory = directory.FullName
+            },
+            false,
+            CancellationToken.None,
+            $"Unable to retrieve the latest commit SHA for {filePath}");
+    }
 
-        public static Uri GetCommitUrl(IGitHubRepoRef repoRef, string sha) =>
-            new Uri($"https://github.com/{repoRef.Owner}/{repoRef.Repo}/commit/{sha}");
+    public static Uri GetArchiveUrl(IGitHubBranchRef branchRef) =>
+        new Uri($"https://github.com/{branchRef.Owner}/{branchRef.Repo}/archive/{branchRef.Branch}.zip");
 
-        public static async Task<GitReference> PushChangesAsync(IGitHubClient client, IGitOptionsHost options, string commitMessage, Func<GitHubBranch, CancellationToken, Task<IEnumerable<GitObject>>> getChanges, CancellationToken cancellationToken)
+    public static Uri GetBlobUrl(IGitHubFileRef fileRef) =>
+        new Uri($"https://github.com/{fileRef.Owner}/{fileRef.Repo}/blob/{fileRef.Branch}/{fileRef.Path}");
+
+    public static Uri GetCommitUrl(IGitHubRepoRef repoRef, string sha) =>
+        new Uri($"https://github.com/{repoRef.Owner}/{repoRef.Repo}/commit/{sha}");
+
+    public static async Task<GitReference> PushChangesAsync(IGitHubClient client, IGitOptionsHost options, string commitMessage, Func<GitHubBranch, CancellationToken, Task<IEnumerable<GitObject>>> getChanges, CancellationToken cancellationToken)
+    {
+        GitOptions gitOptions = options.GitOptions;
+        GitHubProject project = new GitHubProject(gitOptions.Repo, gitOptions.Owner);
+        GitHubBranch branch = new GitHubBranch(gitOptions.Branch, project);
+
+        IEnumerable<GitObject> changes = await getChanges(branch, cancellationToken);
+
+        if (!changes.Any())
         {
-            GitOptions gitOptions = options.GitOptions;
-            GitHubProject project = new GitHubProject(gitOptions.Repo, gitOptions.Owner);
-            GitHubBranch branch = new GitHubBranch(gitOptions.Branch, project);
+            return null;
+        }
 
-            IEnumerable<GitObject> changes = await getChanges(branch, cancellationToken);
+        string masterRef = $"heads/{gitOptions.Branch}";
+        GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
+        string masterSha = currentMaster.Object.Sha;
 
-            if (!changes.Any())
+        if (!options.IsDryRun)
+        {
+            GitTree tree = await client.PostTreeAsync(project, masterSha, changes.ToArray());
+            GitCommit commit = await client.PostCommitAsync(
+                project, commitMessage, tree.Sha, [masterSha]);
+
+            // Only fast-forward. Don't overwrite other changes: throw exception instead.
+            return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
+        }
+        else
+        {
+            ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(GitHelper));
+            logger.LogInformation(
+                "The following files would have been updated at {Owner}/{Repo}/{Branch}:",
+                gitOptions.Owner,
+                gitOptions.Repo,
+                gitOptions.Branch);
+            foreach (GitObject gitObject in changes)
             {
-                return null;
+                logger.LogInformation("{GitObjectPath}:", gitObject.Path);
+                logger.LogInformation("{GitObjectContent}", gitObject.Content);
             }
 
-            string masterRef = $"heads/{gitOptions.Branch}";
-            GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
-            string masterSha = currentMaster.Object.Sha;
-
-            if (!options.IsDryRun)
-            {
-                GitTree tree = await client.PostTreeAsync(project, masterSha, changes.ToArray());
-                GitCommit commit = await client.PostCommitAsync(
-                    project, commitMessage, tree.Sha, new[] { masterSha });
-
-                // Only fast-forward. Don't overwrite other changes: throw exception instead.
-                return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
-            }
-            else
-            {
-                ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(GitHelper));
-                logger.LogInformation($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
-                logger.LogInformation(string.Empty);
-                foreach (GitObject gitObject in changes)
-                {
-                    logger.LogInformation($"{gitObject.Path}:");
-                    logger.LogInformation(gitObject.Content);
-                    logger.LogInformation(string.Empty);
-                }
-
-                return null;
-            }
+            return null;
         }
     }
 }

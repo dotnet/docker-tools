@@ -3,16 +3,15 @@
 
 using System.Diagnostics;
 
-namespace Microsoft.DotNet.ImageBuilder
-{
-    public class ProcessService : IProcessService
-    {
-        public string? Execute(
-            string fileName, string args, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null) =>
-            ExecuteHelper.Execute(fileName, args, isDryRun, cancellationToken, errorMessage, executeMessageOverride);
+namespace Microsoft.DotNet.ImageBuilder;
 
-        public string? Execute(
-            ProcessStartInfo info, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null) =>
-            ExecuteHelper.Execute(info, isDryRun, cancellationToken, errorMessage, executeMessageOverride);
-    }
+public class ProcessService : IProcessService
+{
+    public string? Execute(
+        string fileName, string args, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null) =>
+        ExecuteHelper.Execute(fileName, args, isDryRun, cancellationToken, errorMessage, executeMessageOverride);
+
+    public string? Execute(
+        ProcessStartInfo info, bool isDryRun, CancellationToken cancellationToken, string? errorMessage = null, string? executeMessageOverride = null) =>
+        ExecuteHelper.Execute(info, isDryRun, cancellationToken, errorMessage, executeMessageOverride);
 }

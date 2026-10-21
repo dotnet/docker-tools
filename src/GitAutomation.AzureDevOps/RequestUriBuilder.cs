@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 
@@ -27,10 +26,7 @@ internal sealed class RequestUriBuilder(string repository)
         return this;
     }
 
-    public RequestUriBuilder AppendPath(int segment)
-    {
-        return AppendPath(segment.ToString(CultureInfo.InvariantCulture));
-    }
+    public RequestUriBuilder AppendPath(int segment) => AppendPath(segment.ToString(CultureInfo.InvariantCulture));
 
     public RequestUriBuilder AddQueryParameter(string name, string value)
     {

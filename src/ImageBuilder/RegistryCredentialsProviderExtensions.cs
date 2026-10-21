@@ -41,7 +41,8 @@ internal static class RegistryCredentialsProviderExtensions
     {
         await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
-            ct => {
+            ct =>
+            {
                 action(ct);
                 return Task.CompletedTask;
             },

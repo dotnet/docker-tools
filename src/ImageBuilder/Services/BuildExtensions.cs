@@ -3,11 +3,10 @@
 
 using Microsoft.VisualStudio.Services.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.ImageBuilder.Services;
+
+public static class BuildExtensions
 {
-    public static class BuildExtensions
-    {
-        public static string GetWebLink(this TeamFoundation.Build.WebApi.Build build) =>
-            ((ReferenceLink)build.Links.Links["web"]).Href;
-    }
+    public static string GetWebLink(this TeamFoundation.Build.WebApi.Build build) =>
+        ((ReferenceLink)build.Links.Links["web"]).Href;
 }

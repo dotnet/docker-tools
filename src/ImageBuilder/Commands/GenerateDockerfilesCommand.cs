@@ -1,7 +1,6 @@
 ﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -10,98 +9,91 @@ using Cottle;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class GenerateDockerfilesCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger<GenerateDockerfilesCommand> logger) : GenerateArtifactsCommand<GenerateDockerfilesOptions>(manifestJsonService, environmentService, logger)
 {
-    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions>
+    private readonly ILogger _logger = logger;
+
+    protected override string Description => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        private readonly ILogger _logger;
+        _logger.LogInformation("GENERATING DOCKERFILES");
 
-        public GenerateDockerfilesCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger<GenerateDockerfilesCommand> logger) : base(manifestJsonService, environmentService, logger)
+        await GenerateArtifactsAsync(
+            Manifest.GetFilteredPlatforms(),
+            (platform) => platform.DockerfileTemplate,
+            (platform) => platform.DockerfilePath,
+            (platform, templatePath, indent) => GetTemplateState(platform, templatePath, indent, cancellationToken),
+            nameof(Platform.DockerfileTemplate),
+            "Dockerfile",
+            cancellationToken);
+
+        ValidateArtifacts();
+    }
+
+    public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(PlatformInfo platform, string templatePath, string indent, CancellationToken cancellationToken)
+    {
+        string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
+        ImageInfo image = Manifest.GetImageByPlatform(platform);
+
+        Dictionary<Value, Value> symbols = GetSymbols(
+            templatePath,
+            platform,
+            (platform, templatePath, currentIndent) =>
+                GetTemplateState(platform, templatePath, currentIndent + indent, cancellationToken),
+            cancellationToken);
+        symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
+        symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
+        symbols["ARCH_VERSIONED"] = versionedArch;
+        symbols["ARCH_TAG_SUFFIX"] = $"-{versionedArch}";
+        symbols["PRODUCT_VERSION"] = image.ProductVersion;
+        symbols["OS_VERSION"] = platform.Model.OsVersion;
+        symbols["OS_VERSION_BASE"] = platform.BaseOsVersion;
+        symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);
+        symbols["OS_ARCH_HYPHENATED"] = GetOsArchHyphenatedName(platform);
+
+        return (symbols, indent);
+    }
+
+    private static string GetOsVersionNumber(PlatformInfo platform)
+    {
+        const string prefixGroup = "Prefix";
+        const string versionGroup = "Version";
+        const string ltscPrefix = "ltsc";
+        Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{prefixGroup}>[a-zA-Z_]*))?(?<{versionGroup}>\d+.\d+)");
+
+        string versionNumber = string.Empty;
+        if (match.Groups[prefixGroup].Success && match.Groups[prefixGroup].Value == ltscPrefix)
         {
-            _logger = logger;
+            versionNumber = ltscPrefix;
         }
 
-        protected override string Description => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
+        versionNumber += match.Groups[versionGroup].Value;
+        return versionNumber;
+    }
 
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
+    private static string GetOsArchHyphenatedName(PlatformInfo platform)
+    {
+        string osName;
+        if (platform.BaseOsVersion.Contains("nanoserver"))
         {
-            _logger.LogInformation("GENERATING DOCKERFILES");
-
-            await GenerateArtifactsAsync(
-                Manifest.GetFilteredPlatforms(),
-                (platform) => platform.DockerfileTemplate,
-                (platform) => platform.DockerfilePath,
-                (platform, templatePath, indent) => GetTemplateState(platform, templatePath, indent, cancellationToken),
-                nameof(Platform.DockerfileTemplate),
-                "Dockerfile",
-                cancellationToken);
-
-            ValidateArtifacts();
+            string version = platform.BaseOsVersion.Split('-')[1];
+            osName = $"NanoServer-{version}";
+        }
+        else if (platform.BaseOsVersion.Contains("windowsservercore"))
+        {
+            string version = platform.BaseOsVersion.Split('-')[1];
+            osName = $"WindowsServerCore-{version}";
+        }
+        else
+        {
+            osName = platform.GetOSDisplayName().Replace(' ', '-');
         }
 
-        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(PlatformInfo platform, string templatePath, string indent, CancellationToken cancellationToken)
-        {
-            string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
-            ImageInfo image = Manifest.GetImageByPlatform(platform);
+        string archName = platform.Model.Architecture != Architecture.AMD64 ? $"-{platform.Model.Architecture.GetDisplayName()}" : string.Empty;
 
-            Dictionary<Value, Value> symbols = GetSymbols(
-                templatePath,
-                platform,
-                (platform, templatePath, currentIndent) =>
-                    GetTemplateState(platform, templatePath, currentIndent + indent, cancellationToken),
-                indent,
-                cancellationToken);
-            symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
-            symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
-            symbols["ARCH_VERSIONED"] = versionedArch;
-            symbols["ARCH_TAG_SUFFIX"] = $"-{versionedArch}";
-            symbols["PRODUCT_VERSION"] = image.ProductVersion;
-            symbols["OS_VERSION"] = platform.Model.OsVersion;
-            symbols["OS_VERSION_BASE"] = platform.BaseOsVersion;
-            symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);
-            symbols["OS_ARCH_HYPHENATED"] = GetOsArchHyphenatedName(platform);
-
-            return (symbols, indent);
-        }
-
-        private static string GetOsVersionNumber(PlatformInfo platform)
-        {
-            const string PrefixGroup = "Prefix";
-            const string VersionGroup = "Version";
-            const string LtscPrefix = "ltsc";
-            Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{PrefixGroup}>[a-zA-Z_]*))?(?<{VersionGroup}>\d+.\d+)");
-
-            string versionNumber = string.Empty;
-            if (match.Groups[PrefixGroup].Success && match.Groups[PrefixGroup].Value == LtscPrefix)
-            {
-                versionNumber = LtscPrefix;
-            }
-
-            versionNumber += match.Groups[VersionGroup].Value;
-            return versionNumber;
-        }
-
-        private static string GetOsArchHyphenatedName(PlatformInfo platform)
-        {
-            string osName;
-            if (platform.BaseOsVersion.Contains("nanoserver"))
-            {
-                string version = platform.BaseOsVersion.Split('-')[1];
-                osName = $"NanoServer-{version}";
-            }
-            else if (platform.BaseOsVersion.Contains("windowsservercore"))
-            {
-                string version = platform.BaseOsVersion.Split('-')[1];
-                osName = $"WindowsServerCore-{version}";
-            }
-            else
-            {
-                osName = platform.GetOSDisplayName().Replace(' ', '-');
-            }
-
-            string archName = platform.Model.Architecture != Architecture.AMD64 ? $"-{platform.Model.Architecture.GetDisplayName()}" : string.Empty;
-
-            return osName + archName;
-        }
+        return osName + archName;
     }
 }

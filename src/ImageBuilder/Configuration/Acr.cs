@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System;
 
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
@@ -14,10 +13,7 @@ public sealed record Acr
     private const string AcrDomain = ".azurecr.io";
     private const string Https = "https://";
 
-    private Acr(string name)
-    {
-        Name = name;
-    }
+    private Acr(string name) => Name = name;
 
     /// <summary>
     /// Parses a reference to an <see cref="Acr"/> from a string.

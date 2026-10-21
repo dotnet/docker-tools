@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -8,129 +7,122 @@ using System.Threading.Tasks;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
-{
-    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
-    {
-        private readonly IGitService _gitService;
-        private readonly IOctokitClientFactory _octokitClientFactory;
-        private readonly ILogger<PublishImageInfoCommand> _logger;
-        private readonly IArtifactService _artifactService;
-        private const string CommitMessage = "Merging Docker image info updates from build";
+namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-        public PublishImageInfoCommand(
-            IManifestJsonService manifestJsonService,
-            IGitService gitService,
-            IOctokitClientFactory octokitClientFactory,
-            ILogger<PublishImageInfoCommand> logger,
-            IArtifactService artifactService) : base(manifestJsonService)
+public class PublishImageInfoCommand(
+    IManifestJsonService manifestJsonService,
+    IGitService gitService,
+    IOctokitClientFactory octokitClientFactory,
+    ILogger<PublishImageInfoCommand> logger,
+    IArtifactService artifactService) : ManifestCommand<PublishImageInfoOptions>(manifestJsonService)
+{
+    private readonly IGitService _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+    private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
+    private readonly ILogger<PublishImageInfoCommand> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IArtifactService _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+    private const string CommitMessage = "Merging Docker image info updates from build";
+
+    protected override string Description => "Publishes a build's merged image info.";
+
+    public override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("PUBLISHING IMAGE INFO");
+        string sourceImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+
+        string repoPath = Path.Combine(Path.GetTempPath(), "imagebuilder-repos", Options.GitOptions.Repo);
+        if (Directory.Exists(repoPath))
         {
-            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-            _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _artifactService = artifactService ?? throw new ArgumentNullException(nameof(artifactService));
+            FileHelper.ForceDeleteDirectory(repoPath);
         }
 
-        protected override string Description => "Publishes a build's merged image info.";
-
-        public override async Task ExecuteAsync(CancellationToken cancellationToken)
+        try
         {
-            _logger.LogInformation("PUBLISHING IMAGE INFO");
-            string sourceImageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
+            _logger.LogInformation("Cloning GitHub repo");
 
-            string repoPath = Path.Combine(Path.GetTempPath(), "imagebuilder-repos", Options.GitOptions.Repo);
+            CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
+            CredentialsHandler credentials = await GetCredentialsAsync(cancellationToken);
+            cloneOptions.FetchOptions.CredentialsProvider = credentials;
+
+            using IRepository repo = _gitService.CloneRepository(
+                $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
+                repoPath,
+                cloneOptions);
+
+            Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
+
+            UpdateGitRepos(repoPath, repo, credentials, sourceImageInfoPath);
+        }
+        finally
+        {
             if (Directory.Exists(repoPath))
             {
                 FileHelper.ForceDeleteDirectory(repoPath);
             }
-
-            try
-            {
-                _logger.LogInformation("Cloning GitHub repo");
-
-                CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
-                CredentialsHandler credentials = await GetCredentialsAsync(cancellationToken);
-                cloneOptions.FetchOptions.CredentialsProvider = credentials;
-
-                using IRepository repo =_gitService.CloneRepository(
-                    $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
-                    repoPath,
-                    cloneOptions);
-
-                Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
-
-                UpdateGitRepos(repoPath, repo, credentials, sourceImageInfoPath);
-            }
-            finally
-            {
-                if (Directory.Exists(repoPath))
-                {
-                    FileHelper.ForceDeleteDirectory(repoPath);
-                }
-            }
         }
+    }
 
-        private void UpdateGitRepos(
-            string repoPath,
-            IRepository repo,
-            CredentialsHandler credentials,
-            string sourceImageInfoPath)
+    private void UpdateGitRepos(
+        string repoPath,
+        IRepository repo,
+        CredentialsHandler credentials,
+        string sourceImageInfoPath)
+    {
+        string imageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
+
+        // Ensure the directory exists
+        string? imageInfoDir = Path.GetDirectoryName(imageInfoPath);
+        if (imageInfoDir is not null)
         {
-            string imageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
-
-            // Ensure the directory exists
-            string? imageInfoDir = Path.GetDirectoryName(imageInfoPath);
-            if (imageInfoDir is not null)
-            {
-                Directory.CreateDirectory(imageInfoDir);
-            }
-
-            File.Copy(sourceImageInfoPath, imageInfoPath, overwrite: true);
-
-            if (Options.IsDryRun)
-            {
-                _logger.LogInformation("Skipping commit and push due to dry run.");
-                return;
-            }
-
-            _gitService.Stage(repo, imageInfoPath);
-            Signature sig = new(Options.GitOptions.Username, Options.GitOptions.Email, DateTimeOffset.Now);
-
-            Commit commit;
-            try
-            {
-                _logger.LogInformation("Committing changes...");
-                commit = repo.Commit(CommitMessage, sig, sig);
-                _logger.LogInformation($"Created commit {commit.Sha}: '{commit.Message}'");
-            }
-            catch (EmptyCommitException)
-            {
-                _logger.LogInformation("No changes detected in the image info file. Skipping commit and push.");
-                return;
-            }
-
-            Branch branch = repo.Branches[Options.GitOptions.Branch];
-
-            _logger.LogInformation("Pushing changes to GitHub");
-            repo.Network.Push(branch,
-                new PushOptions
-                {
-                    CredentialsProvider = credentials
-                });
-
-            Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
-            _logger.LogInformation(
-                $"The '{Options.GitOptions.Path}' file was updated. Remote URL: {gitHubCommitUrl}");
+            Directory.CreateDirectory(imageInfoDir);
         }
 
-        private async Task<CredentialsHandler> GetCredentialsAsync(CancellationToken cancellationToken)
+        File.Copy(sourceImageInfoPath, imageInfoPath, overwrite: true);
+
+        if (Options.IsDryRun)
         {
-            string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
-            return (_, _, _) => new UsernamePasswordCredentials
-            {
-                Username = "_",
-                Password = token
-            };
+            _logger.LogInformation("Skipping commit and push due to dry run.");
+            return;
         }
+
+        _gitService.Stage(repo, imageInfoPath);
+        Signature sig = new(Options.GitOptions.Username, Options.GitOptions.Email, DateTimeOffset.Now);
+
+        Commit commit;
+        try
+        {
+            _logger.LogInformation("Committing changes...");
+            commit = repo.Commit(CommitMessage, sig, sig);
+            _logger.LogInformation("Created commit {CommitSha}: '{CommitMessage}'", commit.Sha, commit.Message);
+        }
+        catch (EmptyCommitException)
+        {
+            _logger.LogInformation("No changes detected in the image info file. Skipping commit and push.");
+            return;
+        }
+
+        Branch branch = repo.Branches[Options.GitOptions.Branch];
+
+        _logger.LogInformation("Pushing changes to GitHub");
+        repo.Network.Push(branch,
+            new PushOptions
+            {
+                CredentialsProvider = credentials
+            });
+
+        Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
+        _logger.LogInformation(
+            "The '{GitPath}' file was updated. Remote URL: {GitHubCommitUrl}",
+            Options.GitOptions.Path,
+            gitHubCommitUrl);
+    }
+
+    private async Task<CredentialsHandler> GetCredentialsAsync(CancellationToken cancellationToken)
+    {
+        string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
+        return (_, _, _) => new UsernamePasswordCredentials
+        {
+            Username = "_",
+            Password = token
+        };
     }
 }

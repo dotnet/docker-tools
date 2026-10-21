@@ -1,20 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json.Nodes;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using OrasProject.Oras;
 using OrasProject.Oras.Oci;
 using OrasProject.Oras.Registry;

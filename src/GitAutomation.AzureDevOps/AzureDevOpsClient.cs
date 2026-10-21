@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Http.Json;
 
@@ -23,15 +22,13 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
     /// <param name="project">Azure DevOps project name or ID.</param>
     /// <param name="accessToken">Azure DevOps access token.</param>
     public AzureDevOpsClient(string organization, string project, string accessToken)
-        : this(CreateHttpClient(organization, project, accessToken))
-    {
+        : this(CreateHttpClient(organization, project, accessToken)) =>
         // This is a convenience constructor that allows the client to be used
         // without a DI container and without a ton of boilerplate code.
         // We create our own HttpClient, so we must dispose it when we're done.
         // If the caller provides their own HttpClient, they are responsible
         // for disposing it.
         _ownsHttpClient = true;
-    }
 
     /// <summary>Gets a repository by name or ID.</summary>
     /// <param name="repository">The repository name or ID.</param>
@@ -111,7 +108,9 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
                     .AppendPath("commits");
 
                 if (continuationToken is not null)
+                {
                     uri.AddQueryParameter("continuationToken", continuationToken);
+                }
 
                 return uri.Build();
             },
@@ -201,7 +200,7 @@ public sealed class AzureDevOpsClient(HttpClient httpClient) : IDisposable
 
     private static HttpClient CreateHttpClient(string organization, string project, string accessToken)
     {
-        var authenticationHandler = new AuthenticationHandler(accessToken)
+        AuthenticationHandler authenticationHandler = new AuthenticationHandler(accessToken)
         {
             InnerHandler = new HttpClientHandler(),
         };

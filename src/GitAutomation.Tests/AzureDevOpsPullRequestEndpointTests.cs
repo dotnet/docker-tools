@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net;
 using System.Text;
@@ -315,10 +314,7 @@ public sealed class AzureDevOpsPullRequestEndpointTests
     }
 
     private static HttpClient CreateHttpClient(
-        Func<HttpRequestMessage, int, HttpResponseMessage> send)
-    {
-        return CreateHttpClient((request, count) => Task.FromResult(send(request, count)));
-    }
+        Func<HttpRequestMessage, int, HttpResponseMessage> send) => CreateHttpClient((request, count) => Task.FromResult(send(request, count)));
 
     private static HttpResponseMessage JsonResponse(string json)
     {

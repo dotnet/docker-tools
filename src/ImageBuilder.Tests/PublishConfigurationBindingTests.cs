@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
-
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 /// <summary>
 /// Tests that <see cref="PublishConfiguration"/> binds correctly from JSON
-/// via <see cref="Microsoft.Extensions.Configuration"/>.
+/// via <see cref="Extensions.Configuration"/>.
 /// </summary>
 [TestClass]
 public class PublishConfigurationBindingTests
@@ -99,7 +97,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var buildAuth = config.FindRegistryAuthentication("build.azurecr.io");
+        RegistryAuthentication? buildAuth = config.FindRegistryAuthentication("build.azurecr.io");
         buildAuth.ShouldNotBeNull();
         buildAuth.ServiceConnection.ShouldNotBeNull();
         buildAuth.ServiceConnection.Name.ShouldBe("build-sc");
@@ -115,7 +113,7 @@ public class PublishConfigurationBindingTests
     public void AddPublishConfiguration_GetKnownRegistries_ReturnsAllEndpoints()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
-        var knownRegistries = config.GetKnownRegistries().ToList();
+        List<RegistryEndpoint> knownRegistries = config.GetKnownRegistries().ToList();
 
         knownRegistries.Count.ShouldBe(4);
         knownRegistries.ShouldContain(r => r.Server == "build.azurecr.io");
@@ -129,7 +127,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var auth = config.FindRegistryAuthentication("build.azurecr.io");
+        RegistryAuthentication? auth = config.FindRegistryAuthentication("build.azurecr.io");
 
         auth.ShouldNotBeNull();
         auth.ServiceConnection?.TenantId.ShouldBe("tenant-build");
@@ -140,7 +138,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var auth = config.FindRegistryAuthentication("build");
+        RegistryAuthentication? auth = config.FindRegistryAuthentication("build");
 
         auth.ShouldNotBeNull();
         auth.ServiceConnection?.TenantId.ShouldBe("tenant-build");
@@ -151,7 +149,7 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var auth = config.FindRegistryAuthentication("nonexistent.azurecr.io");
+        RegistryAuthentication? auth = config.FindRegistryAuthentication("nonexistent.azurecr.io");
 
         auth.ShouldBeNull();
     }
@@ -224,8 +222,8 @@ public class PublishConfigurationBindingTests
 
         PublishConfiguration config = BuildConfiguration(sharedAuthJson);
 
-        var buildAuth = config.FindRegistryAuthentication(config.BuildRegistry!.Server!);
-        var mirrorAuth = config.FindRegistryAuthentication(config.InternalMirrorRegistry!.Server!);
+        RegistryAuthentication? buildAuth = config.FindRegistryAuthentication(config.BuildRegistry!.Server!);
+        RegistryAuthentication? mirrorAuth = config.FindRegistryAuthentication(config.InternalMirrorRegistry!.Server!);
 
         buildAuth.ShouldNotBeNull();
         mirrorAuth.ShouldNotBeNull();
@@ -235,16 +233,16 @@ public class PublishConfigurationBindingTests
 
     /// <summary>
     /// Helper method that builds a <see cref="PublishConfiguration"/> from JSON
-    /// using the actual <see cref="ConfigurationExtensions.AddPublishConfiguration"/> method.
+    /// using the actual <see cref="Configuration.ConfigurationExtensions.AddPublishConfiguration"/> method.
     /// </summary>
     private static PublishConfiguration BuildConfiguration(string json)
     {
-        var builder = Host.CreateApplicationBuilder();
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(json)));
         builder.AddPublishConfiguration();
 
-        using var host = builder.Build();
-        var options = host.Services.GetRequiredService<IOptions<PublishConfiguration>>();
+        using IHost host = builder.Build();
+        IOptions<PublishConfiguration> options = host.Services.GetRequiredService<IOptions<PublishConfiguration>>();
         return options.Value;
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -10,14 +9,12 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
-using Microsoft.Extensions.Logging;
 using OrasProject.Oras.Oci;
 using Polly.Timeout;
 using Shouldly;
@@ -35,9 +32,9 @@ public class OrasDotNetServiceTests
     [DataRow("   ")]
     public async Task GetReferrersAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
     {
-        var service = CreateService();
+        OrasDotNetService service = CreateService();
 
-        var exception = await Should.ThrowAsync<ArgumentException>(async () =>
+        ArgumentException exception = await Should.ThrowAsync<ArgumentException>(async () =>
             await service.GetReferrersAsync(reference!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -46,17 +43,17 @@ public class OrasDotNetServiceTests
     [TestMethod]
     public async Task PushSignatureAsync_ReadsPayloadFile()
     {
-        var fileSystem = new InMemoryFileSystem();
-        var service = CreateService(fileSystem);
-        var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        InMemoryFileSystem fileSystem = new InMemoryFileSystem();
+        OrasDotNetService service = CreateService(fileSystem);
+        Descriptor subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
-        var result = new PayloadSigningResult(
+        PayloadSigningResult result = new PayloadSigningResult(
             "registry.io/repo:tag",
             subjectDescriptor,
             "/nonexistent/file.cose",
             "sha256:abcd1234");
 
-        var exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
+        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
             await service.PushSignatureAsync(subjectDescriptor, result, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -65,10 +62,10 @@ public class OrasDotNetServiceTests
     [TestMethod]
     public async Task PushSignatureAsync_ThrowsForNullResult()
     {
-        var service = CreateService();
-        var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        OrasDotNetService service = CreateService();
+        Descriptor subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
-        var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
+        ArgumentNullException exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
             await service.PushSignatureAsync(subjectDescriptor, null!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -81,9 +78,9 @@ public class OrasDotNetServiceTests
     [DataRow("   ")]
     public async Task GetDescriptorAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
     {
-        var service = CreateService();
+        OrasDotNetService service = CreateService();
 
-        var exception = await Should.ThrowAsync<ArgumentException>(async () =>
+        ArgumentException exception = await Should.ThrowAsync<ArgumentException>(async () =>
             await service.GetDescriptorAsync(reference!, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -92,15 +89,15 @@ public class OrasDotNetServiceTests
     [TestMethod]
     public async Task PushSignatureAsync_NullSubjectDescriptor_ThrowsArgumentNullException()
     {
-        var service = CreateService();
-        var descriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
-        var signedPayload = new PayloadSigningResult(
+        OrasDotNetService service = CreateService();
+        Descriptor descriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        PayloadSigningResult signedPayload = new PayloadSigningResult(
             "registry.io/repo:tag",
             descriptor,
             "/tmp/test.cose",
             "[\"thumbprint\"]");
 
-        var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
+        ArgumentNullException exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
             await service.PushSignatureAsync(null!, signedPayload, TestContext?.CancellationToken ?? default));
 
         exception.ShouldNotBeNull();
@@ -166,8 +163,10 @@ public class OrasDotNetServiceTests
             reference, ReferrerArtifactType, new Dictionary<string, string> { ["a"] = "2" },
             TestContext?.CancellationToken ?? default);
 
-        handler.Requests.Count(r => r.StartsWith("POST /v2/repo/blobs/uploads/")).ShouldBe(1);
-        handler.Requests.Count(r => r.StartsWith("PUT /v2/repo/manifests/")).ShouldBe(2);
+        handler.Requests.Count(
+            r => r.StartsWith("POST /v2/repo/blobs/uploads/", StringComparison.Ordinal)).ShouldBe(1);
+        handler.Requests.Count(
+            r => r.StartsWith("PUT /v2/repo/manifests/", StringComparison.Ordinal)).ShouldBe(2);
     }
 
     [TestMethod]
@@ -193,8 +192,10 @@ public class OrasDotNetServiceTests
 
         handler.ManifestPushContents.Count.ShouldBe(timeoutCount + 1);
         handler.ManifestPushContents.Distinct().ShouldHaveSingleItem();
-        handler.Requests.Count(r => r.StartsWith("POST /v2/repo/blobs/uploads/")).ShouldBe(1);
-        digest.ShouldBe(handler.Requests.Last(r => r.StartsWith("PUT /v2/repo/manifests/"))
+        handler.Requests.Count(
+            r => r.StartsWith("POST /v2/repo/blobs/uploads/", StringComparison.Ordinal)).ShouldBe(1);
+        digest.ShouldBe(handler.Requests.Last(
+            r => r.StartsWith("PUT /v2/repo/manifests/", StringComparison.Ordinal))
             ["PUT /v2/repo/manifests/".Length..]);
     }
 
@@ -261,10 +262,10 @@ public class OrasDotNetServiceTests
         IFileSystem? fileSystem = null,
         IHttpClientFactory? httpClientFactory = null)
     {
-        var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
+        IRegistryCredentialsProvider credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
         httpClientFactory ??= CreateHttpClientFactory();
-        var cache = Mock.Of<IMemoryCache>();
-        var logger = Mock.Of<ILogger<OrasDotNetService>>();
+        IMemoryCache cache = Mock.Of<IMemoryCache>();
+        ILogger<OrasDotNetService> logger = Mock.Of<ILogger<OrasDotNetService>>();
 
         return new OrasDotNetService(
             credentialsProvider,
@@ -308,7 +309,8 @@ public class OrasDotNetServiceTests
                 Content = new ByteArrayContent([])
             };
 
-            if (request.Method == HttpMethod.Head && path.StartsWith("/v2/repo/manifests/"))
+            if (request.Method == HttpMethod.Head &&
+                path.StartsWith("/v2/repo/manifests/", StringComparison.Ordinal))
             {
                 response.Content.Headers.ContentType = new MediaTypeHeaderValue(ManifestMediaType);
                 response.Content.Headers.ContentLength = 123;
@@ -323,7 +325,8 @@ public class OrasDotNetServiceTests
             {
                 response.StatusCode = HttpStatusCode.Created;
             }
-            else if (request.Method == HttpMethod.Put && path.StartsWith("/v2/repo/manifests/"))
+            else if (request.Method == HttpMethod.Put &&
+                path.StartsWith("/v2/repo/manifests/", StringComparison.Ordinal))
             {
                 HttpContent content = request.Content
                     ?? throw new InvalidOperationException("A manifest push must include content.");

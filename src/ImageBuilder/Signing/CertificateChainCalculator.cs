@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Formats.Cbor;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -35,18 +33,18 @@ public static class CertificateChainCalculator
     public static string CalculateCertificateChainThumbprints(string signedPayloadPath, IFileSystem fileSystem)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(signedPayloadPath);
-        var fileBytes = fileSystem.ReadAllBytes(signedPayloadPath);
-        var reader = new CborReader(fileBytes);
+        byte[] fileBytes = fileSystem.ReadAllBytes(signedPayloadPath);
+        CborReader reader = new CborReader(fileBytes);
 
         // Read and verify COSE_Sign1 tag
-        var tag = reader.ReadTag();
+        CborTag tag = reader.ReadTag();
         if (tag != CoseSign1Tag)
         {
             throw new InvalidOperationException($"Expected COSE_Sign1 tag ({(int)CoseSign1Tag}), got {(int)tag}.");
         }
 
         // COSE_Sign1 structure is an array: [protected, unprotected, payload, signature]
-        var arrayLength = reader.ReadStartArray()
+        int arrayLength = reader.ReadStartArray()
             ?? throw new InvalidOperationException("Indefinite-length COSE_Sign1 arrays are not supported.");
         if (arrayLength < 2)
         {
@@ -57,10 +55,10 @@ public static class CertificateChainCalculator
         reader.SkipValue();
 
         // Read unprotected header (index 1) - this is a map
-        var x5chainBytes = ReadX5ChainFromMap(reader);
+        List<byte[]> x5chainBytes = ReadX5ChainFromMap(reader);
 
-        var thumbprints = new List<string>();
-        foreach (var certBytes in x5chainBytes)
+        List<string> thumbprints = [];
+        foreach (byte[] certBytes in x5chainBytes)
         {
             thumbprints.Add(ComputeSha256Hex(certBytes));
         }
@@ -73,11 +71,11 @@ public static class CertificateChainCalculator
     /// </summary>
     private static List<byte[]> ReadX5ChainFromMap(CborReader reader)
     {
-        var mapLength = reader.ReadStartMap()
+        int mapLength = reader.ReadStartMap()
             ?? throw new InvalidOperationException("Indefinite-length CBOR maps are not supported.");
-        var x5chainArray = new List<byte[]>();
+        List<byte[]> x5chainArray = [];
 
-        for (var i = 0; i < mapLength; i++)
+        for (int i = 0; i < mapLength; i++)
         {
             // COSE header keys can be integers or text strings (RFC 8152 §3.1).
             // We only care about the integer key 33 (x5chain), so skip text string keys.
@@ -88,11 +86,11 @@ public static class CertificateChainCalculator
                 continue;
             }
 
-            var key = reader.ReadInt32();
+            int key = reader.ReadInt32();
 
             if (key == CoseX5ChainKey)
             {
-                var state = reader.PeekState();
+                CborReaderState state = reader.PeekState();
 
                 if (state == CborReaderState.ByteString)
                 {
@@ -102,12 +100,13 @@ public static class CertificateChainCalculator
                 else if (state == CborReaderState.StartArray)
                 {
                     // Array of certificates
-                    var certArrayLength = reader.ReadStartArray()
+                    int certArrayLength = reader.ReadStartArray()
                         ?? throw new InvalidOperationException("Indefinite-length certificate arrays are not supported.");
-                    for (var j = 0; j < certArrayLength; j++)
+                    for (int j = 0; j < certArrayLength; j++)
                     {
                         x5chainArray.Add(reader.ReadByteString());
                     }
+
                     reader.ReadEndArray();
                 }
                 else
@@ -136,7 +135,7 @@ public static class CertificateChainCalculator
     /// </summary>
     private static string ComputeSha256Hex(byte[] data)
     {
-        var hashBytes = SHA256.HashData(data);
+        byte[] hashBytes = SHA256.HashData(data);
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 }

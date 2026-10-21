@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -16,13 +15,10 @@ public class SubscriptionOptions
         Description = "Path to the subscriptions file"
     };
 
-    public IEnumerable<Option> GetCliOptions() =>
+    public static IEnumerable<Option> GetCliOptions() =>
         [SubscriptionsPathOption];
 
-    public IEnumerable<Argument> GetCliArguments() => [];
+    public static IEnumerable<Argument> GetCliArguments() => [];
 
-    public void Bind(ParseResult result)
-    {
-        SubscriptionsPath = result.GetValue(SubscriptionsPathOption);
-    }
+    public void Bind(ParseResult result) => SubscriptionsPath = result.GetValue(SubscriptionsPathOption);
 }

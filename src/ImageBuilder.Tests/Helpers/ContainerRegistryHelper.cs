@@ -5,10 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using Azure;
 using Azure.Containers.ContainerRegistry;
-using Azure.Core;
 using Moq;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -26,6 +24,7 @@ internal static class ContainerRegistryHelper
                 .Setup(o => o.GetProperties(It.IsAny<CancellationToken>()))
                 .Returns(CreateAzureResponse(repositoryProperties));
         }
+
         repoMock
             .Setup(o => o.GetAllManifestPropertiesAsync(It.IsAny<ArtifactManifestOrder>(), It.IsAny<CancellationToken>()))
             .Returns(new AsyncPageableMock<ArtifactManifestProperties>(manifestProperties));
@@ -93,10 +92,11 @@ internal static class ContainerRegistryHelper
             ];
 
         MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateContainerRepositoryProperties), BindingFlags.Static | BindingFlags.Public) ??
-            throw new Exception("Unable to find method");
+            throw new InvalidOperationException("Unable to find method");
         ConstructorInfo ctor = typeof(ContainerRepositoryProperties).GetConstructor(
             BindingFlags.NonPublic | BindingFlags.Instance,
-            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ?? throw new Exception("Unable to find constructor");
+            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ??
+            throw new InvalidOperationException("Unable to find constructor");
         return (ContainerRepositoryProperties)ctor.Invoke(args);
     }
 
@@ -173,11 +173,12 @@ internal static class ContainerRegistryHelper
             ];
 
         MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateArtifactManifestProperties), BindingFlags.Static | BindingFlags.Public) ??
-            throw new Exception("Unable to find method");
+            throw new InvalidOperationException("Unable to find method");
 
         ConstructorInfo ctor = typeof(ArtifactManifestProperties).GetConstructor(
             BindingFlags.NonPublic | BindingFlags.Instance,
-            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ?? throw new Exception("Unable to find constructor");
+            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ??
+            throw new InvalidOperationException("Unable to find constructor");
         return (ArtifactManifestProperties)ctor.Invoke(args);
     }
 }

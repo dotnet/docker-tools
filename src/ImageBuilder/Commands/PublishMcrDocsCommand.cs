@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -76,7 +75,8 @@ public class PublishMcrDocsCommand(
     }
 
     private bool PathIsValid(Readme readme) =>
-        Options.RootPath is null || Path.GetFullPath(readme.Path).StartsWith(Path.GetFullPath(Options.RootPath));
+        Options.RootPath is null || Path.GetFullPath(readme.Path).StartsWith(
+            Path.GetFullPath(Options.RootPath), PathHelper.PathComparison);
 
     private void ValidateReadmeFilenames(ManifestInfo manifest)
     {
@@ -152,7 +152,7 @@ public class PublishMcrDocsCommand(
     private string GetProductRepo(RepoInfo repo)
     {
         string repoName = repo.QualifiedName.TrimStartString($"{Manifest.Registry}/");
-        return repoName.Substring(0, repoName.LastIndexOf('/'));
+        return repoName[..repoName.LastIndexOf('/')];
     }
 
     private List<GitObject> GetUpdatedReadmes()

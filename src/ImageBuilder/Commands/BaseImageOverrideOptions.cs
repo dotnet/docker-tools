@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -56,10 +55,10 @@ public class BaseImageOverrideOptions
         return imageName;
     }
 
-    public IEnumerable<Option> GetCliOptions() =>
+    public static IEnumerable<Option> GetCliOptions() =>
         [RegexPatternOption, SubstitutionOption];
 
-    public IEnumerable<Argument> GetCliArguments() => [];
+    public static IEnumerable<Argument> GetCliArguments() => [];
 
     public void Bind(ParseResult result)
     {

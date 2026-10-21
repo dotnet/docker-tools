@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
@@ -106,15 +103,15 @@ public class EsrpSigningService(
             payloadFilePaths.Select(path => new SignFileEntry(SrcPath: path, DstPath: path));
 
         string keycodeString = signingKeyCode.ToString();
-        var record = new SignFileRecord(Certs: keycodeString, SignFileList: signFiles);
-        var signList = new SignList(SignFileRecordList: [record]);
+        SignFileRecord record = new SignFileRecord(Certs: keycodeString, SignFileList: signFiles);
+        SignList signList = new SignList(SignFileRecordList: [record]);
 
-        return JsonSerializer.Serialize(signList, s_esrpJsonOptions);
+        return JsonSerializer.Serialize(signList, EsrpJsonOptions);
     }
 
     // Models for ESRP/MicroBuild signing service
-    private static readonly JsonSerializerOptions s_esrpJsonOptions = new() { WriteIndented = true };
-    private record SignList(IEnumerable<SignFileRecord> SignFileRecordList);
-    private record SignFileRecord(string Certs, IEnumerable<SignFileEntry> SignFileList);
-    private record SignFileEntry(string SrcPath, string DstPath);
+    private static readonly JsonSerializerOptions EsrpJsonOptions = new() { WriteIndented = true };
+    private sealed record SignList(IEnumerable<SignFileRecord> SignFileRecordList);
+    private sealed record SignFileRecord(string Certs, IEnumerable<SignFileEntry> SignFileList);
+    private sealed record SignFileEntry(string SrcPath, string DstPath);
 }

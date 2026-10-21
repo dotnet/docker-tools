@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -1601,7 +1602,7 @@ public class GetStaleImagesCommandTests
             {
                 Branch = "testBranch" + index,
                 Repo = repoName,
-                Owner = GetRepoOwner(testMethodName, index.ToString()),
+                Owner = GetRepoOwner(testMethodName, index.ToString(CultureInfo.InvariantCulture)),
                 Path = "testmanifest.json"
             },
             ImageInfo = new GitFile

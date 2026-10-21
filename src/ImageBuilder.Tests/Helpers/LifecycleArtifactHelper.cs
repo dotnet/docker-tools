@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -14,7 +15,8 @@ internal static class LifecycleArtifactHelper
         Dictionary<string, string> annotations = [];
         if (endOfLifeDate is DateOnly date)
         {
-            annotations[LifecycleAnnotations.EndOfLife] = date.ToString(LifecycleAnnotations.EndOfLifeDateFormat);
+            annotations[LifecycleAnnotations.EndOfLife] =
+                date.ToString(LifecycleAnnotations.EndOfLifeDateFormat, CultureInfo.InvariantCulture);
         }
 
         return new LifecycleArtifact(

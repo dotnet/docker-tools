@@ -56,7 +56,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
         EmitVstsVariables(matrices);
     }
 
-    private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphs(
+    private static List<List<PlatformInfo>> ConsolidateSubgraphs(
         IEnumerable<IEnumerable<PlatformInfo>> subgraphs, Func<PlatformInfo, string> getKey)
     {
         List<List<PlatformInfo>> subGraphsList = subgraphs.Select(subgraph => subgraph.ToList()).ToList();

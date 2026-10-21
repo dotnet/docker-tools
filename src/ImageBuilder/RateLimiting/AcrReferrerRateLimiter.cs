@@ -76,7 +76,7 @@ public sealed class AcrReferrerRateLimiter : IDisposable
     private Lazy<RateLimiter> CreateLazyLimiter(string host) =>
         new(() => _limiterFactory(host), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private static RateLimiter CreateSlidingWindowLimiter(int permitLimit) =>
+    private static SlidingWindowRateLimiter CreateSlidingWindowLimiter(int permitLimit) =>
         new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
         {
             PermitLimit = permitLimit,

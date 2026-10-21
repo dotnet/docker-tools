@@ -19,10 +19,10 @@ public static class EnumerableExtensions
             return false;
         }
 
-        IList<T> sourceList = source
+        List<T> sourceList = source
             .OrderBy(item => item)
             .ToList();
-        IList<T> itemsList = items
+        List<T> itemsList = items
             .OrderBy(item => item)
             .ToList();
 

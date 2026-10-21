@@ -197,7 +197,7 @@ public class MarImageIngestionReporter(
                     .Any(statusGroup => statusGroup.All(status => status.OverallStatus == StageStatus.Failed)))
                 .OrderBy(result => result.DigestInfo.Repo)
                 .ThenBy(result => result.DigestInfo.Digest);
-            IEnumerable<ImageResultInfo> successfulResults = imageResultInfos.Except(failedResults);
+            List<ImageResultInfo> successfulResults = imageResultInfos.Except(failedResults).ToList();
 
             foreach (ImageResultInfo result in failedResults)
             {

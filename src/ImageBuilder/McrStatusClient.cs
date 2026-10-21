@@ -83,7 +83,7 @@ public class McrStatusClient : IMcrStatusClient
                 (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, ct, AzureScopes.McrStatusApi)).Token,
             cancellationToken);
 
-    private Task RefreshAccessTokenAsync(CancellationToken cancellationToken) =>
+    private Task<string> RefreshAccessTokenAsync(CancellationToken cancellationToken) =>
         _accessToken.ResetValueAsync(
             cancellationToken,
             async ct =>

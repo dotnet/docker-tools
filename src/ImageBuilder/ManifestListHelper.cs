@@ -42,7 +42,7 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
+        List<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
             GetImagesWithBuiltPlatforms(manifest, imageArtifactDetails);
 
         return imagesWithBuiltPlatforms
@@ -87,7 +87,7 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
+        List<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
             GetImagesWithBuiltPlatforms(manifest, imageArtifactDetails);
 
         return imagesWithBuiltPlatforms
@@ -97,7 +97,7 @@ public static class ManifestListHelper
             .AsReadOnly();
     }
 
-    private static IEnumerable<(RepoInfo Repo, ImageInfo Image)> GetImagesWithBuiltPlatforms(
+    private static List<(RepoInfo Repo, ImageInfo Image)> GetImagesWithBuiltPlatforms(
         ManifestInfo manifest,
         ImageArtifactDetails imageArtifactDetails) =>
         manifest.FilteredRepos

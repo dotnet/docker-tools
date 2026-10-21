@@ -37,7 +37,7 @@ public class QueueBuildCommand(
         string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
         Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson)
             ?? throw new InvalidOperationException("Failed to deserialize subscriptions file.");
-        IEnumerable<SubscriptionImagePaths> imagePathsBySubscription = GetAllSubscriptionImagePaths();
+        List<SubscriptionImagePaths> imagePathsBySubscription = GetAllSubscriptionImagePaths();
 
         if (imagePathsBySubscription.Count > 0)
         {
@@ -60,7 +60,7 @@ public class QueueBuildCommand(
         }
     }
 
-    private IEnumerable<SubscriptionImagePaths> GetAllSubscriptionImagePaths()
+    private List<SubscriptionImagePaths> GetAllSubscriptionImagePaths()
     {
         // This data comes from the GetStaleImagesCommand and represents a mapping of a subscription to the Dockerfile paths
         // of the images that need to be built. A given subscription may have images that are spread across Linux/Windows, AMD64/ARM

@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class BuildCommand : ManifestCommand<BuildOptions>
 {
-    private readonly IDockerService _dockerService;
+    private readonly DockerServiceCache _dockerService;
     private readonly ILogger<BuildCommand> _logger;
     private readonly IGitService _gitService;
     private readonly ICopyImageService _copyImageService;
@@ -358,7 +358,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
 
                     if (!isCachedImage)
                     {
-                        IReadOnlyList<string> allTags = GetStagingTagNames(allTagInfos);
+                        List<string> allTags = GetStagingTagNames(allTagInfos);
                         _processedTagNames.UnionWith(allTags);
 
                         BuildImage(platform, allTags, cancellationToken);
@@ -553,7 +553,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         return buildArgs;
     }
 
-    private IReadOnlyDictionary<string, string> GetBuildSecrets() =>
+    private Dictionary<string, string> GetBuildSecrets() =>
         Options.Internal
             ? new Dictionary<string, string> { ["ACCESSTOKEN"] = _storageAccountToken.Value }
             : [];
@@ -579,7 +579,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         // The pulled image is then tagged with the same tags it would be tagged with had it been built locally. This allows
         // dependent Dockerfiles that reference those tags to seamlessly consume the pulled image.
 
-        IReadOnlyList<string> tagNames = GetStagingTagNames(tagInfos);
+        List<string> tagNames = GetStagingTagNames(tagInfos);
         string copiedSourceDigest = sourceDigest;
         if (Options.IsPushEnabled)
         {
@@ -732,7 +732,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         .SelectMany(imageData => imageData.Platforms)
         ?? [];
 
-    private static IReadOnlyList<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
+    private static List<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
         tagInfos.Select(tag => tag.FullyQualifiedName).Distinct(StringComparer.Ordinal).ToList();
 
     private void PushImages(CancellationToken cancellationToken)

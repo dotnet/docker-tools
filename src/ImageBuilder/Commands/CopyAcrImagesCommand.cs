@@ -73,7 +73,7 @@ public class CopyAcrImagesCommand(
         await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
     }
 
-    private IEnumerable<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(
+    private List<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(
         RepoInfo repo,
         PlatformInfo platform,
         ImageArtifactDetails imageArtifactDetails)

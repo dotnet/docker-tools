@@ -24,7 +24,7 @@ public class WaitForMcrDocIngestionCommandTests
     {
         const string commitDigest = "commit digest";
 
-        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        List<CommitResult>.Enumerator commitResultEnumerator = new List<CommitResult>
         {
             new CommitResult
             {
@@ -104,7 +104,7 @@ public class WaitForMcrDocIngestionCommandTests
         const string commitDigest = "commit digest";
         const string onboardingRequestId = "onboardingRequestId";
 
-        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        List<CommitResult>.Enumerator commitResultEnumerator = new List<CommitResult>
         {
             new CommitResult
             {
@@ -199,7 +199,7 @@ public class WaitForMcrDocIngestionCommandTests
 
         DateTime baselineTime = DateTime.Now;
 
-        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        List<CommitResult>.Enumerator commitResultEnumerator = new List<CommitResult>
         {
             new CommitResult
             {
@@ -299,7 +299,7 @@ public class WaitForMcrDocIngestionCommandTests
 
         DateTime baselineTime = DateTime.Now;
 
-        IEnumerator<CommitResult> commitResultEnumerator = new List<CommitResult>
+        List<CommitResult>.Enumerator commitResultEnumerator = new List<CommitResult>
         {
             new CommitResult
             {

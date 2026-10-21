@@ -240,7 +240,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
             cancellationToken: cancellationToken);
     }
 
-    private IReadOnlyList<string> GetDestinationTagsForImage(PlatformInfo platform, string sourceRepo)
+    private List<string> GetDestinationTagsForImage(PlatformInfo platform, string sourceRepo)
     {
         string prefix = Options.RepoPrefix ?? string.Empty;
         string destRepo = $"{prefix}{sourceRepo}";

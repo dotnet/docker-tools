@@ -1624,7 +1624,6 @@ public class GetStaleImagesCommandTests
     {
         private readonly List<string> _filesToCleanup = [];
         private readonly List<string> _foldersToCleanup = [];
-        private readonly Dictionary<string, string> _imageDigests = [];
         private readonly string _subscriptionsPath;
         private readonly Mock<ILogger<GetStaleImagesCommand>> _loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
         private readonly string _osType;
@@ -1639,7 +1638,7 @@ public class GetStaleImagesCommandTests
 
         public GetStaleImagesCommand Command { get; }
 
-        public IDictionary<string, string> ImageDigests => _imageDigests;
+        public Dictionary<string, string> ImageDigests { get; } = [];
 
         /// <summary>
         /// Initializes a new instance of <see cref="TestFixture"/>.
@@ -1664,7 +1663,7 @@ public class GetStaleImagesCommandTests
                 {
                     // Normalize the key using ImageName.Parse to match how the mock receives ImageName
                     string normalizedName = ImageName.Parse(fromImage.Name, autoResolveImpliedNames: true).ToString();
-                    _imageDigests[normalizedName] = fromImage.Digest;
+                    ImageDigests[normalizedName] = fromImage.Digest;
                 }
             }
 
@@ -1686,7 +1685,7 @@ public class GetStaleImagesCommandTests
         /// <summary>
         /// Verifies the test execution to ensure the results match the expected state.
         /// </summary>
-        public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
+        public void Verify(Dictionary<Subscription, IList<string>> expectedPathsBySubscription)
         {
             IInvocation invocation = _loggerServiceMock.Invocations
                 .First(invocation => invocation.Method.Name == nameof(ILogger.Log) &&
@@ -1883,7 +1882,7 @@ public class GetStaleImagesCommandTests
             manifestServiceMock
                 .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ImageName image, bool isDryRun, CancellationToken _) =>
-                    new ManifestQueryResult(_imageDigests[image], []));
+                    new ManifestQueryResult(ImageDigests[image], []));
 
             Mock<IManifestServiceFactory> manifestServiceFactoryMock =
                 ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock.Object);

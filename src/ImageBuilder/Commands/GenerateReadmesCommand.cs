@@ -129,7 +129,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
             return readme;
         }
 
-        IEnumerable<TagGroup> repoTagGroups = GenerateRepoTagGroups(repo);
+        List<TagGroup> repoTagGroups = GenerateRepoTagGroups(repo);
 
         _logger.LogInformation("GENERATING TAGS LISTING");
         string tagsMarkdown = GenerateMarkdownTables(repoTagGroups);
@@ -148,7 +148,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
     /// Extracts tag groups from MCR tags metadata YAML. Each tag group represents
     /// a set of tags pointing to the same image digest.
     /// </summary>
-    private IEnumerable<TagGroup> GenerateRepoTagGroups(RepoInfo repo)
+    private List<TagGroup> GenerateRepoTagGroups(RepoInfo repo)
     {
         string tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
         TagsMetadata tagsMetadata = new DeserializerBuilder()

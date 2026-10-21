@@ -39,7 +39,7 @@ public class GenerateReadmesCommandTests
 @"About repo
 Referenced Template Content";
 
-    private readonly Exception _exitException = new Exception();
+    private readonly InvalidOperationException _exitException = new();
     private Mock<IEnvironmentService> _environmentServiceMock;
 
     public GenerateReadmesCommandTests()

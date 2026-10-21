@@ -168,7 +168,7 @@ public class WaitForMcrDocIngestionCommandTests
             .ReturnsAsync(new CommitResultDetailed());
 
         Mock<IEnvironmentService> environmentServiceMock = new();
-        Exception exitException = new();
+        InvalidOperationException exitException = new();
         environmentServiceMock
             .Setup(o => o.ExitProcess(1))
             .Throws(exitException);
@@ -359,7 +359,7 @@ public class WaitForMcrDocIngestionCommandTests
             .ReturnsAsync(new CommitResultDetailed());
 
         Mock<IEnvironmentService> environmentServiceMock = new();
-        Exception exitException = new();
+        InvalidOperationException exitException = new();
         environmentServiceMock
             .Setup(o => o.ExitProcess(1))
             .Throws(exitException);

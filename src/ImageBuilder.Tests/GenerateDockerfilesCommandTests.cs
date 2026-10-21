@@ -34,7 +34,7 @@ ENV TEST2 {{VARIABLES[""Variable1""]}}";
 ENV TEST1 IfWorks
 ENV TEST2 Value1";
 
-    private readonly Exception _exitException = new Exception();
+    private readonly InvalidOperationException _exitException = new();
     private Mock<IEnvironmentService> _environmentServiceMock;
 
     public GenerateDockerfilesCommandTests()

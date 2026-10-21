@@ -92,10 +92,11 @@ internal static class ContainerRegistryHelper
             ];
 
         MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateContainerRepositoryProperties), BindingFlags.Static | BindingFlags.Public) ??
-            throw new Exception("Unable to find method");
+            throw new InvalidOperationException("Unable to find method");
         ConstructorInfo ctor = typeof(ContainerRepositoryProperties).GetConstructor(
             BindingFlags.NonPublic | BindingFlags.Instance,
-            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ?? throw new Exception("Unable to find constructor");
+            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ??
+            throw new InvalidOperationException("Unable to find constructor");
         return (ContainerRepositoryProperties)ctor.Invoke(args);
     }
 
@@ -172,11 +173,12 @@ internal static class ContainerRegistryHelper
             ];
 
         MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateArtifactManifestProperties), BindingFlags.Static | BindingFlags.Public) ??
-            throw new Exception("Unable to find method");
+            throw new InvalidOperationException("Unable to find method");
 
         ConstructorInfo ctor = typeof(ArtifactManifestProperties).GetConstructor(
             BindingFlags.NonPublic | BindingFlags.Instance,
-            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ?? throw new Exception("Unable to find constructor");
+            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ??
+            throw new InvalidOperationException("Unable to find constructor");
         return (ArtifactManifestProperties)ctor.Invoke(args);
     }
 }

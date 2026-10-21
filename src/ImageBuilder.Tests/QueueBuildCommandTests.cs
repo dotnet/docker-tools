@@ -584,10 +584,7 @@ public class QueueBuildCommandTests
             }
             else
             {
-                if (expectedPathsBySubscription == null)
-                {
-                    throw new ArgumentNullException(nameof(expectedPathsBySubscription));
-                }
+                ArgumentNullException.ThrowIfNull(expectedPathsBySubscription);
 
                 foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
                 {

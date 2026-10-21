@@ -77,7 +77,7 @@ public class ImageSigningService(
             }
         });
 
-        if (unsignedDigests.Count == 0)
+        if (unsignedDigests.IsEmpty)
         {
             _logger.LogInformation("All {Count} digest(s) already signed. Nothing to sign.", imageDigests.Count);
             return [];

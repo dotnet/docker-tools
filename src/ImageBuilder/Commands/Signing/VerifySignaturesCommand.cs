@@ -99,7 +99,7 @@ public class VerifySignaturesCommand(
             return ValueTask.CompletedTask;
         });
 
-        if (failures.Count > 0)
+        if (!failures.IsEmpty)
         {
             _logger.LogError("Signature verification failed for {Count} image(s)", failures.Count);
             foreach ((string? reference, Exception? error) in failures)

@@ -165,7 +165,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
                     // Log all shared tags, to avoid any ambiguity.
                     using (_logger.BeginScope(
-                            "Image {sharedTagsString}",
+                            "Image {SharedTags}",
                             imageData.ManifestImage.SharedTags.GetDisplayString()))
                     {
                         _logger.LogInformation(

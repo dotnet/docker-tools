@@ -486,3 +486,5 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 # Test arguments should remain isolated instead of sharing mutable arrays between parallel tests.
 [src/*.Tests/**.cs]
 dotnet_diagnostic.CA1861.severity = none
+# Test names use underscores to separate the method under test, scenario, and expected behavior.
+dotnet_diagnostic.CA1707.severity = none

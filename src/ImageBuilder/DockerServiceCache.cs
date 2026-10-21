@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Caches state returned from Docker commands.
 /// </summary>
-internal class DockerServiceCache(IDockerService inner) : IDockerService
+internal sealed class DockerServiceCache(IDockerService inner) : IDockerService
 {
     private readonly IDockerService _inner = inner;
     private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new();

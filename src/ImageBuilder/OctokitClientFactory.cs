@@ -148,7 +148,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
         return new GitHubAppInfoResult(currentApp, installations);
     }
 
-    private record GitHubAppInfoResult(
+    private sealed record GitHubAppInfoResult(
         GitHubApp CurrentApp,
         IReadOnlyList<Installation> Installations)
     {

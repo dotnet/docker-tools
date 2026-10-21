@@ -186,7 +186,7 @@ public static class ExecuteHelper
         return processResult;
     }
 
-    private class ProcessResult(Process process, string standardOutput, string standardError)
+    private sealed class ProcessResult(Process process, string standardOutput, string standardError)
     {
         public Process Process { get; } = process;
         public string StandardOutput { get; } = standardOutput;

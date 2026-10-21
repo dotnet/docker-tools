@@ -21,7 +21,7 @@ public static class JsonHelper
 
     public static string SerializeObject(object? value) => JsonConvert.SerializeObject(value, JsonSerializerSettings);
 
-    private class CustomContractResolver : DefaultContractResolver
+    private sealed class CustomContractResolver : DefaultContractResolver
     {
         public CustomContractResolver() => NamingStrategy = new CamelCaseNamingStrategy();
 

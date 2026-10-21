@@ -594,7 +594,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
         }
     }
 
-    private class PlatformId : IEquatable<PlatformId>
+    private sealed class PlatformId : IEquatable<PlatformId>
     {
         public Architecture Architecture { get; set; }
         public OS OS { get; set; }

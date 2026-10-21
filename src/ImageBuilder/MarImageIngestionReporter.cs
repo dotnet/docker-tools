@@ -52,7 +52,7 @@ public class MarImageIngestionReporter(
         return reporter.ReportImageStatusesAsync(digestInfos, cancellationToken);
     }
 
-    private class ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
+    private sealed class ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
         TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
     {
         private readonly ILogger<ReporterImpl> _logger = loggerFactory.CreateLogger<ReporterImpl>();
@@ -268,7 +268,7 @@ public class MarImageIngestionReporter(
         }
     }
 
-    private record ImageResultInfo
+    private sealed record ImageResultInfo
     {
         public ImageResultInfo(ImageResult imageResult, DigestInfo digestInfo)
         {

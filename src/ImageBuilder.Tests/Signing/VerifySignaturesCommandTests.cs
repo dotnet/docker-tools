@@ -346,7 +346,7 @@ public class VerifySignaturesCommandTests
     /// <summary>
     /// Holds the command under test and its mocked dependencies for assertion.
     /// </summary>
-    private record TestFixture(
+    private sealed record TestFixture(
         VerifySignaturesCommand Command,
         Mock<INotationClient> NotationClientMock,
         Mock<IEnvironmentService> EnvironmentServiceMock,

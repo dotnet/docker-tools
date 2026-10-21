@@ -78,7 +78,7 @@ public static class SubscriptionHelper
         }
     }
 
-    private class TempManifestOptions(ManifestFilterOptions filterOptions) : ManifestOptions, IFilterableOptions
+    private sealed class TempManifestOptions(ManifestFilterOptions filterOptions) : ManifestOptions, IFilterableOptions
     {
         public ManifestFilterOptions FilterOptions { get; } = filterOptions;
     }

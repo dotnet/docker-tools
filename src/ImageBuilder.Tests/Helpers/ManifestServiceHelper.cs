@@ -11,9 +11,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 
 internal static class ManifestServiceHelper
 {
-    public record ImageDigestResults(string Image, string Digest, int OnCallCount = 1);
+    public sealed record ImageDigestResults(string Image, string Digest, int OnCallCount = 1);
 
-    public record ImageLayersResults(string Image, IEnumerable<Layer> Layers);
+    public sealed record ImageLayersResults(string Image, IEnumerable<Layer> Layers);
 
     public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
         IEnumerable<ImageDigestResults>? localImageDigestResults = null,

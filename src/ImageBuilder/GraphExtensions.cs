@@ -68,7 +68,7 @@ public static class GraphExtensions
         }
     }
 
-    private class Node<T>
+    private sealed class Node<T>
     {
         public T Item;
         public List<Node<T>> Parents { get; } = [];

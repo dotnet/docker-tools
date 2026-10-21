@@ -248,7 +248,7 @@ public class McrTagsMetadataGenerator
             .ToList();
 
 #nullable enable
-    private class ImageDocumentationInfo
+    private sealed class ImageDocumentationInfo
     {
         public PlatformInfo Platform { get; }
         public ImageInfo Image { get; }

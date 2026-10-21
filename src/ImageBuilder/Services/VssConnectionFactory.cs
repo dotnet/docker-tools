@@ -12,13 +12,13 @@ using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services;
 
-internal class VssConnectionFactory(ILoggerFactory loggerFactory) : IVssConnectionFactory
+internal sealed class VssConnectionFactory(ILoggerFactory loggerFactory) : IVssConnectionFactory
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
     public IVssConnection Create(Uri baseUrl, VssCredentials credentials) => new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
 
-    private class VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner) : IVssConnection
+    private sealed class VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner) : IVssConnection
     {
         private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         private readonly VssConnection _inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -29,7 +29,7 @@ internal class VssConnectionFactory(ILoggerFactory loggerFactory) : IVssConnecti
 
         public IBuildHttpClient GetBuildHttpClient() => new BuildHttpClientWrapper(_loggerFactory, _inner.GetClient<WebApi.BuildHttpClient>());
 
-        private class ProjectHttpClientWrapper : IProjectHttpClient
+        private sealed class ProjectHttpClientWrapper : IProjectHttpClient
         {
             private readonly ILogger<ProjectHttpClientWrapper> _logger;
             private readonly ProjectHttpClient _inner;
@@ -48,7 +48,7 @@ internal class VssConnectionFactory(ILoggerFactory loggerFactory) : IVssConnecti
                     .ExecuteAsync(_ => _inner.GetProject(projectId), cancellationToken);
         }
 
-        private class BuildHttpClientWrapper : IBuildHttpClient
+        private sealed class BuildHttpClientWrapper : IBuildHttpClient
         {
             private readonly ILogger<BuildHttpClientWrapper> _logger;
             private readonly WebApi.BuildHttpClient _inner;

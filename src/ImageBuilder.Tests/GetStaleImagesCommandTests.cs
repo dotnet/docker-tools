@@ -1619,7 +1619,7 @@ public class GetStaleImagesCommandTests
     /// <summary>
     /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
     /// </summary>
-    private class TestFixture : IDisposable
+    private sealed class TestFixture : IDisposable
     {
         private readonly List<string> _filesToCleanup = [];
         private readonly List<string> _foldersToCleanup = [];
@@ -1934,19 +1934,19 @@ public class GetStaleImagesCommandTests
         }
     }
 
-    private class DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
+    private sealed class DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
     {
         public string DockerfilePath { get; } = dockerfilePath;
         public FromImageInfo[] FromImages { get; } = fromImages;
     }
 
-    private class FromImageInfo(string name, string digest)
+    private sealed class FromImageInfo(string name, string digest)
     {
         public string Digest { get; } = digest;
         public string Name { get; } = name;
     }
 
-    private class PagedList<T> : List<T>, IPagedList<T>
+    private sealed class PagedList<T> : List<T>, IPagedList<T>
     {
         public string ContinuationToken
         {
@@ -1955,7 +1955,7 @@ public class GetStaleImagesCommandTests
         }
     }
 
-    private class SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
+    private sealed class SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
     {
         public Subscription Subscription { get; } = subscription;
         public Manifest Manifest { get; } = manifest;

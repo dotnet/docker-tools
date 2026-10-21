@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-internal class EnvironmentService : IEnvironmentService
+internal sealed class EnvironmentService : IEnvironmentService
 {
     public void ExitProcess(int exitCode) => Environment.Exit(exitCode);
 

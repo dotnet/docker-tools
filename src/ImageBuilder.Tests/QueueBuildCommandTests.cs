@@ -475,7 +475,7 @@ public class QueueBuildCommandTests
     /// <summary>
     /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
     /// </summary>
-    private class TestFixture : IDisposable
+    private sealed class TestFixture : IDisposable
     {
         private readonly PagedList<WebApi.Build> _inProgressBuilds;
         private readonly PagedList<WebApi.Build> _allBuilds;
@@ -760,7 +760,7 @@ public class QueueBuildCommandTests
         }
     }
 
-    private class PagedList<T> : List<T>, IPagedList<T>
+    private sealed class PagedList<T> : List<T>, IPagedList<T>
     {
         public string ContinuationToken
         {

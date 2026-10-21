@@ -111,7 +111,7 @@ public class EsrpSigningService(
 
     // Models for ESRP/MicroBuild signing service
     private static readonly JsonSerializerOptions EsrpJsonOptions = new() { WriteIndented = true };
-    private record SignList(IEnumerable<SignFileRecord> SignFileRecordList);
-    private record SignFileRecord(string Certs, IEnumerable<SignFileEntry> SignFileList);
-    private record SignFileEntry(string SrcPath, string DstPath);
+    private sealed record SignList(IEnumerable<SignFileRecord> SignFileRecordList);
+    private sealed record SignFileRecord(string Certs, IEnumerable<SignFileEntry> SignFileList);
+    private sealed record SignFileEntry(string SrcPath, string DstPath);
 }

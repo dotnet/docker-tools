@@ -6,7 +6,7 @@ using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-internal class ManifestService(IOrasService orasService) : IManifestService
+internal sealed class ManifestService(IOrasService orasService) : IManifestService
 {
     private readonly IOrasService _orasService = orasService;
 

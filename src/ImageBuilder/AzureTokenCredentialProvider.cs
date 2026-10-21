@@ -8,7 +8,7 @@ using Azure.Identity;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
+internal sealed class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 {
     private readonly object _cacheLock = new();
     private readonly Dictionary<string, TokenCredential> _credentialsCache = [];

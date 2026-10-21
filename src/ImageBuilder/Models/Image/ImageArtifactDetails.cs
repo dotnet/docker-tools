@@ -41,7 +41,7 @@ public class ImageArtifactDetails
         return imageArtifactDetails;
     }
 
-    private class SchemaVersion2LayerConverter : JsonConverter
+    private sealed class SchemaVersion2LayerConverter : JsonConverter
     {
         private static readonly JsonSerializer JsonSerializer =
             JsonSerializer.Create(JsonHelper.JsonSerializerSettings);

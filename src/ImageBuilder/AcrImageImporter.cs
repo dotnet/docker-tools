@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.DotNet.ImageBuilder;
 
 /// <inheritdoc />
-internal class AcrImageImporter(
+internal sealed class AcrImageImporter(
     ILogger<AcrImageImporter> logger,
     IAzureTokenCredentialProvider tokenCredentialProvider,
     IOptions<PublishConfiguration> publishConfigOptions) : IAcrImageImporter

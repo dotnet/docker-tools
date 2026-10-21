@@ -32,6 +32,8 @@ public class PublishImageInfoCommandTests : IDisposable
         _foldersToDelete
             .Where(folder => Directory.Exists(folder))
             .ForEach(folder => Directory.Delete(folder, recursive: true));
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

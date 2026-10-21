@@ -79,5 +79,9 @@ public class TempFolderContext : IDisposable
 
     public string Path { get; }
 
-    public void Dispose() => Directory.Delete(Path, true);
+    public void Dispose()
+    {
+        Directory.Delete(Path, true);
+        GC.SuppressFinalize(this);
+    }
 }

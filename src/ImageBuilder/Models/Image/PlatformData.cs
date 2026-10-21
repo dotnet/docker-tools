@@ -104,7 +104,7 @@ public class PlatformData : IComparable<PlatformData>
             SimpleTags = platform.Tags.Select(tag => tag.Name).ToList()
         };
 
-    private bool IsNullOrEmpty<T>(List<T>? list) =>
+    private static bool IsNullOrEmpty<T>(List<T>? list) =>
         list is null || !list.Any();
 
     private string? GetMajorMinorVersion()

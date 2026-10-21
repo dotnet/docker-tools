@@ -13,13 +13,13 @@ public class GenerateDockerfilesOptions : GenerateArtifactsOptions, IDockerfileF
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..Dockerfile.GetCliOptions(),
+        ..DockerfileFilterOptions.GetCliOptions(),
     ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..Dockerfile.GetCliArguments(),
+        ..DockerfileFilterOptions.GetCliArguments(),
     ];
 
     public override void Bind(ParseResult result)

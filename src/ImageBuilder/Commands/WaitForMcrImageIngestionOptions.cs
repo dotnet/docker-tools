@@ -21,10 +21,8 @@ public class WaitForMcrImageIngestionOptions : ManifestOptions
     private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
     private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
-    private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
-
     private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
-        ServiceConnectionBuilder.GetCliOption("--mar-service-connection");
+        ServiceConnectionOptionsBuilder.GetCliOption("--mar-service-connection");
 
     private static readonly Option<DateTime> MinQueueTimeOption = new("--min-queue-time")
     {
@@ -41,7 +39,7 @@ public class WaitForMcrImageIngestionOptions : ManifestOptions
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..IngestionOptions.GetCliArguments(),
+        ..MarIngestionOptions.GetCliArguments(),
         ImageInfoPathArgument,
     ];
 

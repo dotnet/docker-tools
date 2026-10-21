@@ -21,9 +21,9 @@ public class RegistryCredentialsOptions : IRegistryCredentialsHost
                 return new RegistryCredentials(username, password);
             });
 
-    public IEnumerable<Option> GetCliOptions() => [CredentialsOption];
+    public static IEnumerable<Option> GetCliOptions() => [CredentialsOption];
 
-    public IEnumerable<Argument> GetCliArguments() => [];
+    public static IEnumerable<Argument> GetCliArguments() => [];
 
     public void Bind(ParseResult result) => Credentials = result.GetValue(CredentialsOption) ?? [];
 }

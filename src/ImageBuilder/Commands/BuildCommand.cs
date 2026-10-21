@@ -383,7 +383,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         }
     }
 
-    private void CopyPlatformDataFromCachedPlatform(PlatformData dstPlatform, PlatformData srcPlatform)
+    private static void CopyPlatformDataFromCachedPlatform(PlatformData dstPlatform, PlatformData srcPlatform)
     {
         // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
         // published image so we don't need to recalculate it again.
@@ -391,13 +391,13 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         dstPlatform.Layers = [.. srcPlatform.Layers];
     }
 
-    private RepoData CreateRepoData(RepoInfo repoInfo) =>
+    private static RepoData CreateRepoData(RepoInfo repoInfo) =>
         new RepoData
         {
             Repo = repoInfo.Name
         };
 
-    private PlatformData CreatePlatformData(ImageInfo image, PlatformInfo platform)
+    private static PlatformData CreatePlatformData(ImageInfo image, PlatformInfo platform)
     {
         PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
         platformData.SimpleTags = platform.Tags
@@ -408,7 +408,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         return platformData;
     }
 
-    private ImageData CreateImageData(ImageInfo image)
+    private static ImageData CreateImageData(ImageInfo image)
     {
         ImageData imageData =
             new ImageData
@@ -732,7 +732,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         .SelectMany(imageData => imageData.Platforms)
         ?? [];
 
-    private IReadOnlyList<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
+    private static IReadOnlyList<string> GetStagingTagNames(IEnumerable<TagInfo> tagInfos) =>
         tagInfos.Select(tag => tag.FullyQualifiedName).Distinct(StringComparer.Ordinal).ToList();
 
     private void PushImages(CancellationToken cancellationToken)

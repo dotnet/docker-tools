@@ -27,7 +27,7 @@ public class ShowImageStatsCommand(IManifestJsonService manifestJsonService, ILo
         return Task.CompletedTask;
     }
 
-    private string FormatBaseImageStats(
+    private static string FormatBaseImageStats(
         string baseImage,
         object dependentImages,
         object dependentSimpleTags,

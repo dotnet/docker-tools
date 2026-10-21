@@ -17,7 +17,7 @@ public class CopyBaseImagesOptions : CopyImagesOptions
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..CredentialsOptions.GetCliOptions(),
+        ..RegistryCredentialsOptions.GetCliOptions(),
         ..SubscriptionOptions.GetCliOptions(),
         ..BaseImageOverrideOptions.GetCliOptions(),
     ];
@@ -25,7 +25,7 @@ public class CopyBaseImagesOptions : CopyImagesOptions
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..CredentialsOptions.GetCliArguments(),
+        ..RegistryCredentialsOptions.GetCliArguments(),
         ..SubscriptionOptions.GetCliArguments(),
         ..BaseImageOverrideOptions.GetCliArguments(),
     ];

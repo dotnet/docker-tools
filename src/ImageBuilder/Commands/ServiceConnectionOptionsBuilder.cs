@@ -12,7 +12,7 @@ public class ServiceConnectionOptionsBuilder
     /// <summary>
     /// Creates a single CLI option that parses a service connection string.
     /// </summary>
-    public Option<ServiceConnection?> GetCliOption(string optionName, string description = "")
+    public static Option<ServiceConnection?> GetCliOption(string optionName, string description = "")
     {
         const string formatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
 

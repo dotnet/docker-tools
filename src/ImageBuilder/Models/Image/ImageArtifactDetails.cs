@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -19,6 +20,10 @@ public class ImageArtifactDetails
         ]
     };
 
+    [SuppressMessage(
+        "Performance",
+        "CA1822:Mark members as static",
+        Justification = "This instance property is serialized as the image-info schemaVersion field.")]
     public string SchemaVersion => "2.0";
 
     public List<RepoData> Repos { get; set; } = [];

@@ -69,7 +69,7 @@ public class PlatformInfoTests
         platformInfo.ExternalFromImages.ShouldContain(expectedFromImage);
     }
 
-    private void ValidateGetOSDisplayName(OS os, string osVersion, string expectedDisplayName)
+    private static void ValidateGetOSDisplayName(OS os, string osVersion, string expectedDisplayName)
     {
         Platform platform = CreatePlatform("runtime/2.1", ["runtime"], os: os, osVersion: osVersion);
         VariableHelper variableHelper = new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);

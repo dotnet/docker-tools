@@ -12,16 +12,16 @@ public class ManifestFilterOptions
 
     public DockerfileFilterOptions Dockerfile { get; set; } = new();
 
-    public IEnumerable<Option> GetCliOptions() =>
+    public static IEnumerable<Option> GetCliOptions() =>
     [
-        ..Platform.GetCliOptions(),
-        ..Dockerfile.GetCliOptions(),
+        ..PlatformFilterOptions.GetCliOptions(),
+        ..DockerfileFilterOptions.GetCliOptions(),
     ];
 
-    public IEnumerable<Argument> GetCliArguments() =>
+    public static IEnumerable<Argument> GetCliArguments() =>
     [
-        ..Platform.GetCliArguments(),
-        ..Dockerfile.GetCliArguments(),
+        ..PlatformFilterOptions.GetCliArguments(),
+        ..DockerfileFilterOptions.GetCliArguments(),
     ];
 
     public void Bind(ParseResult result)

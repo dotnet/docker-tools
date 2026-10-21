@@ -34,10 +34,10 @@ public class PlatformFilterOptions
         AllowMultipleArgumentsPerToken = false
     };
 
-    public IEnumerable<Option> GetCliOptions() =>
+    public static IEnumerable<Option> GetCliOptions() =>
         [ArchitectureOption, OsTypeOption, OsVersionsOption];
 
-    public IEnumerable<Argument> GetCliArguments() => [];
+    public static IEnumerable<Argument> GetCliArguments() => [];
 
     public void Bind(ParseResult result)
     {

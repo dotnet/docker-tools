@@ -1803,7 +1803,7 @@ public class GetStaleImagesCommandTests
         /// </summary>
         /// <param name="subscriptionInfos">Mapping of data to subscriptions.</param>
         /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
-        private IGitService CreateGitService(
+        private static IGitService CreateGitService(
             SubscriptionInfo[] subscriptionInfos,
             Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos)
         {
@@ -1832,7 +1832,7 @@ public class GetStaleImagesCommandTests
         /// <param name="subscription">The subscription associated with the GitHub repo.</param>
         /// <param name="manifest">Manifest model associated with the subscription.</param>
         /// <param name="repoDockerfileInfos">Set of <see cref="DockerfileInfo"/> objects that describe the Dockerfiles contained in the repo.</param>
-        private void GenerateRepo(
+        private static void GenerateRepo(
             string repoPath,
             Subscription subscription,
             Manifest manifest,

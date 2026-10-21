@@ -71,9 +71,9 @@ public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..FilterOptions.GetCliOptions(),
+        ..ManifestFilterOptions.GetCliOptions(),
         ..BaseImageOverrideOptions.GetCliOptions(),
-        ..CredentialsOptions.GetCliOptions(),
+        ..RegistryCredentialsOptions.GetCliOptions(),
         MatrixTypeOption,
         CustomBuildLegGroupsOption,
         ProductVersionComponentsOption,
@@ -87,9 +87,9 @@ public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..FilterOptions.GetCliArguments(),
+        ..ManifestFilterOptions.GetCliArguments(),
         ..BaseImageOverrideOptions.GetCliArguments(),
-        ..CredentialsOptions.GetCliArguments(),
+        ..RegistryCredentialsOptions.GetCliArguments(),
     ];
 
     public override void Bind(ParseResult result)

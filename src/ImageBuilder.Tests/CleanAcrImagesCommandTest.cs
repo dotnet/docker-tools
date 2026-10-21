@@ -397,7 +397,7 @@ public class CleanAcrImagesCommandTest
         acrClientMock.Verify(o => o.DeleteRepositoryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)
+    private static Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)
     {
         DateOnly dateToday = DateOnly.FromDateTime(DateTime.UtcNow);
         Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();

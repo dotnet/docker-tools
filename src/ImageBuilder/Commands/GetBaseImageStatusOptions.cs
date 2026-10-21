@@ -32,7 +32,7 @@ public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..FilterOptions.GetCliOptions(),
+        ..ManifestFilterOptions.GetCliOptions(),
         ContinuousModeOption,
         ContinuousModeDelayOption,
     ];
@@ -40,7 +40,7 @@ public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..FilterOptions.GetCliArguments(),
+        ..ManifestFilterOptions.GetCliArguments(),
     ];
 
     public override void Bind(ParseResult result)

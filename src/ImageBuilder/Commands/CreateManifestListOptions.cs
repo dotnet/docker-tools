@@ -20,15 +20,15 @@ public class CreateManifestListOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..FilterOptions.GetCliOptions(),
-        ..CredentialsOptions.GetCliOptions(),
+        ..ManifestFilterOptions.GetCliOptions(),
+        ..RegistryCredentialsOptions.GetCliOptions(),
     ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..FilterOptions.GetCliArguments(),
-        ..CredentialsOptions.GetCliArguments(),
+        ..ManifestFilterOptions.GetCliArguments(),
+        ..RegistryCredentialsOptions.GetCliArguments(),
         ImageInfoPathArgument,
     ];
 

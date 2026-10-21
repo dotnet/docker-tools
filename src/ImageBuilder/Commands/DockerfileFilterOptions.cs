@@ -27,10 +27,10 @@ public class DockerfileFilterOptions
         AllowMultipleArgumentsPerToken = false
     };
 
-    public IEnumerable<Option> GetCliOptions() =>
+    public static IEnumerable<Option> GetCliOptions() =>
         [PathsOption, ProductVersionsOption];
 
-    public IEnumerable<Argument> GetCliArguments() => [];
+    public static IEnumerable<Argument> GetCliArguments() => [];
 
     public void Bind(ParseResult result)
     {

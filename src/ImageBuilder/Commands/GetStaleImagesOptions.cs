@@ -50,9 +50,9 @@ public class GetStaleImagesOptions : Options, IFilterableOptions, IGitOptionsHos
     [
         ..base.GetCliOptions(),
         ..SubscriptionOptions.GetCliOptions(),
-        ..FilterOptions.GetCliOptions(),
+        ..ManifestFilterOptions.GetCliOptions(),
         ..GitBuilder.GetCliOptions(),
-        ..CredentialsOptions.GetCliOptions(),
+        ..RegistryCredentialsOptions.GetCliOptions(),
         ..BaseImageOverrideOptions.GetCliOptions(),
         RegistryOverrideOption,
         SourceRepoPrefixOption,
@@ -62,9 +62,9 @@ public class GetStaleImagesOptions : Options, IFilterableOptions, IGitOptionsHos
     [
         ..base.GetCliArguments(),
         ..SubscriptionOptions.GetCliArguments(),
-        ..FilterOptions.GetCliArguments(),
+        ..ManifestFilterOptions.GetCliArguments(),
         ..GitBuilder.GetCliArguments(),
-        ..CredentialsOptions.GetCliArguments(),
+        ..RegistryCredentialsOptions.GetCliArguments(),
         VariableNameArgument,
     ];
 

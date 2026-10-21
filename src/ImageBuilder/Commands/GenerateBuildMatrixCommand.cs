@@ -353,7 +353,7 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
         return consolidatedSubGraphs;
     }
 
-    private void EmitVstsVariables(IEnumerable<BuildMatrixInfo> matrices)
+    private static void EmitVstsVariables(IEnumerable<BuildMatrixInfo> matrices)
     {
         // Emit the special syntax to set a VSTS build definition matrix variable
         // ##vso[task.setvariable variable=x;isoutput=true]{ \"a\": { \"v1\": \"1\" }, \"b\": { \"v1\": \"2\" } }

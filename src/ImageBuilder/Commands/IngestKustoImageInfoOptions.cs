@@ -16,10 +16,8 @@ public class IngestKustoImageInfoOptions : ImageInfoOptions, IFilterableOptions
     public string ImageTable { get; set; } = string.Empty;
     public string LayerTable { get; set; } = string.Empty;
 
-    private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
-
     private static readonly Option<ServiceConnection?> KustoServiceConnectionOption =
-        ServiceConnectionBuilder.GetCliOption("--kusto-service-connection");
+        ServiceConnectionOptionsBuilder.GetCliOption("--kusto-service-connection");
 
     private static readonly Argument<string> ClusterArgument = new(nameof(Cluster))
     {
@@ -44,14 +42,14 @@ public class IngestKustoImageInfoOptions : ImageInfoOptions, IFilterableOptions
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..FilterOptions.GetCliOptions(),
+        ..ManifestFilterOptions.GetCliOptions(),
         KustoServiceConnectionOption,
     ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..FilterOptions.GetCliArguments(),
+        ..ManifestFilterOptions.GetCliArguments(),
         ClusterArgument,
         DatabaseArgument,
         ImageTableArgument,

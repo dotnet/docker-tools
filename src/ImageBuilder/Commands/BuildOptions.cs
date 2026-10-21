@@ -28,10 +28,8 @@ public class BuildOptions : ManifestOptions, IFilterableOptions
     public string? OutputVariableName { get; set; }
     public bool Internal { get; set; }
 
-    private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
-
     private static readonly Option<ServiceConnection?> StorageServiceConnectionOption =
-        ServiceConnectionBuilder.GetCliOption(
+        ServiceConnectionOptionsBuilder.GetCliOption(
             "--storage-service-connection",
             "Storage account to use for internal builds.");
 
@@ -105,9 +103,9 @@ public class BuildOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        ..FilterOptions.GetCliOptions(),
+        ..ManifestFilterOptions.GetCliOptions(),
         ..BaseImageOverrideOptions.GetCliOptions(),
-        ..CredentialsOptions.GetCliOptions(),
+        ..RegistryCredentialsOptions.GetCliOptions(),
         StorageServiceConnectionOption,
         PushOption,
         RetryOption,
@@ -127,9 +125,9 @@ public class BuildOptions : ManifestOptions, IFilterableOptions
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        ..FilterOptions.GetCliArguments(),
+        ..ManifestFilterOptions.GetCliArguments(),
         ..BaseImageOverrideOptions.GetCliArguments(),
-        ..CredentialsOptions.GetCliArguments(),
+        ..RegistryCredentialsOptions.GetCliArguments(),
     ];
 
     public override void Bind(ParseResult result)

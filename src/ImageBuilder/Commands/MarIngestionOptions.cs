@@ -35,7 +35,7 @@ public class MarIngestionOptions
         return [_timeoutOption, _requeryDelayOption];
     }
 
-    public IEnumerable<Argument> GetCliArguments() => [];
+    public static IEnumerable<Argument> GetCliArguments() => [];
 
     public void Bind(ParseResult result)
     {

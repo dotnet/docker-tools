@@ -27,7 +27,7 @@ public class LifecycleMetadataOptions : Options
     };
 
     private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
-        new ServiceConnectionOptionsBuilder().GetCliOption("--mar-service-connection");
+        ServiceConnectionOptionsBuilder.GetCliOption("--mar-service-connection");
 
     private static readonly Option<bool> MarkAsInternalOption = new("--mark-as-internal")
     {

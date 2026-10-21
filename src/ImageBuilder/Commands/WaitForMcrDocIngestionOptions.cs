@@ -19,8 +19,6 @@ public class WaitForMcrDocIngestionOptions : Options
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
-    private static readonly ServiceConnectionOptionsBuilder ServiceConnectionOptionsBuilder = new();
-
     private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
         ServiceConnectionOptionsBuilder.GetCliOption("--mar-service-connection");
 
@@ -32,7 +30,7 @@ public class WaitForMcrDocIngestionOptions : Options
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
-            ..IngestionOptions.GetCliArguments(),
+            ..MarIngestionOptions.GetCliArguments(),
             CommitDigestArgument,
         ];
 

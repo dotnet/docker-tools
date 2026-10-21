@@ -92,7 +92,7 @@ public class PublishImageInfoCommand(
         {
             _logger.LogInformation("Committing changes...");
             commit = repo.Commit(CommitMessage, sig, sig);
-            _logger.LogInformation($"Created commit {commit.Sha}: '{commit.Message}'");
+            _logger.LogInformation("Created commit {CommitSha}: '{CommitMessage}'", commit.Sha, commit.Message);
         }
         catch (EmptyCommitException)
         {
@@ -111,7 +111,9 @@ public class PublishImageInfoCommand(
 
         Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
         _logger.LogInformation(
-            $"The '{Options.GitOptions.Path}' file was updated. Remote URL: {gitHubCommitUrl}");
+            "The '{GitPath}' file was updated. Remote URL: {GitHubCommitUrl}",
+            Options.GitOptions.Path,
+            gitHubCommitUrl);
     }
 
     private async Task<CredentialsHandler> GetCredentialsAsync(CancellationToken cancellationToken)

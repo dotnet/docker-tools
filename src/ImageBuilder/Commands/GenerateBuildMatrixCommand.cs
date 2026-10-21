@@ -457,7 +457,9 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
             {
                 if (platformMapping.PlatformData is null)
                 {
-                    _logger.LogInformation($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
+                    _logger.LogInformation(
+                        "Image info not found for '{DockerfilePath}'. Including path in matrix.",
+                        platformMapping.PlatformInfo.DockerfilePath);
                     subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
                     return;
                 }
@@ -475,7 +477,10 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
                 bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
 
                 _logger.LogInformation(
-                    $"Image '{platformMapping.PlatformInfo.DockerfilePath}' cache state is {cacheResult.State}. Included in matrix: {includePlatformInMatrix}");
+                    "Image '{DockerfilePath}' cache state is {CacheState}. Included in matrix: {IncludedInMatrix}",
+                    platformMapping.PlatformInfo.DockerfilePath,
+                    cacheResult.State,
+                    includePlatformInMatrix);
 
                 if (includePlatformInMatrix)
                 {
@@ -582,13 +587,13 @@ public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOpt
         // Write out the matrices in a human friendly format
         foreach (BuildMatrixInfo matrix in matrices)
         {
-            _logger.LogInformation($"  {matrix.Name}:");
+            _logger.LogInformation("  {MatrixName}:", matrix.Name);
             foreach (BuildLegInfo leg in matrix.OrderedLegs)
             {
-                _logger.LogInformation($"    {leg.Name}:");
+                _logger.LogInformation("    {LegName}:", leg.Name);
                 foreach ((string name, string value) in leg.Variables)
                 {
-                    _logger.LogInformation($"      {name}: {value}");
+                    _logger.LogInformation("      {VariableName}: {VariableValue}", name, value);
                 }
             }
         }

@@ -85,9 +85,13 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
         long allArtifactsEndTime = Stopwatch.GetTimestamp();
         TimeSpan allArtifactsTime = Stopwatch.GetElapsedTime(allArtifactsStartTime, allArtifactsEndTime);
 
-        _logger.LogInformation($"Time spent building documents: {_documentGenerationTime.TotalMilliseconds} ms");
-        _logger.LogInformation($"Time spent generating artifacts: {_artifactGenerationTime.TotalMilliseconds} ms");
-        _logger.LogInformation($"Total elapsed time: {allArtifactsTime.TotalMilliseconds} ms");
+        _logger.LogInformation(
+            "Time spent building documents: {DocumentGenerationMilliseconds} ms",
+            _documentGenerationTime.TotalMilliseconds);
+        _logger.LogInformation(
+            "Time spent generating artifacts: {ArtifactGenerationMilliseconds} ms",
+            _artifactGenerationTime.TotalMilliseconds);
+        _logger.LogInformation("Total elapsed time: {ElapsedMilliseconds} ms", allArtifactsTime.TotalMilliseconds);
     }
 
     private async Task GenerateArtifactAsync<TContext>(
@@ -99,7 +103,10 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
         Func<string, TContext, string> postProcess,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"Generating '{artifactPath}' from '{templatePath}'");
+        _logger.LogInformation(
+            "Generating '{ArtifactPath}' from '{TemplatePath}'",
+            artifactPath,
+            templatePath);
 
         string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false, cancellationToken);
 
@@ -114,20 +121,27 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
                 await File.ReadAllTextAsync(artifactPath, cancellationToken) : string.Empty;
             if (currentArtifact == generatedArtifact)
             {
-                _logger.LogInformation($"{artifactName} in sync with template");
+                _logger.LogInformation("{ArtifactName} in sync with template", artifactName);
             }
             else if (Options.Validate)
             {
                 int differIndex = StringExtensions.DiffersAtIndex(currentArtifact, generatedArtifact);
-                _logger.LogError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
-                    + $"Current:   '{GetSnippet(currentArtifact, differIndex)}'{Environment.NewLine}"
-                    + $"Generated: '{GetSnippet(generatedArtifact, differIndex)}'");
+                _logger.LogError(
+                    "{ArtifactName} out of sync with template starting at index '{DifferenceIndex}'{NewLine}" +
+                    "Current:   '{CurrentSnippet}'{NewLine}" +
+                    "Generated: '{GeneratedSnippet}'",
+                    artifactName,
+                    differIndex,
+                    Environment.NewLine,
+                    GetSnippet(currentArtifact, differIndex),
+                    Environment.NewLine,
+                    GetSnippet(generatedArtifact, differIndex));
                 _outOfSyncArtifacts.Add(artifactPath);
             }
             else if (!Options.IsDryRun)
             {
                 await File.WriteAllTextAsync(artifactPath, generatedArtifact, cancellationToken);
-                _logger.LogInformation($"Updated '{artifactPath}'");
+                _logger.LogInformation("Updated '{ArtifactPath}'", artifactPath);
             }
         }
     }
@@ -204,7 +218,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
 
         if (Options.IsVerbose)
         {
-            _logger.LogInformation($"Template:{Environment.NewLine}{template}");
+            _logger.LogInformation("Template:{NewLine}{Template}", Environment.NewLine, template);
         }
 
         try
@@ -222,7 +236,7 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
 
             if (Options.IsVerbose)
             {
-                _logger.LogInformation($"Generated:{Environment.NewLine}{artifact}");
+                _logger.LogInformation("Generated:{NewLine}{Artifact}", Environment.NewLine, artifact);
             }
         }
         catch (ParseException e)
@@ -251,13 +265,16 @@ public abstract class GenerateArtifactsCommand<TOptions>(IManifestJsonService ma
             if (_outOfSyncArtifacts.Count > 0)
             {
                 string artifacts = string.Join(Environment.NewLine, _outOfSyncArtifacts);
-                _logger.LogError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
+                _logger.LogError("Out of sync with templates:{NewLine}{Artifacts}", Environment.NewLine, artifacts);
             }
 
             if (_invalidTemplates.Count > 0)
             {
                 string templateList = string.Join(Environment.NewLine, _invalidTemplates);
-                _logger.LogError($"Invalid Templates:{Environment.NewLine}{templateList}");
+                _logger.LogError(
+                    "Invalid Templates:{NewLine}{TemplateList}",
+                    Environment.NewLine,
+                    templateList);
             }
 
             _environmentService.ExitProcess(1);

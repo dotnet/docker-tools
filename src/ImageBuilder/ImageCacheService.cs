@@ -181,7 +181,6 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
         }
 
         _logger.LogInformation("CACHE MISS");
-        _logger.LogInformation(string.Empty);
 
         return false;
     }
@@ -199,8 +198,6 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
         bool isDryRun,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation(string.Empty);
-
         if (platform.FinalStageFromImage is null)
         {
             _logger.LogInformation("Image does not have a base image. By default, it is considered up-to-date.");
@@ -261,7 +258,6 @@ public class ImageCacheService(ILogger<ImageCacheService> logger, IGitService gi
             commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
         }
 
-        _logger.LogInformation(string.Empty);
         _logger.LogInformation("Image info's Dockerfile commit: {CommitUrl}", srcPlatformData.CommitUrl);
         _logger.LogInformation("Latest Dockerfile commit: {CurrentCommitUrl}", currentCommitUrl);
         _logger.LogInformation("Dockerfile commits match: {CommitShaMatches}", commitShaMatches);

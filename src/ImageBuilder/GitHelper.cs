@@ -77,13 +77,15 @@ public static class GitHelper
         else
         {
             ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(GitHelper));
-            logger.LogInformation($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
-            logger.LogInformation(string.Empty);
+            logger.LogInformation(
+                "The following files would have been updated at {Owner}/{Repo}/{Branch}:",
+                gitOptions.Owner,
+                gitOptions.Repo,
+                gitOptions.Branch);
             foreach (GitObject gitObject in changes)
             {
-                logger.LogInformation($"{gitObject.Path}:");
-                logger.LogInformation(gitObject.Content);
-                logger.LogInformation(string.Empty);
+                logger.LogInformation("{GitObjectPath}:", gitObject.Path);
+                logger.LogInformation("{GitObjectContent}", gitObject.Content);
             }
 
             return null;

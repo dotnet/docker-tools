@@ -43,8 +43,8 @@ public class ShowImageStatsCommand(IManifestJsonService manifestJsonService, ILo
             .OrderBy(name => name)
             .Select(name => $"{name}");
 
-        _logger.LogInformation(string.Empty);
         _logger.LogInformation(
+            "{BaseImageStats}",
             FormatBaseImageStats(
                 $"External Base Images ({externalBaseImages.Count()})",
                 "Dependent Images",
@@ -66,6 +66,7 @@ public class ShowImageStatsCommand(IManifestJsonService manifestJsonService, ILo
                 .Count();
 
             _logger.LogInformation(
+                "{BaseImageStats}",
                 FormatBaseImageStats(
                     baseImage,
                     dependentPlatforms.Length,
@@ -82,26 +83,32 @@ public class ShowImageStatsCommand(IManifestJsonService manifestJsonService, ILo
         TagInfo[] undocumentedPlatformTags = platformTags.Where(tag => tag.Model.DocType == TagDocumentationType.Undocumented).ToArray();
         TagInfo[] undocumentedSharedTags = sharedTags.Where(tag => tag.Model.DocType == TagDocumentationType.Undocumented).ToArray();
 
-        _logger.LogInformation($"Total Unique Images:  {platforms.Length}");
-        _logger.LogInformation($"Total Simple Tags:  {platformTags.Length}");
+        _logger.LogInformation("Total Unique Images:  {UniqueImageCount}", platforms.Length);
+        _logger.LogInformation("Total Simple Tags:  {SimpleTagCount}", platformTags.Length);
 
         if (undocumentedPlatformTags.Length > 0)
         {
-            _logger.LogInformation($"    Total Undocumented Simple Tags:  {undocumentedPlatformTags.Length}");
+            _logger.LogInformation(
+                "    Total Undocumented Simple Tags:  {UndocumentedSimpleTagCount}",
+                undocumentedPlatformTags.Length);
         }
 
-        _logger.LogInformation($"Total Shared Tags:  {sharedTags.Length}");
+        _logger.LogInformation("Total Shared Tags:  {SharedTagCount}", sharedTags.Length);
 
         if (undocumentedSharedTags.Length > 0)
         {
-            _logger.LogInformation($"    Total Undocumented Shared Tags:  {undocumentedSharedTags.Length}");
+            _logger.LogInformation(
+                "    Total Undocumented Shared Tags:  {UndocumentedSharedTagCount}",
+                undocumentedSharedTags.Length);
         }
 
-        _logger.LogInformation($"Total Tags:  {platformTags.Length + sharedTags.Length}");
+        _logger.LogInformation("Total Tags:  {TagCount}", platformTags.Length + sharedTags.Length);
 
         if (undocumentedPlatformTags.Length > 0 && undocumentedSharedTags.Length > 0)
         {
-            _logger.LogInformation($"    Total Undocumented Tags:  {undocumentedPlatformTags.Length + undocumentedSharedTags.Length}");
+            _logger.LogInformation(
+                "    Total Undocumented Tags:  {UndocumentedTagCount}",
+                undocumentedPlatformTags.Length + undocumentedSharedTags.Length);
         }
     }
 }

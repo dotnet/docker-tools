@@ -76,9 +76,8 @@ public class GetBaseImageStatusCommand(IManifestJsonService manifestJsonService,
                 days = $"{totalDays} days, ";
             }
 
-            _logger.LogInformation(status.Tag);
-            _logger.LogInformation($"Created {days}{timeDiff.Minutes} minutes ago");
-            _logger.LogInformation(string.Empty);
+            _logger.LogInformation("{Tag}", status.Tag);
+            _logger.LogInformation("Created {Days}{Minutes} minutes ago", days, timeDiff.Minutes);
         }
     }
 }

@@ -69,7 +69,6 @@ public class MarImageIngestionReporter(
                 .ToList();
             IEnumerable<ImageResultInfo> imageResultInfos =
                 await TaskHelper.WhenAll(tasks, _timeout, cancellationToken);
-            _logger.LogInformation(string.Empty);
             await LogResults(imageResultInfos, cancellationToken);
             _logger.LogInformation("Image ingestion complete!");
         }
@@ -109,7 +108,7 @@ public class MarImageIngestionReporter(
             stringBuilder.AppendLine($"Querying image status for '{qualifiedDigest}'");
             stringBuilder.AppendLine("Remaining tags:");
             digestInfo.RemainingTags.ForEach(tag => stringBuilder.AppendLine(tag));
-            _logger.LogInformation(stringBuilder.ToString());
+            _logger.LogInformation("{StatusQuery}", stringBuilder.ToString());
 
             ImageResult imageResult = await _statusClient.GetImageResultAsync(digestInfo.Digest, cancellationToken);
 
@@ -156,7 +155,7 @@ public class MarImageIngestionReporter(
                     }
                 }
 
-                _logger.LogInformation(stringBuilder.ToString());
+                _logger.LogInformation("{StatusResults}", stringBuilder.ToString());
             }
 
             return new ImageResultInfo(imageResult, digestInfo);
@@ -216,9 +215,7 @@ public class MarImageIngestionReporter(
 
             if (failedStatusTasks.Count > 0)
             {
-                _logger.LogInformation(string.Empty);
                 _logger.LogInformation("Querying details of failed results...");
-                _logger.LogInformation(string.Empty);
 
                 await Task.WhenAll(failedStatusTasks);
             }
@@ -228,13 +225,14 @@ public class MarImageIngestionReporter(
                 _logger.LogInformation("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
                 {
-                    _logger.LogInformation(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
+                    _logger.LogInformation(
+                        "{QualifiedDigest}",
+                        GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
                     string tags = string.Join(", ",
                         imageResult.ImageResult.Value
                             .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
                             .Select(imageStatus => imageStatus.Tag));
-                    _logger.LogInformation($"\tTags: {tags}");
-                    _logger.LogInformation(string.Empty);
+                    _logger.LogInformation("\tTags: {Tags}", tags);
                 }
             }
 
@@ -244,8 +242,7 @@ public class MarImageIngestionReporter(
 
                 foreach (Task<string> failedStatusTask in failedStatusTasks)
                 {
-                    _logger.LogError(failedStatusTask.Result);
-                    _logger.LogInformation(string.Empty);
+                    _logger.LogError("{FailedStatus}", failedStatusTask.Result);
                 }
 
                 _environmentService.ExitProcess(1);

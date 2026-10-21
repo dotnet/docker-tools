@@ -85,7 +85,9 @@ public class QueueBuildCommand(
     {
         if (!pathsToRebuild.Any())
         {
-            _logger.LogInformation($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
+            _logger.LogInformation(
+                "All images for subscription '{Subscription}' are using up-to-date base images. No rebuild necessary.",
+                subscription);
             return;
         }
 
@@ -95,7 +97,10 @@ public class QueueBuildCommand(
 
         string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedPathsToRebuild + "\"}";
 
-        _logger.LogInformation($"Queueing build for subscription {subscription} with parameters {parameters}.");
+        _logger.LogInformation(
+            "Queueing build for subscription {Subscription} with parameters {Parameters}.",
+            subscription,
+            parameters);
 
         if (Options.IsDryRun)
         {
@@ -134,8 +139,12 @@ public class QueueBuildCommand(
                 if (shouldDisallowBuild)
                 {
                     _logger.LogInformation(
-                        PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
-                    _logger.LogInformation(PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
+                        "{PipelineCommand}",
+                        PipelineHelper.FormatErrorCommand(
+                            "Unable to queue build due to too many recent build failures."));
+                    _logger.LogInformation(
+                        "{PipelineCommand}",
+                        PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
                 }
                 else
                 {
@@ -192,7 +201,7 @@ public class QueueBuildCommand(
         {
             category = "Queued";
             string webLink = queuedBuild.GetWebLink();
-            _logger.LogInformation($"Queued build {webLink}");
+            _logger.LogInformation("Queued build {BuildLink}", webLink);
             notificationMarkdown.AppendLine($"[Build Link]({webLink})");
         }
         else if (recentFailedBuilds is not null)
@@ -214,7 +223,7 @@ public class QueueBuildCommand(
 
             string message = builder.ToString();
 
-            _logger.LogInformation(message);
+            _logger.LogInformation("{Message}", message);
             notificationMarkdown.AppendLine(message);
         }
         else if (inProgressBuilds is not null)
@@ -233,7 +242,7 @@ public class QueueBuildCommand(
 
             string message = builder.ToString();
 
-            _logger.LogInformation(message);
+            _logger.LogInformation("{Message}", message);
             notificationMarkdown.AppendLine(message);
         }
         else if (exception != null)

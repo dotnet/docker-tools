@@ -40,7 +40,7 @@ public class SignImagesCommand(
         if (!fileSystem.FileExists(Options.ImageInfoPath))
         {
             string warning = PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image signing.");
-            logger.LogWarning(warning);
+            logger.LogWarning("{Warning}", warning);
             return;
         }
 

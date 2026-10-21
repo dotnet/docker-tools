@@ -29,8 +29,10 @@ public class WaitForMcrImageIngestionCommand(
 
         if (!File.Exists(imageInfoPath))
         {
-            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping image ingestion wait."));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping image ingestion wait."));
             return;
         }
 

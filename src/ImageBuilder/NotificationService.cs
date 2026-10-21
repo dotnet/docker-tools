@@ -53,12 +53,12 @@ public class NotificationService(ILogger<NotificationService> logger, IOctokitCl
         }
 
         _logger.LogInformation("POSTED NOTIFICATION:");
-        _logger.LogInformation($"Issue URL: {issue?.HtmlUrl ?? "SKIPPED"}");
-        _logger.LogInformation($"Title: {title}");
-        _logger.LogInformation($"Labels: {string.Join(", ", labels)}");
+        _logger.LogInformation("Issue URL: {IssueUrl}", issue?.HtmlUrl ?? "SKIPPED");
+        _logger.LogInformation("Title: {Title}", title);
+        _logger.LogInformation("Labels: {Labels}", string.Join(", ", labels));
         _logger.LogInformation($"Description:");
         _logger.LogInformation($"====BEGIN DESCRIPTION MARKDOWN===");
-        _logger.LogInformation(description);
+        _logger.LogInformation("{Description}", description);
         _logger.LogInformation($"====END DESCRIPTION MARKDOWN===");
 
         if (comments != null)
@@ -66,8 +66,8 @@ public class NotificationService(ILogger<NotificationService> logger, IOctokitCl
             _logger.LogInformation($"====BEGIN COMMENTS MARKDOWN===");
             for (int i = 0; i < comments.Count(); i++)
             {
-                _logger.LogInformation($"====COMMENT {i + 1} MARKDOWN===");
-                _logger.LogInformation(comments.ElementAt(i));
+                _logger.LogInformation("====COMMENT {CommentNumber} MARKDOWN===", i + 1);
+                _logger.LogInformation("{Comment}", comments.ElementAt(i));
             }
 
             _logger.LogInformation($"====END COMMENTS MARKDOWN===");

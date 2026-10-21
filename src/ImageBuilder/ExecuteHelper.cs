@@ -71,7 +71,7 @@ public static class ExecuteHelper
         info.RedirectStandardError = true;
         executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
         string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
-        logger.LogInformation($"{prefix}: {executeMessageOverride}");
+        logger.LogInformation("{ExecutionPrefix}: {ExecutionCommand}", prefix, executeMessageOverride);
 
         if (isDryRun)
         {
@@ -82,7 +82,7 @@ public static class ExecuteHelper
         stopwatch.Start();
         ProcessResult processResult = executor(info);
         stopwatch.Stop();
-        logger.LogInformation($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+        logger.LogInformation("EXECUTION ELAPSED TIME: {ElapsedTime}", stopwatch.Elapsed);
 
         if (processResult.Process.ExitCode != 0)
         {

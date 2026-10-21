@@ -80,8 +80,10 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
             AccessToken installationToken = await appClient.GitHubApps.CreateInstallationToken(appInstallation.Id);
 
             _logger.LogInformation(
-                $"GitHub App token created for App ID {appInstallation.AppId} and installation "
-                + $"{appInstallation.Id} with expiration {installationToken.ExpiresAt}");
+                "GitHub App token created for App ID {AppId} and installation {InstallationId} with expiration {Expiration}",
+                appInstallation.AppId,
+                appInstallation.Id,
+                installationToken.ExpiresAt);
 
             return installationToken.Token;
         }

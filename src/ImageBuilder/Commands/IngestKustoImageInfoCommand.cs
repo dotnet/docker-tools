@@ -28,8 +28,16 @@ public class IngestKustoImageInfoCommand(
         string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
 
         (string imageInfo, string layerInfo) = GetImageInfoCsv(imageInfoPath);
-        _logger.LogInformation($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
-        _logger.LogInformation($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
+        _logger.LogInformation(
+            "Image Info to Ingest:{NewLine}{ImageInfo}{NewLine}",
+            Environment.NewLine,
+            imageInfo,
+            Environment.NewLine);
+        _logger.LogInformation(
+            "Image Layer to Ingest:{NewLine}{LayerInfo}{NewLine}",
+            Environment.NewLine,
+            layerInfo,
+            Environment.NewLine);
 
         if (string.IsNullOrEmpty(imageInfo))
         {
@@ -123,7 +131,7 @@ public class IngestKustoImageInfoCommand(
         }
         else
         {
-            _logger.LogInformation($"(Dry run) Skipping ingestion of data into {table}.");
+            _logger.LogInformation("(Dry run) Skipping ingestion of data into {Table}.", table);
         }
     }
 }

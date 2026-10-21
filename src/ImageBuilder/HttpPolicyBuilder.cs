@@ -24,7 +24,8 @@ public class HttpPolicyBuilder
             .RetryAsync(1, async (result, retryCount, context) =>
             {
                 logger.LogInformation(
-                    $"Unauthorized status code returned for '{result.Result.RequestMessage?.RequestUri}'. Refreshing access token and retrying.");
+                    "Unauthorized status code returned for '{RequestUri}'. Refreshing access token and retrying.",
+                    result.Result.RequestMessage?.RequestUri);
                 await refreshAccessToken();
             }));
         return this;
@@ -39,7 +40,9 @@ public class HttpPolicyBuilder
             .WaitAndRetryAsync(sleepDurations, (result, duration) =>
             {
                 logger.LogInformation(
-                    $"NotFound status code returned for '{result.Result.RequestMessage?.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
+                    "NotFound status code returned for '{RequestUri}'. Retrying in {RetrySeconds} seconds.",
+                    result.Result.RequestMessage?.RequestUri,
+                    retryFrequency.TotalSeconds);
             }));
         return this;
     }

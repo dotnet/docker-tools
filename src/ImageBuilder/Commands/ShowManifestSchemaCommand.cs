@@ -25,7 +25,7 @@ public class ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> logger
 
         JSchema schema = generator.Generate(typeof(Manifest));
 
-        _logger.LogInformation(schema.ToString());
+        _logger.LogInformation("{ManifestSchema}", schema.ToString());
 
         return Task.CompletedTask;
     }

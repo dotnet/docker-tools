@@ -29,7 +29,7 @@ public static class AuthHelper
         {
             string allTenantIds = string.Join(' ', tenants.Select(guid => guid.ToString()));
             logger.LogInformation("Found more than one tenant. Selecting the first one.");
-            logger.LogInformation($"Tenants: {allTenantIds}");
+            logger.LogInformation("Tenants: {TenantIds}", allTenantIds);
         }
 
         return tenants.First();

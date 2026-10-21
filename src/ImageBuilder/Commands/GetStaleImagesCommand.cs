@@ -77,12 +77,15 @@ public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
         string outputString = JsonConvert.SerializeObject(results);
 
         _logger.LogInformation(
+            "{PipelineCommand}",
             PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
                 .Replace("\"", "\\\"")); // Escape all quotes
 
         string formattedResults = JsonConvert.SerializeObject(results, Formatting.Indented);
         _logger.LogInformation(
-            $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
+            "Image Paths to be Rebuilt:{NewLine}{FormattedResults}",
+            Environment.NewLine,
+            formattedResults);
     }
 
     private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest, CancellationToken cancellationToken)

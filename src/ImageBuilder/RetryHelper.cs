@@ -36,5 +36,8 @@ public static class RetryHelper
 
     private static void LogRetryMessage(ILogger logger, TimeSpan timeToNextRetry, int retryCount, int maxRetries) =>
         logger.LogInformation(
-            $"Retry {retryCount}/{maxRetries}, retrying in {timeToNextRetry.TotalSeconds} seconds...");
+            "Retry {RetryCount}/{MaxRetries}, retrying in {RetrySeconds} seconds...",
+            retryCount,
+            maxRetries,
+            timeToNextRetry.TotalSeconds);
 }

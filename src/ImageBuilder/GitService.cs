@@ -14,7 +14,10 @@ public class GitService(ILogger<GitService> logger) : IGitService
 
     public IRepository CloneRepository(string sourceUrl, string workdirPath, CloneOptions options)
     {
-        _logger.LogInformation($"Cloning repository {sourceUrl} to {workdirPath}");
+        _logger.LogInformation(
+            "Cloning repository {SourceUrl} to {WorkingDirectoryPath}",
+            sourceUrl,
+            workdirPath);
         Repository.Clone(sourceUrl, workdirPath, options);
         return new Repository(workdirPath);
     }
@@ -25,7 +28,10 @@ public class GitService(ILogger<GitService> logger) : IGitService
         // Due to the Stage method's dependency on the Diff class, it prevents it from being easily used
         // with its default implementation due to https://github.com/libgit2/libgit2sharp/issues/1856.
 
-        _logger.LogInformation($"Staging {path} in repository {repository.Info.WorkingDirectory}");
+        _logger.LogInformation(
+            "Staging {Path} in repository {WorkingDirectory}",
+            path,
+            repository.Info.WorkingDirectory);
         LibGit2Sharp.Commands.Stage(repository, path);
     }
 }

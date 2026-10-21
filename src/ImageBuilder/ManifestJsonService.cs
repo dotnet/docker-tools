@@ -42,7 +42,9 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
 
         if (options.IsVerbose)
         {
-            _logger.LogInformation(JsonConvert.SerializeObject(manifest, Formatting.Indented));
+            _logger.LogInformation(
+                "{ManifestJson}",
+                JsonConvert.SerializeObject(manifest, Formatting.Indented));
         }
 
         return manifest;

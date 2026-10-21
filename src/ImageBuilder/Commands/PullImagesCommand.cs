@@ -56,6 +56,7 @@ public class PullImagesCommand(IManifestJsonService manifestJsonService, IDocker
         if (Options.OutputVariableName is not null)
         {
             _logger.LogInformation(
+                "{PipelineCommand}",
                 PipelineHelper.FormatOutputVariable(
                     Options.OutputVariableName,
                     string.Join(',', platformTags.Select(platformTag => platformTag.Tag))));

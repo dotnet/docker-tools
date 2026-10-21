@@ -29,16 +29,18 @@ public class CopyAcrImagesCommand(
 
         if (string.IsNullOrEmpty(Options.ImageInfoPath))
         {
-            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping image copy."));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image copy."));
             return;
         }
 
         string imageInfoPath = _artifactService.ResolvePath(Options.ImageInfoPath);
         if (!File.Exists(imageInfoPath))
         {
-            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping image copy."));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image copy."));
             return;
         }
 
@@ -112,12 +114,14 @@ public class CopyAcrImagesCommand(
             }
             else
             {
-                _logger.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
+                _logger.LogInformation(
+                    "Unable to find image info data for path '{DockerfilePath}'.",
+                    platform.DockerfilePath);
             }
         }
         else
         {
-            _logger.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
+            _logger.LogInformation("Unable to find image info data for repo '{RepoName}'.", repo.Name);
         }
 
         return tags;

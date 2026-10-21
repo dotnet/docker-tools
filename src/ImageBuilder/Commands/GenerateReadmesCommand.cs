@@ -137,7 +137,7 @@ public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonSer
         if (Options.IsVerbose)
         {
             _logger.LogInformation($"Tags Documentation:");
-            _logger.LogInformation(tagsMarkdown);
+            _logger.LogInformation("{TagsMarkdown}", tagsMarkdown);
         }
 
         string updatedReadme = ReadmeHelper.UpdateTagsListing(readme, tagsMarkdown);

@@ -39,8 +39,6 @@ public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptio
             LogSuccessfulResults(result);
         }
 
-        _logger.LogInformation(string.Empty);
-
         _logger.LogInformation("Doc ingestion successfully completed!");
     }
 
@@ -57,7 +55,10 @@ public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptio
             foreach (CommitStatus commitStatus in commitResult.Value)
             {
                 _logger.LogInformation(
-                    $"Readme status results for commit digest '{Options.CommitDigest}' with request ID '{commitStatus.OnboardingRequestId}': {commitStatus.OverallStatus}");
+                    "Readme status results for commit digest '{CommitDigest}' with request ID '{OnboardingRequestId}': {Status}",
+                    Options.CommitDigest,
+                    commitStatus.OnboardingRequestId,
+                    commitStatus.OverallStatus);
 
                 switch (commitStatus.OverallStatus)
                 {
@@ -66,7 +67,9 @@ public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptio
                         await Task.Delay(Options.IngestionOptions.RequeryDelay, cancellationToken);
                         break;
                     case StageStatus.Failed:
-                        _logger.LogError(await GetFailureResultsAsync(statusClient, commitStatus, cancellationToken));
+                        _logger.LogError(
+                            "{FailureResults}",
+                            await GetFailureResultsAsync(statusClient, commitStatus, cancellationToken));
                         break;
                     case StageStatus.Succeeded:
                         isComplete = true;
@@ -96,10 +99,10 @@ public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptio
     private void LogSuccessfulResults(CommitResult commitResult)
     {
         _logger.LogInformation("Commit info:");
-        _logger.LogInformation($"\tCommit digest: {commitResult.CommitDigest}");
-        _logger.LogInformation($"\tBranch: {commitResult.Branch}");
+        _logger.LogInformation("\tCommit digest: {CommitDigest}", commitResult.CommitDigest);
+        _logger.LogInformation("\tBranch: {Branch}", commitResult.Branch);
         _logger.LogInformation("\tFiles updated:");
-        commitResult.ContentFiles.ForEach(file => _logger.LogInformation($"\t\t{file}"));
+        commitResult.ContentFiles.ForEach(file => _logger.LogInformation("\t\t{File}", file));
     }
 
     private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus, CancellationToken cancellationToken)

@@ -26,8 +26,10 @@ public class TrimUnchangedPlatformsCommand(
 
         if (!File.Exists(imageInfoPath))
         {
-            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping trimming unchanged platforms."));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping trimming unchanged platforms."));
             return;
         }
 
@@ -59,7 +61,9 @@ public class TrimUnchangedPlatformsCommand(
                         // But it's not set because we haven't used ImageInfoHelper to load it, we've just deserialized it directly.
                         // Using ImageInfoHelper requires having the manifest but that seems unnecessary since it's not needed for the logic
                         // of this command other than this simple logging statement.
-                        _logger.LogInformation($"Removing unchanged platform '{platform.GetIdentifier(excludeProductVersion: true)}'");
+                        _logger.LogInformation(
+                            "Removing unchanged platform '{PlatformIdentifier}'",
+                            platform.GetIdentifier(excludeProductVersion: true));
                         image.Platforms.Remove(platform);
                     }
                 }

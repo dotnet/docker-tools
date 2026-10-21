@@ -101,7 +101,7 @@ public class McrTagsMetadataGenerator
         string metadata = yaml.ToString();
 
         Logger.LogInformation("Generated Metadata:");
-        Logger.LogInformation(metadata);
+        Logger.LogInformation("{Metadata}", metadata);
 
         // Validate that the YAML is in a valid format
         new DeserializerBuilder()

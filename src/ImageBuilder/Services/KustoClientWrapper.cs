@@ -54,7 +54,8 @@ internal sealed class KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAz
         for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
         {
             _logger.LogInformation(
-                $"Waiting for ingestion from source ID {sourceOptions.SourceId} to complete...");
+                "Waiting for ingestion from source ID {SourceId} to complete...",
+                sourceOptions.SourceId);
             await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
             ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
         }
@@ -77,7 +78,9 @@ internal sealed class KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAz
         StreamSourceOptions sourceOptions)
     {
         _logger.LogInformation(
-            $"Ingesting {csv.Length} bytes of data to Kusto (source ID: {sourceOptions.SourceId})");
+            "Ingesting {DataLength} bytes of data to Kusto (source ID: {SourceId})",
+            csv.Length,
+            sourceOptions.SourceId);
 
         using MemoryStream stream = new();
         using StreamWriter writer = new(stream);

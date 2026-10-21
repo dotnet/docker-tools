@@ -136,6 +136,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
                 .Select(platform => DockerHelper.GetDigestString(platform.PlatformInfo!.RepoName, DockerHelper.GetDigestSha(platform.Digest)))
                 .Distinct();
             _logger.LogInformation(
+                "{PipelineCommand}",
                 PipelineHelper.FormatOutputVariable(
                     Options.OutputVariableName,
                     string.Join(',', builtDigests)));
@@ -508,7 +509,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
             if (firstTag is not null)
             {
                 long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun, cancellationToken);
-                _logger.LogInformation($"Image size (on disk): {size} bytes");
+                _logger.LogInformation("Image size (on disk): {ImageSize} bytes", size);
             }
 
             if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
@@ -568,9 +569,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         string sourceDigest,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation(string.Empty);
         _logger.LogInformation("CACHE HIT");
-        _logger.LogInformation(string.Empty);
 
         // When a cache hit occurs on an image, we copy the image from its source location (e.g. mcr.microsoft.com) to its
         // destination location (e.g. staging repo in ACR). Copying only occurs if push is enabled since it will result in
@@ -763,7 +762,7 @@ public class BuildCommand : ManifestCommand<BuildOptions>
                 string fromRepo = DockerHelper.GetRepo(fromImage);
                 RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                 string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.QualifiedName);
-                _logger.LogInformation($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                _logger.LogInformation("Replacing FROM `{FromImage}` with `{NewFromImage}`", fromImage, newFromImage);
                 Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\s\r\n]*");
                 dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
                 updateDockerfile = true;
@@ -773,8 +772,8 @@ public class BuildCommand : ManifestCommand<BuildOptions>
             {
                 // Don't overwrite the original dockerfile - write it to a new path.
                 dockerfilePath += ".temp";
-                _logger.LogInformation($"Writing updated Dockerfile: {dockerfilePath}");
-                _logger.LogInformation(dockerfileContents);
+                _logger.LogInformation("Writing updated Dockerfile: {DockerfilePath}", dockerfilePath);
+                _logger.LogInformation("{DockerfileContents}", dockerfileContents);
                 File.WriteAllText(dockerfilePath, dockerfileContents);
             }
         }
@@ -790,14 +789,12 @@ public class BuildCommand : ManifestCommand<BuildOptions>
         {
             foreach (string tagName in _processedTagNames)
             {
-                _logger.LogInformation(tagName);
+                _logger.LogInformation("{TagName}", tagName);
             }
         }
         else
         {
             _logger.LogInformation("No images built");
         }
-
-        _logger.LogInformation(string.Empty);
     }
 }

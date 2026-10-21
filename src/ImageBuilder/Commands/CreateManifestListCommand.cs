@@ -56,8 +56,9 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         if (!File.Exists(imageInfoPath))
         {
-            _logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping manifest list creation."));
+            _logger.LogInformation(
+                "{PipelineCommand}",
+                PipelineHelper.FormatWarningCommand("Image info file not found. Skipping manifest list creation."));
             return;
         }
 
@@ -304,7 +305,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     {
         foreach (ManifestListInfo manifestListInfo in manifestLists)
         {
-            _logger.LogInformation(manifestListInfo.Tag);
+            _logger.LogInformation("{ManifestListTag}", manifestListInfo.Tag);
         }
 
         if (manifestLists.Count == 0)

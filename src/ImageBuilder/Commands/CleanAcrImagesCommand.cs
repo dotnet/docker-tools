@@ -40,7 +40,7 @@ public class CleanAcrImagesCommand(
 
     public override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Options.ImagesToExclude.Any() && Options.Action == CleanAcrImagesAction.Delete)
+        if (Options.ImagesToExclude.Length != 0 && Options.Action == CleanAcrImagesAction.Delete)
         {
             throw new NotSupportedException("Excluding images is not supported when deleting repositories");
         }

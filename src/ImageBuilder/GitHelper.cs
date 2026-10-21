@@ -21,7 +21,7 @@ public static class GitHelper
         // Don't make the assumption that the current working directory is a Git repository
         // Find the Git repo that contains the file being checked.
         DirectoryInfo directory = new FileInfo(filePath).Directory;
-        while (!directory.GetDirectories(".git").Any())
+        while (directory.GetDirectories(".git").Length == 0)
         {
             directory = directory.Parent ?? throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
         }

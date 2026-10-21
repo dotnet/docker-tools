@@ -71,7 +71,7 @@ public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
 
         // Filter out any results that don't have any images to rebuild
         results = results
-            .Where(result => result.ImagePaths.Any())
+            .Where(result => result.ImagePaths.Length != 0)
             .ToArray();
 
         string outputString = JsonConvert.SerializeObject(results);

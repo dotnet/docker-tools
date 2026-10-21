@@ -53,7 +53,7 @@ public static class ModelExtensions
 
     public static void Validate(this Manifest manifest, string manifestDirectory)
     {
-        if (manifest.Repos == null || !manifest.Repos.Any())
+        if (manifest.Repos == null || manifest.Repos.Length == 0)
         {
             throw new ValidationException($"The manifest must contain at least one repo.");
         }

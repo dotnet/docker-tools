@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public static class CliHelper
 {
-    public static string GetTokenValue(this SymbolResult symbolResult) => symbolResult.Tokens.First().Value;
+    public static string GetTokenValue(this SymbolResult symbolResult) => symbolResult.Tokens[0].Value;
 
     /// <summary>
     /// Creates a dictionary option that parses key=value pairs from the command line.

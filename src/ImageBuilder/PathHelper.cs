@@ -72,7 +72,7 @@ public static class PathHelper
         }
 
         string result = path[trimPath.Length..];
-        if (result.StartsWith("/") || result.StartsWith("\\"))
+        if (result.StartsWith('/') || result.StartsWith('\\'))
         {
             result = result[1..];
         }

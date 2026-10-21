@@ -109,7 +109,7 @@ public static class DockerHelper
             "inspect", ".Created", "Failed to retrieve created date", cancellationToken, image, isDryRun);
     }
 
-    public static string GetDigestSha(string digest) => digest[(digest.IndexOf("@") + 1)..];
+    public static string GetDigestSha(string digest) => digest[(digest.IndexOf('@') + 1)..];
 
     public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
 
@@ -168,7 +168,7 @@ public static class DockerHelper
 
     public static string? GetRegistry(string imageName)
     {
-        int separatorIndex = imageName.IndexOf("/");
+        int separatorIndex = imageName.IndexOf('/');
         if (separatorIndex >= 0)
         {
             string firstSegment = imageName[..separatorIndex];

@@ -1693,11 +1693,11 @@ public class GetStaleImagesCommandTests
                     invocation.Arguments[2]?.ToString()?.StartsWith("##vso") == true);
 
             string message = invocation.Arguments[2].ToString();
-            int variableNameStartIndex = message.IndexOf("=") + 1;
-            string actualVariableName = message[variableNameStartIndex..message.IndexOf(";")];
+            int variableNameStartIndex = message.IndexOf('=') + 1;
+            string actualVariableName = message[variableNameStartIndex..message.IndexOf(';')];
             actualVariableName.ShouldBe(VariableName);
 
-            string variableValue = message[(message.IndexOf("]") + 1)..];
+            string variableValue = message[(message.IndexOf(']') + 1)..];
 
             SubscriptionImagePaths[] pathsBySubscription =
                 JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(variableValue.Replace("\\\"", "\""));

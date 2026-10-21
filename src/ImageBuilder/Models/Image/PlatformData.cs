@@ -122,7 +122,7 @@ public class PlatformData : IComparable<PlatformData>
         }
 
         // Remove any version suffix (like "-preview")
-        int separatorIndex = fullVersion.IndexOf("-");
+        int separatorIndex = fullVersion.IndexOf('-');
         if (separatorIndex >= 0)
         {
             fullVersion = fullVersion[..separatorIndex];

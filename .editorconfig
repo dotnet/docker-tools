@@ -131,6 +131,10 @@ dotnet_diagnostic.CA1036.severity = none
 # declaration overhead without a meaningful runtime benefit.
 dotnet_diagnostic.CA1848.severity = none
 
+# Log arguments in this short-lived CLI are not hot-path work; per-call level guards would
+# obscure command flow more than they would improve runtime performance.
+dotnet_diagnostic.CA1873.severity = none
+
 # Field preferences
 dotnet_style_readonly_field = true:warning
 

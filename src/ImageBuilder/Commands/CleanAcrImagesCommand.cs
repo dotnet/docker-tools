@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure;
@@ -106,13 +108,7 @@ public class CleanAcrImagesCommand(
         switch (Options.Action)
         {
             case CleanAcrImagesAction.PruneDangling:
-                await ProcessManifestsAsync(
-                    acrClient,
-                    acrContentClient,
-                    repository,
-                    (manifest, _) => Task.FromResult(
-                        !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age)),
-                    cancellationToken);
+                await PruneDanglingManifestsAsync(acrClient, acrContentClient, repository, cancellationToken);
                 break;
 
             case CleanAcrImagesAction.PruneEol:
@@ -166,6 +162,162 @@ public class CleanAcrImagesCommand(
             default:
                 throw new NotSupportedException($"Unsupported action: {Options.Action}");
         }
+    }
+
+    private async Task PruneDanglingManifestsAsync(
+        IAcrClient acrClient,
+        IAcrContentClient acrContentClient,
+        ContainerRepository repository,
+        CancellationToken cancellationToken)
+    {
+        DateTimeOffset startedAt = DateTimeOffset.UtcNow;
+        ArtifactManifestProperties[] manifests = await repository
+            .GetAllManifestPropertiesAsync(cancellationToken: cancellationToken)
+            .ToArrayAsync(cancellationToken);
+        Dictionary<string, ArtifactManifestProperties> inventory = manifests.ToDictionary(manifest => manifest.Digest);
+        ConcurrentBag<string> referencedDigests = [];
+        ConcurrentBag<string> retainedDigests = [];
+        ConcurrentBag<string> candidateDigests = [];
+        ConcurrentDictionary<string, string> subjects = new();
+
+        // Build the complete graph before deleting anything: a parent may appear after its children,
+        // even on a different page. A failed or incomplete inspection must not permit deletion.
+        await Parallel.ForEachAsync(manifests, cancellationToken, async (manifest, ct) =>
+        {
+            string imageName = $"{repository.Name}@{manifest.Digest}";
+            ManifestQueryResult content = await acrContentClient.GetManifestAsync(manifest.Digest, ct);
+            if (content.ContentDigest != manifest.Digest)
+            {
+                throw new InvalidOperationException($"Manifest content digest does not match '{imageName}'.");
+            }
+
+            foreach (string digest in GetReferencedManifestDigests(content.Manifest, imageName))
+            {
+                referencedDigests.Add(digest);
+            }
+
+            if (content.IsReferrer())
+            {
+                subjects[manifest.Digest] = GetDescriptorDigest(content.Manifest["subject"], imageName);
+            }
+
+            bool eligible = !manifest.Tags.Any()
+                && manifest.LastUpdatedOn.AddDays(Options.Age) < startedAt
+                && manifest.CanDelete != false
+                && !IsExcludedManifest(manifest);
+            if (!eligible)
+            {
+                retainedDigests.Add(manifest.Digest);
+            }
+            else if (!content.IsReferrer())
+            {
+                candidateDigests.Add(manifest.Digest);
+            }
+        });
+
+        HashSet<string> protectedDigests = referencedDigests.ToHashSet();
+        if (!protectedDigests.IsSubsetOf(inventory.Keys))
+        {
+            throw new InvalidOperationException(
+                $"Cannot safely prune repository '{repository.Name}': referenced manifests are missing from its inventory.");
+        }
+
+        // Protect children even when their parent is being pruned in this run. This keeps deletion
+        // failures/cancellation from leaving a surviving index with deleted children.
+        protectedDigests.UnionWith(retainedDigests);
+        Queue<string> pending = new(protectedDigests);
+        while (pending.TryDequeue(out string? digest))
+        {
+            if (subjects.TryGetValue(digest, out string? subject) && protectedDigests.Add(subject))
+            {
+                pending.Enqueue(subject);
+            }
+        }
+
+        Dictionary<string, ArtifactManifestProperties> currentInventory = (await repository
+            .GetAllManifestPropertiesAsync(cancellationToken: cancellationToken)
+            .ToArrayAsync(cancellationToken))
+            .ToDictionary(manifest => manifest.Digest);
+        if (inventory.Count != currentInventory.Count || manifests.Any(manifest =>
+            !currentInventory.TryGetValue(manifest.Digest, out ArtifactManifestProperties? current)
+            || manifest.CreatedOn != current.CreatedOn
+            || manifest.LastUpdatedOn != current.LastUpdatedOn
+            || manifest.CanDelete != current.CanDelete
+            || !manifest.Tags.Order(StringComparer.Ordinal).SequenceEqual(current.Tags.Order(StringComparer.Ordinal))))
+        {
+            throw new InvalidOperationException(
+                $"Repository '{repository.Name}' changed during inspection. Retry dangling cleanup when no writers are active.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        string[] digestsToDelete = candidateDigests.Where(digest => !protectedDigests.Contains(digest)).ToArray();
+        _logger.LogInformation(
+            "Inspected {ManifestCount} manifests in repository {RepositoryName}:"
+                + " {DeletionCount} dangling manifests selected for deletion. DryRun={DryRun}",
+            manifests.Length, repository.Name, digestsToDelete.Length, Options.IsDryRun);
+        await DeleteManifestsAsync(acrContentClient, repository, digestsToDelete, cancellationToken);
+
+        if (manifests.Length == 0)
+        {
+            await DeleteRepositoryAsync(acrClient, repository, [], cancellationToken);
+        }
+    }
+
+    private static IEnumerable<string> GetReferencedManifestDigests(JsonObject manifest, string imageName)
+    {
+        string? mediaType = null;
+        if (manifest["mediaType"] is JsonNode mediaTypeNode
+            && (mediaTypeNode is not JsonValue mediaTypeValue || !mediaTypeValue.TryGetValue(out mediaType)))
+        {
+            throw new JsonException($"Invalid manifest media type in '{imageName}'.");
+        }
+
+        bool isIndex = mediaType is "application/vnd.oci.image.index.v1+json"
+            or "application/vnd.docker.distribution.manifest.list.v2+json"
+            || (mediaType is null && manifest.ContainsKey("manifests"));
+        if (isIndex)
+        {
+            if (manifest["manifests"] is not JsonArray children)
+            {
+                throw new JsonException($"Missing or invalid manifests array in '{imageName}'.");
+            }
+
+            foreach (JsonNode? child in children)
+            {
+                yield return GetDescriptorDigest(child, imageName);
+            }
+        }
+        else
+        {
+            string? blobProperty = mediaType switch
+            {
+                "application/vnd.oci.image.manifest.v1+json"
+                    or "application/vnd.docker.distribution.manifest.v2+json" => "layers",
+                "application/vnd.docker.distribution.manifest.v1+json"
+                    or "application/vnd.docker.distribution.manifest.v1+prettyjws" => "fsLayers",
+                "application/vnd.oci.artifact.manifest.v1+json" => "blobs",
+                null when manifest["layers"] is JsonArray => "layers",
+                null when manifest["fsLayers"] is JsonArray => "fsLayers",
+                _ => null
+            };
+            if (blobProperty is null || manifest[blobProperty] is not JsonArray || manifest.ContainsKey("manifests"))
+            {
+                throw new JsonException($"Unsupported or malformed manifest '{imageName}'. Cannot safely determine its references.");
+            }
+        }
+    }
+
+    private static string GetDescriptorDigest(JsonNode? descriptor, string imageName)
+    {
+        if (descriptor is not JsonObject descriptorObject
+            || descriptorObject["digest"] is not JsonValue digestValue
+            || !digestValue.TryGetValue(out string? digest)
+            || string.IsNullOrWhiteSpace(digest))
+        {
+            throw new JsonException($"Missing or invalid descriptor digest in '{imageName}'.");
+        }
+
+        return digest;
     }
 
     private async Task LogSummaryAsync(IAcrClient acrClient, TimeSpan? reachedTimeLimit, CancellationToken cancellationToken)

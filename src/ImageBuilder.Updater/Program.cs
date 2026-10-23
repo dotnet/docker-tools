@@ -29,7 +29,51 @@ ProcessRunner processRunner = new(loggerFactory.CreateLogger<ProcessRunner>());
 ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Updater");
 CancellationToken cancellationToken = GetCancellationToken();
 
-IGitHubAccessProvider accessProvider = await GetAccessProviderAsync(processRunner, logger, cancellationToken);
+IGitHubAccessProvider? accessProvider = GetConfiguredAccessProvider(logger);
+
+#if DEBUG
+if (accessProvider is null)
+{
+    // Use gh CLI to resolve auth when running locally
+    logger.LogInformation("Using gh CLI authentication.");
+
+    string gitHubToken = await RunProcessAsync(
+        processRunner,
+        workingDirectory: null,
+        fileName: "gh",
+        arguments: ["auth", "token"],
+        cancellationToken,
+        writeOutput: false);
+
+    string gitHubUser = await RunProcessAsync(
+        processRunner,
+        workingDirectory: null,
+        fileName: "gh",
+        arguments: ["api", "user", "--jq", ".login"],
+        cancellationToken,
+        writeOutput: false);
+
+    string gitHubEmail = await RunProcessAsync(
+        processRunner,
+        workingDirectory: null,
+        fileName: "git",
+        arguments: ["config", "user.email"],
+        cancellationToken,
+        writeOutput: false);
+
+    accessProvider = new StaticGitHubAccessProvider(
+        gitHubToken,
+        new AutomationIdentity(gitHubUser, gitHubEmail));
+}
+#endif
+
+if (accessProvider is null)
+{
+    throw new InvalidOperationException(
+        "Please set either [GITHUB_TOKEN] or "
+        + "[GITHUB_APP_KEY_URI + GITHUB_APP_CLIENT_ID]");
+}
+
 PullRequestManager pullRequestManager = new PullRequestManager(processRunner, loggerFactory);
 
 // Pull image builder reference
@@ -190,10 +234,7 @@ static async Task<string> RunProcessAsync(
     return output;
 }
 
-static async Task<IGitHubAccessProvider> GetAccessProviderAsync(
-    IProcessRunner processRunner,
-    ILogger logger,
-    CancellationToken cancellationToken)
+static IGitHubAccessProvider? GetConfiguredAccessProvider(ILogger logger)
 {
     // Accept explicit token first
     string? gitHubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
@@ -216,42 +257,7 @@ static async Task<IGitHubAccessProvider> GetAccessProviderAsync(
         return new GitHubAppAccessProvider(gitHubAppClientId, cryptographyClient);
     }
 
-#if DEBUG
-    // Use gh CLI to resolve auth when running locally
-    logger.LogInformation("Using gh CLI authentication.");
-
-    gitHubToken = await RunProcessAsync(
-        processRunner,
-        workingDirectory: null,
-        fileName: "gh",
-        arguments: ["auth", "token"],
-        cancellationToken,
-        writeOutput: false);
-
-    string gitHubUser = await RunProcessAsync(
-        processRunner,
-        workingDirectory: null,
-        fileName: "gh",
-        arguments: ["api", "user", "--jq", ".login"],
-        cancellationToken,
-        writeOutput: false);
-
-    string gitHubEmail = await RunProcessAsync(
-        processRunner,
-        workingDirectory: null,
-        fileName: "git",
-        arguments: ["config", "user.email"],
-        cancellationToken,
-        writeOutput: false);
-
-    return new StaticGitHubAccessProvider(
-        gitHubToken,
-        new AutomationIdentity(gitHubUser, gitHubEmail));
-#endif
-
-    throw new InvalidOperationException(
-        "Please set either [GITHUB_TOKEN] or "
-        + "[GITHUB_APP_KEY_URI + GITHUB_APP_CLIENT_ID]");
+    return null;
 }
 
 static string GetEnvVar(string name) => Environment.GetEnvironmentVariable(name) switch

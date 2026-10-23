@@ -1,25 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json;
+
 namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
 public sealed record Manifest(
     Readme Readme,
     IDictionary<string, Repo> Repos,
-    IDictionary<string, string> Variables);
+    IDictionary<string, JsonElement> Metadata);
 
 public sealed record Repo(
     string Id,
     IDictionary<string, Image> Images,
     string McrTagsMetadataTemplate,
     string Name,
-    Readme[] Readmes);
+    Readme[] Readmes,
+    IDictionary<string, JsonElement> Metadata);
 
 public sealed record Image(
     IDictionary<string, Platform> Platforms,
     Tag[] Tags,
     string ProductVersion,
-    string Syndication);
+    string Syndication,
+    IDictionary<string, JsonElement> Metadata);
 
 public sealed record Platform(
     TargetPlatform TargetPlatform,
@@ -27,7 +31,8 @@ public sealed record Platform(
     string Dockerfile,
     string? DockerfileTemplate,
     string OsVersion,
-    Tag[] Tags);
+    Tag[] Tags,
+    IDictionary<string, JsonElement> Metadata);
 
 public sealed record TargetPlatform(
     OS OS,

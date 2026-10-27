@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #:project ..\ImageBuilder.Models\Microsoft.DotNet.ImageBuilder.Models.csproj
+#:package YamlDotNet
 #:property PublishAot=false
 
 using System.Collections;
@@ -10,6 +11,8 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
 
 // Run from this directory: dotnet run --file Program.cs
 if (args.Length > 1)
@@ -17,10 +20,10 @@ if (args.Length > 1)
     throw new ArgumentException("Expected at most one argument: the manifest path.");
 }
 
-string inputPath = args.Length == 1 ? args[0] : "manifest.json";
+string inputPath = args.Length == 1 ? args[0] : "manifest.yaml";
 string outputPath = Path.ChangeExtension(inputPath, ".resolved.json");
 
-Manifest manifest = await ManifestJson.ReadAsync(inputPath);
+Manifest manifest = await ManifestYaml.ReadAsync(inputPath);
 Manifest resolved = new ManifestResolver(manifest).Resolve();
 await ManifestJson.WriteAsync(outputPath, resolved);
 Console.WriteLine($"Wrote {outputPath}");
@@ -29,146 +32,173 @@ file sealed class ManifestResolver(Manifest manifest)
 {
     public Manifest Resolve()
     {
-        ResolutionScope scope = new(manifest.Metadata, manifest.TagPatterns);
         Dictionary<string, Repo> repos = manifest.Repos.ToDictionary(
             repoEntry => repoEntry.Key,
-            repoEntry => ResolveRepo(repoEntry.Key, repoEntry.Value, scope));
+            repoEntry => ResolveRepo(repoEntry.Key, repoEntry.Value, manifest.Metadata, manifest.Defaults));
 
-        return manifest with { Repos = repos, TagPatterns = new() };
+        return manifest with { Repos = repos, Defaults = null };
     }
 
-    private Repo ResolveRepo(string key, Repo repo, ResolutionScope parent)
+    private static Repo ResolveRepo(
+        string repoKey, Repo repo, Dictionary<string, JsonElement> parentMetadata, ManifestDefaults? parentDefaults)
     {
-        ResolutionScope scope = parent.Enter(key, repo.Metadata, repo.TagPatterns);
+        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, repo.Metadata);
+        ManifestDefaults defaults = InheritDefaults(parentDefaults, repo.Defaults);
         Dictionary<string, Image> images = repo.Images.ToDictionary(
             imageEntry => imageEntry.Key,
-            imageEntry => ResolveImage(imageEntry.Key, imageEntry.Value, scope));
+            imageEntry => ResolveImage(
+                repoKey, $"{repoKey}__{imageEntry.Key}", imageEntry.Value, metadata, defaults));
 
-        return repo with { Metadata = scope.Metadata, Images = images, TagPatterns = new() };
+        return repo with { Images = images, Metadata = metadata, Defaults = null };
     }
 
-    private Image ResolveImage(string key, Image image, ResolutionScope parent)
+    private static Image ResolveImage(
+        string repoKey, string scopeKey, Image image,
+        Dictionary<string, JsonElement> parentMetadata, ManifestDefaults parentDefaults)
     {
-        ResolutionScope scope = parent.Enter(key, image.Metadata, image.TagPatterns);
-        TagEvaluator evaluator = new(scope, image.ProductVersion);
-        Tag[] tags = evaluator.Resolve(scope.TagPatterns.ImageTags, image.Tags);
+        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, image.Metadata);
+        ManifestDefaults defaults = InheritDefaults(parentDefaults, image.Defaults);
+        TargetPlatform[] targets = image.Platforms.Values.Select(platform => platform.TargetPlatform).ToArray();
+        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, targets);
+        Dictionary<string, Tag> tags = evaluator.ResolveTags(image.Tags ?? defaults.Image.Tags ?? []);
         Dictionary<string, Platform> platforms = image.Platforms.ToDictionary(
             platformEntry => platformEntry.Key,
             platformEntry => ResolvePlatform(
-                platformEntry.Key, platformEntry.Value, scope, image.ProductVersion));
+                repoKey, $"{scopeKey}__{platformEntry.Key}", platformEntry.Value, metadata, defaults.Platform));
 
         return image with
         {
-            Metadata = evaluator.Metadata,
             Tags = tags,
             Platforms = platforms,
-            TagPatterns = new()
+            Metadata = metadata,
+            Defaults = null
         };
     }
 
-    private Platform ResolvePlatform(
-        string key, Platform platform, ResolutionScope parent, string? productVersion)
+    private static Platform ResolvePlatform(
+        string repoKey, string scopeKey, Platform platform,
+        Dictionary<string, JsonElement> parentMetadata, PlatformDefaults defaults)
     {
-        ResolutionScope scope = parent.Enter(key, platform.Metadata);
-        string osKey = platform.TargetPlatform.OsDefinition;
-        if (!manifest.OsDefinitions.TryGetValue(osKey, out OsDefinition? os))
+        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, platform.Metadata);
+        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, [platform.TargetPlatform]);
+        Dictionary<string, Tag> tags = evaluator.ResolveTags(platform.Tags ?? defaults.Tags ?? []);
+        string dockerfile = platform.Dockerfile ?? defaults.Dockerfile
+            ?? throw new InvalidDataException($"{scopeKey}: dockerfile must be specified explicitly or in defaults.platform.");
+
+        return platform with
         {
-            throw new InvalidDataException($"{scope.ScopeKey}: unknown OS definition '{osKey}'.");
-        }
-
-        TagEvaluator evaluator = new(scope, productVersion, os, platform.TargetPlatform.Arch);
-        Tag[] tags = evaluator.Resolve(scope.TagPatterns.PlatformTags, platform.Tags);
-
-        return platform with { Metadata = evaluator.Metadata, Tags = tags };
+            Dockerfile = evaluator.Expand(dockerfile),
+            DockerfileTemplate = platform.DockerfileTemplate is null
+                ? null
+                : evaluator.Expand(platform.DockerfileTemplate),
+            Tags = tags,
+            Metadata = metadata
+        };
     }
-}
 
-file sealed class ResolutionScope(
-    Dictionary<string, JsonElement> metadata,
-    TagPatterns tagPatterns,
-    string scopeKey = "")
-{
-    public Dictionary<string, JsonElement> Metadata { get; } = metadata;
-    public TagPatterns TagPatterns { get; } = tagPatterns;
-    public string ScopeKey { get; } = scopeKey;
+    private static ManifestDefaults InheritDefaults(ManifestDefaults? parentDefaults, ManifestDefaults? defaults) =>
+        new()
+        {
+            Image = new()
+            {
+                Tags = defaults?.Image.Tags ?? parentDefaults?.Image.Tags
+            },
+            Platform = new()
+            {
+                Dockerfile = defaults?.Platform.Dockerfile ?? parentDefaults?.Platform.Dockerfile,
+                Tags = defaults?.Platform.Tags ?? parentDefaults?.Platform.Tags
+            }
+        };
 
-    /// <summary>
-    /// Inherits all tag patterns and metadata keys. Child metadata replaces values by top-level key,
-    /// including entire nested objects and arrays; it does not deep-merge them.
-    /// </summary>
-    public ResolutionScope Enter(string key, Dictionary<string, JsonElement> metadata, TagPatterns? tagPatterns = null)
+    // Replace entire values by top-level key, without changing parent or sibling metadata.
+    private static Dictionary<string, JsonElement> InheritMetadata(
+        Dictionary<string, JsonElement> parentMetadata, Dictionary<string, JsonElement> metadata)
     {
-        // Copy parent metadata so child overrides cannot affect its parent or siblings.
-        Dictionary<string, JsonElement> inheritedMetadata = new(Metadata, StringComparer.Ordinal);
+        Dictionary<string, JsonElement> inheritedMetadata = new(parentMetadata, StringComparer.Ordinal);
         foreach ((string name, JsonElement value) in metadata)
         {
             inheritedMetadata[name] = value;
         }
 
-        // Append child patterns, keeping all inherited patterns available to descendants.
-        TagPatterns inheritedPatterns = tagPatterns is null ? TagPatterns : new TagPatterns
-        {
-            ImageTags = [.. TagPatterns.ImageTags, .. tagPatterns.ImageTags],
-            PlatformTags = [.. TagPatterns.PlatformTags, .. tagPatterns.PlatformTags]
-        };
-
-        // Extend the scope key, e.g. dotnet__aspnet__nanoserver2022-amd64.
-        string childScopeKey = ScopeKey.Length == 0 ? key : $"{ScopeKey}__{key}";
-
-        return new ResolutionScope(inheritedMetadata, inheritedPatterns, childScopeKey);
+        return inheritedMetadata;
     }
 }
 
-file sealed class TagEvaluator
+file sealed class PatternEvaluator(
+    string repoKey,
+    string scopeKey,
+    Dictionary<string, JsonElement> metadata,
+    TargetPlatform[] targets)
 {
-    private readonly string _scopeKey;
-
-    public TagEvaluator(ResolutionScope scope, string? productVersion)
+    public string Expand(string pattern)
     {
-        _scopeKey = scope.ScopeKey;
-        Metadata = new Dictionary<string, JsonElement>(scope.Metadata, StringComparer.Ordinal);
-        if (productVersion is not null)
+        string expanded = Regex.Replace(pattern, @"\{([^{}]+)\}", match => ResolvePlaceholder(match.Groups[1].Value));
+        if (expanded.Contains('{') || expanded.Contains('}'))
         {
-            AddBuiltIn("productVersion", productVersion);
+            throw new InvalidDataException($"{scopeKey}: pattern '{pattern}' contains malformed placeholders.");
         }
+
+        return expanded;
     }
 
-    public TagEvaluator(ResolutionScope scope, string? productVersion, OsDefinition os, Arch arch)
-        : this(scope, productVersion)
+    public Dictionary<string, Tag> ResolveTags(Dictionary<string, Tag> tags)
     {
-        AddBuiltIn("os", os.TagPart);
-        AddBuiltIn("arch", JsonNamingPolicy.CamelCase.ConvertName(arch.ToString()));
+        Dictionary<string, Tag> resolvedTags = new(StringComparer.Ordinal);
+        foreach ((string pattern, Tag tag) in tags)
+        {
+            if (tag is null)
+            {
+                throw new InvalidDataException(
+                    $"{scopeKey}: tag '{pattern}' must have an options mapping; use '{{}}' for default options.");
+            }
+
+            string name = ExpandTagName(pattern);
+            if (!resolvedTags.TryAdd(name, tag))
+            {
+                throw new InvalidDataException($"{scopeKey}: multiple tag declarations resolve to '{name}'.");
+            }
+        }
+
+        return resolvedTags;
     }
 
-    public Dictionary<string, JsonElement> Metadata { get; }
-
-    public Tag[] Resolve(Tag[] patterns, Tag[] explicitTags) =>
-        patterns.Concat(explicitTags).Select(ExpandTag).ToArray();
-
-    private Tag ExpandTag(Tag tag)
+    private string ExpandTagName(string pattern)
     {
-        string name = Regex.Replace(tag.Name, @"\{([^{}]+)\}", match => ResolvePlaceholder(match.Groups[1].Value));
+        string name = Expand(pattern);
         if (!Regex.IsMatch(name, @"\A[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}\z"))
         {
-            throw new InvalidDataException($"{_scopeKey}: resolved tag '{name}' is not a valid Docker tag.");
+            throw new InvalidDataException($"{scopeKey}: resolved tag '{name}' is not a valid Docker tag.");
         }
 
-        return tag with { Name = name };
+        return name;
     }
 
     private string ResolvePlaceholder(string placeholder)
     {
-        string[] segments = placeholder.Split('.');
-        if (!Metadata.TryGetValue(segments[0], out JsonElement value))
+        string? modelValue = placeholder switch
         {
-            throw new InvalidDataException($"{_scopeKey}: unknown tag variable '{placeholder}'.");
+            "repoKey" => repoKey,
+            "os" => ResolveTargetValue(placeholder, target => target.TagPart),
+            "arch" => ResolveTargetValue(
+                placeholder, target => JsonNamingPolicy.CamelCase.ConvertName(target.Arch.ToString())),
+            _ => null
+        };
+        if (modelValue is not null)
+        {
+            return modelValue;
+        }
+
+        string[] segments = placeholder.Split('.');
+        if (!metadata.TryGetValue(segments[0], out JsonElement value))
+        {
+            throw new InvalidDataException($"{scopeKey}: unknown pattern variable '{placeholder}'.");
         }
 
         foreach (string segment in segments.Skip(1))
         {
             if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segment, out value))
             {
-                throw new InvalidDataException($"{_scopeKey}: unknown tag variable '{placeholder}'.");
+                throw new InvalidDataException($"{scopeKey}: unknown pattern variable '{placeholder}'.");
             }
         }
 
@@ -176,16 +206,40 @@ file sealed class TagEvaluator
         {
             JsonValueKind.String => value.ToString(),
             JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => value.GetRawText(),
-            _ => throw new InvalidDataException($"{_scopeKey}: tag variable '{placeholder}' must be a non-null scalar.")
+            _ => throw new InvalidDataException($"{scopeKey}: pattern variable '{placeholder}' must be a non-null scalar.")
         };
     }
 
-    private void AddBuiltIn(string name, string value)
+    private string? ResolveTargetValue(string placeholder, Func<TargetPlatform, string> selector)
     {
-        if (!Metadata.TryAdd(name, JsonSerializer.SerializeToElement(value)))
+        string[] values = targets.Select(selector).Distinct(StringComparer.Ordinal).Take(2).ToArray();
+        return values.Length switch
         {
-            throw new InvalidDataException($"Metadata cannot redefine the built-in variable '{name}'.");
-        }
+            0 => null,
+            1 => values[0],
+            _ => throw new InvalidDataException(
+                $"{scopeKey}: pattern variable '{placeholder}' is ambiguous across platform targets.")
+        };
+    }
+}
+
+file static class ManifestYaml
+{
+    private static readonly IDeserializer s_deserializer = new DeserializerBuilder()
+        .WithAttemptingUnquotedStringTypeDeserialization()
+        .Build();
+
+    public static async Task<Manifest> ReadAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        string yaml = await File.ReadAllTextAsync(filePath, cancellationToken);
+        using StringReader reader = new(yaml);
+        MergingParser parser = new(new Parser(reader));
+        Dictionary<string, object?> document = s_deserializer.Deserialize<Dictionary<string, object?>>(parser)
+            ?? throw new InvalidDataException("The manifest must not be null.");
+
+        // Expand YAML reuse before removing authoring-only definitions and validating the model.
+        document.Remove("definitions");
+        return ManifestJson.Deserialize(JsonSerializer.SerializeToElement(document));
     }
 }
 
@@ -195,13 +249,12 @@ file static class ManifestJson
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        RespectRequiredConstructorParameters = true,
         RespectNullableAnnotations = true,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
-            Modifiers = { OmitEmptyProperties }
+            Modifiers = { ConfigureProperties }
         },
         Converters =
         {
@@ -211,12 +264,9 @@ file static class ManifestJson
         }
     };
 
-    public static async Task<Manifest> ReadAsync(string filePath, CancellationToken cancellationToken = default)
-    {
-        string json = await File.ReadAllTextAsync(filePath, cancellationToken);
-        return JsonSerializer.Deserialize<Manifest>(json, s_options)
-            ?? throw new InvalidDataException("The manifest must not be null.");
-    }
+    public static Manifest Deserialize(JsonElement document) =>
+        document.Deserialize<Manifest>(s_options)
+        ?? throw new InvalidDataException("The manifest must not be null.");
 
     public static Task WriteAsync(string filePath, Manifest manifest, CancellationToken cancellationToken = default)
     {
@@ -224,14 +274,21 @@ file static class ManifestJson
         return File.WriteAllTextAsync(filePath, json + Environment.NewLine, cancellationToken);
     }
 
-    private static void OmitEmptyProperties(JsonTypeInfo typeInfo)
+    private static void ConfigureProperties(JsonTypeInfo typeInfo)
     {
         foreach (JsonPropertyInfo property in typeInfo.Properties)
         {
+            // Omission enables inheritance; explicit null is not a valid override.
+            if (property.PropertyType == typeof(Dictionary<string, Tag>)
+                || ((typeInfo.Type == typeof(Platform) || typeInfo.Type == typeof(PlatformDefaults))
+                    && property.Name == "dockerfile"))
+            {
+                property.IsSetNullable = false;
+            }
+
             property.ShouldSerialize = (_, value) =>
                 value is not null
                 && value is not ICollection { Count: 0 }
-                && value is not TagPatterns { ImageTags.Length: 0, PlatformTags.Length: 0 }
                 && !(typeInfo.Type == typeof(Tag) && property.Name == "undocumented" && value is false);
         }
     }

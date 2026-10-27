@@ -2,186 +2,1358 @@
   "readme": {
     "path": "README.md"
   },
-  "osDefinitions": {
-    "nanoserver2022": {
-      "os": "windows",
-      "version": "ltsc2022",
-      "tagPart": "nanoserver-ltsc2022"
-    },
-    "noble": {
-      "os": "linux",
-      "version": "24.04",
-      "tagPart": "noble"
-    }
-  },
   "repos": {
-    "dotnet": {
-      "name": "example/dotnet",
-      "mcrTagsMetadataTemplate": "README.tags.yml",
+    "runtime-deps": {
+      "name": "dotnet/runtime-deps",
       "images": {
-        "runtime": {
-          "productVersion": "10.0.1",
+        "9.0-noble": {
           "platforms": {
-            "nanoserver2022-amd64": {
+            "amd64": {
               "targetPlatform": {
-                "osDefinition": "nanoserver2022",
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
                 "arch": "amd64"
               },
-              "dockerfile": "runtime/nanoserver-ltsc2022/amd64/Dockerfile",
-              "tags": [
-                {
-                  "name": "10.0.1-nanoserver-ltsc2022-amd64"
-                },
-                {
-                  "name": "10.0-nanoserver-ltsc2022-amd64"
-                },
-                {
-                  "name": "stable-nanoserver-ltsc2022"
-                }
-              ],
+              "dockerfile": "src/runtime-deps/9.0/noble/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-noble-amd64": {},
+                "9.0-noble-amd64": {}
+              },
               "metadata": {
+                "servicing": "monthly",
                 "version": {
-                  "majorMinor": "10.0",
-                  "channel": "stable"
-                },
-                "flavor": "runtime",
-                "servicing": "ltsc",
-                "productVersion": "10.0.1",
-                "os": "nanoserver-ltsc2022",
-                "arch": "amd64"
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
               }
             },
-            "noble-arm64": {
+            "arm32v7": {
               "targetPlatform": {
-                "osDefinition": "noble",
-                "arch": "arm64"
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
               },
-              "dockerfile": "runtime/noble/arm64/Dockerfile",
-              "tags": [
-                {
-                  "name": "10.0.1-noble-arm64"
-                },
-                {
-                  "name": "10.0-noble-arm64"
-                }
-              ],
+              "dockerfile": "src/runtime-deps/9.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-noble-arm32v7": {},
+                "9.0-noble-arm32v7": {}
+              },
               "metadata": {
-                "version": {
-                  "majorMinor": "10.0",
-                  "channel": "stable"
-                },
-                "flavor": "runtime",
                 "servicing": "monthly",
-                "productVersion": "10.0.1",
-                "os": "noble",
-                "arch": "arm64"
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/9.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-noble-arm64v8": {},
+                "9.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
               }
             }
           },
-          "tags": [
-            {
-              "name": "10.0.1"
-            },
-            {
-              "name": "10.0"
-            },
-            {
-              "name": "10.0.1-runtime"
-            },
-            {
-              "name": "10.0-runtime"
-            },
-            {
-              "name": "latest",
-              "undocumented": true
-            }
-          ],
+          "tags": {
+            "9.0.22": {},
+            "9.0": {},
+            "9.0.22-noble": {},
+            "9.0-noble": {}
+          },
           "metadata": {
-            "version": {
-              "majorMinor": "10.0",
-              "channel": "stable"
-            },
-            "flavor": "runtime",
             "servicing": "monthly",
-            "productVersion": "10.0.1"
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.22"
+            }
           }
         },
-        "aspnet": {
-          "productVersion": "10.0.1",
+        "10.0-noble": {
           "platforms": {
-            "nanoserver2022-amd64": {
+            "amd64": {
               "targetPlatform": {
-                "osDefinition": "nanoserver2022",
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
                 "arch": "amd64"
               },
-              "dockerfile": "aspnet/nanoserver-ltsc2022/amd64/Dockerfile",
-              "tags": [
-                {
-                  "name": "10.0.1-nanoserver-ltsc2022-amd64"
-                },
-                {
-                  "name": "10.0-nanoserver-ltsc2022-amd64"
-                },
-                {
-                  "name": "10.0.1-nanoserver-ltsc2022-amd64-composite"
-                }
-              ],
+              "dockerfile": "src/runtime-deps/10.0/noble/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-noble-amd64": {},
+                "10.0-noble-amd64": {}
+              },
               "metadata": {
-                "version": {
-                  "majorMinor": "10.0",
-                  "channel": "stable"
-                },
-                "flavor": "standard",
                 "servicing": "monthly",
-                "variant": "composite",
-                "productVersion": "10.0.1",
-                "os": "nanoserver-ltsc2022",
-                "arch": "amd64"
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime-deps/10.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.14-noble-arm32v7": {},
+                "10.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/10.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.14-noble-arm64v8": {},
+                "10.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
               }
             }
           },
-          "tags": [
-            {
-              "name": "10.0.1"
-            },
-            {
-              "name": "10.0"
-            },
-            {
-              "name": "10.0.1-standard"
-            },
-            {
-              "name": "10.0-standard"
-            }
-          ],
+          "tags": {
+            "10.0.14": {},
+            "10.0": {},
+            "10.0.14-noble": {},
+            "10.0-noble": {},
+            "latest": {}
+          },
           "metadata": {
-            "version": {
-              "majorMinor": "10.0",
-              "channel": "stable"
-            },
-            "flavor": "standard",
             "servicing": "monthly",
-            "variant": "composite",
-            "productVersion": "10.0.1"
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
+          }
+        },
+        "9.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime-deps/9.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-amd64": {},
+                "9.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime-deps/9.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-arm32v7": {},
+                "9.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/9.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-arm64v8": {},
+                "9.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22-alpine3.24": {},
+            "9.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
+        "10.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime-deps/10.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-amd64": {},
+                "10.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime-deps/10.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-arm32v7": {},
+                "10.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/10.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-arm64v8": {},
+                "10.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.14-alpine3.24": {},
+            "10.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
           }
         }
       },
       "metadata": {
-        "version": {
-          "majorMinor": "10.0",
-          "channel": "stable"
+        "servicing": "monthly"
+      }
+    },
+    "runtime": {
+      "name": "dotnet/runtime",
+      "images": {
+        "9.0-noble": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/9.0/noble/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-noble-amd64": {},
+                "9.0-noble-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/9.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-noble-arm32v7": {},
+                "9.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/9.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-noble-arm64v8": {},
+                "9.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22": {},
+            "9.0": {},
+            "9.0.22-noble": {},
+            "9.0-noble": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.22"
+            }
+          }
         },
-        "flavor": "standard",
+        "10.0-noble": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/10.0/noble/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-noble-amd64": {},
+                "10.0-noble-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/10.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.14-noble-arm32v7": {},
+                "10.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/10.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.14-noble-arm64v8": {},
+                "10.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.14": {},
+            "10.0": {},
+            "10.0.14-noble": {},
+            "10.0-noble": {},
+            "latest": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
+          }
+        },
+        "10.0-nanoserver2022": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "windows",
+                "version": "ltsc2022",
+                "tagPart": "nanoserver-ltsc2022",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/10.0/nanoserver-ltsc2022/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-nanoserver-ltsc2022": {},
+                "10.0-nanoserver-ltsc2022": {}
+              },
+              "metadata": {
+                "servicing": "ltsc",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
+          }
+        },
+        "9.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/9.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-amd64": {},
+                "9.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/9.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-arm32v7": {},
+                "9.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/9.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-arm64v8": {},
+                "9.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22-alpine3.24": {},
+            "9.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
+        "10.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/10.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-amd64": {},
+                "10.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/10.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-arm32v7": {},
+                "10.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/10.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-arm64v8": {},
+                "10.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.14-alpine3.24": {},
+            "10.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
+          }
+        }
+      },
+      "metadata": {
+        "servicing": "monthly"
+      }
+    },
+    "aspnet": {
+      "name": "dotnet/aspnet",
+      "images": {
+        "9.0-noble": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/9.0/noble/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-noble-amd64": {},
+                "9.0-noble-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/9.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-noble-arm32v7": {},
+                "9.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/9.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-noble-arm64v8": {},
+                "9.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22": {},
+            "9.0": {},
+            "9.0.22-noble": {},
+            "9.0-noble": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
+        "10.0-noble": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/10.0/noble/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-noble-amd64": {},
+                "10.0-noble-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/10.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.14-noble-arm32v7": {},
+                "10.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/10.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.14-noble-arm64v8": {},
+                "10.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.14": {},
+            "10.0": {},
+            "10.0.14-noble": {},
+            "10.0-noble": {},
+            "latest": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
+          }
+        },
+        "9.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/9.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-amd64": {},
+                "9.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/9.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-arm32v7": {},
+                "9.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/9.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-alpine3.24-arm64v8": {},
+                "9.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22-alpine3.24": {},
+            "9.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
+        "10.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/10.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-amd64": {},
+                "10.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/10.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-arm32v7": {},
+                "10.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/10.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.14-alpine3.24-arm64v8": {},
+                "10.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.14"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.14-alpine3.24": {},
+            "10.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.14"
+            }
+          }
+        }
+      },
+      "metadata": {
+        "servicing": "monthly"
+      }
+    },
+    "sdk": {
+      "name": "dotnet/sdk",
+      "images": {
+        "9.0-noble": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/9.0/noble/amd64/Dockerfile",
+              "tags": {
+                "9.0.320-noble-amd64": {},
+                "9.0-noble-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/9.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.320-noble-arm32v7": {},
+                "9.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/9.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.320-noble-arm64v8": {},
+                "9.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.320": {},
+            "9.0": {},
+            "9.0.320-noble": {},
+            "9.0-noble": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.320"
+            }
+          }
+        },
+        "10.0-noble": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/10.0/noble/amd64/Dockerfile",
+              "tags": {
+                "10.0.403-noble-amd64": {},
+                "10.0-noble-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.403"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/10.0/noble/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.403-noble-arm32v7": {},
+                "10.0-noble-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.403"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "24.04",
+                "tagPart": "noble",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/10.0/noble/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.403-noble-arm64v8": {},
+                "10.0-noble-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.403"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.403": {},
+            "10.0": {},
+            "10.0.403-noble": {},
+            "10.0-noble": {},
+            "latest": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.403"
+            }
+          }
+        },
+        "9.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/9.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "9.0.320-alpine3.24-amd64": {},
+                "9.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/9.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.320-alpine3.24-arm32v7": {},
+                "9.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/9.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.320-alpine3.24-arm64v8": {},
+                "9.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "9.0",
+                  "channel": "stable",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.320-alpine3.24": {},
+            "9.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "9.0",
+              "channel": "stable",
+              "patchVersion": "9.0.320"
+            }
+          }
+        },
+        "10.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/10.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "10.0.403-alpine3.24-amd64": {},
+                "10.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.403"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/10.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "10.0.403-alpine3.24-arm32v7": {},
+                "10.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.403"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/10.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "10.0.403-alpine3.24-arm64v8": {},
+                "10.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "servicing": "monthly",
+                "version": {
+                  "minorVersion": "10.0",
+                  "channel": "stable",
+                  "patchVersion": "10.0.403"
+                }
+              }
+            }
+          },
+          "tags": {
+            "10.0.403-alpine3.24": {},
+            "10.0-alpine3.24": {}
+          },
+          "metadata": {
+            "servicing": "monthly",
+            "version": {
+              "minorVersion": "10.0",
+              "channel": "stable",
+              "patchVersion": "10.0.403"
+            }
+          }
+        }
+      },
+      "metadata": {
         "servicing": "monthly"
       }
     }
   },
   "metadata": {
-    "version": {
-      "majorMinor": "10.0",
-      "channel": "stable"
-    },
-    "flavor": "default",
     "servicing": "monthly"
   }
 }

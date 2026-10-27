@@ -16,6 +16,11 @@ parameters:
   type: boolean
   default: false
 
+- name: poolPriority
+  displayName: Pool priority (High, Medium, or Low)
+  type: string
+  default: Medium
+
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
 # Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
@@ -50,6 +55,7 @@ extends:
         stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
         stagesTemplateParameters:
           noCache: true
+          poolPriority: ${{ parameters.poolPriority }}
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
           ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
             customInitSteps:

@@ -23,6 +23,10 @@ parameters:
   type: boolean
   default: false
 
+- name: poolPriority
+  type: string
+  default: ""
+
 # When provided, ImageBuilder will not be pulled from MCR at the start of each
 # job and these steps will be run instead.
 - name: customInitSteps
@@ -45,6 +49,8 @@ stages:
     publishConfig: ${{ parameters.publishConfig }}
     customInitSteps: ${{ parameters.customInitSteps }}
     additionalServiceConnections: ${{ parameters.additionalServiceConnections }}
+    ${{ if ne(parameters.poolPriority, '') }}:
+      poolPriority: ${{ parameters.poolPriority }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
     ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

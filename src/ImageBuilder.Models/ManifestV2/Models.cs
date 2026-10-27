@@ -7,65 +7,73 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
 public sealed record Manifest
 {
-    public Readme? Readme { get; init; }
-    public Dictionary<string, OsDefinition> OsDefinitions { get; init; } = [];
-    public Dictionary<string, Repo> Repos { get; init; } = [];
-    public TagPatterns TagPatterns { get; init; } = new();
-    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+    public Readme? Readme { get; set; }
+    public Dictionary<string, OsDefinition> OsDefinitions { get; set; } = [];
+    public Dictionary<string, Repo> Repos { get; set; } = [];
+    public TagPatterns TagPatterns { get; set; } = new();
+    public Dictionary<string, JsonElement> Metadata { get; set; } = [];
 }
 
 public sealed record Repo
 {
-    public required string Name { get; init; }
-    public string? McrTagsMetadataTemplate { get; init; }
-    public Dictionary<string, Image> Images { get; init; } = [];
-    public Readme[] Readmes { get; init; } = [];
-    public TagPatterns TagPatterns { get; init; } = new();
-    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+    public required string Name { get; set; }
+    public string? McrTagsMetadataTemplate { get; set; }
+    public Dictionary<string, Image> Images { get; set; } = [];
+    public Readme[] Readmes { get; set; } = [];
+    public TagPatterns TagPatterns { get; set; } = new();
+    public Dictionary<string, JsonElement> Metadata { get; set; } = [];
 }
 
 public sealed record Image
 {
-    public string? ProductVersion { get; init; }
-    public string? Syndication { get; init; }
-    public Dictionary<string, Platform> Platforms { get; init; } = [];
-    public Tag[] Tags { get; init; } = [];
-    public TagPatterns TagPatterns { get; init; } = new();
-    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+    public string? ProductVersion { get; set; }
+    public string? Syndication { get; set; }
+    public Dictionary<string, Platform> Platforms { get; set; } = [];
+    public Tag[] Tags { get; set; } = [];
+    public TagPatterns TagPatterns { get; set; } = new();
+    public Dictionary<string, JsonElement> Metadata { get; set; } = [];
 }
 
 public sealed record Platform
 {
-    public required TargetPlatform TargetPlatform { get; init; }
-    public required string Dockerfile { get; init; }
-    public string? DockerfileTemplate { get; init; }
-    public Dictionary<string, string> BuildArgs { get; init; } = [];
-    public Tag[] Tags { get; init; } = [];
-    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+    public required TargetPlatform TargetPlatform { get; set; }
+    public required string Dockerfile { get; set; }
+    public string? DockerfileTemplate { get; set; }
+    public Dictionary<string, string> BuildArgs { get; set; } = [];
+    public Tag[] Tags { get; set; } = [];
+    public Dictionary<string, JsonElement> Metadata { get; set; } = [];
 }
 
-public sealed record TargetPlatform(
-    string OsDefinition,
-    Arch Arch);
+public sealed record TargetPlatform
+{
+    public required string OsDefinition { get; set; }
+    public required Arch Arch { get; set; }
+}
 
-public sealed record OsDefinition(
-    OS OS,
-    string Version,
-    string TagPart);
+public sealed record OsDefinition
+{
+    public required OS OS { get; set; }
+    public required string Version { get; set; }
+    public required string TagPart { get; set; }
+}
 
 public sealed record TagPatterns
 {
-    public Tag[] ImageTags { get; init; } = [];
-    public Tag[] PlatformTags { get; init; } = [];
+    public Tag[] ImageTags { get; set; } = [];
+    public Tag[] PlatformTags { get; set; } = [];
 }
 
-public sealed record Tag(
-    string Name,
-    bool Undocumented = false);
+public sealed record Tag
+{
+    public required string Name { get; set; }
+    public bool Undocumented { get; set; }
+}
 
-public sealed record Readme(
-    string Path,
-    string? TemplatePath = null);
+public sealed record Readme
+{
+    public required string Path { get; set; }
+    public string? TemplatePath { get; set; }
+}
 
 public enum Arch
 {

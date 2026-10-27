@@ -20,6 +20,10 @@ parameters:
   displayName: Pool priority (High, Medium, or Low)
   type: string
   default: Medium
+  values:
+  - High
+  - Medium
+  - Low
 
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self

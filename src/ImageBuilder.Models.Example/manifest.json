@@ -1,0 +1,122 @@
+{
+  "readme": {
+    "path": "README.md"
+  },
+  "osDefinitions": {
+    "nanoserver2022": {
+      "os": "windows",
+      "version": "ltsc2022",
+      "tagPart": "nanoserver-ltsc2022"
+    },
+    "noble": {
+      "os": "linux",
+      "version": "24.04",
+      "tagPart": "noble"
+    }
+  },
+  "metadata": {
+    "version": {
+      "majorMinor": "10.0",
+      "channel": "stable"
+    },
+    "flavor": "default",
+    "servicing": "monthly"
+  },
+  "tagPatterns": {
+    "imageTags": [
+      {
+        "name": "{productVersion}"
+      },
+      {
+        "name": "{version.majorMinor}"
+      }
+    ],
+    "platformTags": [
+      {
+        "name": "{productVersion}-{os}-{arch}"
+      },
+      {
+        "name": "{version.majorMinor}-{os}-{arch}"
+      }
+    ]
+  },
+  "repos": {
+    "dotnet": {
+      "name": "example/dotnet",
+      "mcrTagsMetadataTemplate": "README.tags.yml",
+      "metadata": {
+        "flavor": "standard"
+      },
+      "tagPatterns": {
+        "imageTags": [
+          {
+            "name": "{productVersion}-{flavor}"
+          },
+          {
+            "name": "{version.majorMinor}-{flavor}"
+          }
+        ]
+      },
+      "images": {
+        "runtime": {
+          "productVersion": "10.0.1",
+          "metadata": {
+            "flavor": "runtime"
+          },
+          "tags": [
+            {
+              "name": "latest",
+              "undocumented": true
+            }
+          ],
+          "platforms": {
+            "nanoserver2022-amd64": {
+              "targetPlatform": {
+                "osDefinition": "nanoserver2022",
+                "arch": "amd64"
+              },
+              "dockerfile": "runtime/nanoserver-ltsc2022/amd64/Dockerfile",
+              "metadata": {
+                "servicing": "ltsc"
+              },
+              "tags": [
+                {
+                  "name": "{version.channel}-{os}"
+                }
+              ]
+            },
+            "noble-arm64": {
+              "targetPlatform": {
+                "osDefinition": "noble",
+                "arch": "arm64"
+              },
+              "dockerfile": "runtime/noble/arm64/Dockerfile"
+            }
+          }
+        },
+        "aspnet": {
+          "productVersion": "10.0.1",
+          "metadata": {
+            "variant": "composite"
+          },
+          "tagPatterns": {
+            "platformTags": [
+              {
+                "name": "{productVersion}-{os}-{arch}-{variant}"
+              }
+            ]
+          },
+          "platforms": {
+            "nanoserver2022-amd64": {
+              "targetPlatform": {
+                "osDefinition": "nanoserver2022",
+                "arch": "amd64"
+              },
+              "dockerfile": "aspnet/nanoserver-ltsc2022/amd64/Dockerfile"
+            }
+          }
+        }
+      }
+    }
+  }
+}

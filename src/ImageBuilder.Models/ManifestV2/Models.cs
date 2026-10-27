@@ -5,46 +5,67 @@ using System.Text.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
-public sealed record Manifest(
-    Readme Readme,
-    IDictionary<string, Repo> Repos,
-    IDictionary<string, JsonElement> Metadata);
+public sealed record Manifest
+{
+    public Readme? Readme { get; init; }
+    public Dictionary<string, OsDefinition> OsDefinitions { get; init; } = [];
+    public Dictionary<string, Repo> Repos { get; init; } = [];
+    public TagPatterns TagPatterns { get; init; } = new();
+    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+}
 
-public sealed record Repo(
-    string Id,
-    IDictionary<string, Image> Images,
-    string McrTagsMetadataTemplate,
-    string Name,
-    Readme[] Readmes,
-    IDictionary<string, JsonElement> Metadata);
+public sealed record Repo
+{
+    public required string Name { get; init; }
+    public string? McrTagsMetadataTemplate { get; init; }
+    public Dictionary<string, Image> Images { get; init; } = [];
+    public Readme[] Readmes { get; init; } = [];
+    public TagPatterns TagPatterns { get; init; } = new();
+    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+}
 
-public sealed record Image(
-    IDictionary<string, Platform> Platforms,
-    Tag[] Tags,
-    string ProductVersion,
-    string Syndication,
-    IDictionary<string, JsonElement> Metadata);
+public sealed record Image
+{
+    public string? ProductVersion { get; init; }
+    public string? Syndication { get; init; }
+    public Dictionary<string, Platform> Platforms { get; init; } = [];
+    public Tag[] Tags { get; init; } = [];
+    public TagPatterns TagPatterns { get; init; } = new();
+    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+}
 
-public sealed record Platform(
-    TargetPlatform TargetPlatform,
-    IDictionary<string, string> BuildArgs,
-    string Dockerfile,
-    string? DockerfileTemplate,
-    string OsVersion,
-    Tag[] Tags,
-    IDictionary<string, JsonElement> Metadata);
+public sealed record Platform
+{
+    public required TargetPlatform TargetPlatform { get; init; }
+    public required string Dockerfile { get; init; }
+    public string? DockerfileTemplate { get; init; }
+    public Dictionary<string, string> BuildArgs { get; init; } = [];
+    public Tag[] Tags { get; init; } = [];
+    public Dictionary<string, JsonElement> Metadata { get; init; } = [];
+}
 
 public sealed record TargetPlatform(
-    OS OS,
+    string OsDefinition,
     Arch Arch);
+
+public sealed record OsDefinition(
+    OS OS,
+    string Version,
+    string TagPart);
+
+public sealed record TagPatterns
+{
+    public Tag[] ImageTags { get; init; } = [];
+    public Tag[] PlatformTags { get; init; } = [];
+}
 
 public sealed record Tag(
     string Name,
-    bool Undocumented);
+    bool Undocumented = false);
 
 public sealed record Readme(
     string Path,
-    string? TemplatePath);
+    string? TemplatePath = null);
 
 public enum Arch
 {

@@ -1,0 +1,187 @@
+{
+  "readme": {
+    "path": "README.md"
+  },
+  "osDefinitions": {
+    "nanoserver2022": {
+      "os": "windows",
+      "version": "ltsc2022",
+      "tagPart": "nanoserver-ltsc2022"
+    },
+    "noble": {
+      "os": "linux",
+      "version": "24.04",
+      "tagPart": "noble"
+    }
+  },
+  "repos": {
+    "dotnet": {
+      "name": "example/dotnet",
+      "mcrTagsMetadataTemplate": "README.tags.yml",
+      "images": {
+        "runtime": {
+          "productVersion": "10.0.1",
+          "platforms": {
+            "nanoserver2022-amd64": {
+              "targetPlatform": {
+                "osDefinition": "nanoserver2022",
+                "arch": "amd64"
+              },
+              "dockerfile": "runtime/nanoserver-ltsc2022/amd64/Dockerfile",
+              "tags": [
+                {
+                  "name": "10.0.1-nanoserver-ltsc2022-amd64"
+                },
+                {
+                  "name": "10.0-nanoserver-ltsc2022-amd64"
+                },
+                {
+                  "name": "stable-nanoserver-ltsc2022"
+                }
+              ],
+              "metadata": {
+                "version": {
+                  "majorMinor": "10.0",
+                  "channel": "stable"
+                },
+                "flavor": "runtime",
+                "servicing": "ltsc",
+                "productVersion": "10.0.1",
+                "os": "nanoserver-ltsc2022",
+                "arch": "amd64"
+              }
+            },
+            "noble-arm64": {
+              "targetPlatform": {
+                "osDefinition": "noble",
+                "arch": "arm64"
+              },
+              "dockerfile": "runtime/noble/arm64/Dockerfile",
+              "tags": [
+                {
+                  "name": "10.0.1-noble-arm64"
+                },
+                {
+                  "name": "10.0-noble-arm64"
+                }
+              ],
+              "metadata": {
+                "version": {
+                  "majorMinor": "10.0",
+                  "channel": "stable"
+                },
+                "flavor": "runtime",
+                "servicing": "monthly",
+                "productVersion": "10.0.1",
+                "os": "noble",
+                "arch": "arm64"
+              }
+            }
+          },
+          "tags": [
+            {
+              "name": "10.0.1"
+            },
+            {
+              "name": "10.0"
+            },
+            {
+              "name": "10.0.1-runtime"
+            },
+            {
+              "name": "10.0-runtime"
+            },
+            {
+              "name": "latest",
+              "undocumented": true
+            }
+          ],
+          "metadata": {
+            "version": {
+              "majorMinor": "10.0",
+              "channel": "stable"
+            },
+            "flavor": "runtime",
+            "servicing": "monthly",
+            "productVersion": "10.0.1"
+          }
+        },
+        "aspnet": {
+          "productVersion": "10.0.1",
+          "platforms": {
+            "nanoserver2022-amd64": {
+              "targetPlatform": {
+                "osDefinition": "nanoserver2022",
+                "arch": "amd64"
+              },
+              "dockerfile": "aspnet/nanoserver-ltsc2022/amd64/Dockerfile",
+              "tags": [
+                {
+                  "name": "10.0.1-nanoserver-ltsc2022-amd64"
+                },
+                {
+                  "name": "10.0-nanoserver-ltsc2022-amd64"
+                },
+                {
+                  "name": "10.0.1-nanoserver-ltsc2022-amd64-composite"
+                }
+              ],
+              "metadata": {
+                "version": {
+                  "majorMinor": "10.0",
+                  "channel": "stable"
+                },
+                "flavor": "standard",
+                "servicing": "monthly",
+                "variant": "composite",
+                "productVersion": "10.0.1",
+                "os": "nanoserver-ltsc2022",
+                "arch": "amd64"
+              }
+            }
+          },
+          "tags": [
+            {
+              "name": "10.0.1"
+            },
+            {
+              "name": "10.0"
+            },
+            {
+              "name": "10.0.1-standard"
+            },
+            {
+              "name": "10.0-standard"
+            }
+          ],
+          "metadata": {
+            "version": {
+              "majorMinor": "10.0",
+              "channel": "stable"
+            },
+            "flavor": "standard",
+            "servicing": "monthly",
+            "variant": "composite",
+            "productVersion": "10.0.1"
+          }
+        }
+      },
+      "metadata": {
+        "version": {
+          "majorMinor": "10.0",
+          "channel": "stable"
+        },
+        "flavor": "standard",
+        "servicing": "monthly"
+      }
+    }
+  },
+  "metadata": {
+    "version": {
+      "majorMinor": "10.0",
+      "channel": "stable"
+    },
+    "flavor": "default",
+    "servicing": "monthly"
+  }
+}

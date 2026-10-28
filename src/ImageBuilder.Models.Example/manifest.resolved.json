@@ -254,6 +254,79 @@
             }
           }
         },
+        "9.0-bookworm-slim": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime-deps/9.0/bookworm-slim/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-amd64": {},
+                "9.0-bookworm-slim-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime-deps/9.0/bookworm-slim/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-arm32v7": {},
+                "9.0-bookworm-slim-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/9.0/bookworm-slim/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-arm64v8": {},
+                "9.0-bookworm-slim-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22": {},
+            "9.0": {},
+            "9.0.22-bookworm-slim": {},
+            "9.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "9.0",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
         "9.0-alpine3.24": {
           "platforms": {
             "amd64": {
@@ -265,6 +338,7 @@
               },
               "dockerfile": "src/runtime-deps/9.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "9.0-alpine-amd64": {},
                 "9.0.22-alpine3.24-amd64": {},
                 "9.0-alpine3.24-amd64": {}
               },
@@ -284,6 +358,7 @@
               },
               "dockerfile": "src/runtime-deps/9.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "9.0-alpine-arm32v7": {},
                 "9.0.22-alpine3.24-arm32v7": {},
                 "9.0-alpine3.24-arm32v7": {}
               },
@@ -303,6 +378,7 @@
               },
               "dockerfile": "src/runtime-deps/9.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "9.0-alpine-arm64v8": {},
                 "9.0.22-alpine3.24-arm64v8": {},
                 "9.0-alpine3.24-arm64v8": {}
               },
@@ -315,6 +391,7 @@
             }
           },
           "tags": {
+            "9.0-alpine": {},
             "9.0.22-alpine3.24": {},
             "9.0-alpine3.24": {}
           },
@@ -386,8 +463,6 @@
             }
           },
           "tags": {
-            "9.0.22": {},
-            "9.0": {},
             "9.0.22-noble": {},
             "9.0-noble": {}
           },
@@ -535,6 +610,7 @@
               },
               "dockerfile": "src/runtime-deps/10.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "10.0-alpine-amd64": {},
                 "10.0.14-alpine3.24-amd64": {},
                 "10.0-alpine3.24-amd64": {}
               },
@@ -554,6 +630,7 @@
               },
               "dockerfile": "src/runtime-deps/10.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "10.0-alpine-arm32v7": {},
                 "10.0.14-alpine3.24-arm32v7": {},
                 "10.0-alpine3.24-arm32v7": {}
               },
@@ -573,6 +650,7 @@
               },
               "dockerfile": "src/runtime-deps/10.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "10.0-alpine-arm64v8": {},
                 "10.0.14-alpine3.24-arm64v8": {},
                 "10.0-alpine3.24-arm64v8": {}
               },
@@ -585,6 +663,7 @@
             }
           },
           "tags": {
+            "10.0-alpine": {},
             "10.0.14-alpine3.24": {},
             "10.0-alpine3.24": {}
           },
@@ -791,6 +870,81 @@
             }
           }
         },
+        "11.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime-deps/11.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "11.0-alpine-amd64": {},
+                "11.0.0-rc.3-alpine3.24-amd64": {},
+                "11.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime-deps/11.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm32v7": {},
+                "11.0.0-rc.3-alpine3.24-arm32v7": {},
+                "11.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/11.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm64v8": {},
+                "11.0.0-rc.3-alpine3.24-arm64v8": {},
+                "11.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            }
+          },
+          "tags": {
+            "11.0-alpine": {},
+            "11.0.0-rc.3-alpine3.24": {},
+            "11.0-alpine3.24": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "11.0",
+              "patchVersion": "11.0.0-rc.3"
+            }
+          }
+        },
         "11.0-azurelinux3.0": {
           "platforms": {
             "amd64": {
@@ -965,6 +1119,81 @@
             "8.0": {},
             "8.0.33-bookworm-slim": {},
             "8.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "8.0",
+              "patchVersion": "8.0.33"
+            }
+          }
+        },
+        "8.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/8.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "8.0-alpine-amd64": {},
+                "8.0.33-alpine3.24-amd64": {},
+                "8.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/8.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "8.0-alpine-arm32v7": {},
+                "8.0.33-alpine3.24-arm32v7": {},
+                "8.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/8.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "8.0-alpine-arm64v8": {},
+                "8.0.33-alpine3.24-arm64v8": {},
+                "8.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            }
+          },
+          "tags": {
+            "8.0-alpine": {},
+            "8.0.33-alpine3.24": {},
+            "8.0-alpine3.24": {}
           },
           "metadata": {
             "version": {
@@ -1235,7 +1464,7 @@
             }
           }
         },
-        "8.0-windowsservercore2019": {
+        "8.0-servercore2019": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -1264,7 +1493,7 @@
             }
           }
         },
-        "8.0-windowsservercore2022": {
+        "8.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -1293,7 +1522,7 @@
             }
           }
         },
-        "8.0-windowsservercore2025": {
+        "8.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -1322,6 +1551,79 @@
             }
           }
         },
+        "9.0-bookworm-slim": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/9.0/bookworm-slim/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-amd64": {},
+                "9.0-bookworm-slim-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/9.0/bookworm-slim/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-arm32v7": {},
+                "9.0-bookworm-slim-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/9.0/bookworm-slim/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-arm64v8": {},
+                "9.0-bookworm-slim-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22": {},
+            "9.0": {},
+            "9.0.22-bookworm-slim": {},
+            "9.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "9.0",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
         "9.0-alpine3.24": {
           "platforms": {
             "amd64": {
@@ -1333,6 +1635,7 @@
               },
               "dockerfile": "src/runtime/9.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "9.0-alpine-amd64": {},
                 "9.0.22-alpine3.24-amd64": {},
                 "9.0-alpine3.24-amd64": {}
               },
@@ -1352,6 +1655,7 @@
               },
               "dockerfile": "src/runtime/9.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "9.0-alpine-arm32v7": {},
                 "9.0.22-alpine3.24-arm32v7": {},
                 "9.0-alpine3.24-arm32v7": {}
               },
@@ -1371,6 +1675,7 @@
               },
               "dockerfile": "src/runtime/9.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "9.0-alpine-arm64v8": {},
                 "9.0.22-alpine3.24-arm64v8": {},
                 "9.0-alpine3.24-arm64v8": {}
               },
@@ -1383,6 +1688,7 @@
             }
           },
           "tags": {
+            "9.0-alpine": {},
             "9.0.22-alpine3.24": {},
             "9.0-alpine3.24": {}
           },
@@ -1454,8 +1760,6 @@
             }
           },
           "tags": {
-            "9.0.22": {},
-            "9.0": {},
             "9.0.22-noble": {},
             "9.0-noble": {}
           },
@@ -1605,7 +1909,7 @@
             }
           }
         },
-        "9.0-windowsservercore2019": {
+        "9.0-servercore2019": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -1634,7 +1938,7 @@
             }
           }
         },
-        "9.0-windowsservercore2022": {
+        "9.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -1663,7 +1967,7 @@
             }
           }
         },
-        "9.0-windowsservercore2025": {
+        "9.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -1777,6 +2081,7 @@
               },
               "dockerfile": "src/runtime/10.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "10.0-alpine-amd64": {},
                 "10.0.14-alpine3.24-amd64": {},
                 "10.0-alpine3.24-amd64": {}
               },
@@ -1796,6 +2101,7 @@
               },
               "dockerfile": "src/runtime/10.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "10.0-alpine-arm32v7": {},
                 "10.0.14-alpine3.24-arm32v7": {},
                 "10.0-alpine3.24-arm32v7": {}
               },
@@ -1815,6 +2121,7 @@
               },
               "dockerfile": "src/runtime/10.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "10.0-alpine-arm64v8": {},
                 "10.0.14-alpine3.24-arm64v8": {},
                 "10.0-alpine3.24-arm64v8": {}
               },
@@ -1827,6 +2134,7 @@
             }
           },
           "tags": {
+            "10.0-alpine": {},
             "10.0.14-alpine3.24": {},
             "10.0-alpine3.24": {}
           },
@@ -2018,7 +2326,7 @@
             }
           }
         },
-        "10.0-windowsservercore2022": {
+        "10.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -2047,7 +2355,7 @@
             }
           }
         },
-        "10.0-windowsservercore2025": {
+        "10.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -2141,6 +2449,81 @@
             "11.0": {},
             "11.0.0-rc.3-resolute": {},
             "11.0-resolute": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "11.0",
+              "patchVersion": "11.0.0-rc.3"
+            }
+          }
+        },
+        "11.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime/11.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "11.0-alpine-amd64": {},
+                "11.0.0-rc.3-alpine3.24-amd64": {},
+                "11.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime/11.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm32v7": {},
+                "11.0.0-rc.3-alpine3.24-arm32v7": {},
+                "11.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime/11.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm64v8": {},
+                "11.0.0-rc.3-alpine3.24-arm64v8": {},
+                "11.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            }
+          },
+          "tags": {
+            "11.0-alpine": {},
+            "11.0.0-rc.3-alpine3.24": {},
+            "11.0-alpine3.24": {}
           },
           "metadata": {
             "version": {
@@ -2282,7 +2665,7 @@
             }
           }
         },
-        "11.0-windowsservercore2025": {
+        "11.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -2381,6 +2764,81 @@
             "8.0": {},
             "8.0.33-bookworm-slim": {},
             "8.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "8.0",
+              "patchVersion": "8.0.33"
+            }
+          }
+        },
+        "8.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/8.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "8.0-alpine-amd64": {},
+                "8.0.33-alpine3.24-amd64": {},
+                "8.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/8.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "8.0-alpine-arm32v7": {},
+                "8.0.33-alpine3.24-arm32v7": {},
+                "8.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/8.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "8.0-alpine-arm64v8": {},
+                "8.0.33-alpine3.24-arm64v8": {},
+                "8.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            }
+          },
+          "tags": {
+            "8.0-alpine": {},
+            "8.0.33-alpine3.24": {},
+            "8.0-alpine3.24": {}
           },
           "metadata": {
             "version": {
@@ -2651,7 +3109,7 @@
             }
           }
         },
-        "8.0-windowsservercore2019": {
+        "8.0-servercore2019": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -2680,7 +3138,7 @@
             }
           }
         },
-        "8.0-windowsservercore2022": {
+        "8.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -2709,7 +3167,7 @@
             }
           }
         },
-        "8.0-windowsservercore2025": {
+        "8.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -2738,6 +3196,79 @@
             }
           }
         },
+        "9.0-bookworm-slim": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/9.0/bookworm-slim/amd64/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-amd64": {},
+                "9.0-bookworm-slim-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/9.0/bookworm-slim/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-arm32v7": {},
+                "9.0-bookworm-slim-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/9.0/bookworm-slim/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.22-bookworm-slim-arm64v8": {},
+                "9.0-bookworm-slim-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.22"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.22": {},
+            "9.0": {},
+            "9.0.22-bookworm-slim": {},
+            "9.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "9.0",
+              "patchVersion": "9.0.22"
+            }
+          }
+        },
         "9.0-alpine3.24": {
           "platforms": {
             "amd64": {
@@ -2749,6 +3280,7 @@
               },
               "dockerfile": "src/aspnet/9.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "9.0-alpine-amd64": {},
                 "9.0.22-alpine3.24-amd64": {},
                 "9.0-alpine3.24-amd64": {}
               },
@@ -2768,6 +3300,7 @@
               },
               "dockerfile": "src/aspnet/9.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "9.0-alpine-arm32v7": {},
                 "9.0.22-alpine3.24-arm32v7": {},
                 "9.0-alpine3.24-arm32v7": {}
               },
@@ -2787,6 +3320,7 @@
               },
               "dockerfile": "src/aspnet/9.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "9.0-alpine-arm64v8": {},
                 "9.0.22-alpine3.24-arm64v8": {},
                 "9.0-alpine3.24-arm64v8": {}
               },
@@ -2799,6 +3333,7 @@
             }
           },
           "tags": {
+            "9.0-alpine": {},
             "9.0.22-alpine3.24": {},
             "9.0-alpine3.24": {}
           },
@@ -2870,8 +3405,6 @@
             }
           },
           "tags": {
-            "9.0.22": {},
-            "9.0": {},
             "9.0.22-noble": {},
             "9.0-noble": {}
           },
@@ -3021,7 +3554,7 @@
             }
           }
         },
-        "9.0-windowsservercore2019": {
+        "9.0-servercore2019": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -3050,7 +3583,7 @@
             }
           }
         },
-        "9.0-windowsservercore2022": {
+        "9.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -3079,7 +3612,7 @@
             }
           }
         },
-        "9.0-windowsservercore2025": {
+        "9.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -3193,6 +3726,7 @@
               },
               "dockerfile": "src/aspnet/10.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "10.0-alpine-amd64": {},
                 "10.0.14-alpine3.24-amd64": {},
                 "10.0-alpine3.24-amd64": {}
               },
@@ -3212,6 +3746,7 @@
               },
               "dockerfile": "src/aspnet/10.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "10.0-alpine-arm32v7": {},
                 "10.0.14-alpine3.24-arm32v7": {},
                 "10.0-alpine3.24-arm32v7": {}
               },
@@ -3231,6 +3766,7 @@
               },
               "dockerfile": "src/aspnet/10.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "10.0-alpine-arm64v8": {},
                 "10.0.14-alpine3.24-arm64v8": {},
                 "10.0-alpine3.24-arm64v8": {}
               },
@@ -3243,6 +3779,7 @@
             }
           },
           "tags": {
+            "10.0-alpine": {},
             "10.0.14-alpine3.24": {},
             "10.0-alpine3.24": {}
           },
@@ -3434,7 +3971,7 @@
             }
           }
         },
-        "10.0-windowsservercore2022": {
+        "10.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -3463,7 +4000,7 @@
             }
           }
         },
-        "10.0-windowsservercore2025": {
+        "10.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -3557,6 +4094,81 @@
             "11.0": {},
             "11.0.0-rc.3-resolute": {},
             "11.0-resolute": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "11.0",
+              "patchVersion": "11.0.0-rc.3"
+            }
+          }
+        },
+        "11.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/aspnet/11.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "11.0-alpine-amd64": {},
+                "11.0.0-rc.3-alpine3.24-amd64": {},
+                "11.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/aspnet/11.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm32v7": {},
+                "11.0.0-rc.3-alpine3.24-arm32v7": {},
+                "11.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/aspnet/11.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm64v8": {},
+                "11.0.0-rc.3-alpine3.24-arm64v8": {},
+                "11.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.0-rc.3"
+                }
+              }
+            }
+          },
+          "tags": {
+            "11.0-alpine": {},
+            "11.0.0-rc.3-alpine3.24": {},
+            "11.0-alpine3.24": {}
           },
           "metadata": {
             "version": {
@@ -3698,7 +4310,7 @@
             }
           }
         },
-        "11.0-windowsservercore2025": {
+        "11.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -3797,6 +4409,81 @@
             "8.0": {},
             "8.0.427-bookworm-slim": {},
             "8.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "8.0",
+              "patchVersion": "8.0.427"
+            }
+          }
+        },
+        "8.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/8.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "8.0-alpine-amd64": {},
+                "8.0.427-alpine3.24-amd64": {},
+                "8.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.427"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/8.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "8.0-alpine-arm32v7": {},
+                "8.0.427-alpine3.24-arm32v7": {},
+                "8.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.427"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/8.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "8.0-alpine-arm64v8": {},
+                "8.0.427-alpine3.24-arm64v8": {},
+                "8.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.427"
+                }
+              }
+            }
+          },
+          "tags": {
+            "8.0-alpine": {},
+            "8.0.427-alpine3.24": {},
+            "8.0-alpine3.24": {}
           },
           "metadata": {
             "version": {
@@ -4067,7 +4754,7 @@
             }
           }
         },
-        "8.0-windowsservercore2019": {
+        "8.0-servercore2019": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4096,7 +4783,7 @@
             }
           }
         },
-        "8.0-windowsservercore2022": {
+        "8.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4125,7 +4812,7 @@
             }
           }
         },
-        "8.0-windowsservercore2025": {
+        "8.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4154,6 +4841,79 @@
             }
           }
         },
+        "9.0-bookworm-slim": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/9.0/bookworm-slim/amd64/Dockerfile",
+              "tags": {
+                "9.0.320-bookworm-slim-amd64": {},
+                "9.0-bookworm-slim-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/9.0/bookworm-slim/arm32v7/Dockerfile",
+              "tags": {
+                "9.0.320-bookworm-slim-arm32v7": {},
+                "9.0-bookworm-slim-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "12",
+                "tagPart": "bookworm-slim",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/9.0/bookworm-slim/arm64v8/Dockerfile",
+              "tags": {
+                "9.0.320-bookworm-slim-arm64v8": {},
+                "9.0-bookworm-slim-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "9.0",
+                  "patchVersion": "9.0.320"
+                }
+              }
+            }
+          },
+          "tags": {
+            "9.0.320": {},
+            "9.0": {},
+            "9.0.320-bookworm-slim": {},
+            "9.0-bookworm-slim": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "9.0",
+              "patchVersion": "9.0.320"
+            }
+          }
+        },
         "9.0-alpine3.24": {
           "platforms": {
             "amd64": {
@@ -4165,6 +4925,7 @@
               },
               "dockerfile": "src/sdk/9.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "9.0-alpine-amd64": {},
                 "9.0.320-alpine3.24-amd64": {},
                 "9.0-alpine3.24-amd64": {}
               },
@@ -4184,6 +4945,7 @@
               },
               "dockerfile": "src/sdk/9.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "9.0-alpine-arm32v7": {},
                 "9.0.320-alpine3.24-arm32v7": {},
                 "9.0-alpine3.24-arm32v7": {}
               },
@@ -4203,6 +4965,7 @@
               },
               "dockerfile": "src/sdk/9.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "9.0-alpine-arm64v8": {},
                 "9.0.320-alpine3.24-arm64v8": {},
                 "9.0-alpine3.24-arm64v8": {}
               },
@@ -4215,6 +4978,7 @@
             }
           },
           "tags": {
+            "9.0-alpine": {},
             "9.0.320-alpine3.24": {},
             "9.0-alpine3.24": {}
           },
@@ -4286,8 +5050,6 @@
             }
           },
           "tags": {
-            "9.0.320": {},
-            "9.0": {},
             "9.0.320-noble": {},
             "9.0-noble": {}
           },
@@ -4437,7 +5199,7 @@
             }
           }
         },
-        "9.0-windowsservercore2019": {
+        "9.0-servercore2019": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4466,7 +5228,7 @@
             }
           }
         },
-        "9.0-windowsservercore2022": {
+        "9.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4495,7 +5257,7 @@
             }
           }
         },
-        "9.0-windowsservercore2025": {
+        "9.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4680,6 +5442,7 @@
               },
               "dockerfile": "src/sdk/10.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "10.0-alpine-amd64": {},
                 "10.0.403-alpine3.24-amd64": {},
                 "10.0-alpine3.24-amd64": {}
               },
@@ -4699,6 +5462,7 @@
               },
               "dockerfile": "src/sdk/10.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "10.0-alpine-arm32v7": {},
                 "10.0.403-alpine3.24-arm32v7": {},
                 "10.0-alpine3.24-arm32v7": {}
               },
@@ -4718,6 +5482,7 @@
               },
               "dockerfile": "src/sdk/10.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "10.0-alpine-arm64v8": {},
                 "10.0.403-alpine3.24-arm64v8": {},
                 "10.0-alpine3.24-arm64v8": {}
               },
@@ -4730,6 +5495,7 @@
             }
           },
           "tags": {
+            "10.0-alpine": {},
             "10.0.403-alpine3.24": {},
             "10.0-alpine3.24": {}
           },
@@ -4850,7 +5616,7 @@
             }
           }
         },
-        "10.0-windowsservercore2022": {
+        "10.0-servercore2022": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4879,7 +5645,7 @@
             }
           }
         },
-        "10.0-windowsservercore2025": {
+        "10.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {
@@ -4973,6 +5739,81 @@
             "11.0": {},
             "11.0.100-rc.3-resolute": {},
             "11.0-resolute": {}
+          },
+          "metadata": {
+            "version": {
+              "minorVersion": "11.0",
+              "patchVersion": "11.0.100-rc.3"
+            }
+          }
+        },
+        "11.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/sdk/11.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "11.0-alpine-amd64": {},
+                "11.0.100-rc.3-alpine3.24-amd64": {},
+                "11.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.100-rc.3"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/sdk/11.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm32v7": {},
+                "11.0.100-rc.3-alpine3.24-arm32v7": {},
+                "11.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.100-rc.3"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/sdk/11.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "11.0-alpine-arm64v8": {},
+                "11.0.100-rc.3-alpine3.24-arm64v8": {},
+                "11.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "version": {
+                  "minorVersion": "11.0",
+                  "patchVersion": "11.0.100-rc.3"
+                }
+              }
+            }
+          },
+          "tags": {
+            "11.0-alpine": {},
+            "11.0.100-rc.3-alpine3.24": {},
+            "11.0-alpine3.24": {}
           },
           "metadata": {
             "version": {
@@ -5114,7 +5955,7 @@
             }
           }
         },
-        "11.0-windowsservercore2025": {
+        "11.0-servercore2025": {
           "platforms": {
             "amd64": {
               "targetPlatform": {

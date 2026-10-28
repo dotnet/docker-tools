@@ -1,14 +1,32 @@
+defaults:
+  image:
+    tags: &defaultSharedTags
+      "{version.patchVersion}-{os}": {}
+      "{version.minorVersion}-{os}": {}
+  platform:
+    dockerfile: "src/{repoKey}/{version.minorVersion}/{os}/{arch}/Dockerfile"
+    tags: &defaultPlatformTags
+      "{version.patchVersion}-{os}-{arch}": {}
+      "{version.minorVersion}-{os}-{arch}": {}
+
 definitions:
+  convenienceTags: &convenienceTags
+    "{version.patchVersion}": {}
+    "{version.minorVersion}": {}
+
+  defaultWindowsSharedTags: &defaultWindowsSharedTags {}
+
   nanoserver2022:
     os: &nanoserver2022
       os: windows
       version: ltsc2022
       tagPart: nanoserver-ltsc2022
-    platforms:
+    platforms: &nanoserver2022Platforms
       amd64: &nanoserver2022Amd64
         targetPlatform:
           <<: *nanoserver2022
           arch: amd64
+        tags: *defaultSharedTags
 
   noble:
     os: &noble
@@ -52,7 +70,6 @@ definitions:
     dotnet-9.0:
       defaults: &dotnet-9.0-defaults
         minorVersion: "9.0"
-        channel: stable
       runtime: &runtime-9.0
         <<: *dotnet-9.0-defaults
         patchVersion: 9.0.22
@@ -65,7 +82,6 @@ definitions:
     dotnet-10.0:
       defaults: &dotnet-10.0-defaults
         minorVersion: "10.0"
-        channel: stable
       runtime: &runtime-10.0
         <<: *dotnet-10.0-defaults
         patchVersion: 10.0.14
@@ -76,31 +92,17 @@ definitions:
         <<: *dotnet-10.0-defaults
         patchVersion: 10.0.403
 
-  convenienceTags: &convenienceTags
-    "{version.patchVersion}": {}
-    "{version.minorVersion}": {}
-
-defaults:
-  image:
-    tags: &defaultSharedTags
-      "{version.patchVersion}-{os}": {}
-      "{version.minorVersion}-{os}": {}
-  platform:
-    dockerfile: "src/{repoKey}/{version.minorVersion}/{os}/{arch}/Dockerfile"
-    tags: &defaultPlatformTags
-      "{version.patchVersion}-{os}-{arch}": {}
-      "{version.minorVersion}-{os}-{arch}": {}
-
 readme:
   path: README.md
-
-metadata:
-  servicing: monthly
 
 repos:
   runtime-deps:
     name: dotnet/runtime-deps
     images:
+      9.0-alpine3.24:
+        metadata:
+          version: *runtime-9.0
+        platforms: *alpine3.24Platforms
       9.0-noble:
         metadata:
           version: *runtime-9.0
@@ -114,10 +116,6 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
-      9.0-alpine3.24:
-        metadata:
-          version: *runtime-9.0
-        platforms: *alpine3.24Platforms
       10.0-alpine3.24:
         metadata:
           version: *runtime-10.0
@@ -126,6 +124,10 @@ repos:
   runtime:
     name: dotnet/runtime
     images:
+      9.0-alpine3.24:
+        metadata:
+          version: *runtime-9.0
+        platforms: *alpine3.24Platforms
       9.0-noble:
         metadata:
           version: *runtime-9.0
@@ -139,28 +141,23 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
-      10.0-nanoserver2022:
-        metadata:
-          version: *runtime-10.0
-        tags: {}
-        platforms:
-          amd64:
-            <<: *nanoserver2022Amd64
-            tags: *defaultSharedTags
-            metadata:
-              servicing: ltsc
-      9.0-alpine3.24:
-        metadata:
-          version: *runtime-9.0
-        platforms: *alpine3.24Platforms
       10.0-alpine3.24:
         metadata:
           version: *runtime-10.0
         platforms: *alpine3.24Platforms
+      10.0-nanoserver2022:
+        metadata:
+          version: *runtime-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
 
   aspnet:
     name: dotnet/aspnet
     images:
+      9.0-alpine3.24:
+        metadata:
+          version: *aspnet-9.0
+        platforms: *alpine3.24Platforms
       9.0-noble:
         metadata:
           version: *aspnet-9.0
@@ -174,10 +171,6 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
-      9.0-alpine3.24:
-        metadata:
-          version: *aspnet-9.0
-        platforms: *alpine3.24Platforms
       10.0-alpine3.24:
         metadata:
           version: *aspnet-10.0
@@ -186,6 +179,10 @@ repos:
   sdk:
     name: dotnet/sdk
     images:
+      9.0-alpine3.24:
+        metadata:
+          version: *sdk-9.0
+        platforms: *alpine3.24Platforms
       9.0-noble:
         metadata:
           version: *sdk-9.0
@@ -199,10 +196,6 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
-      9.0-alpine3.24:
-        metadata:
-          version: *sdk-9.0
-        platforms: *alpine3.24Platforms
       10.0-alpine3.24:
         metadata:
           version: *sdk-10.0

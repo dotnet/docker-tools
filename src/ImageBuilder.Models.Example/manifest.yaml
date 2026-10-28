@@ -1,25 +1,32 @@
 # Source matrix: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
+metadata:
+  variant: ""
+
 defaults:
   image:
     tags: &defaultSharedTags
-      "{version.patchVersion}-{os}": {}
-      "{version.minorVersion}-{os}": {}
+      "{version.patchVersion}-{os}{variant}": {}
+      "{version.minorVersion}-{os}{variant}": {}
   platform:
-    dockerfile: "src/{repoKey}/{version.minorVersion}/{os}/{arch}/Dockerfile"
+    dockerfile: "src/{repoKey}/{version.minorVersion}/{os}{variant}/{arch}/Dockerfile"
     tags: &defaultPlatformTags
-      "{version.patchVersion}-{os}-{arch}": {}
-      "{version.minorVersion}-{os}-{arch}": {}
+      "{version.patchVersion}-{os}{variant}-{arch}": {}
+      "{version.minorVersion}-{os}{variant}-{arch}": {}
 
 definitions:
   convenienceTags: &convenienceTags
     "{version.patchVersion}": {}
     "{version.minorVersion}": {}
 
+  aotConvenienceTags: &aotConvenienceTags
+    "{version.patchVersion}-aot": {}
+    "{version.minorVersion}-aot": {}
+
   alpineFloatingSharedTags: &alpineFloatingSharedTags
-    "{version.minorVersion}-alpine": {}
+    "{version.minorVersion}-alpine{variant}": {}
 
   alpineFloatingPlatformTags: &alpineFloatingPlatformTags
-    "{version.minorVersion}-alpine-{arch}": {}
+    "{version.minorVersion}-alpine{variant}-{arch}": {}
 
   defaultWindowsSharedTags: &defaultWindowsSharedTags {}
 
@@ -132,7 +139,10 @@ definitions:
         targetPlatform:
           <<: *noble
           arch: arm64v8
-    platformsWithoutArm32: &noblePlatformsWithoutArm32
+    platforms-dotnet-8.0: &noblePlatforms-dotnet-8.0
+      amd64: *nobleAmd64
+      arm64v8: *nobleArm64
+    platforms-sdk-aot: &noblePlatforms-sdk-aot
       amd64: *nobleAmd64
       arm64v8: *nobleArm64
 
@@ -160,6 +170,19 @@ definitions:
           arch: arm64v8
         tags:
           <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+    platforms-composite-dotnet-8.0-10.0: &alpine3.24Platforms-composite-dotnet-8.0-10.0
+      amd64:
+        <<: *alpine3.24Amd64
+        tags: *defaultPlatformTags
+      arm32v7:
+        <<: *alpine3.24Arm32
+        tags: *defaultPlatformTags
+      arm64v8:
+        <<: *alpine3.24Arm64
+        tags: *defaultPlatformTags
+    platforms-sdk-aot: &alpine3.24Platforms-sdk-aot
+      amd64: *alpine3.24Amd64
+      arm64v8: *alpine3.24Arm64
 
   jammy:
     os: &jammy
@@ -228,6 +251,9 @@ definitions:
         targetPlatform:
           <<: *resolute
           arch: arm64v8
+    platforms-sdk-aot: &resolutePlatforms-sdk-aot
+      amd64: *resoluteAmd64
+      arm64v8: *resoluteArm64
 
   versions:
     dotnet-8.0:
@@ -295,26 +321,54 @@ repos:
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *bookwormSlimPlatforms
-      # TODO: 8.0-alpine3.24: source's undocumented AOT aliases remain outside the approved tag policies.
-      # TODO: 8.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-alpine3.24: source's undocumented AOT aliases still need an explicit tag policy.
+      8.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-extra"
+        platforms: *alpine3.24Platforms
       8.0-noble:
         metadata:
           version: *runtime-8.0
-        platforms: *noblePlatformsWithoutArm32
-      # TODO: 8.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
           version: *runtime-8.0
         platforms: *jammyPlatforms
-      # TODO: 8.0-jammy-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-jammy-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-jammy-chiseled:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled"
+        platforms: *jammyPlatforms
+      8.0-jammy-chiseled-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled-extra"
+        platforms: *jammyPlatforms
       8.0-azurelinux3.0:
         metadata:
           version: *runtime-8.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 8.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-8.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      8.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
 
       9.0-bookworm-slim:
         metadata:
@@ -322,26 +376,48 @@ repos:
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *bookwormSlimPlatforms
-      # TODO: 9.0-alpine3.24: source's undocumented AOT aliases remain outside the approved tag policies.
+      # TODO: 9.0-alpine3.24: source's undocumented AOT aliases still need an explicit tag policy.
       9.0-alpine3.24:
         metadata:
           version: *runtime-9.0
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 9.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-9.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       9.0-noble:
         metadata:
           version: *runtime-9.0
         platforms: *noblePlatforms
-      # TODO: 9.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-noble-chiseled:
+        metadata:
+          version: *runtime-9.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms
+      9.0-noble-chiseled-extra:
+        metadata:
+          version: *runtime-9.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms
       9.0-azurelinux3.0:
         metadata:
           version: *runtime-9.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 9.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-9.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      9.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-9.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
 
       10.0-noble:
         metadata:
@@ -356,21 +432,51 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 10.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       10.0-azurelinux3.0:
         metadata:
           version: *runtime-10.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 10.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-10.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      10.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
+      10.0-noble-chiseled:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms
+      10.0-noble-chiseled-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms
       10.0-resolute:
         metadata:
           version: *runtime-10.0
         platforms: *resolutePlatforms
-      # TODO: 10.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute-chiseled:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled"
+        platforms: *resolutePlatforms
+      10.0-resolute-chiseled-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled-extra"
+        platforms: *resolutePlatforms
 
       11.0-resolute:
         metadata:
@@ -384,21 +490,51 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 11.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       11.0-azurelinux3.0:
         metadata:
           version: *runtime-11.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 11.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      11.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
           version: *runtime-11.0
         platforms: *azurelinux4.0Platforms
-      # TODO: 11.0-azurelinux4.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux4.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0-distroless:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless"
+        platforms: *azurelinux4.0Platforms
+      11.0-azurelinux4.0-distroless-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux4.0Platforms
+      11.0-resolute-chiseled:
+        metadata:
+          version: *runtime-11.0
+          variant: "-chiseled"
+        platforms: *resolutePlatforms
+      11.0-resolute-chiseled-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-chiseled-extra"
+        platforms: *resolutePlatforms
 
   runtime:
     name: dotnet/runtime
@@ -415,25 +551,55 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 8.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       8.0-noble:
         metadata:
           version: *runtime-8.0
-        platforms: *noblePlatformsWithoutArm32
-      # TODO: 8.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
           version: *runtime-8.0
         platforms: *jammyPlatforms
-      # TODO: 8.0-jammy-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-jammy-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-jammy-chiseled:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled"
+        platforms: *jammyPlatforms
+      8.0-jammy-chiseled-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-chiseled-extra"
+        platforms: *jammyPlatforms
       8.0-azurelinux3.0:
         metadata:
           version: *runtime-8.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 8.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-8.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      8.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-8.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
       8.0-nanoserver1809:
         metadata:
           version: *runtime-8.0
@@ -477,19 +643,41 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 9.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-9.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       9.0-noble:
         metadata:
           version: *runtime-9.0
         platforms: *noblePlatforms
-      # TODO: 9.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-noble-chiseled:
+        metadata:
+          version: *runtime-9.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms
+      9.0-noble-chiseled-extra:
+        metadata:
+          version: *runtime-9.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms
       9.0-azurelinux3.0:
         metadata:
           version: *runtime-9.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 9.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-9.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      9.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-9.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
       9.0-nanoserver1809:
         metadata:
           version: *runtime-9.0
@@ -534,21 +722,51 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 10.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       10.0-azurelinux3.0:
         metadata:
           version: *runtime-10.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 10.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-10.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      10.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
+      10.0-noble-chiseled:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms
+      10.0-noble-chiseled-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms
       10.0-resolute:
         metadata:
           version: *runtime-10.0
         platforms: *resolutePlatforms
-      # TODO: 10.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute-chiseled:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled"
+        platforms: *resolutePlatforms
+      10.0-resolute-chiseled-extra:
+        metadata:
+          version: *runtime-10.0
+          variant: "-chiseled-extra"
+        platforms: *resolutePlatforms
       10.0-nanoserver2022:
         metadata:
           version: *runtime-10.0
@@ -582,21 +800,51 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 11.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-alpine3.24-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       11.0-azurelinux3.0:
         metadata:
           version: *runtime-11.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 11.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0-distroless:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      11.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
           version: *runtime-11.0
         platforms: *azurelinux4.0Platforms
-      # TODO: 11.0-azurelinux4.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux4.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0-distroless:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless"
+        platforms: *azurelinux4.0Platforms
+      11.0-azurelinux4.0-distroless-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux4.0Platforms
+      11.0-resolute-chiseled:
+        metadata:
+          version: *runtime-11.0
+          variant: "-chiseled"
+        platforms: *resolutePlatforms
+      11.0-resolute-chiseled-extra:
+        metadata:
+          version: *runtime-11.0
+          variant: "-chiseled-extra"
+        platforms: *resolutePlatforms
       11.0-nanoserver2025:
         metadata:
           version: *runtime-11.0
@@ -623,33 +871,95 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 8.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-alpine3.24-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
+      8.0-alpine3.24-composite:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-composite"
+        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
+      8.0-alpine3.24-composite-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-composite-extra"
+        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       8.0-noble:
         metadata:
           version: *aspnet-8.0
-        platforms: *noblePlatformsWithoutArm32
-      # TODO: 8.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-noble-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-noble-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled-composite-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled-composite-extra"
+        platforms: *noblePlatforms-dotnet-8.0
+      8.0-noble-chiseled-composite:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled-composite"
+        platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
           version: *aspnet-8.0
         platforms: *jammyPlatforms
-      # TODO: 8.0-jammy-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-jammy-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-jammy-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-jammy-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-jammy-chiseled:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled"
+        platforms: *jammyPlatforms
+      8.0-jammy-chiseled-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled-extra"
+        platforms: *jammyPlatforms
+      8.0-jammy-chiseled-composite-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled-composite-extra"
+        platforms: *jammyPlatforms
+      8.0-jammy-chiseled-composite:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-chiseled-composite"
+        platforms: *jammyPlatforms
       8.0-azurelinux3.0:
         metadata:
           version: *aspnet-8.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 8.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 8.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-azurelinux3.0-distroless:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      8.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
+      8.0-azurelinux3.0-distroless-composite:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-distroless-composite"
+        platforms: *azurelinux3.0Platforms
+      8.0-azurelinux3.0-distroless-composite-extra:
+        metadata:
+          version: *aspnet-8.0
+          variant: "-distroless-composite-extra"
+        platforms: *azurelinux3.0Platforms
       8.0-nanoserver1809:
         metadata:
           version: *aspnet-8.0
@@ -693,25 +1003,71 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 9.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-alpine3.24-extra:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
+      9.0-alpine3.24-composite:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-composite"
+        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
+      9.0-alpine3.24-composite-extra:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-composite-extra"
+        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       9.0-noble:
         metadata:
           version: *aspnet-9.0
         platforms: *noblePlatforms
-      # TODO: 9.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-noble-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-noble-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-noble-chiseled:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms
+      9.0-noble-chiseled-extra:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms
+      9.0-noble-chiseled-composite-extra:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-chiseled-composite-extra"
+        platforms: *noblePlatforms
+      9.0-noble-chiseled-composite:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-chiseled-composite"
+        platforms: *noblePlatforms
       9.0-azurelinux3.0:
         metadata:
           version: *aspnet-9.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 9.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 9.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-azurelinux3.0-distroless:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      9.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
+      9.0-azurelinux3.0-distroless-composite:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-distroless-composite"
+        platforms: *azurelinux3.0Platforms
+      9.0-azurelinux3.0-distroless-composite-extra:
+        metadata:
+          version: *aspnet-9.0
+          variant: "-distroless-composite-extra"
+        platforms: *azurelinux3.0Platforms
       9.0-nanoserver1809:
         metadata:
           version: *aspnet-9.0
@@ -756,29 +1112,91 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 10.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-alpine3.24-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
+      10.0-alpine3.24-composite:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-composite"
+        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
+      10.0-alpine3.24-composite-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-composite-extra"
+        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       10.0-azurelinux3.0:
         metadata:
           version: *aspnet-10.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 10.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-noble-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0-distroless:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      10.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
+      10.0-azurelinux3.0-distroless-composite:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-distroless-composite"
+        platforms: *azurelinux3.0Platforms
+      10.0-azurelinux3.0-distroless-composite-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-distroless-composite-extra"
+        platforms: *azurelinux3.0Platforms
+      10.0-noble-chiseled:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled"
+        platforms: *noblePlatforms
+      10.0-noble-chiseled-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled-extra"
+        platforms: *noblePlatforms
+      10.0-noble-chiseled-composite-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled-composite-extra"
+        platforms: *noblePlatforms
+      10.0-noble-chiseled-composite:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled-composite"
+        platforms: *noblePlatforms
       10.0-resolute:
         metadata:
           version: *aspnet-10.0
         platforms: *resolutePlatforms
-      # TODO: 10.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-resolute-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 10.0-resolute-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute-chiseled:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled"
+        platforms: *resolutePlatforms
+      10.0-resolute-chiseled-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled-extra"
+        platforms: *resolutePlatforms
+      10.0-resolute-chiseled-composite-extra:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled-composite-extra"
+        platforms: *resolutePlatforms
+      10.0-resolute-chiseled-composite:
+        metadata:
+          version: *aspnet-10.0
+          variant: "-chiseled-composite"
+        platforms: *resolutePlatforms
       10.0-nanoserver2022:
         metadata:
           version: *aspnet-10.0
@@ -812,29 +1230,95 @@ repos:
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 11.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-alpine3.24-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
+      11.0-alpine3.24-composite:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-composite"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
+      11.0-alpine3.24-composite-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-composite-extra"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms
       11.0-azurelinux3.0:
         metadata:
           version: *aspnet-11.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 11.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0-distroless:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless"
+        platforms: *azurelinux3.0Platforms
+      11.0-azurelinux3.0-distroless-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux3.0Platforms
+      11.0-azurelinux3.0-distroless-composite:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless-composite"
+        platforms: *azurelinux3.0Platforms
+      11.0-azurelinux3.0-distroless-composite-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless-composite-extra"
+        platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
           version: *aspnet-11.0
         platforms: *azurelinux4.0Platforms
-      # TODO: 11.0-azurelinux4.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux4.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux4.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-azurelinux4.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
-      # TODO: 11.0-resolute-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0-distroless:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless"
+        platforms: *azurelinux4.0Platforms
+      11.0-azurelinux4.0-distroless-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless-extra"
+        platforms: *azurelinux4.0Platforms
+      11.0-azurelinux4.0-distroless-composite:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless-composite"
+        platforms: *azurelinux4.0Platforms
+      11.0-azurelinux4.0-distroless-composite-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-distroless-composite-extra"
+        platforms: *azurelinux4.0Platforms
+      11.0-resolute-chiseled:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-chiseled"
+        platforms: *resolutePlatforms
+      11.0-resolute-chiseled-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-chiseled-extra"
+        platforms: *resolutePlatforms
+      11.0-resolute-chiseled-composite-extra:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-chiseled-composite-extra"
+        platforms: *resolutePlatforms
+      11.0-resolute-chiseled-composite:
+        metadata:
+          version: *aspnet-11.0
+          variant: "-chiseled-composite"
+        platforms: *resolutePlatforms
       11.0-nanoserver2025:
         metadata:
           version: *aspnet-11.0
@@ -864,7 +1348,7 @@ repos:
       8.0-noble:
         metadata:
           version: *sdk-8.0
-        platforms: *noblePlatformsWithoutArm32
+        platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
           version: *sdk-8.0
@@ -962,24 +1446,44 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
-      # TODO: 10.0-noble-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-noble-aot:
+        metadata:
+          version: *sdk-10.0
+          variant: "-aot"
+        tags:
+          <<: [*defaultSharedTags, *aotConvenienceTags]
+        platforms: *noblePlatforms-sdk-aot
       10.0-resolute:
         metadata:
           version: *sdk-10.0
         platforms: *resolutePlatforms
-      # TODO: 10.0-resolute-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute-aot:
+        metadata:
+          version: *sdk-10.0
+          variant: "-aot"
+        platforms: *resolutePlatforms-sdk-aot
       10.0-alpine3.24:
         metadata:
           version: *sdk-10.0
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 10.0-alpine3.24-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-alpine3.24-aot:
+        metadata:
+          version: *sdk-10.0
+          variant: "-aot"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms-sdk-aot
       10.0-azurelinux3.0:
         metadata:
           version: *sdk-10.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 10.0-azurelinux3.0-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0-aot:
+        metadata:
+          version: *sdk-10.0
+          variant: "-aot"
+        platforms: *azurelinux3.0Platforms
       10.0-nanoserver2022:
         metadata:
           version: *sdk-10.0
@@ -1007,24 +1511,44 @@ repos:
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *resolutePlatforms
-      # TODO: 11.0-resolute-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-resolute-aot:
+        metadata:
+          version: *sdk-11.0
+          variant: "-aot"
+        tags:
+          <<: [*defaultSharedTags, *aotConvenienceTags]
+        platforms: *resolutePlatforms-sdk-aot
       11.0-alpine3.24:
         metadata:
           version: *sdk-11.0
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
-      # TODO: 11.0-alpine3.24-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-alpine3.24-aot:
+        metadata:
+          version: *sdk-11.0
+          variant: "-aot"
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
+        platforms: *alpine3.24Platforms-sdk-aot
       11.0-azurelinux3.0:
         metadata:
           version: *sdk-11.0
         platforms: *azurelinux3.0Platforms
-      # TODO: 11.0-azurelinux3.0-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0-aot:
+        metadata:
+          version: *sdk-11.0
+          variant: "-aot"
+        platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
           version: *sdk-11.0
         platforms: *azurelinux4.0Platforms
-      # TODO: 11.0-azurelinux4.0-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0-aot:
+        metadata:
+          version: *sdk-11.0
+          variant: "-aot"
+        platforms: *azurelinux4.0Platforms
       11.0-nanoserver2025:
         metadata:
           version: *sdk-11.0

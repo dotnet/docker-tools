@@ -1,3 +1,4 @@
+# Source matrix: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
 defaults:
   image:
     tags: &defaultSharedTags
@@ -16,6 +17,18 @@ definitions:
 
   defaultWindowsSharedTags: &defaultWindowsSharedTags {}
 
+  nanoserver1809:
+    os: &nanoserver1809
+      os: windows
+      version: "1809"
+      tagPart: nanoserver-1809
+    platforms: &nanoserver1809Platforms
+      amd64: &nanoserver1809Amd64
+        targetPlatform:
+          <<: *nanoserver1809
+          arch: amd64
+        tags: *defaultSharedTags
+
   nanoserver2022:
     os: &nanoserver2022
       os: windows
@@ -27,6 +40,73 @@ definitions:
           <<: *nanoserver2022
           arch: amd64
         tags: *defaultSharedTags
+
+  nanoserver2025:
+    os: &nanoserver2025
+      os: windows
+      version: ltsc2025
+      tagPart: nanoserver-ltsc2025
+    platforms: &nanoserver2025Platforms
+      amd64: &nanoserver2025Amd64
+        targetPlatform:
+          <<: *nanoserver2025
+          arch: amd64
+        tags: *defaultSharedTags
+
+  windowsservercore2019:
+    os: &windowsservercore2019
+      os: windows
+      version: ltsc2019
+      tagPart: windowsservercore-ltsc2019
+    platforms: &windowsservercore2019Platforms
+      amd64: &windowsservercore2019Amd64
+        targetPlatform:
+          <<: *windowsservercore2019
+          arch: amd64
+        tags: *defaultSharedTags
+
+  windowsservercore2022:
+    os: &windowsservercore2022
+      os: windows
+      version: ltsc2022
+      tagPart: windowsservercore-ltsc2022
+    platforms: &windowsservercore2022Platforms
+      amd64: &windowsservercore2022Amd64
+        targetPlatform:
+          <<: *windowsservercore2022
+          arch: amd64
+        tags: *defaultSharedTags
+
+  windowsservercore2025:
+    os: &windowsservercore2025
+      os: windows
+      version: ltsc2025
+      tagPart: windowsservercore-ltsc2025
+    platforms: &windowsservercore2025Platforms
+      amd64: &windowsservercore2025Amd64
+        targetPlatform:
+          <<: *windowsservercore2025
+          arch: amd64
+        tags: *defaultSharedTags
+
+  bookworm-slim:
+    os: &bookwormSlim
+      os: linux
+      version: "12"
+      tagPart: bookworm-slim
+    platforms: &bookwormSlimPlatforms
+      amd64: &bookwormSlimAmd64
+        targetPlatform:
+          <<: *bookwormSlim
+          arch: amd64
+      arm32v7: &bookwormSlimArm32
+        targetPlatform:
+          <<: *bookwormSlim
+          arch: arm32v7
+      arm64v8: &bookwormSlimArm64
+        targetPlatform:
+          <<: *bookwormSlim
+          arch: arm64v8
 
   noble:
     os: &noble
@@ -46,6 +126,9 @@ definitions:
         targetPlatform:
           <<: *noble
           arch: arm64v8
+    platformsWithoutArm32: &noblePlatformsWithoutArm32
+      amd64: *nobleAmd64
+      arm64v8: *nobleArm64
 
   alpine3.24:
     os: &alpine3.24
@@ -66,7 +149,87 @@ definitions:
           <<: *alpine3.24
           arch: arm64v8
 
+  jammy:
+    os: &jammy
+      os: linux
+      version: "22.04"
+      tagPart: jammy
+    platforms: &jammyPlatforms
+      amd64: &jammyAmd64
+        targetPlatform:
+          <<: *jammy
+          arch: amd64
+      arm32v7: &jammyArm32
+        targetPlatform:
+          <<: *jammy
+          arch: arm32v7
+      arm64v8: &jammyArm64
+        targetPlatform:
+          <<: *jammy
+          arch: arm64v8
+
+  azurelinux3.0:
+    os: &azurelinux3.0
+      os: linux
+      version: "3.0"
+      tagPart: azurelinux3.0
+    platforms: &azurelinux3.0Platforms
+      amd64: &azurelinux3.0Amd64
+        targetPlatform:
+          <<: *azurelinux3.0
+          arch: amd64
+      arm64v8: &azurelinux3.0Arm64
+        targetPlatform:
+          <<: *azurelinux3.0
+          arch: arm64v8
+
+  azurelinux4.0:
+    os: &azurelinux4.0
+      os: linux
+      version: "4.0"
+      tagPart: azurelinux4.0
+    platforms: &azurelinux4.0Platforms
+      amd64: &azurelinux4.0Amd64
+        targetPlatform:
+          <<: *azurelinux4.0
+          arch: amd64
+      arm64v8: &azurelinux4.0Arm64
+        targetPlatform:
+          <<: *azurelinux4.0
+          arch: arm64v8
+
+  resolute:
+    os: &resolute
+      os: linux
+      version: "26.04"
+      tagPart: resolute
+    platforms: &resolutePlatforms
+      amd64: &resoluteAmd64
+        targetPlatform:
+          <<: *resolute
+          arch: amd64
+      arm32v7: &resoluteArm32
+        targetPlatform:
+          <<: *resolute
+          arch: arm32v7
+      arm64v8: &resoluteArm64
+        targetPlatform:
+          <<: *resolute
+          arch: arm64v8
+
   versions:
+    dotnet-8.0:
+      defaults: &dotnet-8.0-defaults
+        minorVersion: "8.0"
+      runtime: &runtime-8.0
+        <<: *dotnet-8.0-defaults
+        patchVersion: 8.0.33
+      aspnet: &aspnet-8.0
+        <<: *dotnet-8.0-defaults
+        patchVersion: 8.0.33
+      sdk: &sdk-8.0
+        <<: *dotnet-8.0-defaults
+        patchVersion: 8.0.427
     dotnet-9.0:
       defaults: &dotnet-9.0-defaults
         minorVersion: "9.0"
@@ -91,6 +254,18 @@ definitions:
       sdk: &sdk-10.0
         <<: *dotnet-10.0-defaults
         patchVersion: 10.0.403
+    dotnet-11.0:
+      defaults: &dotnet-11.0-defaults
+        minorVersion: "11.0"
+      runtime: &runtime-11.0
+        <<: *dotnet-11.0-defaults
+        patchVersion: 11.0.0-rc.3
+      aspnet: &aspnet-11.0
+        <<: *dotnet-11.0-defaults
+        patchVersion: 11.0.0-rc.3
+      sdk: &sdk-11.0
+        <<: *dotnet-11.0-defaults
+        patchVersion: 11.0.100-rc.3
 
 readme:
   path: README.md
@@ -99,16 +274,54 @@ repos:
   runtime-deps:
     name: dotnet/runtime-deps
     images:
+      8.0-bookworm-slim:
+        metadata:
+          version: *runtime-8.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *bookwormSlimPlatforms
+      # TODO: 8.0-alpine3.24: source adds 8.0-alpine and 8.0-alpine-{arch} aliases outside tag defaults, plus undocumented AOT aliases.
+      # TODO: 8.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-noble:
+        metadata:
+          version: *runtime-8.0
+        platforms: *noblePlatformsWithoutArm32
+      # TODO: 8.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-jammy:
+        metadata:
+          version: *runtime-8.0
+        platforms: *jammyPlatforms
+      # TODO: 8.0-jammy-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-jammy-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-azurelinux3.0:
+        metadata:
+          version: *runtime-8.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 8.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-bookworm-slim: source convenience tags conflict with this example's 9.0-noble tags; reconcile the default OS first.
+      # TODO: 9.0-alpine3.24: source floating Alpine aliases and undocumented AOT aliases differ from shared/platform defaults.
       9.0-alpine3.24:
         metadata:
           version: *runtime-9.0
         platforms: *alpine3.24Platforms
+      # TODO: 9.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble: source has no convenience tags here; reconcile with 9.0-bookworm-slim.
       9.0-noble:
         metadata:
           version: *runtime-9.0
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *noblePlatforms
+      # TODO: 9.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-azurelinux3.0:
+        metadata:
+          version: *runtime-9.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 9.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
       10.0-noble:
         metadata:
           version: *runtime-10.0
@@ -116,24 +329,160 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
+      # TODO: 10.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       10.0-alpine3.24:
         metadata:
           version: *runtime-10.0
         platforms: *alpine3.24Platforms
+      # TODO: 10.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0:
+        metadata:
+          version: *runtime-10.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 10.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute:
+        metadata:
+          version: *runtime-10.0
+        platforms: *resolutePlatforms
+      # TODO: 10.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-resolute:
+        metadata:
+          version: *runtime-11.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *resolutePlatforms
+      # TODO: 11.0-alpine3.24: source adds 11.0-alpine and 11.0-alpine-{arch} aliases outside tag defaults.
+      # TODO: 11.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0:
+        metadata:
+          version: *runtime-11.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 11.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0:
+        metadata:
+          version: *runtime-11.0
+        platforms: *azurelinux4.0Platforms
+      # TODO: 11.0-azurelinux4.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux4.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
 
   runtime:
     name: dotnet/runtime
     images:
+      8.0-bookworm-slim:
+        metadata:
+          version: *runtime-8.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *bookwormSlimPlatforms
+      # TODO: 8.0-alpine3.24: source adds 8.0-alpine and 8.0-alpine-{arch} aliases outside tag defaults.
+      # TODO: 8.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-noble:
+        metadata:
+          version: *runtime-8.0
+        platforms: *noblePlatformsWithoutArm32
+      # TODO: 8.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-jammy:
+        metadata:
+          version: *runtime-8.0
+        platforms: *jammyPlatforms
+      # TODO: 8.0-jammy-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-jammy-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-azurelinux3.0:
+        metadata:
+          version: *runtime-8.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 8.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-nanoserver1809:
+        metadata:
+          version: *runtime-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver1809Platforms
+      8.0-nanoserver2022:
+        metadata:
+          version: *runtime-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      8.0-nanoserver2025:
+        metadata:
+          version: *runtime-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      8.0-windowsservercore2019:
+        metadata:
+          version: *runtime-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2019Platforms
+      8.0-windowsservercore2022:
+        metadata:
+          version: *runtime-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      8.0-windowsservercore2025:
+        metadata:
+          version: *runtime-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
+      # TODO: 9.0-bookworm-slim: source convenience tags conflict with this example's 9.0-noble tags; reconcile the default OS first.
+      # TODO: 9.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       9.0-alpine3.24:
         metadata:
           version: *runtime-9.0
         platforms: *alpine3.24Platforms
+      # TODO: 9.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble: source has no convenience tags here; reconcile with 9.0-bookworm-slim.
       9.0-noble:
         metadata:
           version: *runtime-9.0
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *noblePlatforms
+      # TODO: 9.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-azurelinux3.0:
+        metadata:
+          version: *runtime-9.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 9.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-nanoserver1809:
+        metadata:
+          version: *runtime-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver1809Platforms
+      9.0-nanoserver2022:
+        metadata:
+          version: *runtime-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      9.0-nanoserver2025:
+        metadata:
+          version: *runtime-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      9.0-windowsservercore2019:
+        metadata:
+          version: *runtime-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2019Platforms
+      9.0-windowsservercore2022:
+        metadata:
+          version: *runtime-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      9.0-windowsservercore2025:
+        metadata:
+          version: *runtime-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
       10.0-noble:
         metadata:
           version: *runtime-10.0
@@ -141,29 +490,204 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
+      # TODO: 10.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       10.0-alpine3.24:
         metadata:
           version: *runtime-10.0
         platforms: *alpine3.24Platforms
+      # TODO: 10.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0:
+        metadata:
+          version: *runtime-10.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 10.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute:
+        metadata:
+          version: *runtime-10.0
+        platforms: *resolutePlatforms
+      # TODO: 10.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
       10.0-nanoserver2022:
         metadata:
           version: *runtime-10.0
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
+      10.0-nanoserver2025:
+        metadata:
+          version: *runtime-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      10.0-windowsservercore2022:
+        metadata:
+          version: *runtime-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      10.0-windowsservercore2025:
+        metadata:
+          version: *runtime-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
+      11.0-resolute:
+        metadata:
+          version: *runtime-11.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *resolutePlatforms
+      # TODO: 11.0-alpine3.24: source adds 11.0-alpine and 11.0-alpine-{arch} aliases outside tag defaults.
+      # TODO: 11.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0:
+        metadata:
+          version: *runtime-11.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 11.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0:
+        metadata:
+          version: *runtime-11.0
+        platforms: *azurelinux4.0Platforms
+      # TODO: 11.0-azurelinux4.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux4.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-nanoserver2025:
+        metadata:
+          version: *runtime-11.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      11.0-windowsservercore2025:
+        metadata:
+          version: *runtime-11.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
 
   aspnet:
     name: dotnet/aspnet
     images:
+      8.0-bookworm-slim:
+        metadata:
+          version: *aspnet-8.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *bookwormSlimPlatforms
+      # TODO: 8.0-alpine3.24: source adds 8.0-alpine and 8.0-alpine-{arch} aliases outside tag defaults.
+      # TODO: 8.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-noble:
+        metadata:
+          version: *aspnet-8.0
+        platforms: *noblePlatformsWithoutArm32
+      # TODO: 8.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-noble-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-noble-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-jammy:
+        metadata:
+          version: *aspnet-8.0
+        platforms: *jammyPlatforms
+      # TODO: 8.0-jammy-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-jammy-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-jammy-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-jammy-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-azurelinux3.0:
+        metadata:
+          version: *aspnet-8.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 8.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 8.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      8.0-nanoserver1809:
+        metadata:
+          version: *aspnet-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver1809Platforms
+      8.0-nanoserver2022:
+        metadata:
+          version: *aspnet-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      8.0-nanoserver2025:
+        metadata:
+          version: *aspnet-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      8.0-windowsservercore2019:
+        metadata:
+          version: *aspnet-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2019Platforms
+      8.0-windowsservercore2022:
+        metadata:
+          version: *aspnet-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      8.0-windowsservercore2025:
+        metadata:
+          version: *aspnet-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
+      # TODO: 9.0-bookworm-slim: source convenience tags conflict with this example's 9.0-noble tags; reconcile the default OS first.
+      # TODO: 9.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       9.0-alpine3.24:
         metadata:
           version: *aspnet-9.0
         platforms: *alpine3.24Platforms
+      # TODO: 9.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble: source has no convenience tags here; reconcile with 9.0-bookworm-slim.
       9.0-noble:
         metadata:
           version: *aspnet-9.0
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *noblePlatforms
+      # TODO: 9.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-noble-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-azurelinux3.0:
+        metadata:
+          version: *aspnet-9.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 9.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 9.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      9.0-nanoserver1809:
+        metadata:
+          version: *aspnet-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver1809Platforms
+      9.0-nanoserver2022:
+        metadata:
+          version: *aspnet-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      9.0-nanoserver2025:
+        metadata:
+          version: *aspnet-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      9.0-windowsservercore2019:
+        metadata:
+          version: *aspnet-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2019Platforms
+      9.0-windowsservercore2022:
+        metadata:
+          version: *aspnet-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      9.0-windowsservercore2025:
+        metadata:
+          version: *aspnet-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
       10.0-noble:
         metadata:
           version: *aspnet-10.0
@@ -171,24 +695,194 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
+      # TODO: 10.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       10.0-alpine3.24:
         metadata:
           version: *aspnet-10.0
         platforms: *alpine3.24Platforms
+      # TODO: 10.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0:
+        metadata:
+          version: *aspnet-10.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 10.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-noble-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute:
+        metadata:
+          version: *aspnet-10.0
+        platforms: *resolutePlatforms
+      # TODO: 10.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-resolute-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-resolute-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-nanoserver2022:
+        metadata:
+          version: *aspnet-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      10.0-nanoserver2025:
+        metadata:
+          version: *aspnet-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      10.0-windowsservercore2022:
+        metadata:
+          version: *aspnet-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      10.0-windowsservercore2025:
+        metadata:
+          version: *aspnet-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
+      11.0-resolute:
+        metadata:
+          version: *aspnet-11.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *resolutePlatforms
+      # TODO: 11.0-alpine3.24: source adds 11.0-alpine and 11.0-alpine-{arch} aliases outside tag defaults.
+      # TODO: 11.0-alpine3.24-extra: unsupported extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-alpine3.24-composite: unsupported composite variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-alpine3.24-composite-extra: unsupported composite/extra variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0:
+        metadata:
+          version: *aspnet-11.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 11.0-azurelinux3.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux3.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux3.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux3.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0:
+        metadata:
+          version: *aspnet-11.0
+        platforms: *azurelinux4.0Platforms
+      # TODO: 11.0-azurelinux4.0-distroless: unsupported distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux4.0-distroless-extra: unsupported extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux4.0-distroless-composite: unsupported composite/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-azurelinux4.0-distroless-composite-extra: unsupported composite/extra/distroless variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled: unsupported chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled-extra: unsupported extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled-composite-extra: unsupported composite/extra/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-resolute-chiseled-composite: unsupported composite/chiseled variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-nanoserver2025:
+        metadata:
+          version: *aspnet-11.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      11.0-windowsservercore2025:
+        metadata:
+          version: *aspnet-11.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
 
   sdk:
     name: dotnet/sdk
     images:
+      8.0-bookworm-slim:
+        metadata:
+          version: *sdk-8.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *bookwormSlimPlatforms
+      # TODO: 8.0-alpine3.24: source adds 8.0-alpine and 8.0-alpine-{arch} aliases outside tag defaults.
+      8.0-noble:
+        metadata:
+          version: *sdk-8.0
+        platforms: *noblePlatformsWithoutArm32
+      8.0-jammy:
+        metadata:
+          version: *sdk-8.0
+        platforms: *jammyPlatforms
+      8.0-azurelinux3.0:
+        metadata:
+          version: *sdk-8.0
+        platforms: *azurelinux3.0Platforms
+      8.0-nanoserver1809:
+        metadata:
+          version: *sdk-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver1809Platforms
+      8.0-nanoserver2022:
+        metadata:
+          version: *sdk-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      8.0-nanoserver2025:
+        metadata:
+          version: *sdk-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      8.0-windowsservercore2019:
+        metadata:
+          version: *sdk-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2019Platforms
+      8.0-windowsservercore2022:
+        metadata:
+          version: *sdk-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      8.0-windowsservercore2025:
+        metadata:
+          version: *sdk-8.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
+      # TODO: 9.0-bookworm-slim: source convenience tags conflict with this example's 9.0-noble tags; reconcile the default OS first.
+      # TODO: 9.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       9.0-alpine3.24:
         metadata:
           version: *sdk-9.0
         platforms: *alpine3.24Platforms
+      # TODO: 9.0-noble: source has no convenience tags here; reconcile with 9.0-bookworm-slim.
       9.0-noble:
         metadata:
           version: *sdk-9.0
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *noblePlatforms
+      9.0-azurelinux3.0:
+        metadata:
+          version: *sdk-9.0
+        platforms: *azurelinux3.0Platforms
+      9.0-nanoserver1809:
+        metadata:
+          version: *sdk-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver1809Platforms
+      9.0-nanoserver2022:
+        metadata:
+          version: *sdk-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      9.0-nanoserver2025:
+        metadata:
+          version: *sdk-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      9.0-windowsservercore2019:
+        metadata:
+          version: *sdk-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2019Platforms
+      9.0-windowsservercore2022:
+        metadata:
+          version: *sdk-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      9.0-windowsservercore2025:
+        metadata:
+          version: *sdk-9.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
       10.0-noble:
         metadata:
           version: *sdk-10.0
@@ -196,7 +890,69 @@ repos:
           <<: [*defaultSharedTags, *convenienceTags]
           latest: {}
         platforms: *noblePlatforms
+      # TODO: 10.0-noble-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-resolute:
+        metadata:
+          version: *sdk-10.0
+        platforms: *resolutePlatforms
+      # TODO: 10.0-resolute-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 10.0-alpine3.24: source floating Alpine aliases differ from shared/platform defaults.
       10.0-alpine3.24:
         metadata:
           version: *sdk-10.0
         platforms: *alpine3.24Platforms
+      # TODO: 10.0-alpine3.24-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-azurelinux3.0:
+        metadata:
+          version: *sdk-10.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 10.0-azurelinux3.0-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      10.0-nanoserver2022:
+        metadata:
+          version: *sdk-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2022Platforms
+      10.0-nanoserver2025:
+        metadata:
+          version: *sdk-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      10.0-windowsservercore2022:
+        metadata:
+          version: *sdk-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2022Platforms
+      10.0-windowsservercore2025:
+        metadata:
+          version: *sdk-10.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms
+      11.0-resolute:
+        metadata:
+          version: *sdk-11.0
+        tags:
+          <<: [*defaultSharedTags, *convenienceTags]
+        platforms: *resolutePlatforms
+      # TODO: 11.0-resolute-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      # TODO: 11.0-alpine3.24: source adds 11.0-alpine and 11.0-alpine-{arch} aliases outside tag defaults.
+      # TODO: 11.0-alpine3.24-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux3.0:
+        metadata:
+          version: *sdk-11.0
+        platforms: *azurelinux3.0Platforms
+      # TODO: 11.0-azurelinux3.0-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-azurelinux4.0:
+        metadata:
+          version: *sdk-11.0
+        platforms: *azurelinux4.0Platforms
+      # TODO: 11.0-azurelinux4.0-aot: unsupported AOT variant; target, tag, and Dockerfile suffix policy is unresolved.
+      11.0-nanoserver2025:
+        metadata:
+          version: *sdk-11.0
+        tags: *defaultWindowsSharedTags
+        platforms: *nanoserver2025Platforms
+      11.0-windowsservercore2025:
+        metadata:
+          version: *sdk-11.0
+        tags: *defaultWindowsSharedTags
+        platforms: *windowsservercore2025Platforms

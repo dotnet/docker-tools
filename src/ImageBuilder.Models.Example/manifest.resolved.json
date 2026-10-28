@@ -83,6 +83,118 @@
             }
           }
         },
+        "8.0-alpine3.24": {
+          "platforms": {
+            "amd64": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "amd64"
+              },
+              "dockerfile": "src/runtime-deps/8.0/alpine3.24/amd64/Dockerfile",
+              "tags": {
+                "8.0.33-alpine3.24-aot-amd64": {
+                  "undocumented": true
+                },
+                "8.0-alpine3.24-aot-amd64": {
+                  "undocumented": true
+                },
+                "8.0-alpine-aot-amd64": {
+                  "undocumented": true
+                },
+                "8.0-alpine-amd64": {},
+                "8.0.33-alpine3.24-amd64": {},
+                "8.0-alpine3.24-amd64": {}
+              },
+              "metadata": {
+                "variant": "",
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            },
+            "arm32v7": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm32v7"
+              },
+              "dockerfile": "src/runtime-deps/8.0/alpine3.24/arm32v7/Dockerfile",
+              "tags": {
+                "8.0.33-alpine3.24-aot-arm32v7": {
+                  "undocumented": true
+                },
+                "8.0-alpine3.24-aot-arm32v7": {
+                  "undocumented": true
+                },
+                "8.0-alpine-aot-arm32v7": {
+                  "undocumented": true
+                },
+                "8.0-alpine-arm32v7": {},
+                "8.0.33-alpine3.24-arm32v7": {},
+                "8.0-alpine3.24-arm32v7": {}
+              },
+              "metadata": {
+                "variant": "",
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            },
+            "arm64v8": {
+              "targetPlatform": {
+                "os": "linux",
+                "version": "3.24",
+                "tagPart": "alpine3.24",
+                "arch": "arm64v8"
+              },
+              "dockerfile": "src/runtime-deps/8.0/alpine3.24/arm64v8/Dockerfile",
+              "tags": {
+                "8.0.33-alpine3.24-aot-arm64v8": {
+                  "undocumented": true
+                },
+                "8.0-alpine3.24-aot-arm64v8": {
+                  "undocumented": true
+                },
+                "8.0-alpine-aot-arm64v8": {
+                  "undocumented": true
+                },
+                "8.0-alpine-arm64v8": {},
+                "8.0.33-alpine3.24-arm64v8": {},
+                "8.0-alpine3.24-arm64v8": {}
+              },
+              "metadata": {
+                "variant": "",
+                "version": {
+                  "minorVersion": "8.0",
+                  "patchVersion": "8.0.33"
+                }
+              }
+            }
+          },
+          "tags": {
+            "8.0.33-alpine3.24-aot": {
+              "undocumented": true
+            },
+            "8.0-alpine3.24-aot": {
+              "undocumented": true
+            },
+            "8.0-alpine": {},
+            "8.0.33-alpine3.24": {},
+            "8.0-alpine3.24": {}
+          },
+          "metadata": {
+            "variant": "",
+            "version": {
+              "minorVersion": "8.0",
+              "patchVersion": "8.0.33"
+            }
+          }
+        },
         "8.0-alpine3.24-extra": {
           "platforms": {
             "amd64": {
@@ -804,6 +916,15 @@
               },
               "dockerfile": "src/runtime-deps/9.0/alpine3.24/amd64/Dockerfile",
               "tags": {
+                "9.0.22-alpine3.24-aot-amd64": {
+                  "undocumented": true
+                },
+                "9.0-alpine3.24-aot-amd64": {
+                  "undocumented": true
+                },
+                "9.0-alpine-aot-amd64": {
+                  "undocumented": true
+                },
                 "9.0-alpine-amd64": {},
                 "9.0.22-alpine3.24-amd64": {},
                 "9.0-alpine3.24-amd64": {}
@@ -825,6 +946,15 @@
               },
               "dockerfile": "src/runtime-deps/9.0/alpine3.24/arm32v7/Dockerfile",
               "tags": {
+                "9.0.22-alpine3.24-aot-arm32v7": {
+                  "undocumented": true
+                },
+                "9.0-alpine3.24-aot-arm32v7": {
+                  "undocumented": true
+                },
+                "9.0-alpine-aot-arm32v7": {
+                  "undocumented": true
+                },
                 "9.0-alpine-arm32v7": {},
                 "9.0.22-alpine3.24-arm32v7": {},
                 "9.0-alpine3.24-arm32v7": {}
@@ -846,6 +976,15 @@
               },
               "dockerfile": "src/runtime-deps/9.0/alpine3.24/arm64v8/Dockerfile",
               "tags": {
+                "9.0.22-alpine3.24-aot-arm64v8": {
+                  "undocumented": true
+                },
+                "9.0-alpine3.24-aot-arm64v8": {
+                  "undocumented": true
+                },
+                "9.0-alpine-aot-arm64v8": {
+                  "undocumented": true
+                },
                 "9.0-alpine-arm64v8": {},
                 "9.0.22-alpine3.24-arm64v8": {},
                 "9.0-alpine3.24-arm64v8": {}
@@ -860,6 +999,15 @@
             }
           },
           "tags": {
+            "9.0.22-alpine3.24-aot": {
+              "undocumented": true
+            },
+            "9.0-alpine3.24-aot": {
+              "undocumented": true
+            },
+            "9.0-alpine-aot": {
+              "undocumented": true
+            },
             "9.0-alpine": {},
             "9.0.22-alpine3.24": {},
             "9.0-alpine3.24": {}

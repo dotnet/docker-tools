@@ -28,6 +28,22 @@ definitions:
   alpineFloatingPlatformTags: &alpineFloatingPlatformTags
     "{version.minorVersion}-alpine{variant}-{arch}": {}
 
+  alpineAotAliasSharedTags-8.0: &alpineAotAliasSharedTags-8.0
+    "{version.patchVersion}-{os}-aot": { undocumented: true }
+    "{version.minorVersion}-{os}-aot": { undocumented: true }
+
+  alpineAotAliasPlatformTags-8.0: &alpineAotAliasPlatformTags-8.0
+    "{version.patchVersion}-{os}-aot-{arch}": { undocumented: true }
+    "{version.minorVersion}-{os}-aot-{arch}": { undocumented: true }
+    "{version.minorVersion}-alpine-aot-{arch}": { undocumented: true }
+
+  alpineAotAliasSharedTags-9.0: &alpineAotAliasSharedTags-9.0
+    <<: *alpineAotAliasSharedTags-8.0
+    "{version.minorVersion}-alpine-aot": { undocumented: true }
+
+  alpineAotAliasPlatformTags-9.0: &alpineAotAliasPlatformTags-9.0
+    <<: *alpineAotAliasPlatformTags-8.0
+
   defaultWindowsSharedTags: &defaultWindowsSharedTags {}
 
   nanoserver1809:
@@ -36,7 +52,7 @@ definitions:
       version: "1809"
       tagPart: nanoserver-1809
     platforms: &nanoserver1809Platforms
-      amd64: &nanoserver1809Amd64
+      amd64:
         targetPlatform:
           <<: *nanoserver1809
           arch: amd64
@@ -48,7 +64,7 @@ definitions:
       version: ltsc2022
       tagPart: nanoserver-ltsc2022
     platforms: &nanoserver2022Platforms
-      amd64: &nanoserver2022Amd64
+      amd64:
         targetPlatform:
           <<: *nanoserver2022
           arch: amd64
@@ -60,7 +76,7 @@ definitions:
       version: ltsc2025
       tagPart: nanoserver-ltsc2025
     platforms: &nanoserver2025Platforms
-      amd64: &nanoserver2025Amd64
+      amd64:
         targetPlatform:
           <<: *nanoserver2025
           arch: amd64
@@ -72,7 +88,7 @@ definitions:
       version: ltsc2019
       tagPart: windowsservercore-ltsc2019
     platforms: &servercore2019Platforms
-      amd64: &servercore2019Amd64
+      amd64:
         targetPlatform:
           <<: *servercore2019
           arch: amd64
@@ -84,7 +100,7 @@ definitions:
       version: ltsc2022
       tagPart: windowsservercore-ltsc2022
     platforms: &servercore2022Platforms
-      amd64: &servercore2022Amd64
+      amd64:
         targetPlatform:
           <<: *servercore2022
           arch: amd64
@@ -96,7 +112,7 @@ definitions:
       version: ltsc2025
       tagPart: windowsservercore-ltsc2025
     platforms: &servercore2025Platforms
-      amd64: &servercore2025Amd64
+      amd64:
         targetPlatform:
           <<: *servercore2025
           arch: amd64
@@ -108,15 +124,15 @@ definitions:
       version: "12"
       tagPart: bookworm-slim
     platforms: &bookwormSlimPlatforms
-      amd64: &bookwormSlimAmd64
+      amd64:
         targetPlatform:
           <<: *bookwormSlim
           arch: amd64
-      arm32v7: &bookwormSlimArm32
+      arm32v7:
         targetPlatform:
           <<: *bookwormSlim
           arch: arm32v7
-      arm64v8: &bookwormSlimArm64
+      arm64v8:
         targetPlatform:
           <<: *bookwormSlim
           arch: arm64v8
@@ -131,7 +147,7 @@ definitions:
         targetPlatform:
           <<: *noble
           arch: amd64
-      arm32v7: &nobleArm32
+      arm32v7:
         targetPlatform:
           <<: *noble
           arch: arm32v7
@@ -190,15 +206,15 @@ definitions:
       version: "22.04"
       tagPart: jammy
     platforms: &jammyPlatforms
-      amd64: &jammyAmd64
+      amd64:
         targetPlatform:
           <<: *jammy
           arch: amd64
-      arm32v7: &jammyArm32
+      arm32v7:
         targetPlatform:
           <<: *jammy
           arch: arm32v7
-      arm64v8: &jammyArm64
+      arm64v8:
         targetPlatform:
           <<: *jammy
           arch: arm64v8
@@ -209,11 +225,11 @@ definitions:
       version: "3.0"
       tagPart: azurelinux3.0
     platforms: &azurelinux3.0Platforms
-      amd64: &azurelinux3.0Amd64
+      amd64:
         targetPlatform:
           <<: *azurelinux3.0
           arch: amd64
-      arm64v8: &azurelinux3.0Arm64
+      arm64v8:
         targetPlatform:
           <<: *azurelinux3.0
           arch: arm64v8
@@ -224,11 +240,11 @@ definitions:
       version: "4.0"
       tagPart: azurelinux4.0
     platforms: &azurelinux4.0Platforms
-      amd64: &azurelinux4.0Amd64
+      amd64:
         targetPlatform:
           <<: *azurelinux4.0
           arch: amd64
-      arm64v8: &azurelinux4.0Arm64
+      arm64v8:
         targetPlatform:
           <<: *azurelinux4.0
           arch: arm64v8
@@ -243,7 +259,7 @@ definitions:
         targetPlatform:
           <<: *resolute
           arch: amd64
-      arm32v7: &resoluteArm32
+      arm32v7:
         targetPlatform:
           <<: *resolute
           arch: arm32v7
@@ -321,7 +337,24 @@ repos:
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *bookwormSlimPlatforms
-      # TODO: 8.0-alpine3.24: source's undocumented AOT aliases still need an explicit tag policy.
+      8.0-alpine3.24:
+        metadata:
+          version: *runtime-8.0
+        tags:
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags, *alpineAotAliasSharedTags-8.0]
+        platforms:
+          amd64:
+            <<: *alpine3.24Amd64
+            tags:
+              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-8.0]
+          arm32v7:
+            <<: *alpine3.24Arm32
+            tags:
+              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-8.0]
+          arm64v8:
+            <<: *alpine3.24Arm64
+            tags:
+              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-8.0]
       8.0-alpine3.24-extra:
         metadata:
           version: *runtime-8.0
@@ -376,13 +409,24 @@ repos:
         tags:
           <<: [*defaultSharedTags, *convenienceTags]
         platforms: *bookwormSlimPlatforms
-      # TODO: 9.0-alpine3.24: source's undocumented AOT aliases still need an explicit tag policy.
       9.0-alpine3.24:
         metadata:
           version: *runtime-9.0
         tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
+          <<: [*defaultSharedTags, *alpineFloatingSharedTags, *alpineAotAliasSharedTags-9.0]
+        platforms:
+          amd64:
+            <<: *alpine3.24Amd64
+            tags:
+              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-9.0]
+          arm32v7:
+            <<: *alpine3.24Arm32
+            tags:
+              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-9.0]
+          arm64v8:
+            <<: *alpine3.24Arm64
+            tags:
+              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-9.0]
       9.0-alpine3.24-extra:
         metadata:
           version: *runtime-9.0

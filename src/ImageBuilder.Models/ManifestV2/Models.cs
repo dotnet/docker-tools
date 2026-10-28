@@ -56,6 +56,7 @@ public sealed record ImageDefaults
 public sealed record PlatformDefaults
 {
     public string? Dockerfile { get; set; }
+    public string? DockerfileTemplate { get; set; }
     public Dictionary<string, Tag>? Tags { get; set; }
 }
 

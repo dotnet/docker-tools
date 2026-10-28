@@ -9,6 +9,7 @@ defaults:
       "{version.minorVersion}-{os}{variant}": {}
   platform:
     dockerfile: "src/{repoKey}/{version.minorVersion}/{os}{variant}/{arch}/Dockerfile"
+    dockerfileTemplate: "eng/dockerfile-templates/{repoKey}/{templateFile}"
     tags: &defaultPlatformTags
       "{version.patchVersion}-{os}{variant}-{arch}": {}
       "{version.minorVersion}-{os}{variant}-{arch}": {}
@@ -326,10 +327,21 @@ definitions:
 
 readme:
   path: README.md
+  templatePath: eng/readme-templates/README.github.md
 
 repos:
   runtime-deps:
     name: dotnet/runtime-deps
+    readmes:
+      - path: README.runtime-deps.md
+        templatePath: eng/readme-templates/README.github.md
+      - path: .portal-docs/docker-hub/README.runtime-deps.md
+        templatePath: eng/readme-templates/README.dockerhub.md
+      - path: .portal-docs/mar/README.runtime-deps.portal.md
+        templatePath: eng/readme-templates/README.mcr.md
+    mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/runtime-deps-tags.yml
+    metadata:
+      templateFile: Dockerfile
     images:
       8.0-bookworm-slim:
         metadata:
@@ -359,6 +371,7 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-extra"
+          templateFile: Dockerfile.extra
         platforms: *alpine3.24Platforms
       8.0-noble:
         metadata:
@@ -368,11 +381,13 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-chiseled"
+          templateFile: Dockerfile.chiseled-ubuntu
         platforms: *noblePlatforms-dotnet-8.0
       8.0-noble-chiseled-extra:
         metadata:
           version: *runtime-8.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.chiseled-ubuntu.extra
         platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
@@ -382,11 +397,13 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-chiseled"
+          templateFile: Dockerfile.chiseled-ubuntu
         platforms: *jammyPlatforms
       8.0-jammy-chiseled-extra:
         metadata:
           version: *runtime-8.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.chiseled-ubuntu.extra
         platforms: *jammyPlatforms
       8.0-azurelinux3.0:
         metadata:
@@ -396,11 +413,13 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-distroless"
+          templateFile: Dockerfile.distroless-azurelinux
         platforms: *azurelinux3.0Platforms
       8.0-azurelinux3.0-distroless-extra:
         metadata:
           version: *runtime-8.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.distroless-azurelinux.extra
         platforms: *azurelinux3.0Platforms
 
       9.0-bookworm-slim:
@@ -431,6 +450,7 @@ repos:
         metadata:
           version: *runtime-9.0
           variant: "-extra"
+          templateFile: Dockerfile.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -442,11 +462,13 @@ repos:
         metadata:
           version: *runtime-9.0
           variant: "-chiseled"
+          templateFile: Dockerfile.chiseled-ubuntu
         platforms: *noblePlatforms
       9.0-noble-chiseled-extra:
         metadata:
           version: *runtime-9.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.chiseled-ubuntu.extra
         platforms: *noblePlatforms
       9.0-azurelinux3.0:
         metadata:
@@ -456,11 +478,13 @@ repos:
         metadata:
           version: *runtime-9.0
           variant: "-distroless"
+          templateFile: Dockerfile.distroless-azurelinux
         platforms: *azurelinux3.0Platforms
       9.0-azurelinux3.0-distroless-extra:
         metadata:
           version: *runtime-9.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.distroless-azurelinux.extra
         platforms: *azurelinux3.0Platforms
 
       10.0-noble:
@@ -480,6 +504,7 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-extra"
+          templateFile: Dockerfile.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -491,21 +516,25 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-distroless"
+          templateFile: Dockerfile.distroless-azurelinux
         platforms: *azurelinux3.0Platforms
       10.0-azurelinux3.0-distroless-extra:
         metadata:
           version: *runtime-10.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.distroless-azurelinux.extra
         platforms: *azurelinux3.0Platforms
       10.0-noble-chiseled:
         metadata:
           version: *runtime-10.0
           variant: "-chiseled"
+          templateFile: Dockerfile.chiseled-ubuntu
         platforms: *noblePlatforms
       10.0-noble-chiseled-extra:
         metadata:
           version: *runtime-10.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.chiseled-ubuntu.extra
         platforms: *noblePlatforms
       10.0-resolute:
         metadata:
@@ -515,11 +544,13 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-chiseled"
+          templateFile: Dockerfile.chiseled-ubuntu
         platforms: *resolutePlatforms
       10.0-resolute-chiseled-extra:
         metadata:
           version: *runtime-10.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.chiseled-ubuntu.extra
         platforms: *resolutePlatforms
 
       11.0-resolute:
@@ -538,6 +569,7 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-extra"
+          templateFile: Dockerfile.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -549,11 +581,13 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-distroless"
+          templateFile: Dockerfile.distroless-azurelinux
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux3.0-distroless-extra:
         metadata:
           version: *runtime-11.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.distroless-azurelinux.extra
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
@@ -563,25 +597,39 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-distroless"
+          templateFile: Dockerfile.distroless-azurelinux
         platforms: *azurelinux4.0Platforms
       11.0-azurelinux4.0-distroless-extra:
         metadata:
           version: *runtime-11.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.distroless-azurelinux.extra
         platforms: *azurelinux4.0Platforms
       11.0-resolute-chiseled:
         metadata:
           version: *runtime-11.0
           variant: "-chiseled"
+          templateFile: Dockerfile.chiseled-ubuntu
         platforms: *resolutePlatforms
       11.0-resolute-chiseled-extra:
         metadata:
           version: *runtime-11.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.chiseled-ubuntu.extra
         platforms: *resolutePlatforms
 
   runtime:
     name: dotnet/runtime
+    readmes:
+      - path: README.runtime.md
+        templatePath: eng/readme-templates/README.github.md
+      - path: .portal-docs/docker-hub/README.runtime.md
+        templatePath: eng/readme-templates/README.dockerhub.md
+      - path: .portal-docs/mar/README.runtime.portal.md
+        templatePath: eng/readme-templates/README.mcr.md
+    mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/runtime-tags.yml
+    metadata:
+      templateFile: Dockerfile.linux
     images:
       8.0-bookworm-slim:
         metadata:
@@ -599,6 +647,7 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -615,6 +664,7 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
@@ -629,6 +679,7 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *jammyPlatforms
       8.0-azurelinux3.0:
         metadata:
@@ -643,35 +694,42 @@ repos:
         metadata:
           version: *runtime-8.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       8.0-nanoserver1809:
         metadata:
           version: *runtime-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver1809Platforms
       8.0-nanoserver2022:
         metadata:
           version: *runtime-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       8.0-nanoserver2025:
         metadata:
           version: *runtime-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       8.0-servercore2019:
         metadata:
           version: *runtime-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2019Platforms
       8.0-servercore2022:
         metadata:
           version: *runtime-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       8.0-servercore2025:
         metadata:
           version: *runtime-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -691,6 +749,7 @@ repos:
         metadata:
           version: *runtime-9.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -707,6 +766,7 @@ repos:
         metadata:
           version: *runtime-9.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *noblePlatforms
       9.0-azurelinux3.0:
         metadata:
@@ -721,35 +781,42 @@ repos:
         metadata:
           version: *runtime-9.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       9.0-nanoserver1809:
         metadata:
           version: *runtime-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver1809Platforms
       9.0-nanoserver2022:
         metadata:
           version: *runtime-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       9.0-nanoserver2025:
         metadata:
           version: *runtime-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       9.0-servercore2019:
         metadata:
           version: *runtime-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2019Platforms
       9.0-servercore2022:
         metadata:
           version: *runtime-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       9.0-servercore2025:
         metadata:
           version: *runtime-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -770,6 +837,7 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -786,6 +854,7 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       10.0-noble-chiseled:
         metadata:
@@ -796,6 +865,7 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *noblePlatforms
       10.0-resolute:
         metadata:
@@ -810,25 +880,30 @@ repos:
         metadata:
           version: *runtime-10.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *resolutePlatforms
       10.0-nanoserver2022:
         metadata:
           version: *runtime-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       10.0-nanoserver2025:
         metadata:
           version: *runtime-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       10.0-servercore2022:
         metadata:
           version: *runtime-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       10.0-servercore2025:
         metadata:
           version: *runtime-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -848,6 +923,7 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -864,6 +940,7 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
@@ -878,6 +955,7 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux4.0Platforms
       11.0-resolute-chiseled:
         metadata:
@@ -888,20 +966,33 @@ repos:
         metadata:
           version: *runtime-11.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *resolutePlatforms
       11.0-nanoserver2025:
         metadata:
           version: *runtime-11.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       11.0-servercore2025:
         metadata:
           version: *runtime-11.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
   aspnet:
     name: dotnet/aspnet
+    readmes:
+      - path: README.aspnet.md
+        templatePath: eng/readme-templates/README.github.md
+      - path: .portal-docs/docker-hub/README.aspnet.md
+        templatePath: eng/readme-templates/README.dockerhub.md
+      - path: .portal-docs/mar/README.aspnet.portal.md
+        templatePath: eng/readme-templates/README.mcr.md
+    mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/aspnet-tags.yml
+    metadata:
+      templateFile: Dockerfile.linux
     images:
       8.0-bookworm-slim:
         metadata:
@@ -919,6 +1010,7 @@ repos:
         metadata:
           version: *aspnet-8.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -926,11 +1018,13 @@ repos:
         metadata:
           version: *aspnet-8.0
           variant: "-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       8.0-alpine3.24-composite-extra:
         metadata:
           version: *aspnet-8.0
           variant: "-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       8.0-noble:
         metadata:
@@ -945,16 +1039,19 @@ repos:
         metadata:
           version: *aspnet-8.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *noblePlatforms-dotnet-8.0
       8.0-noble-chiseled-composite-extra:
         metadata:
           version: *aspnet-8.0
           variant: "-chiseled-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *noblePlatforms-dotnet-8.0
       8.0-noble-chiseled-composite:
         metadata:
           version: *aspnet-8.0
           variant: "-chiseled-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *noblePlatforms-dotnet-8.0
       8.0-jammy:
         metadata:
@@ -969,16 +1066,19 @@ repos:
         metadata:
           version: *aspnet-8.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *jammyPlatforms
       8.0-jammy-chiseled-composite-extra:
         metadata:
           version: *aspnet-8.0
           variant: "-chiseled-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *jammyPlatforms
       8.0-jammy-chiseled-composite:
         metadata:
           version: *aspnet-8.0
           variant: "-chiseled-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *jammyPlatforms
       8.0-azurelinux3.0:
         metadata:
@@ -993,45 +1093,54 @@ repos:
         metadata:
           version: *aspnet-8.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       8.0-azurelinux3.0-distroless-composite:
         metadata:
           version: *aspnet-8.0
           variant: "-distroless-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *azurelinux3.0Platforms
       8.0-azurelinux3.0-distroless-composite-extra:
         metadata:
           version: *aspnet-8.0
           variant: "-distroless-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *azurelinux3.0Platforms
       8.0-nanoserver1809:
         metadata:
           version: *aspnet-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver1809Platforms
       8.0-nanoserver2022:
         metadata:
           version: *aspnet-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       8.0-nanoserver2025:
         metadata:
           version: *aspnet-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       8.0-servercore2019:
         metadata:
           version: *aspnet-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2019Platforms
       8.0-servercore2022:
         metadata:
           version: *aspnet-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       8.0-servercore2025:
         metadata:
           version: *aspnet-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -1051,6 +1160,7 @@ repos:
         metadata:
           version: *aspnet-9.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -1058,11 +1168,13 @@ repos:
         metadata:
           version: *aspnet-9.0
           variant: "-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       9.0-alpine3.24-composite-extra:
         metadata:
           version: *aspnet-9.0
           variant: "-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       9.0-noble:
         metadata:
@@ -1077,16 +1189,19 @@ repos:
         metadata:
           version: *aspnet-9.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *noblePlatforms
       9.0-noble-chiseled-composite-extra:
         metadata:
           version: *aspnet-9.0
           variant: "-chiseled-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *noblePlatforms
       9.0-noble-chiseled-composite:
         metadata:
           version: *aspnet-9.0
           variant: "-chiseled-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *noblePlatforms
       9.0-azurelinux3.0:
         metadata:
@@ -1101,45 +1216,54 @@ repos:
         metadata:
           version: *aspnet-9.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       9.0-azurelinux3.0-distroless-composite:
         metadata:
           version: *aspnet-9.0
           variant: "-distroless-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *azurelinux3.0Platforms
       9.0-azurelinux3.0-distroless-composite-extra:
         metadata:
           version: *aspnet-9.0
           variant: "-distroless-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *azurelinux3.0Platforms
       9.0-nanoserver1809:
         metadata:
           version: *aspnet-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver1809Platforms
       9.0-nanoserver2022:
         metadata:
           version: *aspnet-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       9.0-nanoserver2025:
         metadata:
           version: *aspnet-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       9.0-servercore2019:
         metadata:
           version: *aspnet-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2019Platforms
       9.0-servercore2022:
         metadata:
           version: *aspnet-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       9.0-servercore2025:
         metadata:
           version: *aspnet-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -1160,6 +1284,7 @@ repos:
         metadata:
           version: *aspnet-10.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -1167,11 +1292,13 @@ repos:
         metadata:
           version: *aspnet-10.0
           variant: "-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       10.0-alpine3.24-composite-extra:
         metadata:
           version: *aspnet-10.0
           variant: "-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
       10.0-azurelinux3.0:
         metadata:
@@ -1186,16 +1313,19 @@ repos:
         metadata:
           version: *aspnet-10.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       10.0-azurelinux3.0-distroless-composite:
         metadata:
           version: *aspnet-10.0
           variant: "-distroless-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *azurelinux3.0Platforms
       10.0-azurelinux3.0-distroless-composite-extra:
         metadata:
           version: *aspnet-10.0
           variant: "-distroless-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *azurelinux3.0Platforms
       10.0-noble-chiseled:
         metadata:
@@ -1206,16 +1336,19 @@ repos:
         metadata:
           version: *aspnet-10.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *noblePlatforms
       10.0-noble-chiseled-composite-extra:
         metadata:
           version: *aspnet-10.0
           variant: "-chiseled-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *noblePlatforms
       10.0-noble-chiseled-composite:
         metadata:
           version: *aspnet-10.0
           variant: "-chiseled-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *noblePlatforms
       10.0-resolute:
         metadata:
@@ -1230,35 +1363,42 @@ repos:
         metadata:
           version: *aspnet-10.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *resolutePlatforms
       10.0-resolute-chiseled-composite-extra:
         metadata:
           version: *aspnet-10.0
           variant: "-chiseled-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *resolutePlatforms
       10.0-resolute-chiseled-composite:
         metadata:
           version: *aspnet-10.0
           variant: "-chiseled-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *resolutePlatforms
       10.0-nanoserver2022:
         metadata:
           version: *aspnet-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       10.0-nanoserver2025:
         metadata:
           version: *aspnet-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       10.0-servercore2022:
         metadata:
           version: *aspnet-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       10.0-servercore2025:
         metadata:
           version: *aspnet-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -1278,6 +1418,7 @@ repos:
         metadata:
           version: *aspnet-11.0
           variant: "-extra"
+          templateFile: Dockerfile.linux.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -1285,6 +1426,7 @@ repos:
         metadata:
           version: *aspnet-11.0
           variant: "-composite"
+          templateFile: Dockerfile.linux-composite
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -1292,6 +1434,7 @@ repos:
         metadata:
           version: *aspnet-11.0
           variant: "-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms
@@ -1308,16 +1451,19 @@ repos:
         metadata:
           version: *aspnet-11.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux3.0-distroless-composite:
         metadata:
           version: *aspnet-11.0
           variant: "-distroless-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux3.0-distroless-composite-extra:
         metadata:
           version: *aspnet-11.0
           variant: "-distroless-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
@@ -1332,16 +1478,19 @@ repos:
         metadata:
           version: *aspnet-11.0
           variant: "-distroless-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *azurelinux4.0Platforms
       11.0-azurelinux4.0-distroless-composite:
         metadata:
           version: *aspnet-11.0
           variant: "-distroless-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *azurelinux4.0Platforms
       11.0-azurelinux4.0-distroless-composite-extra:
         metadata:
           version: *aspnet-11.0
           variant: "-distroless-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *azurelinux4.0Platforms
       11.0-resolute-chiseled:
         metadata:
@@ -1352,30 +1501,45 @@ repos:
         metadata:
           version: *aspnet-11.0
           variant: "-chiseled-extra"
+          templateFile: Dockerfile.linux.extra
         platforms: *resolutePlatforms
       11.0-resolute-chiseled-composite-extra:
         metadata:
           version: *aspnet-11.0
           variant: "-chiseled-composite-extra"
+          templateFile: Dockerfile.linux-composite.extra
         platforms: *resolutePlatforms
       11.0-resolute-chiseled-composite:
         metadata:
           version: *aspnet-11.0
           variant: "-chiseled-composite"
+          templateFile: Dockerfile.linux-composite
         platforms: *resolutePlatforms
       11.0-nanoserver2025:
         metadata:
           version: *aspnet-11.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       11.0-servercore2025:
         metadata:
           version: *aspnet-11.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
   sdk:
     name: dotnet/sdk
+    readmes:
+      - path: README.sdk.md
+        templatePath: eng/readme-templates/README.github.md
+      - path: .portal-docs/docker-hub/README.sdk.md
+        templatePath: eng/readme-templates/README.dockerhub.md
+      - path: .portal-docs/mar/README.sdk.portal.md
+        templatePath: eng/readme-templates/README.mcr.md
+    mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/sdk-tags.yml
+    metadata:
+      templateFile: Dockerfile.linux
     images:
       8.0-bookworm-slim:
         metadata:
@@ -1404,31 +1568,37 @@ repos:
       8.0-nanoserver1809:
         metadata:
           version: *sdk-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver1809Platforms
       8.0-nanoserver2022:
         metadata:
           version: *sdk-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       8.0-nanoserver2025:
         metadata:
           version: *sdk-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       8.0-servercore2019:
         metadata:
           version: *sdk-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2019Platforms
       8.0-servercore2022:
         metadata:
           version: *sdk-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       8.0-servercore2025:
         metadata:
           version: *sdk-8.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -1455,31 +1625,37 @@ repos:
       9.0-nanoserver1809:
         metadata:
           version: *sdk-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver1809Platforms
       9.0-nanoserver2022:
         metadata:
           version: *sdk-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       9.0-nanoserver2025:
         metadata:
           version: *sdk-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       9.0-servercore2019:
         metadata:
           version: *sdk-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2019Platforms
       9.0-servercore2022:
         metadata:
           version: *sdk-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       9.0-servercore2025:
         metadata:
           version: *sdk-9.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -1494,6 +1670,7 @@ repos:
         metadata:
           version: *sdk-10.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         tags:
           <<: [*defaultSharedTags, *aotConvenienceTags]
         platforms: *noblePlatforms-sdk-aot
@@ -1505,6 +1682,7 @@ repos:
         metadata:
           version: *sdk-10.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         platforms: *resolutePlatforms-sdk-aot
       10.0-alpine3.24:
         metadata:
@@ -1516,6 +1694,7 @@ repos:
         metadata:
           version: *sdk-10.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms-sdk-aot
@@ -1527,25 +1706,30 @@ repos:
         metadata:
           version: *sdk-10.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         platforms: *azurelinux3.0Platforms
       10.0-nanoserver2022:
         metadata:
           version: *sdk-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2022Platforms
       10.0-nanoserver2025:
         metadata:
           version: *sdk-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       10.0-servercore2022:
         metadata:
           version: *sdk-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2022Platforms
       10.0-servercore2025:
         metadata:
           version: *sdk-10.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms
 
@@ -1559,6 +1743,7 @@ repos:
         metadata:
           version: *sdk-11.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         tags:
           <<: [*defaultSharedTags, *aotConvenienceTags]
         platforms: *resolutePlatforms-sdk-aot
@@ -1572,6 +1757,7 @@ repos:
         metadata:
           version: *sdk-11.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         tags:
           <<: [*defaultSharedTags, *alpineFloatingSharedTags]
         platforms: *alpine3.24Platforms-sdk-aot
@@ -1583,6 +1769,7 @@ repos:
         metadata:
           version: *sdk-11.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         platforms: *azurelinux3.0Platforms
       11.0-azurelinux4.0:
         metadata:
@@ -1592,14 +1779,17 @@ repos:
         metadata:
           version: *sdk-11.0
           variant: "-aot"
+          templateFile: Dockerfile.linux.aot
         platforms: *azurelinux4.0Platforms
       11.0-nanoserver2025:
         metadata:
           version: *sdk-11.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *nanoserver2025Platforms
       11.0-servercore2025:
         metadata:
           version: *sdk-11.0
+          templateFile: Dockerfile.windows
         tags: *defaultWindowsSharedTags
         platforms: *servercore2025Platforms

@@ -84,13 +84,12 @@ file sealed class ManifestResolver(Manifest manifest)
         Dictionary<string, Tag> tags = evaluator.ResolveTags(platform.Tags ?? defaults.Tags ?? []);
         string dockerfile = platform.Dockerfile ?? defaults.Dockerfile
             ?? throw new InvalidDataException($"{scopeKey}: dockerfile must be specified explicitly or in defaults.platform.");
+        string? dockerfileTemplate = platform.DockerfileTemplate ?? defaults.DockerfileTemplate;
 
         return platform with
         {
             Dockerfile = evaluator.Expand(dockerfile),
-            DockerfileTemplate = platform.DockerfileTemplate is null
-                ? null
-                : evaluator.Expand(platform.DockerfileTemplate),
+            DockerfileTemplate = dockerfileTemplate is null ? null : evaluator.Expand(dockerfileTemplate),
             Tags = tags,
             Metadata = metadata
         };
@@ -106,6 +105,7 @@ file sealed class ManifestResolver(Manifest manifest)
             Platform = new()
             {
                 Dockerfile = defaults?.Platform.Dockerfile ?? parentDefaults?.Platform.Dockerfile,
+                DockerfileTemplate = defaults?.Platform.DockerfileTemplate ?? parentDefaults?.Platform.DockerfileTemplate,
                 Tags = defaults?.Platform.Tags ?? parentDefaults?.Platform.Tags
             }
         };
@@ -281,7 +281,7 @@ file static class ManifestJson
             // Omission enables inheritance; explicit null is not a valid override.
             if (property.PropertyType == typeof(Dictionary<string, Tag>)
                 || ((typeInfo.Type == typeof(Platform) || typeInfo.Type == typeof(PlatformDefaults))
-                    && property.Name == "dockerfile"))
+                    && property.Name is "dockerfile" or "dockerfileTemplate"))
             {
                 property.IsSetNullable = false;
             }

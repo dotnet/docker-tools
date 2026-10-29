@@ -49,6 +49,7 @@ file sealed class ManifestResolver(Manifest manifest)
             imageEntry => ResolveImage(
                 repoKey, $"{repoKey}__{imageEntry.Key}", imageEntry.Value, metadata, defaults));
 
+        ValidateUniqueTags(repoKey, images);
         return repo with { Images = images, Metadata = metadata, Defaults = null };
     }
 
@@ -121,6 +122,33 @@ file sealed class ManifestResolver(Manifest manifest)
         }
 
         return inheritedMetadata;
+    }
+
+    // Shared and platform tags share one namespace per repo.
+    private static void ValidateUniqueTags(string repoKey, Dictionary<string, Image> images)
+    {
+        Dictionary<string, string> tagOwners = new(StringComparer.Ordinal);
+        foreach ((string imageKey, Image image) in images)
+        {
+            string imageScope = $"{repoKey}__{imageKey}";
+            ClaimTags(image.Tags!, imageScope);
+            foreach ((string platformKey, Platform platform) in image.Platforms)
+            {
+                ClaimTags(platform.Tags!, $"{imageScope}__{platformKey}");
+            }
+        }
+
+        void ClaimTags(Dictionary<string, Tag> tags, string scopeKey)
+        {
+            foreach (string tag in tags.Keys)
+            {
+                if (!tagOwners.TryAdd(tag, scopeKey))
+                {
+                    throw new InvalidDataException(
+                        $"{repoKey}: tag '{tag}' is declared by both {tagOwners[tag]} and {scopeKey}.");
+                }
+            }
+        }
     }
 }
 

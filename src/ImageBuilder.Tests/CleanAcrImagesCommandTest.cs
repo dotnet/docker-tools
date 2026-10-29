@@ -113,6 +113,17 @@ public class CleanAcrImagesCommandTest
         Mock<IAcrContentClient> repo3ContentClient = CreateAcrContentClientMock(publicRepo3Name);
         Mock<IAcrContentClient> repo4ContentClient = CreateAcrContentClientMock(publicRepo4Name);
 
+        foreach (Mock<IAcrContentClient> contentClient in new[] { repo1ContentClient, repo3ContentClient, repo4ContentClient })
+        {
+            contentClient
+                .Setup(client => client.GetManifestAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((string digest, CancellationToken _) => new ManifestQueryResult(digest, new JsonObject
+                {
+                    ["mediaType"] = "application/vnd.oci.image.manifest.v1+json",
+                    ["layers"] = new JsonArray()
+                }));
+        }
+
         IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
             AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 

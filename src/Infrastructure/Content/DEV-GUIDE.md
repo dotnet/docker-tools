@@ -102,6 +102,45 @@ For advanced scenarios, you may want to invoke ImageBuilder with specific comman
 
 ---
 
+### Scenario: Pruning Unused Mirrored Images
+
+`cleanAcrImages --action pruneDangling` inspects the entire repository before
+deleting expired, untagged images. It preserves manifests referenced by Docker
+manifest lists or OCI indexes, including nested indexes and shared platform
+images. Tags, age thresholds, explicit exclusions, and deletion locks are
+respected. Referrer artifacts such as signatures and lifecycle metadata are not
+independently pruned; retained referrers also protect their subjects.
+
+A child is preserved even if its untagged parent is selected for deletion in the
+same run. This avoids breaking an index when deletion is interrupted or fails.
+After the parent is gone, an unreferenced child can be collected by a later run.
+Cycles are conservatively retained.
+
+Use a dry run first, keeping a nonzero age threshold appropriate for your
+retention policy:
+
+```powershell
+./eng/docker-tools/Invoke-ImageBuilder.ps1 "cleanAcrImages 'mirror/*' '<registry>.azurecr.io' --action pruneDangling --age 30 --dry-run"
+```
+
+The command reads manifest contents rather than using the referrers-list API.
+Failed reads, unsupported or malformed manifests, missing index children, or an
+inventory change detected before deletion cause the command to fail before
+deleting anything in that repository. Other cleanup actions are unchanged.
+
+**Run without concurrent pushes, imports, tag updates, or other cleanup against
+the same repositories.** ACR does not provide an atomic inventory-and-delete
+operation. The pre-deletion inventory check detects changes during inspection,
+but cannot eliminate races after that check. Images used only by digest outside
+the registry are not discoverable as live references; keep a tag on them or use
+`--exclude`.
+
+This command change does not enable scheduled mirror cleanup. Deploy an
+ImageBuilder containing the fix, validate against a disposable ACR repository,
+and review dry-run output before enabling a consuming pipeline.
+
+---
+
 ## Understanding the Pipeline Architecture
 
 ### The Build Flow

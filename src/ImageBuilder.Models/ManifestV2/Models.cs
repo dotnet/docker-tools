@@ -19,7 +19,16 @@ public sealed record Repo
     public string? McrTagsMetadataTemplate { get; set; }
     public ManifestDefaults? Defaults { get; set; }
     public Dictionary<string, Image> Images { get; set; } = [];
+    public Dictionary<string, Group> Groups { get; set; } = [];
     public Readme[] Readmes { get; set; } = [];
+    public Dictionary<string, JsonElement> Metadata { get; set; } = [];
+}
+
+// An optional level between a repo and its images that shares metadata and defaults.
+public sealed record Group
+{
+    public ManifestDefaults? Defaults { get; set; }
+    public Dictionary<string, Image> Images { get; set; } = [];
     public Dictionary<string, JsonElement> Metadata { get; set; } = [];
 }
 
@@ -57,15 +66,21 @@ public sealed record PlatformDefaults
 {
     public string? Dockerfile { get; set; }
     public string? DockerfileTemplate { get; set; }
+    public Dictionary<string, string>? BuildArgs { get; set; }
     public Dictionary<string, Tag>? Tags { get; set; }
 }
 
 public sealed record TargetPlatform
 {
+    // Docker platform and OS-specific build behavior.
     public required OS OS { get; set; }
-    public required string Version { get; set; }
-    public required string TagPart { get; set; }
     public required Arch Arch { get; set; }
+    // Identifies the OS in image info, filters, tags and paths, like "noble".
+    public required string Name { get; set; }
+    // Shown in readmes and MCR tag metadata, like "Ubuntu 24.04".
+    public required string DisplayName { get; set; }
+    // The OS's own version, like "24.04". Only Dockerfile templates read it.
+    public required string Version { get; set; }
 }
 
 public sealed record Tag

@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using Group = Microsoft.DotNet.ImageBuilder.Models.ManifestV2.Group;
 
 // Run from this directory: dotnet run --file Program.cs
 if (args.Length > 1)
@@ -44,14 +45,38 @@ file sealed class ManifestResolver(Manifest manifest)
     {
         Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, repo.Metadata);
         ManifestDefaults defaults = InheritDefaults(parentDefaults, repo.Defaults);
-        Dictionary<string, Image> images = repo.Images.ToDictionary(
+        Dictionary<string, Image> images = ResolveImages(repoKey, repoKey, repo.Images, metadata, defaults);
+        Dictionary<string, Group> groups = repo.Groups.ToDictionary(
+            groupEntry => groupEntry.Key,
+            groupEntry => ResolveGroup(
+                repoKey, $"{repoKey}__{groupEntry.Key}", groupEntry.Value, metadata, defaults));
+
+        ValidateUniqueTags(
+            repoKey,
+            [
+                (repoKey, images),
+                .. groups.Select(groupEntry => ($"{repoKey}__{groupEntry.Key}", groupEntry.Value.Images))
+            ]);
+        return repo with { Images = images, Groups = groups, Metadata = metadata, Defaults = null };
+    }
+
+    private static Group ResolveGroup(
+        string repoKey, string scopeKey, Group group,
+        Dictionary<string, JsonElement> parentMetadata, ManifestDefaults parentDefaults)
+    {
+        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, group.Metadata);
+        ManifestDefaults defaults = InheritDefaults(parentDefaults, group.Defaults);
+        Dictionary<string, Image> images = ResolveImages(repoKey, scopeKey, group.Images, metadata, defaults);
+        return group with { Images = images, Metadata = metadata, Defaults = null };
+    }
+
+    private static Dictionary<string, Image> ResolveImages(
+        string repoKey, string scopeKey, Dictionary<string, Image> images,
+        Dictionary<string, JsonElement> parentMetadata, ManifestDefaults parentDefaults) =>
+        images.ToDictionary(
             imageEntry => imageEntry.Key,
             imageEntry => ResolveImage(
-                repoKey, $"{repoKey}__{imageEntry.Key}", imageEntry.Value, metadata, defaults));
-
-        ValidateUniqueTags(repoKey, images);
-        return repo with { Images = images, Metadata = metadata, Defaults = null };
-    }
+                repoKey, $"{scopeKey}__{imageEntry.Key}", imageEntry.Value, parentMetadata, parentDefaults));
 
     private static Image ResolveImage(
         string repoKey, string scopeKey, Image image,
@@ -87,12 +112,21 @@ file sealed class ManifestResolver(Manifest manifest)
             ?? throw new InvalidDataException($"{scopeKey}: dockerfile must be specified explicitly or in defaults.platform.");
         string? dockerfileTemplate = platform.DockerfileTemplate ?? defaults.DockerfileTemplate;
 
+        // Build args are independent of each other, so a platform overrides default args one at a time.
+        Dictionary<string, string> buildArgs = new(defaults.BuildArgs ?? [], StringComparer.Ordinal);
+        foreach ((string name, string value) in platform.BuildArgs)
+        {
+            buildArgs[name] = value;
+        }
+
         return platform with
         {
+            BuildArgs = buildArgs,
             Dockerfile = evaluator.Expand(dockerfile),
             DockerfileTemplate = dockerfileTemplate is null ? null : evaluator.Expand(dockerfileTemplate),
             Tags = tags,
-            Metadata = metadata
+            // Each platform gets its inherited metadata with patterns expanded for that platform.
+            Metadata = evaluator.ExpandMetadata(metadata)
         };
     }
 
@@ -107,6 +141,7 @@ file sealed class ManifestResolver(Manifest manifest)
             {
                 Dockerfile = defaults?.Platform.Dockerfile ?? parentDefaults?.Platform.Dockerfile,
                 DockerfileTemplate = defaults?.Platform.DockerfileTemplate ?? parentDefaults?.Platform.DockerfileTemplate,
+                BuildArgs = defaults?.Platform.BuildArgs ?? parentDefaults?.Platform.BuildArgs,
                 Tags = defaults?.Platform.Tags ?? parentDefaults?.Platform.Tags
             }
         };
@@ -124,17 +159,21 @@ file sealed class ManifestResolver(Manifest manifest)
         return inheritedMetadata;
     }
 
-    // Shared and platform tags share one namespace per repo.
-    private static void ValidateUniqueTags(string repoKey, Dictionary<string, Image> images)
+    // Shared and platform tags share one namespace per repo, across all of its groups.
+    private static void ValidateUniqueTags(
+        string repoKey, IEnumerable<(string ScopeKey, Dictionary<string, Image> Images)> imageSets)
     {
         Dictionary<string, string> tagOwners = new(StringComparer.Ordinal);
-        foreach ((string imageKey, Image image) in images)
+        foreach ((string scopeKey, Dictionary<string, Image> images) in imageSets)
         {
-            string imageScope = $"{repoKey}__{imageKey}";
-            ClaimTags(image.Tags!, imageScope);
-            foreach ((string platformKey, Platform platform) in image.Platforms)
+            foreach ((string imageKey, Image image) in images)
             {
-                ClaimTags(platform.Tags!, $"{imageScope}__{platformKey}");
+                string imageScope = $"{scopeKey}__{imageKey}";
+                ClaimTags(image.Tags!, imageScope);
+                foreach ((string platformKey, Platform platform) in image.Platforms)
+                {
+                    ClaimTags(platform.Tags!, $"{imageScope}__{platformKey}");
+                }
             }
         }
 
@@ -158,6 +197,9 @@ file sealed class PatternEvaluator(
     Dictionary<string, JsonElement> metadata,
     TargetPlatform[] targets)
 {
+    // Placeholders being expanded, to reject metadata values that refer to themselves.
+    private readonly HashSet<string> _activePlaceholders = new(StringComparer.Ordinal);
+
     public string Expand(string pattern)
     {
         string expanded = Regex.Replace(pattern, @"\{([^{}]+)\}", match => ResolvePlaceholder(match.Groups[1].Value));
@@ -168,6 +210,18 @@ file sealed class PatternEvaluator(
 
         return expanded;
     }
+
+    public Dictionary<string, JsonElement> ExpandMetadata(Dictionary<string, JsonElement> metadata) =>
+        metadata.ToDictionary(entry => entry.Key, entry => ExpandValue(entry.Value), StringComparer.Ordinal);
+
+    private JsonElement ExpandValue(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.String => JsonSerializer.SerializeToElement(Expand(value.GetString()!)),
+        JsonValueKind.Object => JsonSerializer.SerializeToElement(
+            value.EnumerateObject().ToDictionary(property => property.Name, property => ExpandValue(property.Value))),
+        JsonValueKind.Array => JsonSerializer.SerializeToElement(value.EnumerateArray().Select(ExpandValue).ToArray()),
+        _ => value
+    };
 
     public Dictionary<string, Tag> ResolveTags(Dictionary<string, Tag> tags)
     {
@@ -206,7 +260,8 @@ file sealed class PatternEvaluator(
         string? modelValue = placeholder switch
         {
             "repoKey" => repoKey,
-            "os" => ResolveTargetValue(placeholder, target => target.TagPart),
+            "os" => ResolveTargetValue(placeholder, target => target.OS.ToString().ToLowerInvariant()),
+            "osName" => ResolveTargetValue(placeholder, target => target.Name),
             "arch" => ResolveTargetValue(
                 placeholder, target => JsonNamingPolicy.CamelCase.ConvertName(target.Arch.ToString())),
             _ => null
@@ -232,10 +287,28 @@ file sealed class PatternEvaluator(
 
         return value.ValueKind switch
         {
-            JsonValueKind.String => value.ToString(),
+            JsonValueKind.String => ExpandNested(placeholder, value.GetString()!),
             JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => value.GetRawText(),
             _ => throw new InvalidDataException($"{scopeKey}: pattern variable '{placeholder}' must be a non-null scalar.")
         };
+    }
+
+    // A metadata value may itself contain placeholders, such as "{monitorUrl}.sha512".
+    private string ExpandNested(string placeholder, string value)
+    {
+        if (!_activePlaceholders.Add(placeholder))
+        {
+            throw new InvalidDataException($"{scopeKey}: pattern variable '{placeholder}' refers to itself.");
+        }
+
+        try
+        {
+            return Expand(value);
+        }
+        finally
+        {
+            _activePlaceholders.Remove(placeholder);
+        }
     }
 
     private string? ResolveTargetValue(string placeholder, Func<TargetPlatform, string> selector)

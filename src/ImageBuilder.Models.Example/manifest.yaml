@@ -1,505 +1,462 @@
+# .NET runtime-deps, runtime, aspnet and sdk images, written with repo groups.
 # Source matrix: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
 # Versions: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.versions.json
+# Anchors hold the facts that change together on a release, and each target platform.
+# Placeholders like {version.minorVersion}, {osName}, {os} and {arch} keep repeated values from drifting apart.
 metadata:
   variant: ""
+  # Images with their own template, like extra and AOT, override this.
+  templateFile: "Dockerfile.{os}"
 
 defaults:
-  image:
-    tags: &defaultSharedTags
-      "{version.patchVersion}-{os}{variant}": {}
-      "{version.minorVersion}-{os}{variant}": {}
   platform:
-    dockerfile: "src/{repoKey}/{version.minorVersion}/{os}{variant}/{arch}/Dockerfile"
+    dockerfile: "src/{repoKey}/{version.minorVersion}/{osName}{variant}/{arch}/Dockerfile"
     dockerfileTemplate: "eng/dockerfile-templates/{repoKey}/{templateFile}"
     tags: &defaultPlatformTags
-      "{version.patchVersion}-{os}{variant}-{arch}": {}
-      "{version.minorVersion}-{os}{variant}-{arch}": {}
+      "{version.patchVersion}-{osName}{variant}-{arch}": {}
+      "{version.minorVersion}-{osName}{variant}-{arch}": {}
 
 definitions:
-  convenienceTags: &convenienceTags
-    "{version.patchVersion}": {}
-    "{version.minorVersion}": {}
+  tags:
+    sharedTags: &sharedTags
+      "{version.patchVersion}-{osName}{variant}": {}
+      "{version.minorVersion}-{osName}{variant}": {}
+    convenienceTags: &convenienceTags
+      "{version.patchVersion}{variant}": {}
+      "{version.minorVersion}{variant}": {}
+    alpineFloatingTags: &alpineFloatingTags
+      "{version.minorVersion}-alpine{variant}": {}
+    alpineFloatingPlatformTags: &alpineFloatingPlatformTags
+      "{version.minorVersion}-alpine{variant}-{arch}": {}
+    # Undocumented -aot aliases for runtime-deps Alpine images, which AOT apps also use.
+    aotAliasTags: &aotAliasTags
+      "{version.patchVersion}-{osName}-aot": { undocumented: true }
+      "{version.minorVersion}-{osName}-aot": { undocumented: true }
+    aotAliasPlatformTags: &aotAliasPlatformTags
+      "{version.patchVersion}-{osName}-aot-{arch}": { undocumented: true }
+      "{version.minorVersion}-{osName}-aot-{arch}": { undocumented: true }
+    alpineFloatingAotAliasTags: &alpineFloatingAotAliasTags
+      "{version.minorVersion}-alpine-aot": { undocumented: true }
+    alpineFloatingAotAliasPlatformTags: &alpineFloatingAotAliasPlatformTags
+      "{version.minorVersion}-alpine-aot-{arch}": { undocumented: true }
 
-  aotConvenienceTags: &aotConvenienceTags
-    "{version.patchVersion}-aot": {}
-    "{version.minorVersion}-aot": {}
+  # .NET 8.0: each product's version. Update them together.
+  dotnet-8.0:
+    runtime: &runtime-8.0
+      minorVersion: "8.0"
+      patchVersion: "8.0.33"
+      buildVersion: "8.0.33"
+    aspnet: &aspnet-8.0
+      minorVersion: "8.0"
+      patchVersion: "8.0.33"
+      buildVersion: "8.0.33"
+    sdk: &sdk-8.0
+      minorVersion: "8.0"
+      patchVersion: "8.0.427"
+      buildVersion: "8.0.427"
 
-  alpineFloatingSharedTags: &alpineFloatingSharedTags
-    "{version.minorVersion}-alpine{variant}": {}
+  # .NET 9.0: each product's version. Update them together.
+  dotnet-9.0:
+    runtime: &runtime-9.0
+      minorVersion: "9.0"
+      patchVersion: "9.0.22"
+      buildVersion: "9.0.22"
+    aspnet: &aspnet-9.0
+      minorVersion: "9.0"
+      patchVersion: "9.0.22"
+      buildVersion: "9.0.22"
+    sdk: &sdk-9.0
+      minorVersion: "9.0"
+      patchVersion: "9.0.320"
+      buildVersion: "9.0.320"
 
-  alpineFloatingPlatformTags: &alpineFloatingPlatformTags
-    "{version.minorVersion}-alpine{variant}-{arch}": {}
+  # .NET 10.0: each product's version. Update them together.
+  dotnet-10.0:
+    runtime: &runtime-10.0
+      minorVersion: "10.0"
+      patchVersion: "10.0.14"
+      buildVersion: "10.0.14"
+    aspnet: &aspnet-10.0
+      minorVersion: "10.0"
+      patchVersion: "10.0.14"
+      buildVersion: "10.0.14"
+    sdk: &sdk-10.0
+      minorVersion: "10.0"
+      patchVersion: "10.0.403"
+      buildVersion: "10.0.403"
 
-  alpineAotAliasSharedTags-8.0: &alpineAotAliasSharedTags-8.0
-    "{version.patchVersion}-{os}-aot": { undocumented: true }
-    "{version.minorVersion}-{os}-aot": { undocumented: true }
+  # .NET 11.0: each product's version. Update them together.
+  dotnet-11.0:
+    runtime: &runtime-11.0
+      minorVersion: "11.0"
+      patchVersion: "11.0.0-rc.3"
+      buildVersion: "11.0.0-rc.3.26522.148"
+    aspnet: &aspnet-11.0
+      minorVersion: "11.0"
+      patchVersion: "11.0.0-rc.3"
+      buildVersion: "11.0.0-rc.3.26522.148"
+    sdk: &sdk-11.0
+      minorVersion: "11.0"
+      patchVersion: "11.0.100-rc.3"
+      buildVersion: "11.0.100-rc.3.26522.148"
 
-  alpineAotAliasPlatformTags-8.0: &alpineAotAliasPlatformTags-8.0
-    "{version.patchVersion}-{os}-aot-{arch}": { undocumented: true }
-    "{version.minorVersion}-{os}-aot-{arch}": { undocumented: true }
-    "{version.minorVersion}-alpine-aot-{arch}": { undocumented: true }
-
-  alpineAotAliasSharedTags-9.0: &alpineAotAliasSharedTags-9.0
-    <<: *alpineAotAliasSharedTags-8.0
-    "{version.minorVersion}-alpine-aot": { undocumented: true }
-
-  alpineAotAliasPlatformTags-9.0: &alpineAotAliasPlatformTags-9.0
-    <<: *alpineAotAliasPlatformTags-8.0
-
-  defaultWindowsSharedTags: &defaultWindowsSharedTags {}
-
+  # One anchor per PowerShell download. Each SDK image picks the PowerShell it ships.
+  # PowerShell has no linux-musl (Alpine) packages for Arm.
   powershell:
-    dotnet-8.0:
-      metadata: &powershell-dotnet-8.0
-        version: 7.4.22
-      downloads:
-        linux:
-          amd64: &powershellLinuxAmd64-dotnet-8.0
-            <<: *powershell-dotnet-8.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.x64.7.4.22.nupkg"
-            digest: "sha256:32b931d40895e6e1a096d81e9335dce170e7b63aaca7eb0bb57e390a0dbf620c"
-          arm32v7: &powershellLinuxArm32v7-dotnet-8.0
-            <<: *powershell-dotnet-8.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.arm32.7.4.22.nupkg"
-            digest: "sha256:ab63c333cd43b365040c3ca2b71a26f91d0aadd6139836181ca9bb5ae4322617"
-          arm64v8: &powershellLinuxArm64v8-dotnet-8.0
-            <<: *powershell-dotnet-8.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.arm64.7.4.22.nupkg"
-            digest: "sha256:3b229f77b43cb77a9cb46494d9f1621d5048a63a41384c6b85c1a0622643f119"
-        alpine:
-          amd64: &powershellAlpineAmd64-dotnet-8.0
-            <<: *powershell-dotnet-8.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.Alpine.7.4.22.nupkg"
-            digest: "sha256:c3a3be3832b3739173bb6fe0c0db0a91296d8567b80742d97e6a33e97d6a7654"
-        windows:
-          amd64: &powershellWindowsAmd64-dotnet-8.0
-            <<: *powershell-dotnet-8.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Windows.x64.7.4.22.nupkg"
-            digest: "sha256:09eea115e974b5661b50587052c24be7242a60774a53c9f802f90d08d721fb68"
+    powershell-7.4:
+      linux-amd64: &powershell-7.4-linux-amd64
+        version: "7.4.22"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.x64.7.4.22.nupkg"
+        digest: "sha256:32b931d40895e6e1a096d81e9335dce170e7b63aaca7eb0bb57e390a0dbf620c"
+      linux-arm32v7: &powershell-7.4-linux-arm32v7
+        version: "7.4.22"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.arm32.7.4.22.nupkg"
+        digest: "sha256:ab63c333cd43b365040c3ca2b71a26f91d0aadd6139836181ca9bb5ae4322617"
+      linux-arm64v8: &powershell-7.4-linux-arm64v8
+        version: "7.4.22"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.arm64.7.4.22.nupkg"
+        digest: "sha256:3b229f77b43cb77a9cb46494d9f1621d5048a63a41384c6b85c1a0622643f119"
+      linux-musl-amd64: &powershell-7.4-linux-musl-amd64
+        version: "7.4.22"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Linux.Alpine.7.4.22.nupkg"
+        digest: "sha256:c3a3be3832b3739173bb6fe0c0db0a91296d8567b80742d97e6a33e97d6a7654"
+      windows-amd64: &powershell-7.4-windows-amd64
+        version: "7.4.22"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.4.22/PowerShell.Windows.x64.7.4.22.nupkg"
+        digest: "sha256:09eea115e974b5661b50587052c24be7242a60774a53c9f802f90d08d721fb68"
 
-    dotnet-9.0:
-      metadata: &powershell-dotnet-9.0
-        version: 7.5.13
-      downloads:
-        linux:
-          amd64: &powershellLinuxAmd64-dotnet-9.0
-            <<: *powershell-dotnet-9.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.x64.7.5.13.nupkg"
-            digest: "sha256:0a2d957e7d5492769605812720c937778b96ff0003d82ef8b0a6031ef08d9afc"
-          arm32v7: &powershellLinuxArm32v7-dotnet-9.0
-            <<: *powershell-dotnet-9.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.arm32.7.5.13.nupkg"
-            digest: "sha256:251559d46d84ab420c891fe847a25eeef828595a57899602a47db5a7cd7d0111"
-          arm64v8: &powershellLinuxArm64v8-dotnet-9.0
-            <<: *powershell-dotnet-9.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.arm64.7.5.13.nupkg"
-            digest: "sha256:a3de606cc29c5c200b85b4f21c84b52b264954ade81c8d3c755fe579deb67723"
-        alpine:
-          amd64: &powershellAlpineAmd64-dotnet-9.0
-            <<: *powershell-dotnet-9.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.Alpine.7.5.13.nupkg"
-            digest: "sha256:0b18cc838db0a69b0268001a93d40731f1212f39f7ac803a724db4694af7e9bf"
-        windows:
-          amd64: &powershellWindowsAmd64-dotnet-9.0
-            <<: *powershell-dotnet-9.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Windows.x64.7.5.13.nupkg"
-            digest: "sha256:9036f4c6aa1190c59eff7b5054613ae4b323a6633a07a1cfa87949ed4cc49b23"
+    powershell-7.5:
+      linux-amd64: &powershell-7.5-linux-amd64
+        version: "7.5.13"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.x64.7.5.13.nupkg"
+        digest: "sha256:0a2d957e7d5492769605812720c937778b96ff0003d82ef8b0a6031ef08d9afc"
+      linux-arm32v7: &powershell-7.5-linux-arm32v7
+        version: "7.5.13"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.arm32.7.5.13.nupkg"
+        digest: "sha256:251559d46d84ab420c891fe847a25eeef828595a57899602a47db5a7cd7d0111"
+      linux-arm64v8: &powershell-7.5-linux-arm64v8
+        version: "7.5.13"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.arm64.7.5.13.nupkg"
+        digest: "sha256:a3de606cc29c5c200b85b4f21c84b52b264954ade81c8d3c755fe579deb67723"
+      linux-musl-amd64: &powershell-7.5-linux-musl-amd64
+        version: "7.5.13"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Linux.Alpine.7.5.13.nupkg"
+        digest: "sha256:0b18cc838db0a69b0268001a93d40731f1212f39f7ac803a724db4694af7e9bf"
+      windows-amd64: &powershell-7.5-windows-amd64
+        version: "7.5.13"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.5.13/PowerShell.Windows.x64.7.5.13.nupkg"
+        digest: "sha256:9036f4c6aa1190c59eff7b5054613ae4b323a6633a07a1cfa87949ed4cc49b23"
 
-    dotnet-10.0:
-      metadata: &powershell-dotnet-10.0
-        version: 7.6.9
-      downloads:
-        linux:
-          amd64: &powershellLinuxAmd64-dotnet-10.0
-            <<: *powershell-dotnet-10.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.x64.7.6.9.nupkg"
-            digest: "sha256:e14ad06e1192ccb221a6bfbc804476dabae792bb5c9c7ad62793e5ff058d826e"
-          arm32v7: &powershellLinuxArm32v7-dotnet-10.0
-            <<: *powershell-dotnet-10.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm32.7.6.9.nupkg"
-            digest: "sha256:157b5dc526e2a4664831f308ab3cffd87dcf34123dec03dd6f3e1b7dcd76e0c8"
-          arm64v8: &powershellLinuxArm64v8-dotnet-10.0
-            <<: *powershell-dotnet-10.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm64.7.6.9.nupkg"
-            digest: "sha256:9d098cb700f518702a87bbc037dadb6a9d6b34489012431756fb2531503f436b"
-        alpine:
-          amd64: &powershellAlpineAmd64-dotnet-10.0
-            <<: *powershell-dotnet-10.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.Alpine.7.6.9.nupkg"
-            digest: "sha256:6696a3ad4322209a9ba9dd8156eef65eee7e20bc7a6318439c11598044d83c70"
-        windows:
-          amd64: &powershellWindowsAmd64-dotnet-10.0
-            <<: *powershell-dotnet-10.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Windows.x64.7.6.9.nupkg"
-            digest: "sha256:be4c95159889a2930e1b8bd714700e46794b234fe16616f9e89f1c090badab15"
+    powershell-7.6:
+      linux-amd64: &powershell-7.6-linux-amd64
+        version: "7.6.9"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.x64.7.6.9.nupkg"
+        digest: "sha256:e14ad06e1192ccb221a6bfbc804476dabae792bb5c9c7ad62793e5ff058d826e"
+      linux-arm32v7: &powershell-7.6-linux-arm32v7
+        version: "7.6.9"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm32.7.6.9.nupkg"
+        digest: "sha256:157b5dc526e2a4664831f308ab3cffd87dcf34123dec03dd6f3e1b7dcd76e0c8"
+      linux-arm64v8: &powershell-7.6-linux-arm64v8
+        version: "7.6.9"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm64.7.6.9.nupkg"
+        digest: "sha256:9d098cb700f518702a87bbc037dadb6a9d6b34489012431756fb2531503f436b"
+      linux-musl-amd64: &powershell-7.6-linux-musl-amd64
+        version: "7.6.9"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.Alpine.7.6.9.nupkg"
+        digest: "sha256:6696a3ad4322209a9ba9dd8156eef65eee7e20bc7a6318439c11598044d83c70"
+      windows-amd64: &powershell-7.6-windows-amd64
+        version: "7.6.9"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Windows.x64.7.6.9.nupkg"
+        digest: "sha256:be4c95159889a2930e1b8bd714700e46794b234fe16616f9e89f1c090badab15"
 
-    dotnet-11.0:
-      metadata: &powershell-dotnet-11.0
-        version: 7.7.0-preview.5
-      downloads:
-        linux:
-          amd64: &powershellLinuxAmd64-dotnet-11.0
-            <<: *powershell-dotnet-11.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.x64.7.7.0-preview.5.nupkg"
-            digest: "sha512:d8543590a76c597bb7797497d5b40a695ad741c492ddbf0310831326a1476b37ae97e5bf5709f6afb4a17a7d4585b9394dbdbeb980bc17e5627d40f974296284"
-          arm32v7: &powershellLinuxArm32v7-dotnet-11.0
-            <<: *powershell-dotnet-11.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.arm32.7.7.0-preview.5.nupkg"
-            digest: "sha512:d45bcb6d129a2bb068b47528ed0ec554e5860d113baeed1e8e28920fcb7d8669bf2d2d9a46f442c53dac6030fbc93c4ee577e7e9f7fd496bf37354cea3a4f6e7"
-          arm64v8: &powershellLinuxArm64v8-dotnet-11.0
-            <<: *powershell-dotnet-11.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.arm64.7.7.0-preview.5.nupkg"
-            digest: "sha512:0f4cb9bebbdefdfd603676cd91804523b801be593f3253c3bedc15b8d433ad3cd455e76d1447769ac4b9fbcbcfd34d6398e85b362a08e77caef6fe89cdcfaace"
-        alpine:
-          amd64: &powershellAlpineAmd64-dotnet-11.0
-            <<: *powershell-dotnet-11.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.Alpine.7.7.0-preview.5.nupkg"
-            digest: "sha512:e3d3e80b026760f173a268b2ff5630a28741be33f67c6628141d75e854e20299fb89d61e819da32ba988a055baaa049d20ba355b196a0c3297221c2032dd706a"
-        windows:
-          amd64: &powershellWindowsAmd64-dotnet-11.0
-            <<: *powershell-dotnet-11.0
-            url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Windows.x64.7.7.0-preview.5.nupkg"
-            digest: "sha512:4684ec6b7dc49aff2e5b2189512c59c4280dfbdb1ea488000b49372ddbe0435f71e43653d1901f6a26e945684979dd955cce43492435108fa702221bdd59b36e"
+    powershell-7.7:
+      linux-amd64: &powershell-7.7-linux-amd64
+        version: "7.7.0-preview.5"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.x64.7.7.0-preview.5.nupkg"
+        digest: "sha512:d8543590a76c597bb7797497d5b40a695ad741c492ddbf0310831326a1476b37ae97e5bf5709f6afb4a17a7d4585b9394dbdbeb980bc17e5627d40f974296284"
+      linux-arm32v7: &powershell-7.7-linux-arm32v7
+        version: "7.7.0-preview.5"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.arm32.7.7.0-preview.5.nupkg"
+        digest: "sha512:d45bcb6d129a2bb068b47528ed0ec554e5860d113baeed1e8e28920fcb7d8669bf2d2d9a46f442c53dac6030fbc93c4ee577e7e9f7fd496bf37354cea3a4f6e7"
+      linux-arm64v8: &powershell-7.7-linux-arm64v8
+        version: "7.7.0-preview.5"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.arm64.7.7.0-preview.5.nupkg"
+        digest: "sha512:0f4cb9bebbdefdfd603676cd91804523b801be593f3253c3bedc15b8d433ad3cd455e76d1447769ac4b9fbcbcfd34d6398e85b362a08e77caef6fe89cdcfaace"
+      linux-musl-amd64: &powershell-7.7-linux-musl-amd64
+        version: "7.7.0-preview.5"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.Alpine.7.7.0-preview.5.nupkg"
+        digest: "sha512:e3d3e80b026760f173a268b2ff5630a28741be33f67c6628141d75e854e20299fb89d61e819da32ba988a055baaa049d20ba355b196a0c3297221c2032dd706a"
+      windows-amd64: &powershell-7.7-windows-amd64
+        version: "7.7.0-preview.5"
+        url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Windows.x64.7.7.0-preview.5.nupkg"
+        digest: "sha512:4684ec6b7dc49aff2e5b2189512c59c4280dfbdb1ea488000b49372ddbe0435f71e43653d1901f6a26e945684979dd955cce43492435108fa702221bdd59b36e"
 
-  nanoserver1809:
-    os: &nanoserver1809
-      os: windows
-      version: "1809"
-      tagPart: nanoserver-1809
-    platforms: &nanoserver1809Platforms
-      amd64: &nanoserver1809Amd64
-        targetPlatform:
-          <<: *nanoserver1809
-          arch: amd64
-        tags: *defaultSharedTags
+  # Each image variant: the suffix in tags and Dockerfile paths, and the template that builds it.
+  variants:
+    extra: &variant-extra
+      variant: -extra
+      templateFile: Dockerfile.linux.extra
+    composite: &variant-composite
+      variant: -composite
+      templateFile: Dockerfile.linux-composite
+    composite-extra: &variant-composite-extra
+      variant: -composite-extra
+      templateFile: Dockerfile.linux-composite.extra
+    chiseled: &variant-chiseled
+      variant: -chiseled
+    chiseled-extra: &variant-chiseled-extra
+      variant: -chiseled-extra
+      templateFile: Dockerfile.linux.extra
+    chiseled-composite: &variant-chiseled-composite
+      variant: -chiseled-composite
+      templateFile: Dockerfile.linux-composite
+    chiseled-composite-extra: &variant-chiseled-composite-extra
+      variant: -chiseled-composite-extra
+      templateFile: Dockerfile.linux-composite.extra
+    distroless: &variant-distroless
+      variant: -distroless
+    distroless-extra: &variant-distroless-extra
+      variant: -distroless-extra
+      templateFile: Dockerfile.linux.extra
+    distroless-composite: &variant-distroless-composite
+      variant: -distroless-composite
+      templateFile: Dockerfile.linux-composite
+    distroless-composite-extra: &variant-distroless-composite-extra
+      variant: -distroless-composite-extra
+      templateFile: Dockerfile.linux-composite.extra
+    aot: &variant-aot
+      variant: -aot
+      templateFile: Dockerfile.linux.aot
 
-  nanoserver2022:
-    os: &nanoserver2022
-      os: windows
-      version: ltsc2022
-      tagPart: nanoserver-ltsc2022
-    platforms: &nanoserver2022Platforms
-      amd64: &nanoserver2022Amd64
-        targetPlatform:
-          <<: *nanoserver2022
-          arch: amd64
-        tags: *defaultSharedTags
+    # These repos build the same variant with a different template.
+    runtime-deps:
+      chiseled: &variant-runtime-deps-chiseled
+        variant: -chiseled
+        templateFile: Dockerfile.chiseled-ubuntu
+      chiseled-extra: &variant-runtime-deps-chiseled-extra
+        variant: -chiseled-extra
+        templateFile: Dockerfile.chiseled-ubuntu.extra
+      distroless: &variant-runtime-deps-distroless
+        variant: -distroless
+        templateFile: Dockerfile.distroless-azurelinux
+      distroless-extra: &variant-runtime-deps-distroless-extra
+        variant: -distroless-extra
+        templateFile: Dockerfile.distroless-azurelinux.extra
 
-  nanoserver2025:
-    os: &nanoserver2025
-      os: windows
-      version: ltsc2025
-      tagPart: nanoserver-ltsc2025
-    platforms: &nanoserver2025Platforms
-      amd64: &nanoserver2025Amd64
-        targetPlatform:
-          <<: *nanoserver2025
-          arch: amd64
-        tags: *defaultSharedTags
+  # Each OS, its target platforms, and the platforms for every arch it supports.
+  # Images that use only some arches list their target platforms one by one.
+  platforms:
+    bookworm-slim:
+      os: &bookworm-slim-os
+        os: linux
+        name: bookworm-slim
+        displayName: "Debian 12"
+        version: "12"
+      amd64: &bookworm-slim-amd64
+        <<: *bookworm-slim-os
+        arch: amd64
+      arm32v7: &bookworm-slim-arm32v7
+        <<: *bookworm-slim-os
+        arch: arm32v7
+      arm64v8: &bookworm-slim-arm64v8
+        <<: *bookworm-slim-os
+        arch: arm64v8
+      all: &bookworm-slim
+        amd64:
+          targetPlatform: *bookworm-slim-amd64
+        arm32v7:
+          targetPlatform: *bookworm-slim-arm32v7
+        arm64v8:
+          targetPlatform: *bookworm-slim-arm64v8
 
-  servercore2019:
-    os: &servercore2019
-      os: windows
-      version: ltsc2019
-      tagPart: windowsservercore-ltsc2019
-    platforms: &servercore2019Platforms
-      amd64: &servercore2019Amd64
-        targetPlatform:
-          <<: *servercore2019
-          arch: amd64
-        tags: *defaultSharedTags
+    jammy:
+      os: &jammy-os
+        os: linux
+        name: jammy
+        displayName: "Ubuntu 22.04"
+        version: "22.04"
+      amd64: &jammy-amd64
+        <<: *jammy-os
+        arch: amd64
+      arm32v7: &jammy-arm32v7
+        <<: *jammy-os
+        arch: arm32v7
+      arm64v8: &jammy-arm64v8
+        <<: *jammy-os
+        arch: arm64v8
+      all: &jammy
+        amd64:
+          targetPlatform: *jammy-amd64
+        arm32v7:
+          targetPlatform: *jammy-arm32v7
+        arm64v8:
+          targetPlatform: *jammy-arm64v8
 
-  servercore2022:
-    os: &servercore2022
-      os: windows
-      version: ltsc2022
-      tagPart: windowsservercore-ltsc2022
-    platforms: &servercore2022Platforms
-      amd64: &servercore2022Amd64
-        targetPlatform:
-          <<: *servercore2022
-          arch: amd64
-        tags: *defaultSharedTags
+    noble:
+      os: &noble-os
+        os: linux
+        name: noble
+        displayName: "Ubuntu 24.04"
+        version: "24.04"
+      amd64: &noble-amd64
+        <<: *noble-os
+        arch: amd64
+      arm32v7: &noble-arm32v7
+        <<: *noble-os
+        arch: arm32v7
+      arm64v8: &noble-arm64v8
+        <<: *noble-os
+        arch: arm64v8
+      all: &noble
+        amd64:
+          targetPlatform: *noble-amd64
+        arm32v7:
+          targetPlatform: *noble-arm32v7
+        arm64v8:
+          targetPlatform: *noble-arm64v8
 
-  servercore2025:
-    os: &servercore2025
-      os: windows
-      version: ltsc2025
-      tagPart: windowsservercore-ltsc2025
-    platforms: &servercore2025Platforms
-      amd64: &servercore2025Amd64
-        targetPlatform:
-          <<: *servercore2025
-          arch: amd64
-        tags: *defaultSharedTags
+    resolute:
+      os: &resolute-os
+        os: linux
+        name: resolute
+        displayName: "Ubuntu 26.04"
+        version: "26.04"
+      amd64: &resolute-amd64
+        <<: *resolute-os
+        arch: amd64
+      arm32v7: &resolute-arm32v7
+        <<: *resolute-os
+        arch: arm32v7
+      arm64v8: &resolute-arm64v8
+        <<: *resolute-os
+        arch: arm64v8
+      all: &resolute
+        amd64:
+          targetPlatform: *resolute-amd64
+        arm32v7:
+          targetPlatform: *resolute-arm32v7
+        arm64v8:
+          targetPlatform: *resolute-arm64v8
 
-  bookworm-slim:
-    os: &bookwormSlim
-      os: linux
-      version: "12"
-      tagPart: bookworm-slim
-    platforms: &bookwormSlimPlatforms
-      amd64: &bookwormSlimAmd64
-        targetPlatform:
-          <<: *bookwormSlim
-          arch: amd64
-      arm32v7: &bookwormSlimArm32
-        targetPlatform:
-          <<: *bookwormSlim
-          arch: arm32v7
-      arm64v8: &bookwormSlimArm64
-        targetPlatform:
-          <<: *bookwormSlim
-          arch: arm64v8
+    alpine3.24:
+      os: &alpine3.24-os
+        os: linux
+        name: alpine3.24
+        displayName: "Alpine 3.24"
+        version: "3.24"
+      amd64: &alpine3.24-amd64
+        <<: *alpine3.24-os
+        arch: amd64
+      arm32v7: &alpine3.24-arm32v7
+        <<: *alpine3.24-os
+        arch: arm32v7
+      arm64v8: &alpine3.24-arm64v8
+        <<: *alpine3.24-os
+        arch: arm64v8
+      all: &alpine3.24
+        amd64:
+          targetPlatform: *alpine3.24-amd64
+        arm32v7:
+          targetPlatform: *alpine3.24-arm32v7
+        arm64v8:
+          targetPlatform: *alpine3.24-arm64v8
 
-  noble:
-    os: &noble
-      os: linux
-      version: "24.04"
-      tagPart: noble
-    platforms: &noblePlatforms
-      amd64: &nobleAmd64
-        targetPlatform:
-          <<: *noble
-          arch: amd64
-      arm32v7: &nobleArm32
-        targetPlatform:
-          <<: *noble
-          arch: arm32v7
-      arm64v8: &nobleArm64
-        targetPlatform:
-          <<: *noble
-          arch: arm64v8
-    platforms-dotnet-8.0: &noblePlatforms-dotnet-8.0
-      amd64: *nobleAmd64
-      arm64v8: *nobleArm64
-  alpine3.24:
-    os: &alpine3.24
-      os: linux
-      version: "3.24"
-      tagPart: alpine3.24
-    platforms: &alpine3.24Platforms
-      amd64: &alpine3.24Amd64
-        targetPlatform:
-          <<: *alpine3.24
-          arch: amd64
-        tags:
-          <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-      arm32v7: &alpine3.24Arm32
-        targetPlatform:
-          <<: *alpine3.24
-          arch: arm32v7
-        tags:
-          <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-      arm64v8: &alpine3.24Arm64
-        targetPlatform:
-          <<: *alpine3.24
-          arch: arm64v8
-        tags:
-          <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-    platforms-composite-dotnet-8.0-10.0: &alpine3.24Platforms-composite-dotnet-8.0-10.0
-      amd64:
-        <<: *alpine3.24Amd64
-        tags: *defaultPlatformTags
-      arm32v7:
-        <<: *alpine3.24Arm32
-        tags: *defaultPlatformTags
-      arm64v8:
-        <<: *alpine3.24Arm64
-        tags: *defaultPlatformTags
-    platforms-sdk: &alpine3.24Platforms-sdk
-      amd64: *alpine3.24Amd64
-      arm32v7:
-        <<: *alpine3.24Arm32
-        metadata:
-          powershell: null
-      arm64v8: &alpine3.24Arm64-sdk
-        <<: *alpine3.24Arm64
-        metadata:
-          powershell: null
-    platforms-sdk-aot: &alpine3.24Platforms-sdk-aot
-      amd64: *alpine3.24Amd64
-      arm64v8: *alpine3.24Arm64-sdk
+    azurelinux3.0:
+      os: &azurelinux3.0-os
+        os: linux
+        name: azurelinux3.0
+        displayName: "Azure Linux 3.0"
+        version: "3.0"
+      amd64: &azurelinux3.0-amd64
+        <<: *azurelinux3.0-os
+        arch: amd64
+      arm64v8: &azurelinux3.0-arm64v8
+        <<: *azurelinux3.0-os
+        arch: arm64v8
+      all: &azurelinux3.0
+        amd64:
+          targetPlatform: *azurelinux3.0-amd64
+        arm64v8:
+          targetPlatform: *azurelinux3.0-arm64v8
 
-  jammy:
-    os: &jammy
-      os: linux
-      version: "22.04"
-      tagPart: jammy
-    platforms: &jammyPlatforms
-      amd64: &jammyAmd64
-        targetPlatform:
-          <<: *jammy
-          arch: amd64
-      arm32v7: &jammyArm32
-        targetPlatform:
-          <<: *jammy
-          arch: arm32v7
-      arm64v8: &jammyArm64
-        targetPlatform:
-          <<: *jammy
-          arch: arm64v8
+    azurelinux4.0:
+      os: &azurelinux4.0-os
+        os: linux
+        name: azurelinux4.0
+        displayName: "Azure Linux 4.0"
+        version: "4.0"
+      amd64: &azurelinux4.0-amd64
+        <<: *azurelinux4.0-os
+        arch: amd64
+      arm64v8: &azurelinux4.0-arm64v8
+        <<: *azurelinux4.0-os
+        arch: arm64v8
+      all: &azurelinux4.0
+        amd64:
+          targetPlatform: *azurelinux4.0-amd64
+        arm64v8:
+          targetPlatform: *azurelinux4.0-arm64v8
 
-  azurelinux3.0:
-    os: &azurelinux3.0
-      os: linux
-      version: "3.0"
-      tagPart: azurelinux3.0
-    platforms: &azurelinux3.0Platforms
-      amd64: &azurelinux3.0Amd64
-        targetPlatform:
-          <<: *azurelinux3.0
-          arch: amd64
-      arm64v8: &azurelinux3.0Arm64
-        targetPlatform:
-          <<: *azurelinux3.0
-          arch: arm64v8
+    # Windows images have one arch each.
+    nanoserver-1809:
+      os: &nanoserver-1809-os
+        os: windows
+        name: nanoserver-1809
+        displayName: "Nano Server, version 1809"
+        version: "1809"
+      amd64: &nanoserver-1809-amd64
+        <<: *nanoserver-1809-os
+        arch: amd64
 
-  azurelinux4.0:
-    os: &azurelinux4.0
-      os: linux
-      version: "4.0"
-      tagPart: azurelinux4.0
-    platforms: &azurelinux4.0Platforms
-      amd64: &azurelinux4.0Amd64
-        targetPlatform:
-          <<: *azurelinux4.0
-          arch: amd64
-      arm64v8: &azurelinux4.0Arm64
-        targetPlatform:
-          <<: *azurelinux4.0
-          arch: arm64v8
+    nanoserver-ltsc2022:
+      os: &nanoserver-ltsc2022-os
+        os: windows
+        name: nanoserver-ltsc2022
+        displayName: "Nano Server 2022"
+        version: "ltsc2022"
+      amd64: &nanoserver-ltsc2022-amd64
+        <<: *nanoserver-ltsc2022-os
+        arch: amd64
 
-  resolute:
-    os: &resolute
-      os: linux
-      version: "26.04"
-      tagPart: resolute
-    platforms: &resolutePlatforms
-      amd64: &resoluteAmd64
-        targetPlatform:
-          <<: *resolute
-          arch: amd64
-      arm32v7: &resoluteArm32
-        targetPlatform:
-          <<: *resolute
-          arch: arm32v7
-      arm64v8: &resoluteArm64
-        targetPlatform:
-          <<: *resolute
-          arch: arm64v8
-  versions:
-    dotnet-8.0:
-      defaults: &dotnet-8.0-defaults
-        minorVersion: "8.0"
-      runtime: &runtime-8.0
-        <<: *dotnet-8.0-defaults
-        patchVersion: 8.0.33
-        buildVersion: 8.0.33
-      aspnet: &aspnet-8.0
-        <<: *dotnet-8.0-defaults
-        patchVersion: 8.0.33
-        buildVersion: 8.0.33
-      sdk: &sdk-8.0
-        <<: *dotnet-8.0-defaults
-        patchVersion: 8.0.427
-        buildVersion: 8.0.427
-      runtimeMetadata: &runtimeMetadata-8.0
-        version: *runtime-8.0
-        runtime: *runtime-8.0
-      aspnetMetadata: &aspnetMetadata-8.0
-        version: *aspnet-8.0
-        runtime: *runtime-8.0
-        aspnet: *aspnet-8.0
-      sdkMetadata: &sdkMetadata-8.0
-        version: *sdk-8.0
-        runtime: *runtime-8.0
-        aspnet: *aspnet-8.0
-        powershell: *powershell-dotnet-8.0
+    nanoserver-ltsc2025:
+      os: &nanoserver-ltsc2025-os
+        os: windows
+        name: nanoserver-ltsc2025
+        displayName: "Nano Server 2025"
+        version: "ltsc2025"
+      amd64: &nanoserver-ltsc2025-amd64
+        <<: *nanoserver-ltsc2025-os
+        arch: amd64
 
-    dotnet-9.0:
-      defaults: &dotnet-9.0-defaults
-        minorVersion: "9.0"
-      runtime: &runtime-9.0
-        <<: *dotnet-9.0-defaults
-        patchVersion: 9.0.22
-        buildVersion: 9.0.22
-      aspnet: &aspnet-9.0
-        <<: *dotnet-9.0-defaults
-        patchVersion: 9.0.22
-        buildVersion: 9.0.22
-      sdk: &sdk-9.0
-        <<: *dotnet-9.0-defaults
-        patchVersion: 9.0.320
-        buildVersion: 9.0.320
-      runtimeMetadata: &runtimeMetadata-9.0
-        version: *runtime-9.0
-        runtime: *runtime-9.0
-      aspnetMetadata: &aspnetMetadata-9.0
-        version: *aspnet-9.0
-        runtime: *runtime-9.0
-        aspnet: *aspnet-9.0
-      sdkMetadata: &sdkMetadata-9.0
-        version: *sdk-9.0
-        runtime: *runtime-9.0
-        aspnet: *aspnet-9.0
-        powershell: *powershell-dotnet-9.0
+    windowsservercore-ltsc2019:
+      os: &windowsservercore-ltsc2019-os
+        os: windows
+        name: windowsservercore-ltsc2019
+        displayName: "Windows Server Core 2019"
+        version: "ltsc2019"
+      amd64: &windowsservercore-ltsc2019-amd64
+        <<: *windowsservercore-ltsc2019-os
+        arch: amd64
 
-    dotnet-10.0:
-      defaults: &dotnet-10.0-defaults
-        minorVersion: "10.0"
-      runtime: &runtime-10.0
-        <<: *dotnet-10.0-defaults
-        patchVersion: 10.0.14
-        buildVersion: 10.0.14
-      aspnet: &aspnet-10.0
-        <<: *dotnet-10.0-defaults
-        patchVersion: 10.0.14
-        buildVersion: 10.0.14
-      sdk: &sdk-10.0
-        <<: *dotnet-10.0-defaults
-        patchVersion: 10.0.403
-        buildVersion: 10.0.403
-      runtimeMetadata: &runtimeMetadata-10.0
-        version: *runtime-10.0
-        runtime: *runtime-10.0
-      aspnetMetadata: &aspnetMetadata-10.0
-        version: *aspnet-10.0
-        runtime: *runtime-10.0
-        aspnet: *aspnet-10.0
-      sdkMetadata: &sdkMetadata-10.0
-        version: *sdk-10.0
-        runtime: *runtime-10.0
-        aspnet: *aspnet-10.0
-        powershell: *powershell-dotnet-10.0
+    windowsservercore-ltsc2022:
+      os: &windowsservercore-ltsc2022-os
+        os: windows
+        name: windowsservercore-ltsc2022
+        displayName: "Windows Server Core 2022"
+        version: "ltsc2022"
+      amd64: &windowsservercore-ltsc2022-amd64
+        <<: *windowsservercore-ltsc2022-os
+        arch: amd64
 
-    dotnet-11.0:
-      defaults: &dotnet-11.0-defaults
-        minorVersion: "11.0"
-      runtime: &runtime-11.0
-        <<: *dotnet-11.0-defaults
-        patchVersion: 11.0.0-rc.3
-        buildVersion: 11.0.0-rc.3.26522.148
-      aspnet: &aspnet-11.0
-        <<: *dotnet-11.0-defaults
-        patchVersion: 11.0.0-rc.3
-        buildVersion: 11.0.0-rc.3.26522.148
-      sdk: &sdk-11.0
-        <<: *dotnet-11.0-defaults
-        patchVersion: 11.0.100-rc.3
-        buildVersion: 11.0.100-rc.3.26522.148
-      runtimeMetadata: &runtimeMetadata-11.0
-        version: *runtime-11.0
-        runtime: *runtime-11.0
-      aspnetMetadata: &aspnetMetadata-11.0
-        version: *aspnet-11.0
-        runtime: *runtime-11.0
-        aspnet: *aspnet-11.0
-      sdkMetadata: &sdkMetadata-11.0
-        version: *sdk-11.0
-        runtime: *runtime-11.0
-        aspnet: *aspnet-11.0
-        powershell: *powershell-dotnet-11.0
+    windowsservercore-ltsc2025:
+      os: &windowsservercore-ltsc2025-os
+        os: windows
+        name: windowsservercore-ltsc2025
+        displayName: "Windows Server Core 2025"
+        version: "ltsc2025"
+      amd64: &windowsservercore-ltsc2025-amd64
+        <<: *windowsservercore-ltsc2025-os
+        arch: amd64
 
 readme:
   path: README.md
@@ -516,283 +473,281 @@ repos:
       - path: .portal-docs/mar/README.runtime-deps.portal.md
         templatePath: eng/readme-templates/README.mcr.md
     mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/runtime-deps-tags.yml
+    # runtime-deps's base template is named Dockerfile, not Dockerfile.linux.
     metadata:
       templateFile: Dockerfile
-    images:
-      8.0-bookworm-slim:
+    groups:
+      "8.0":
         metadata:
           version: *runtime-8.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *bookwormSlimPlatforms
-      8.0-alpine3.24:
-        metadata:
-          version: *runtime-8.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags, *alpineAotAliasSharedTags-8.0]
-        platforms:
-          amd64:
-            <<: *alpine3.24Amd64
+        images:
+          bookworm-slim:
             tags:
-              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-8.0]
-          arm32v7:
-            <<: *alpine3.24Arm32
-            tags:
-              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-8.0]
-          arm64v8:
-            <<: *alpine3.24Arm64
-            tags:
-              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-8.0]
-      8.0-alpine3.24-extra:
-        metadata:
-          version: *runtime-8.0
-          variant: "-extra"
-          templateFile: Dockerfile.extra
-        platforms: *alpine3.24Platforms
-      8.0-noble:
-        metadata:
-          version: *runtime-8.0
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled:
-        metadata:
-          version: *runtime-8.0
-          variant: "-chiseled"
-          templateFile: Dockerfile.chiseled-ubuntu
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled-extra:
-        metadata:
-          version: *runtime-8.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.chiseled-ubuntu.extra
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-jammy:
-        metadata:
-          version: *runtime-8.0
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled:
-        metadata:
-          version: *runtime-8.0
-          variant: "-chiseled"
-          templateFile: Dockerfile.chiseled-ubuntu
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled-extra:
-        metadata:
-          version: *runtime-8.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.chiseled-ubuntu.extra
-        platforms: *jammyPlatforms
-      8.0-azurelinux3.0:
-        metadata:
-          version: *runtime-8.0
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless:
-        metadata:
-          version: *runtime-8.0
-          variant: "-distroless"
-          templateFile: Dockerfile.distroless-azurelinux
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless-extra:
-        metadata:
-          version: *runtime-8.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.distroless-azurelinux.extra
-        platforms: *azurelinux3.0Platforms
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *bookworm-slim
 
-      9.0-bookworm-slim:
-        metadata:
-          version: *runtime-9.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *bookwormSlimPlatforms
-      9.0-alpine3.24:
-        metadata:
-          version: *runtime-9.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags, *alpineAotAliasSharedTags-9.0]
-        platforms:
-          amd64:
-            <<: *alpine3.24Amd64
+          # .NET 8 has no floating -alpine-aot tag, only the per-arch ones.
+          alpine3.24:
             tags:
-              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-9.0]
-          arm32v7:
-            <<: *alpine3.24Arm32
-            tags:
-              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-9.0]
-          arm64v8:
-            <<: *alpine3.24Arm64
-            tags:
-              <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *alpineAotAliasPlatformTags-9.0]
-      9.0-alpine3.24-extra:
-        metadata:
-          version: *runtime-9.0
-          variant: "-extra"
-          templateFile: Dockerfile.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      9.0-noble:
-        metadata:
-          version: *runtime-9.0
-        platforms: *noblePlatforms
-      9.0-noble-chiseled:
-        metadata:
-          version: *runtime-9.0
-          variant: "-chiseled"
-          templateFile: Dockerfile.chiseled-ubuntu
-        platforms: *noblePlatforms
-      9.0-noble-chiseled-extra:
-        metadata:
-          version: *runtime-9.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.chiseled-ubuntu.extra
-        platforms: *noblePlatforms
-      9.0-azurelinux3.0:
-        metadata:
-          version: *runtime-9.0
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless:
-        metadata:
-          version: *runtime-9.0
-          variant: "-distroless"
-          templateFile: Dockerfile.distroless-azurelinux
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless-extra:
-        metadata:
-          version: *runtime-9.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.distroless-azurelinux.extra
-        platforms: *azurelinux3.0Platforms
+              <<: [*sharedTags, *alpineFloatingTags, *aotAliasTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *aotAliasPlatformTags, *alpineFloatingAotAliasPlatformTags]
+            platforms: *alpine3.24
 
-      10.0-noble:
-        metadata:
-          version: *runtime-10.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-          latest: {}
-        platforms: *noblePlatforms
-      10.0-alpine3.24:
-        metadata:
-          version: *runtime-10.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      10.0-alpine3.24-extra:
-        metadata:
-          version: *runtime-10.0
-          variant: "-extra"
-          templateFile: Dockerfile.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      10.0-azurelinux3.0:
-        metadata:
-          version: *runtime-10.0
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless:
-        metadata:
-          version: *runtime-10.0
-          variant: "-distroless"
-          templateFile: Dockerfile.distroless-azurelinux
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless-extra:
-        metadata:
-          version: *runtime-10.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.distroless-azurelinux.extra
-        platforms: *azurelinux3.0Platforms
-      10.0-noble-chiseled:
-        metadata:
-          version: *runtime-10.0
-          variant: "-chiseled"
-          templateFile: Dockerfile.chiseled-ubuntu
-        platforms: *noblePlatforms
-      10.0-noble-chiseled-extra:
-        metadata:
-          version: *runtime-10.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.chiseled-ubuntu.extra
-        platforms: *noblePlatforms
-      10.0-resolute:
-        metadata:
-          version: *runtime-10.0
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled:
-        metadata:
-          version: *runtime-10.0
-          variant: "-chiseled"
-          templateFile: Dockerfile.chiseled-ubuntu
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled-extra:
-        metadata:
-          version: *runtime-10.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.chiseled-ubuntu.extra
-        platforms: *resolutePlatforms
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags: *sharedTags
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
 
-      11.0-resolute:
+          # .NET 8 doesn't support arm32 on Noble.
+          noble:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled:
+            metadata: *variant-runtime-deps-chiseled
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled-extra:
+            metadata: *variant-runtime-deps-chiseled-extra
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          jammy:
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled:
+            metadata: *variant-runtime-deps-chiseled
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled-extra:
+            metadata: *variant-runtime-deps-chiseled-extra
+            tags: *sharedTags
+            platforms: *jammy
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-runtime-deps-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-runtime-deps-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+      "9.0":
+        metadata:
+          version: *runtime-9.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *bookworm-slim
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags, *aotAliasTags, *alpineFloatingAotAliasTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags, *aotAliasPlatformTags, *alpineFloatingAotAliasPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          noble:
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled:
+            metadata: *variant-runtime-deps-chiseled
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-extra:
+            metadata: *variant-runtime-deps-chiseled-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-runtime-deps-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-runtime-deps-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+      "10.0":
+        metadata:
+          version: *runtime-10.0
+        images:
+          noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
+            platforms: *noble
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-runtime-deps-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-runtime-deps-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          noble-chiseled:
+            metadata: *variant-runtime-deps-chiseled
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-extra:
+            metadata: *variant-runtime-deps-chiseled-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          resolute:
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled:
+            metadata: *variant-runtime-deps-chiseled
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-extra:
+            metadata: *variant-runtime-deps-chiseled-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+      "11.0":
         metadata:
           version: *runtime-11.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *resolutePlatforms
-      11.0-alpine3.24:
-        metadata:
-          version: *runtime-11.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-alpine3.24-extra:
-        metadata:
-          version: *runtime-11.0
-          variant: "-extra"
-          templateFile: Dockerfile.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-azurelinux3.0:
-        metadata:
-          version: *runtime-11.0
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless:
-        metadata:
-          version: *runtime-11.0
-          variant: "-distroless"
-          templateFile: Dockerfile.distroless-azurelinux
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless-extra:
-        metadata:
-          version: *runtime-11.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.distroless-azurelinux.extra
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux4.0:
-        metadata:
-          version: *runtime-11.0
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless:
-        metadata:
-          version: *runtime-11.0
-          variant: "-distroless"
-          templateFile: Dockerfile.distroless-azurelinux
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless-extra:
-        metadata:
-          version: *runtime-11.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.distroless-azurelinux.extra
-        platforms: *azurelinux4.0Platforms
-      11.0-resolute-chiseled:
-        metadata:
-          version: *runtime-11.0
-          variant: "-chiseled"
-          templateFile: Dockerfile.chiseled-ubuntu
-        platforms: *resolutePlatforms
-      11.0-resolute-chiseled-extra:
-        metadata:
-          version: *runtime-11.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.chiseled-ubuntu.extra
-        platforms: *resolutePlatforms
+        images:
+          resolute:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *resolute
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-runtime-deps-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-runtime-deps-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux4.0:
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless:
+            metadata: *variant-runtime-deps-distroless
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless-extra:
+            metadata: *variant-runtime-deps-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          resolute-chiseled:
+            metadata: *variant-runtime-deps-chiseled
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-extra:
+            metadata: *variant-runtime-deps-chiseled-extra
+            tags: *sharedTags
+            platforms: *resolute
 
   runtime:
     name: dotnet/runtime
@@ -804,358 +759,426 @@ repos:
       - path: .portal-docs/mar/README.runtime.portal.md
         templatePath: eng/readme-templates/README.mcr.md
     mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/runtime-tags.yml
-    metadata:
-      templateFile: Dockerfile.linux
-    images:
-      8.0-bookworm-slim:
+    groups:
+      "8.0":
         metadata:
-          <<: *runtimeMetadata-8.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *bookwormSlimPlatforms
-      8.0-alpine3.24:
-        metadata:
-          <<: *runtimeMetadata-8.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      8.0-alpine3.24-extra:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      8.0-noble:
-        metadata:
-          <<: *runtimeMetadata-8.0
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-chiseled"
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled-extra:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-jammy:
-        metadata:
-          <<: *runtimeMetadata-8.0
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-chiseled"
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled-extra:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *jammyPlatforms
-      8.0-azurelinux3.0:
-        metadata:
-          <<: *runtimeMetadata-8.0
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      8.0-nanoserver1809:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver1809Platforms
-      8.0-nanoserver2022:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2022Platforms
-      8.0-nanoserver2025:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      8.0-servercore2019:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2019Platforms
-      8.0-servercore2022:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2022Platforms
-      8.0-servercore2025:
-        metadata:
-          <<: *runtimeMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          version: *runtime-8.0
+          runtime: *runtime-8.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *bookworm-slim
 
-      9.0-bookworm-slim:
-        metadata:
-          <<: *runtimeMetadata-9.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *bookwormSlimPlatforms
-      9.0-alpine3.24:
-        metadata:
-          <<: *runtimeMetadata-9.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      9.0-alpine3.24-extra:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      9.0-noble:
-        metadata:
-          <<: *runtimeMetadata-9.0
-        platforms: *noblePlatforms
-      9.0-noble-chiseled:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          variant: "-chiseled"
-        platforms: *noblePlatforms
-      9.0-noble-chiseled-extra:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *noblePlatforms
-      9.0-azurelinux3.0:
-        metadata:
-          <<: *runtimeMetadata-9.0
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      9.0-nanoserver1809:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver1809Platforms
-      9.0-nanoserver2022:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2022Platforms
-      9.0-nanoserver2025:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      9.0-servercore2019:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2019Platforms
-      9.0-servercore2022:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2022Platforms
-      9.0-servercore2025:
-        metadata:
-          <<: *runtimeMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
 
-      10.0-noble:
-        metadata:
-          <<: *runtimeMetadata-10.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-          latest: {}
-        platforms: *noblePlatforms
-      10.0-alpine3.24:
-        metadata:
-          <<: *runtimeMetadata-10.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      10.0-alpine3.24-extra:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      10.0-azurelinux3.0:
-        metadata:
-          <<: *runtimeMetadata-10.0
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      10.0-noble-chiseled:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-chiseled"
-        platforms: *noblePlatforms
-      10.0-noble-chiseled-extra:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *noblePlatforms
-      10.0-resolute:
-        metadata:
-          <<: *runtimeMetadata-10.0
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-chiseled"
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled-extra:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *resolutePlatforms
-      10.0-nanoserver2022:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2022Platforms
-      10.0-nanoserver2025:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      10.0-servercore2022:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2022Platforms
-      10.0-servercore2025:
-        metadata:
-          <<: *runtimeMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
 
-      11.0-resolute:
+          # .NET 8 doesn't support arm32 on Noble.
+          noble:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          jammy:
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *jammy
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          nanoserver-1809:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-1809-amd64
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2019:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2019-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+
+      "9.0":
         metadata:
-          <<: *runtimeMetadata-11.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *resolutePlatforms
-      11.0-alpine3.24:
+          version: *runtime-9.0
+          runtime: *runtime-9.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *bookworm-slim
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          noble:
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          nanoserver-1809:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-1809-amd64
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2019:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2019-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+
+      "10.0":
         metadata:
-          <<: *runtimeMetadata-11.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-alpine3.24-extra:
+          version: *runtime-10.0
+          runtime: *runtime-10.0
+        images:
+          noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
+            platforms: *noble
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          noble-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          resolute:
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+
+      "11.0":
         metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-azurelinux3.0:
-        metadata:
-          <<: *runtimeMetadata-11.0
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux4.0:
-        metadata:
-          <<: *runtimeMetadata-11.0
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-distroless"
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless-extra:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux4.0Platforms
-      11.0-resolute-chiseled:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-chiseled"
-        platforms: *resolutePlatforms
-      11.0-resolute-chiseled-extra:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *resolutePlatforms
-      11.0-nanoserver2025:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      11.0-servercore2025:
-        metadata:
-          <<: *runtimeMetadata-11.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          version: *runtime-11.0
+          runtime: *runtime-11.0
+        images:
+          resolute:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *resolute
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux4.0:
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          resolute-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
 
   aspnet:
     name: dotnet/aspnet
@@ -1167,542 +1190,598 @@ repos:
       - path: .portal-docs/mar/README.aspnet.portal.md
         templatePath: eng/readme-templates/README.mcr.md
     mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/aspnet-tags.yml
-    metadata:
-      templateFile: Dockerfile.linux
-    images:
-      8.0-bookworm-slim:
+    groups:
+      "8.0":
         metadata:
-          <<: *aspnetMetadata-8.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *bookwormSlimPlatforms
-      8.0-alpine3.24:
-        metadata:
-          <<: *aspnetMetadata-8.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      8.0-alpine3.24-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      8.0-alpine3.24-composite:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
-      8.0-alpine3.24-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
-      8.0-noble:
-        metadata:
-          <<: *aspnetMetadata-8.0
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled"
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-noble-chiseled-composite:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *noblePlatforms-dotnet-8.0
-      8.0-jammy:
-        metadata:
-          <<: *aspnetMetadata-8.0
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled"
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *jammyPlatforms
-      8.0-jammy-chiseled-composite:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-chiseled-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *jammyPlatforms
-      8.0-azurelinux3.0:
-        metadata:
-          <<: *aspnetMetadata-8.0
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless-composite:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-distroless-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *azurelinux3.0Platforms
-      8.0-azurelinux3.0-distroless-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          variant: "-distroless-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *azurelinux3.0Platforms
-      8.0-nanoserver1809:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver1809Platforms
-      8.0-nanoserver2022:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2022Platforms
-      8.0-nanoserver2025:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      8.0-servercore2019:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2019Platforms
-      8.0-servercore2022:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2022Platforms
-      8.0-servercore2025:
-        metadata:
-          <<: *aspnetMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          version: *aspnet-8.0
+          runtime: *runtime-8.0
+          aspnet: *aspnet-8.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *bookworm-slim
 
-      9.0-bookworm-slim:
-        metadata:
-          <<: *aspnetMetadata-9.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *bookwormSlimPlatforms
-      9.0-alpine3.24:
-        metadata:
-          <<: *aspnetMetadata-9.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      9.0-alpine3.24-extra:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      9.0-alpine3.24-composite:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
-      9.0-alpine3.24-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
-      9.0-noble:
-        metadata:
-          <<: *aspnetMetadata-9.0
-        platforms: *noblePlatforms
-      9.0-noble-chiseled:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-chiseled"
-        platforms: *noblePlatforms
-      9.0-noble-chiseled-extra:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *noblePlatforms
-      9.0-noble-chiseled-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-chiseled-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *noblePlatforms
-      9.0-noble-chiseled-composite:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-chiseled-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *noblePlatforms
-      9.0-azurelinux3.0:
-        metadata:
-          <<: *aspnetMetadata-9.0
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless-composite:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-distroless-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *azurelinux3.0Platforms
-      9.0-azurelinux3.0-distroless-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          variant: "-distroless-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *azurelinux3.0Platforms
-      9.0-nanoserver1809:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver1809Platforms
-      9.0-nanoserver2022:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2022Platforms
-      9.0-nanoserver2025:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      9.0-servercore2019:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2019Platforms
-      9.0-servercore2022:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2022Platforms
-      9.0-servercore2025:
-        metadata:
-          <<: *aspnetMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
 
-      10.0-noble:
-        metadata:
-          <<: *aspnetMetadata-10.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-          latest: {}
-        platforms: *noblePlatforms
-      10.0-alpine3.24:
-        metadata:
-          <<: *aspnetMetadata-10.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      10.0-alpine3.24-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      10.0-alpine3.24-composite:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
-      10.0-alpine3.24-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *alpine3.24Platforms-composite-dotnet-8.0-10.0
-      10.0-azurelinux3.0:
-        metadata:
-          <<: *aspnetMetadata-10.0
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless-composite:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-distroless-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *azurelinux3.0Platforms
-      10.0-azurelinux3.0-distroless-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-distroless-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *azurelinux3.0Platforms
-      10.0-noble-chiseled:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled"
-        platforms: *noblePlatforms
-      10.0-noble-chiseled-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *noblePlatforms
-      10.0-noble-chiseled-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *noblePlatforms
-      10.0-noble-chiseled-composite:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *noblePlatforms
-      10.0-resolute:
-        metadata:
-          <<: *aspnetMetadata-10.0
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled"
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *resolutePlatforms
-      10.0-resolute-chiseled-composite:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          variant: "-chiseled-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *resolutePlatforms
-      10.0-nanoserver2022:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2022Platforms
-      10.0-nanoserver2025:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      10.0-servercore2022:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2022Platforms
-      10.0-servercore2025:
-        metadata:
-          <<: *aspnetMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
 
-      11.0-resolute:
+          alpine3.24-composite:
+            metadata: *variant-composite
+            tags: *sharedTags
+            platforms: *alpine3.24
+
+          alpine3.24-composite-extra:
+            metadata: *variant-composite-extra
+            tags: *sharedTags
+            platforms: *alpine3.24
+
+          # .NET 8 doesn't support arm32 on Noble.
+          noble:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled-composite-extra:
+            metadata: *variant-chiseled-composite-extra
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          noble-chiseled-composite:
+            metadata: *variant-chiseled-composite
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+
+          jammy:
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled-composite-extra:
+            metadata: *variant-chiseled-composite-extra
+            tags: *sharedTags
+            platforms: *jammy
+
+          jammy-chiseled-composite:
+            metadata: *variant-chiseled-composite
+            tags: *sharedTags
+            platforms: *jammy
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite:
+            metadata: *variant-distroless-composite
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite-extra:
+            metadata: *variant-distroless-composite-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          nanoserver-1809:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-1809-amd64
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2019:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2019-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+
+      "9.0":
         metadata:
-          <<: *aspnetMetadata-11.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms: *resolutePlatforms
-      11.0-alpine3.24:
+          version: *aspnet-9.0
+          runtime: *runtime-9.0
+          aspnet: *aspnet-9.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *bookworm-slim
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-composite:
+            metadata: *variant-composite
+            tags: *sharedTags
+            platforms: *alpine3.24
+
+          alpine3.24-composite-extra:
+            metadata: *variant-composite-extra
+            tags: *sharedTags
+            platforms: *alpine3.24
+
+          noble:
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-composite-extra:
+            metadata: *variant-chiseled-composite-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-composite:
+            metadata: *variant-chiseled-composite
+            tags: *sharedTags
+            platforms: *noble
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite:
+            metadata: *variant-distroless-composite
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite-extra:
+            metadata: *variant-distroless-composite-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          nanoserver-1809:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-1809-amd64
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2019:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2019-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+
+      "10.0":
         metadata:
-          <<: *aspnetMetadata-11.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-alpine3.24-extra:
+          version: *aspnet-10.0
+          runtime: *runtime-10.0
+          aspnet: *aspnet-10.0
+        images:
+          noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
+            platforms: *noble
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-composite:
+            metadata: *variant-composite
+            tags: *sharedTags
+            platforms: *alpine3.24
+
+          alpine3.24-composite-extra:
+            metadata: *variant-composite-extra
+            tags: *sharedTags
+            platforms: *alpine3.24
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite:
+            metadata: *variant-distroless-composite
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite-extra:
+            metadata: *variant-distroless-composite-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          noble-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-composite-extra:
+            metadata: *variant-chiseled-composite-extra
+            tags: *sharedTags
+            platforms: *noble
+
+          noble-chiseled-composite:
+            metadata: *variant-chiseled-composite
+            tags: *sharedTags
+            platforms: *noble
+
+          resolute:
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-composite-extra:
+            metadata: *variant-chiseled-composite-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-composite:
+            metadata: *variant-chiseled-composite
+            tags: *sharedTags
+            platforms: *resolute
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+
+      "11.0":
         metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-extra"
-          templateFile: Dockerfile.linux.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-alpine3.24-composite:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-composite"
-          templateFile: Dockerfile.linux-composite
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-alpine3.24-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms: *alpine3.24Platforms
-      11.0-azurelinux3.0:
-        metadata:
-          <<: *aspnetMetadata-11.0
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless"
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless-composite:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux3.0-distroless-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *azurelinux3.0Platforms
-      11.0-azurelinux4.0:
-        metadata:
-          <<: *aspnetMetadata-11.0
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless"
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless-composite:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *azurelinux4.0Platforms
-      11.0-azurelinux4.0-distroless-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-distroless-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *azurelinux4.0Platforms
-      11.0-resolute-chiseled:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-chiseled"
-        platforms: *resolutePlatforms
-      11.0-resolute-chiseled-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-chiseled-extra"
-          templateFile: Dockerfile.linux.extra
-        platforms: *resolutePlatforms
-      11.0-resolute-chiseled-composite-extra:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-chiseled-composite-extra"
-          templateFile: Dockerfile.linux-composite.extra
-        platforms: *resolutePlatforms
-      11.0-resolute-chiseled-composite:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          variant: "-chiseled-composite"
-          templateFile: Dockerfile.linux-composite
-        platforms: *resolutePlatforms
-      11.0-nanoserver2025:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *nanoserver2025Platforms
-      11.0-servercore2025:
-        metadata:
-          <<: *aspnetMetadata-11.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms: *servercore2025Platforms
+          version: *aspnet-11.0
+          runtime: *runtime-11.0
+          aspnet: *aspnet-11.0
+        images:
+          resolute:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms: *resolute
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-extra:
+            metadata: *variant-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-composite:
+            metadata: *variant-composite
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          alpine3.24-composite-extra:
+            metadata: *variant-composite-extra
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms: *alpine3.24
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite:
+            metadata: *variant-distroless-composite
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux3.0-distroless-composite-extra:
+            metadata: *variant-distroless-composite-extra
+            tags: *sharedTags
+            platforms: *azurelinux3.0
+
+          azurelinux4.0:
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless:
+            metadata: *variant-distroless
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless-extra:
+            metadata: *variant-distroless-extra
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless-composite:
+            metadata: *variant-distroless-composite
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          azurelinux4.0-distroless-composite-extra:
+            metadata: *variant-distroless-composite-extra
+            tags: *sharedTags
+            platforms: *azurelinux4.0
+
+          resolute-chiseled:
+            metadata: *variant-chiseled
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-extra:
+            metadata: *variant-chiseled-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-composite-extra:
+            metadata: *variant-chiseled-composite-extra
+            tags: *sharedTags
+            platforms: *resolute
+
+          resolute-chiseled-composite:
+            metadata: *variant-chiseled-composite
+            tags: *sharedTags
+            platforms: *resolute
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
 
   sdk:
     name: dotnet/sdk
@@ -1714,492 +1793,579 @@ repos:
       - path: .portal-docs/mar/README.sdk.portal.md
         templatePath: eng/readme-templates/README.mcr.md
     mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/sdk-tags.yml
-    metadata:
-      templateFile: Dockerfile.linux
-    images:
-      8.0-bookworm-slim:
+    groups:
+      "8.0":
         metadata:
-          <<: *sdkMetadata-8.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms:
-          amd64:
-            <<: *bookwormSlimAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-8.0
-          arm32v7:
-            <<: *bookwormSlimArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-8.0
-          arm64v8:
-            <<: *bookwormSlimArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-8.0
-      8.0-alpine3.24:
-        metadata:
-          <<: *sdkMetadata-8.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms:
-          <<: *alpine3.24Platforms-sdk
-          amd64:
-            <<: *alpine3.24Amd64
-            metadata:
-              powershell: *powershellAlpineAmd64-dotnet-8.0
-      8.0-noble:
-        metadata:
-          <<: *sdkMetadata-8.0
-        platforms:
-          amd64:
-            <<: *nobleAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-8.0
-          arm64v8:
-            <<: *nobleArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-8.0
-      8.0-jammy:
-        metadata:
-          <<: *sdkMetadata-8.0
-        platforms:
-          amd64:
-            <<: *jammyAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-8.0
-          arm32v7:
-            <<: *jammyArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-8.0
-          arm64v8:
-            <<: *jammyArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-8.0
-      8.0-azurelinux3.0:
-        metadata:
-          <<: *sdkMetadata-8.0
-        platforms:
-          amd64:
-            <<: *azurelinux3.0Amd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-8.0
-          arm64v8:
-            <<: *azurelinux3.0Arm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-8.0
-      8.0-nanoserver1809:
-        metadata:
-          <<: *sdkMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver1809Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-8.0
-      8.0-nanoserver2022:
-        metadata:
-          <<: *sdkMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2022Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-8.0
-      8.0-nanoserver2025:
-        metadata:
-          <<: *sdkMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-8.0
-      8.0-servercore2019:
-        metadata:
-          <<: *sdkMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2019Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-8.0
-      8.0-servercore2022:
-        metadata:
-          <<: *sdkMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2022Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-8.0
-      8.0-servercore2025:
-        metadata:
-          <<: *sdkMetadata-8.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-8.0
+          version: *sdk-8.0
+          runtime: *runtime-8.0
+          aspnet: *aspnet-8.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms:
+              amd64:
+                targetPlatform: *bookworm-slim-amd64
+                metadata:
+                  powershell: *powershell-7.4-linux-amd64
+              arm32v7:
+                targetPlatform: *bookworm-slim-arm32v7
+                metadata:
+                  powershell: *powershell-7.4-linux-arm32v7
+              arm64v8:
+                targetPlatform: *bookworm-slim-arm64v8
+                metadata:
+                  powershell: *powershell-7.4-linux-arm64v8
 
-      9.0-bookworm-slim:
-        metadata:
-          <<: *sdkMetadata-9.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms:
-          amd64:
-            <<: *bookwormSlimAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-9.0
-          arm32v7:
-            <<: *bookwormSlimArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-9.0
-          arm64v8:
-            <<: *bookwormSlimArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-9.0
-      9.0-alpine3.24:
-        metadata:
-          <<: *sdkMetadata-9.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms:
-          <<: *alpine3.24Platforms-sdk
-          amd64:
-            <<: *alpine3.24Amd64
-            metadata:
-              powershell: *powershellAlpineAmd64-dotnet-9.0
-      9.0-noble:
-        metadata:
-          <<: *sdkMetadata-9.0
-        platforms:
-          amd64:
-            <<: *nobleAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-9.0
-          arm32v7:
-            <<: *nobleArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-9.0
-          arm64v8:
-            <<: *nobleArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-9.0
-      9.0-azurelinux3.0:
-        metadata:
-          <<: *sdkMetadata-9.0
-        platforms:
-          amd64:
-            <<: *azurelinux3.0Amd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-9.0
-          arm64v8:
-            <<: *azurelinux3.0Arm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-9.0
-      9.0-nanoserver1809:
-        metadata:
-          <<: *sdkMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver1809Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-9.0
-      9.0-nanoserver2022:
-        metadata:
-          <<: *sdkMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2022Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-9.0
-      9.0-nanoserver2025:
-        metadata:
-          <<: *sdkMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-9.0
-      9.0-servercore2019:
-        metadata:
-          <<: *sdkMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2019Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-9.0
-      9.0-servercore2022:
-        metadata:
-          <<: *sdkMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2022Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-9.0
-      9.0-servercore2025:
-        metadata:
-          <<: *sdkMetadata-9.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-9.0
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms:
+              amd64:
+                targetPlatform: *alpine3.24-amd64
+                metadata:
+                  powershell: *powershell-7.4-linux-musl-amd64
+              arm32v7:
+                targetPlatform: *alpine3.24-arm32v7
+              arm64v8:
+                targetPlatform: *alpine3.24-arm64v8
 
-      10.0-noble:
-        metadata:
-          <<: *sdkMetadata-10.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-          latest: {}
-        platforms:
-          amd64: &nobleAmd64-sdk-10.0
-            <<: *nobleAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-10.0
-          arm32v7:
-            <<: *nobleArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-10.0
-          arm64v8: &nobleArm64v8-sdk-10.0
-            <<: *nobleArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-10.0
-      10.0-noble-aot:
-        metadata:
-          <<: *sdkMetadata-10.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        tags:
-          <<: [*defaultSharedTags, *aotConvenienceTags]
-        platforms:
-          amd64: *nobleAmd64-sdk-10.0
-          arm64v8: *nobleArm64v8-sdk-10.0
-      10.0-resolute:
-        metadata:
-          <<: *sdkMetadata-10.0
-        platforms:
-          amd64: &resoluteAmd64-sdk-10.0
-            <<: *resoluteAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-10.0
-          arm32v7:
-            <<: *resoluteArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-10.0
-          arm64v8: &resoluteArm64v8-sdk-10.0
-            <<: *resoluteArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-10.0
-      10.0-resolute-aot:
-        metadata:
-          <<: *sdkMetadata-10.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        platforms:
-          amd64: *resoluteAmd64-sdk-10.0
-          arm64v8: *resoluteArm64v8-sdk-10.0
-      10.0-alpine3.24:
-        metadata:
-          <<: *sdkMetadata-10.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms:
-          <<: *alpine3.24Platforms-sdk
-          amd64: &alpine3.24Amd64-sdk-10.0
-            <<: *alpine3.24Amd64
-            metadata:
-              powershell: *powershellAlpineAmd64-dotnet-10.0
-      10.0-alpine3.24-aot:
-        metadata:
-          <<: *sdkMetadata-10.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms:
-          <<: *alpine3.24Platforms-sdk-aot
-          amd64: *alpine3.24Amd64-sdk-10.0
-      10.0-azurelinux3.0:
-        metadata:
-          <<: *sdkMetadata-10.0
-        platforms: &azurelinux3.0Platforms-sdk-10.0
-          amd64:
-            <<: *azurelinux3.0Amd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-10.0
-          arm64v8:
-            <<: *azurelinux3.0Arm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-10.0
-      10.0-azurelinux3.0-aot:
-        metadata:
-          <<: *sdkMetadata-10.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        platforms: *azurelinux3.0Platforms-sdk-10.0
-      10.0-nanoserver2022:
-        metadata:
-          <<: *sdkMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2022Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-10.0
-      10.0-nanoserver2025:
-        metadata:
-          <<: *sdkMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-10.0
-      10.0-servercore2022:
-        metadata:
-          <<: *sdkMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2022Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-10.0
-      10.0-servercore2025:
-        metadata:
-          <<: *sdkMetadata-10.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-10.0
+          # .NET 8 doesn't support arm32 on Noble.
+          noble:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+                metadata:
+                  powershell: *powershell-7.4-linux-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+                metadata:
+                  powershell: *powershell-7.4-linux-arm64v8
 
-      11.0-resolute:
+          jammy:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *jammy-amd64
+                metadata:
+                  powershell: *powershell-7.4-linux-amd64
+              arm32v7:
+                targetPlatform: *jammy-arm32v7
+                metadata:
+                  powershell: *powershell-7.4-linux-arm32v7
+              arm64v8:
+                targetPlatform: *jammy-arm64v8
+                metadata:
+                  powershell: *powershell-7.4-linux-arm64v8
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux3.0-amd64
+                metadata:
+                  powershell: *powershell-7.4-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux3.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.4-linux-arm64v8
+
+          nanoserver-1809:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-1809-amd64
+                metadata:
+                  powershell: *powershell-7.4-windows-amd64
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+                metadata:
+                  powershell: *powershell-7.4-windows-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.4-windows-amd64
+
+          windowsservercore-ltsc2019:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2019-amd64
+                metadata:
+                  powershell: *powershell-7.4-windows-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+                metadata:
+                  powershell: *powershell-7.4-windows-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.4-windows-amd64
+
+      "9.0":
         metadata:
-          <<: *sdkMetadata-11.0
-        tags:
-          <<: [*defaultSharedTags, *convenienceTags]
-        platforms:
-          amd64: &resoluteAmd64-sdk-11.0
-            <<: *resoluteAmd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-11.0
-          arm32v7:
-            <<: *resoluteArm32
-            metadata:
-              powershell: *powershellLinuxArm32v7-dotnet-11.0
-          arm64v8: &resoluteArm64v8-sdk-11.0
-            <<: *resoluteArm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-11.0
-      11.0-resolute-aot:
+          version: *sdk-9.0
+          runtime: *runtime-9.0
+          aspnet: *aspnet-9.0
+        images:
+          bookworm-slim:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms:
+              amd64:
+                targetPlatform: *bookworm-slim-amd64
+                metadata:
+                  powershell: *powershell-7.5-linux-amd64
+              arm32v7:
+                targetPlatform: *bookworm-slim-arm32v7
+                metadata:
+                  powershell: *powershell-7.5-linux-arm32v7
+              arm64v8:
+                targetPlatform: *bookworm-slim-arm64v8
+                metadata:
+                  powershell: *powershell-7.5-linux-arm64v8
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms:
+              amd64:
+                targetPlatform: *alpine3.24-amd64
+                metadata:
+                  powershell: *powershell-7.5-linux-musl-amd64
+              arm32v7:
+                targetPlatform: *alpine3.24-arm32v7
+              arm64v8:
+                targetPlatform: *alpine3.24-arm64v8
+
+          noble:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+                metadata:
+                  powershell: *powershell-7.5-linux-amd64
+              arm32v7:
+                targetPlatform: *noble-arm32v7
+                metadata:
+                  powershell: *powershell-7.5-linux-arm32v7
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+                metadata:
+                  powershell: *powershell-7.5-linux-arm64v8
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux3.0-amd64
+                metadata:
+                  powershell: *powershell-7.5-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux3.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.5-linux-arm64v8
+
+          nanoserver-1809:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-1809-amd64
+                metadata:
+                  powershell: *powershell-7.5-windows-amd64
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+                metadata:
+                  powershell: *powershell-7.5-windows-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.5-windows-amd64
+
+          windowsservercore-ltsc2019:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2019-amd64
+                metadata:
+                  powershell: *powershell-7.5-windows-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+                metadata:
+                  powershell: *powershell-7.5-windows-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.5-windows-amd64
+
+      "10.0":
         metadata:
-          <<: *sdkMetadata-11.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        tags:
-          <<: [*defaultSharedTags, *aotConvenienceTags]
-        platforms:
-          amd64: *resoluteAmd64-sdk-11.0
-          arm64v8: *resoluteArm64v8-sdk-11.0
-      11.0-alpine3.24:
+          version: *sdk-10.0
+          runtime: *runtime-10.0
+          aspnet: *aspnet-10.0
+        images:
+          noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-amd64
+              arm32v7:
+                targetPlatform: *noble-arm32v7
+                metadata:
+                  powershell: *powershell-7.6-linux-arm32v7
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+                metadata:
+                  powershell: *powershell-7.6-linux-arm64v8
+
+          # AOT images don't support arm32.
+          noble-aot:
+            metadata: *variant-aot
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms:
+              amd64:
+                targetPlatform: *noble-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-amd64
+              arm64v8:
+                targetPlatform: *noble-arm64v8
+                metadata:
+                  powershell: *powershell-7.6-linux-arm64v8
+
+          resolute:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *resolute-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-amd64
+              arm32v7:
+                targetPlatform: *resolute-arm32v7
+                metadata:
+                  powershell: *powershell-7.6-linux-arm32v7
+              arm64v8:
+                targetPlatform: *resolute-arm64v8
+                metadata:
+                  powershell: *powershell-7.6-linux-arm64v8
+
+          resolute-aot:
+            metadata: *variant-aot
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *resolute-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-amd64
+              arm64v8:
+                targetPlatform: *resolute-arm64v8
+                metadata:
+                  powershell: *powershell-7.6-linux-arm64v8
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms:
+              amd64:
+                targetPlatform: *alpine3.24-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-musl-amd64
+              arm32v7:
+                targetPlatform: *alpine3.24-arm32v7
+              arm64v8:
+                targetPlatform: *alpine3.24-arm64v8
+
+          alpine3.24-aot:
+            metadata: *variant-aot
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms:
+              amd64:
+                targetPlatform: *alpine3.24-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-musl-amd64
+              arm64v8:
+                targetPlatform: *alpine3.24-arm64v8
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux3.0-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux3.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.6-linux-arm64v8
+
+          azurelinux3.0-aot:
+            metadata: *variant-aot
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux3.0-amd64
+                metadata:
+                  powershell: *powershell-7.6-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux3.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.6-linux-arm64v8
+
+          nanoserver-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2022-amd64
+                metadata:
+                  powershell: *powershell-7.6-windows-amd64
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.6-windows-amd64
+
+          windowsservercore-ltsc2022:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2022-amd64
+                metadata:
+                  powershell: *powershell-7.6-windows-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.6-windows-amd64
+
+      "11.0":
         metadata:
-          <<: *sdkMetadata-11.0
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms:
-          <<: *alpine3.24Platforms-sdk
-          amd64: &alpine3.24Amd64-sdk-11.0
-            <<: *alpine3.24Amd64
-            metadata:
-              powershell: *powershellAlpineAmd64-dotnet-11.0
-      11.0-alpine3.24-aot:
-        metadata:
-          <<: *sdkMetadata-11.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        tags:
-          <<: [*defaultSharedTags, *alpineFloatingSharedTags]
-        platforms:
-          <<: *alpine3.24Platforms-sdk-aot
-          amd64: *alpine3.24Amd64-sdk-11.0
-      11.0-azurelinux3.0:
-        metadata:
-          <<: *sdkMetadata-11.0
-        platforms: &azurelinux3.0Platforms-sdk-11.0
-          amd64:
-            <<: *azurelinux3.0Amd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-11.0
-          arm64v8:
-            <<: *azurelinux3.0Arm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-11.0
-      11.0-azurelinux3.0-aot:
-        metadata:
-          <<: *sdkMetadata-11.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        platforms: *azurelinux3.0Platforms-sdk-11.0
-      11.0-azurelinux4.0:
-        metadata:
-          <<: *sdkMetadata-11.0
-        platforms: &azurelinux4.0Platforms-sdk-11.0
-          amd64:
-            <<: *azurelinux4.0Amd64
-            metadata:
-              powershell: *powershellLinuxAmd64-dotnet-11.0
-          arm64v8:
-            <<: *azurelinux4.0Arm64
-            metadata:
-              powershell: *powershellLinuxArm64v8-dotnet-11.0
-      11.0-azurelinux4.0-aot:
-        metadata:
-          <<: *sdkMetadata-11.0
-          variant: "-aot"
-          templateFile: Dockerfile.linux.aot
-        platforms: *azurelinux4.0Platforms-sdk-11.0
-      11.0-nanoserver2025:
-        metadata:
-          <<: *sdkMetadata-11.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *nanoserver2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-11.0
-      11.0-servercore2025:
-        metadata:
-          <<: *sdkMetadata-11.0
-          templateFile: Dockerfile.windows
-        tags: *defaultWindowsSharedTags
-        platforms:
-          amd64:
-            <<: *servercore2025Amd64
-            metadata:
-              powershell: *powershellWindowsAmd64-dotnet-11.0
+          version: *sdk-11.0
+          runtime: *runtime-11.0
+          aspnet: *aspnet-11.0
+        images:
+          resolute:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms:
+              amd64:
+                targetPlatform: *resolute-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-amd64
+              arm32v7:
+                targetPlatform: *resolute-arm32v7
+                metadata:
+                  powershell: *powershell-7.7-linux-arm32v7
+              arm64v8:
+                targetPlatform: *resolute-arm64v8
+                metadata:
+                  powershell: *powershell-7.7-linux-arm64v8
+
+          # AOT images don't support arm32.
+          resolute-aot:
+            metadata: *variant-aot
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+            platforms:
+              amd64:
+                targetPlatform: *resolute-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-amd64
+              arm64v8:
+                targetPlatform: *resolute-arm64v8
+                metadata:
+                  powershell: *powershell-7.7-linux-arm64v8
+
+          alpine3.24:
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms:
+              amd64:
+                targetPlatform: *alpine3.24-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-musl-amd64
+              arm32v7:
+                targetPlatform: *alpine3.24-arm32v7
+              arm64v8:
+                targetPlatform: *alpine3.24-arm64v8
+
+          alpine3.24-aot:
+            metadata: *variant-aot
+            tags:
+              <<: [*sharedTags, *alpineFloatingTags]
+            defaults:
+              platform:
+                tags:
+                  <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
+            platforms:
+              amd64:
+                targetPlatform: *alpine3.24-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-musl-amd64
+              arm64v8:
+                targetPlatform: *alpine3.24-arm64v8
+
+          azurelinux3.0:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux3.0-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux3.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.7-linux-arm64v8
+
+          azurelinux3.0-aot:
+            metadata: *variant-aot
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux3.0-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux3.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.7-linux-arm64v8
+
+          azurelinux4.0:
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux4.0-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux4.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.7-linux-arm64v8
+
+          azurelinux4.0-aot:
+            metadata: *variant-aot
+            tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *azurelinux4.0-amd64
+                metadata:
+                  powershell: *powershell-7.7-linux-amd64
+              arm64v8:
+                targetPlatform: *azurelinux4.0-arm64v8
+                metadata:
+                  powershell: *powershell-7.7-linux-arm64v8
+
+          nanoserver-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *nanoserver-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.7-windows-amd64
+
+          windowsservercore-ltsc2025:
+            defaults:
+              platform:
+                tags: *sharedTags
+            platforms:
+              amd64:
+                targetPlatform: *windowsservercore-ltsc2025-amd64
+                metadata:
+                  powershell: *powershell-7.7-windows-amd64

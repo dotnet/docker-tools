@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using LibGit2Sharp;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -1782,10 +1783,10 @@ public class GetStaleImagesCommandTests
 
             Mock<IOctokitClientFactory> octokitClientFactoryMock = new();
             octokitClientFactoryMock
-                .Setup(o => o.CreateTreesClientAsync(It.IsAny<GitHubAuthOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(o => o.CreateTreesClientAsync(It.IsAny<GitHubAuthOptions>(), It.IsAny<GitHubRepo>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(treesClientMock.Object);
             octokitClientFactoryMock
-                .Setup(o => o.CreateBlobsClientAsync(It.IsAny<GitHubAuthOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(o => o.CreateBlobsClientAsync(It.IsAny<GitHubAuthOptions>(), It.IsAny<GitHubRepo>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(blobsClientMock.Object);
 
             return octokitClientFactoryMock.Object;

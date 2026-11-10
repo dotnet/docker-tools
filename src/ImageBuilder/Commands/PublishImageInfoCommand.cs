@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
+using Microsoft.DotNet.GitAutomation.GitHub;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -118,7 +119,9 @@ public class PublishImageInfoCommand(
 
     private async Task<CredentialsHandler> GetCredentialsAsync(CancellationToken cancellationToken)
     {
-        string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
+        GitHubRepo repo = new(Options.GitOptions.Owner, Options.GitOptions.Repo);
+        string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions, repo, cancellationToken);
+
         return (_, _, _) => new UsernamePasswordCredentials
         {
             Username = "_",

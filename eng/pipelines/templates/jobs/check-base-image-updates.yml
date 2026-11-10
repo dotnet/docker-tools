@@ -48,6 +48,8 @@ jobs:
       publishConfig: ${{ parameters.publishConfig }}
       usesRegistries:
         - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+      serviceConnections:
+      - name: DotnetContainersGitHubBot
 
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
@@ -59,7 +61,7 @@ jobs:
       getStaleImages
       $(dotnetDockerBot.userName)
       $(dotnetDockerBot.email)
-      --gh-token $(BotAccount-dotnet-docker-bot-PAT)
+      $(dotnetContainersBot.gitHubAuthArgs)
       staleImagePaths
       --registry-override '${{ parameters.publishConfig.InternalMirrorRegistry.server }}'
       --source-repo-prefix '${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}'
@@ -74,14 +76,17 @@ jobs:
       SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
 
   - script: >
-      $(runImageBuilderCmd)
+      $(runAuthedImageBuilderCmd)
       queueBuild
       $(System.AccessToken)
       dnceng
       internal
-      --gh-token '$(BotAccount-dotnet-docker-bot-PAT)'
+      $(dotnetContainersBot.gitHubAuthArgs)
       --git-owner 'dotnet'
       --git-repo '$(internalGitHubRepo)'
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --image-paths "$(GetStaleImages.staleImagePaths)"
     displayName: Queue Build for Stale Images
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)

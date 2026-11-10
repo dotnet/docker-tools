@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
@@ -23,7 +24,8 @@ internal sealed class GitHubClientFactory(
 
     public async Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun, CancellationToken cancellationToken)
     {
-        string token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions, cancellationToken);
+        GitHubRepo repo = new(gitOptions.Owner, gitOptions.Repo);
+        string token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions, repo, cancellationToken);
 
         GitHubAuth auth = new GitHubAuth(
             authToken: token,

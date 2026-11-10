@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
@@ -210,14 +211,24 @@ public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
 
     private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest, CancellationToken cancellationToken)
     {
-        ITreesClient treesClient = await _octokitClientFactory.CreateTreesClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
+        GitHubRepo imageInfoRepo = new(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo);
+
+        ITreesClient treesClient = await _octokitClientFactory.CreateTreesClientAsync(
+            Options.GitOptions.GitHubAuthOptions,
+            imageInfoRepo,
+            cancellationToken);
+
         string fileSha = await treesClient.GetFileShaAsync(
             subscription.ImageInfo.Owner,
             subscription.ImageInfo.Repo,
             subscription.ImageInfo.Branch,
             subscription.ImageInfo.Path);
 
-        IBlobsClient blobsClient = await _octokitClientFactory.CreateBlobsClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
+        IBlobsClient blobsClient = await _octokitClientFactory.CreateBlobsClientAsync(
+            Options.GitOptions.GitHubAuthOptions,
+            imageInfoRepo,
+            cancellationToken);
+
         string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
 
         return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);

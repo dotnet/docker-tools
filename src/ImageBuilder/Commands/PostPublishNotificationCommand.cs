@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.QueueNotification;
 using Microsoft.DotNet.ImageBuilder.Services;
@@ -113,8 +114,10 @@ public class PostPublishNotificationCommand(
         // In the case where the publish build was queued by AutoBuilder, this finds the GitHub issue associated
         // with that queued build.
 
+        GitHubRepo repo = new(Options.GitOptions.Owner, Options.GitOptions.Repo);
         IGitHubClient gitHubClient =
-            await _octokitClientFactory.CreateGitHubClientAsync(Options.GitOptions.GitHubAuthOptions, cancellationToken);
+            await _octokitClientFactory.CreateGitHubClientAsync(Options.GitOptions.GitHubAuthOptions, repo, cancellationToken);
+
         RepositoryIssueRequest issueRequest = new()
         {
             Filter = IssueFilter.All,

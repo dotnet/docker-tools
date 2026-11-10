@@ -7,36 +7,63 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Security.KeyVault.Keys.Cryptography;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Helpers;
 using Octokit;
+using TokenCredential = Azure.Core.TokenCredential;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctokitClientFactory
+public class OctokitClientFactory(
+    ILogger<OctokitClientFactory> logger,
+    IAzureTokenCredentialProvider credentialProvider) : IOctokitClientFactory
 {
+    private readonly IAzureTokenCredentialProvider _credentialProvider = credentialProvider;
+    private GitHubAppAccessProvider? _keyVaultAccessProvider;
+
     private static readonly ProductHeaderValue ProductHeaderValue =
         new(name: Assembly.GetExecutingAssembly().GetName().Name);
 
     private readonly ILogger<OctokitClientFactory> _logger = logger;
 
-    public async Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
+    public async Task<IGitHubClient> CreateGitHubClientAsync(
+        GitHubAuthOptions authOptions, GitHubRepo repo, CancellationToken cancellationToken)
     {
-        Credentials credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
+        if (authOptions.IsKeyVaultAppAuth)
+        {
+            GitHubAppAccessProvider provider = GetKeyVaultAccessProvider(authOptions);
+            GitHubAccess access = await provider.GetAccessAsync(repo, cancellationToken);
+            return access.Client;
+        }
+
+        Credentials credentials = await CreateCredentialsAsync(authOptions, repo, cancellationToken);
         GitHubClient client = CreateClient(credentials);
         return client;
     }
 
-    public async Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
+    public async Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions, GitHubRepo repo, CancellationToken cancellationToken)
     {
-        ApiConnection apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
-        return new BlobsClient(apiConnection);
+        IGitHubClient client = await CreateGitHubClientAsync(authOptions, repo, cancellationToken);
+        return client.Git.Blob;
     }
 
-    public async Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
+    public async Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions, GitHubRepo repo, CancellationToken cancellationToken)
     {
-        ApiConnection apiConnection = await CreateApiConnectionAsync(authOptions, cancellationToken);
-        return new TreesClient(apiConnection);
+        IGitHubClient client = await CreateGitHubClientAsync(authOptions, repo, cancellationToken);
+        return client.Git.Tree;
+    }
+
+    private GitHubAppAccessProvider GetKeyVaultAccessProvider(GitHubAuthOptions authOptions) =>
+        LazyInitializer.EnsureInitialized(ref _keyVaultAccessProvider, () => CreateKeyVaultAccessProvider(authOptions));
+
+    private GitHubAppAccessProvider CreateKeyVaultAccessProvider(GitHubAuthOptions authOptions)
+    {
+        TokenCredential credential = _credentialProvider.GetCredential(authOptions.KeyVaultServiceConnection);
+        Uri keyUri = new(authOptions.KeyVaultKeyUri);
+        CryptographyClient signer = new(keyUri, credential);
+        return new GitHubAppAccessProvider(authOptions.ClientId, signer);
     }
 
     /// <summary>
@@ -47,6 +74,7 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     /// the private key and client ID of the GitHub App.
     /// </remarks>
     /// <param name="authOptions"></param>
+    /// <param name="repo">Repository the token is used for. Selects the App installation for Key Vault auth.</param>
     /// <param name="cancellationToken"></param>
     /// <returns>
     /// A GitHub token created according to the authentication options.
@@ -54,8 +82,17 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
     /// <exception cref="InvalidOperationException">
     /// Thrown if no installations are found for the GitHub App specified by authOptions.
     /// </exception>
-    public async Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
+    public async Task<string> CreateGitHubTokenAsync(
+        GitHubAuthOptions authOptions, GitHubRepo repo, CancellationToken cancellationToken)
     {
+        if (authOptions.IsKeyVaultAppAuth)
+        {
+            GitHubAppAccessProvider provider = GetKeyVaultAccessProvider(authOptions);
+            GitHubAccess access = await provider.GetAccessAsync(repo, cancellationToken);
+            Credentials credentials = await access.Credentials.GetCredentials();
+            return credentials.Password;
+        }
+
         if (authOptions.IsGitHubAppAuth)
         {
             /*
@@ -91,20 +128,10 @@ public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctok
         return authOptions.AuthToken;
     }
 
-    private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
+    private async Task<Credentials> CreateCredentialsAsync(
+        GitHubAuthOptions authOptions, GitHubRepo repo, CancellationToken cancellationToken)
     {
-        Credentials credentials = await CreateCredentialsAsync(authOptions, cancellationToken);
-        Connection connection = new Connection(ProductHeaderValue)
-        {
-            Credentials = credentials
-        };
-
-        return new ApiConnection(connection);
-    }
-
-    private async Task<Credentials> CreateCredentialsAsync(GitHubAuthOptions authOptions, CancellationToken cancellationToken)
-    {
-        string token = await CreateGitHubTokenAsync(authOptions, cancellationToken);
+        string token = await CreateGitHubTokenAsync(authOptions, repo, cancellationToken);
         return CreateCredentials(token);
     }
 

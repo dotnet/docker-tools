@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -26,15 +27,20 @@ public record GitHubAuthOptions(
     string AuthToken = "",
     string PrivateKey = "",
     string ClientId = "",
-    string? InstallationId = null)
+    string? InstallationId = null,
+    string KeyVaultKeyUri = "",
+    ServiceConnection? KeyVaultServiceConnection = null)
 {
     public bool IsGitHubAppAuth =>
         !string.IsNullOrEmpty(PrivateKey) &&
         !string.IsNullOrEmpty(ClientId);
 
+    public bool IsKeyVaultAppAuth =>
+        !string.IsNullOrEmpty(KeyVaultKeyUri) &&
+        !string.IsNullOrEmpty(ClientId);
+
     public bool HasCredentials =>
-        !string.IsNullOrEmpty(AuthToken) ||
-        (!string.IsNullOrEmpty(PrivateKey) && !string.IsNullOrEmpty(ClientId));
+        !string.IsNullOrEmpty(AuthToken) || IsGitHubAppAuth || IsKeyVaultAppAuth;
 }
 
 public class GitOptionsBuilder
@@ -151,13 +157,44 @@ public class GitOptionsBuilder
             Description = "GitHub App installation ID to use (only required if app has more than one installation)"
         };
 
-        _options.AddRange([tokenOption, privateKeyOption, clientIdOption, installationIdOption]);
+        Option<string> keyUriOption = new("--gh-app-key-uri")
+        {
+            Description = "Azure Key Vault key URI of the GitHub App private key, used instead of --gh-private-key"
+        };
+
+        Option<ServiceConnection?> keyVaultServiceConnectionOption =
+            ServiceConnectionOptionsBuilder.GetCliOption(
+                "--gh-app-key-service-connection",
+                "Azure service connection used to sign with the Key Vault key");
+
+        _options.AddRange([
+            tokenOption,
+            privateKeyOption,
+            clientIdOption,
+            installationIdOption,
+            keyUriOption,
+            keyVaultServiceConnectionOption]);
 
         _validators.Add(commandResult =>
         {
             bool hasToken = commandResult.Has(tokenOption);
-            bool hasPrivateKey = commandResult.Has(privateKeyOption);
+            bool hasKeyUri = commandResult.Has(keyUriOption);
+            bool hasPrivateKey = commandResult.Has(privateKeyOption) || hasKeyUri;
             bool hasClientId = commandResult.Has(clientIdOption);
+
+            if (commandResult.Has(privateKeyOption) && hasKeyUri)
+            {
+                commandResult.AddError($"Cannot use both {privateKeyOption.Name} and {keyUriOption.Name}.");
+                return;
+            }
+
+            if (hasKeyUri != commandResult.Has(keyVaultServiceConnectionOption))
+            {
+                commandResult.AddError(
+                    $"{keyUriOption.Name} and {keyVaultServiceConnectionOption.Name} must be provided together.");
+
+                return;
+            }
 
             // If token is provided, ensure that private key and client ID were not provided
             if (hasToken && (hasPrivateKey || hasClientId))
@@ -194,7 +231,9 @@ public class GitOptionsBuilder
                     AuthToken: parseResult.GetValue(tokenOption) ?? string.Empty,
                     PrivateKey: parseResult.GetValue(privateKeyOption) ?? string.Empty,
                     ClientId: parseResult.GetValue(clientIdOption) ?? string.Empty,
-                    InstallationId: parseResult.GetValue(installationIdOption)));
+                    InstallationId: parseResult.GetValue(installationIdOption),
+                    KeyVaultKeyUri: parseResult.GetValue(keyUriOption) ?? string.Empty,
+                    KeyVaultServiceConnection: parseResult.GetValue(keyVaultServiceConnectionOption)));
 
         return this;
     }

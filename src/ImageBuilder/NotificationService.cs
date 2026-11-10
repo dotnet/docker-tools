@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
 
@@ -27,7 +28,8 @@ public class NotificationService(ILogger<NotificationService> logger, IOctokitCl
         CancellationToken cancellationToken,
         IEnumerable<string>? comments = null)
     {
-        IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth, cancellationToken);
+        GitHubRepo repo = new(repoOwner, repoName);
+        IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth, repo, cancellationToken);
 
         Issue? issue = null;
         if (!isDryRun)

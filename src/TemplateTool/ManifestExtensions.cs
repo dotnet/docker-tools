@@ -11,9 +11,22 @@ internal static class ManifestExtensions
     /// Every image in the manifest with its repo, keyed by its repo, group (if any) and image keys,
     /// like "sdk__10.0__noble".
     /// </summary>
-    public static IEnumerable<(string Key, Repo Repo, Image Image)> GetImages(this Manifest manifest) =>
-        manifest.Repos.SelectMany(repo =>
-            repo.Value.Images.Select(image => ($"{repo.Key}__{image.Key}", repo.Value, image.Value))
-                .Concat(repo.Value.Groups.SelectMany(group => group.Value.Images.Select(
-                    image => ($"{repo.Key}__{group.Key}__{image.Key}", repo.Value, image.Value)))));
+    public static IEnumerable<(string Key, Repo Repo, Image Image)> GetImages(this Manifest manifest)
+    {
+        foreach ((string repoKey, Repo repo) in manifest.Repos)
+        {
+            foreach ((string imageKey, Image image) in repo.Images)
+            {
+                yield return ($"{repoKey}__{imageKey}", repo, image);
+            }
+
+            foreach ((string groupKey, Group group) in repo.Groups)
+            {
+                foreach ((string imageKey, Image image) in group.Images)
+                {
+                    yield return ($"{repoKey}__{groupKey}__{imageKey}", repo, image);
+                }
+            }
+        }
+    }
 }

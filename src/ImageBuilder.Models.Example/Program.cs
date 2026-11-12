@@ -57,7 +57,7 @@ file sealed class ManifestResolver(Manifest manifest)
                 (repoKey, images),
                 .. groups.Select(groupEntry => ($"{repoKey}__{groupEntry.Key}", groupEntry.Value.Images))
             ]);
-        return repo with { Images = images, Groups = groups, Metadata = metadata, Defaults = null };
+        return repo with { Images = images, Groups = groups, Defaults = null };
     }
 
     private static Group ResolveGroup(
@@ -67,7 +67,7 @@ file sealed class ManifestResolver(Manifest manifest)
         Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, group.Metadata);
         ManifestDefaults defaults = InheritDefaults(parentDefaults, group.Defaults);
         Dictionary<string, Image> images = ResolveImages(repoKey, scopeKey, group.Images, metadata, defaults);
-        return group with { Images = images, Metadata = metadata, Defaults = null };
+        return group with { Images = images, Defaults = null };
     }
 
     private static Dictionary<string, Image> ResolveImages(
@@ -95,7 +95,6 @@ file sealed class ManifestResolver(Manifest manifest)
         {
             Tags = tags,
             Platforms = platforms,
-            Metadata = metadata,
             Defaults = null
         };
     }
@@ -124,10 +123,22 @@ file sealed class ManifestResolver(Manifest manifest)
             Dockerfile = evaluator.Expand(dockerfile),
             DockerfileTemplate = dockerfileTemplate is null ? null : evaluator.Expand(dockerfileTemplate),
             Tags = tags,
-            // Each platform gets its inherited metadata with patterns expanded for that platform.
-            Metadata = evaluator.ExpandMetadata(metadata)
+            // Metadata stays where it's declared, so a template's metadata is the manifest, repo, group, image
+            // and platform metadata merged by key. A platform also gets each inherited value that has
+            // placeholders, expanded for that platform.
+            Metadata = evaluator.ExpandMetadata(metadata
+                .Where(entry => platform.Metadata.ContainsKey(entry.Key) || HasPlaceholders(entry.Value))
+                .ToDictionary(StringComparer.Ordinal))
         };
     }
+
+    private static bool HasPlaceholders(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.String => value.GetString()!.Contains('{'),
+        JsonValueKind.Object => value.EnumerateObject().Any(property => HasPlaceholders(property.Value)),
+        JsonValueKind.Array => value.EnumerateArray().Any(HasPlaceholders),
+        _ => false
+    };
 
     private static ManifestDefaults InheritDefaults(ManifestDefaults? parentDefaults, ManifestDefaults? defaults) =>
         new()

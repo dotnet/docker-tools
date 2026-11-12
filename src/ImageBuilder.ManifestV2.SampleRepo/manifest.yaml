@@ -64,13 +64,6 @@ metadata:
             digest: "sha256:9d098cb700f518702a87bbc037dadb6a9d6b34489012431756fb2531503f436b"
 
 defaults:
-  image:
-    tags:
-      "{version.patch}-{os.name}": {}
-      "{version.minor}-{os.name}": {}
-      "{version.patch}": {}
-      "{version.minor}": {}
-      "latest": {}
   platform:
     dockerfile: "src/{repoKey}/{version.minor}/{os.name}/{arch}/Dockerfile"
     dockerfileTemplate: "Dockerfile.{repoKey}.template"
@@ -79,6 +72,14 @@ defaults:
       "{version.minor}-{os.name}-{arch}": {}
 
 definitions:
+  tags:
+    sharedTags: &sharedTags
+      "{version.patch}-{os.name}": {}
+      "{version.minor}-{os.name}": {}
+    convenienceTags: &convenienceTags
+      "{version.patch}": {}
+      "{version.minor}": {}
+
   # Ubuntu 24.04 and its platform for every arch it supports.
   # Each platform carries the downloadKey its Dockerfile template uses to pick downloads.
   noble-os: &noble-os
@@ -113,6 +114,9 @@ repos:
           version: *dotnet-runtime-10.0
         images:
           noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
             platforms: *noble
 
   runtime:
@@ -128,6 +132,9 @@ repos:
           version: *dotnet-runtime-10.0
         images:
           noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
             platforms: *noble
 
   aspnet:
@@ -142,6 +149,9 @@ repos:
           version: *dotnet-aspnet-10.0
         images:
           noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
             platforms: *noble
 
   sdk:
@@ -156,4 +166,7 @@ repos:
           version: *dotnet-sdk-10.0
         images:
           noble:
+            tags:
+              <<: [*sharedTags, *convenienceTags]
+              "latest": {}
             platforms: *noble

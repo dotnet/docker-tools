@@ -96,11 +96,9 @@ public sealed record Readme
 
 public enum Arch
 {
-    Arm32,
-    Arm32v7,
-    Arm64,
-    Arm64v8,
     Amd64,
+    Arm32v7,
+    Arm64v8,
 }
 
 public enum OSFamily

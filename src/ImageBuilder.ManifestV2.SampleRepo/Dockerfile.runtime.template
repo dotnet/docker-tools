@@ -1,1 +1,28 @@
-{% comment %} Placeholder: generates src/runtime/<version>/<os>/<arch>/Dockerfile. {% endcomment %}
+{% assign runtime = dotnet[version.minor].runtime -%}
+{% assign download = runtime.downloads[downloadKey] -%}
+{% assign file = download.url | split: "/" | last -%}
+{% assign checksumFile = download.checksumUrl | split: "/" | last -%}
+# Installer image
+FROM {{ arch }}/buildpack-deps:{{ os.name }}-curl AS installer
+
+# Retrieve .NET Runtime
+RUN curl --fail --show-error --location \
+        --remote-name {{ download.url }} \
+        --remote-name {{ download.checksumUrl }} \
+    && sha512sum -c {{ checksumFile }} \
+    && mkdir --parents /dotnet \
+    && tar --gzip --extract --no-same-owner --file {{ file }} --directory /dotnet \
+    && rm \
+        {{ file }} \
+        {{ checksumFile }}
+
+
+# .NET runtime image
+FROM mcr.microsoft.com/dotnet/runtime-deps:{{ runtime.patch }}-{{ os.name }}-{{ arch }}
+
+# .NET Runtime version
+ENV DOTNET_VERSION={{ runtime.patch }}
+
+COPY --from=installer ["/dotnet", "/usr/share/dotnet"]
+
+RUN ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet

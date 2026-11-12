@@ -1,1 +1,26 @@
-{% comment %} Placeholder: generates src/aspnet/<version>/<os>/<arch>/Dockerfile. {% endcomment %}
+{% assign aspnet = dotnet[version.minor].aspnet -%}
+{% assign download = aspnet.downloads[downloadKey] -%}
+{% assign file = download.url | split: "/" | last -%}
+{% assign checksumFile = download.checksumUrl | split: "/" | last -%}
+# Installer image
+FROM {{ arch }}/buildpack-deps:{{ os.name }}-curl AS installer
+
+# Retrieve ASP.NET Core
+RUN curl --fail --show-error --location \
+        --remote-name {{ download.url }} \
+        --remote-name {{ download.checksumUrl }} \
+    && sha512sum -c {{ checksumFile }} \
+    && mkdir --parents /dotnet \
+    && tar --gzip --extract --no-same-owner --file {{ file }} --directory /dotnet ./shared/Microsoft.AspNetCore.App \
+    && rm \
+        {{ file }} \
+        {{ checksumFile }}
+
+
+# ASP.NET Core image
+FROM mcr.microsoft.com/dotnet/runtime:{{ dotnet[version.minor].runtime.patch }}-{{ os.name }}-{{ arch }}
+
+# ASP.NET Core version
+ENV ASPNET_VERSION={{ aspnet.patch }}
+
+COPY --from=installer ["/dotnet", "/usr/share/dotnet"]

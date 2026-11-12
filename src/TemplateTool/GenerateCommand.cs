@@ -20,16 +20,27 @@ internal static class GenerateCommand
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
             Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
+            string baseDirectory = manifestFile.DirectoryName!;
+            TemplateRenderer renderer = new(baseDirectory);
 
-            // TODO: Render each template with Fluid. For now, this only shows what would be generated.
             foreach (ImageEntry entry in manifest.GetImages())
             {
                 Console.WriteLine(entry.Key);
                 foreach (PlatformEntry platformEntry in entry.GetPlatforms())
                 {
                     Platform platform = platformEntry.Platform;
-                    string template = platform.DockerfileTemplate ?? "(no template)";
-                    Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {platform.Dockerfile}");
+                    if (platform.DockerfileTemplate is null)
+                    {
+                        Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
+                        continue;
+                    }
+
+                    string dockerfile = await renderer.RenderAsync(
+                        platform.DockerfileTemplate, platformEntry.GetVariables(), cancellationToken);
+                    string dockerfilePath = Path.Combine(baseDirectory, platform.Dockerfile!);
+                    Directory.CreateDirectory(Path.GetDirectoryName(dockerfilePath)!);
+                    await File.WriteAllTextAsync(dockerfilePath, dockerfile, cancellationToken);
+                    Console.WriteLine($"  {platformEntry.PlatformKey}: {platform.DockerfileTemplate} -> {platform.Dockerfile}");
                 }
             }
         });

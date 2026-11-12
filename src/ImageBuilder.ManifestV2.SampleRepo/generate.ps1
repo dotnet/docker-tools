@@ -3,5 +3,5 @@
 
 $ErrorActionPreference = 'Stop'
 
-dotnet run --project "$PSScriptRoot/../TemplateTool/TemplateTool.csproj" -- "$PSScriptRoot/manifest.yaml"
+dotnet run --project "$PSScriptRoot/../TemplateTool/TemplateTool.csproj" -- generate "$PSScriptRoot/manifest.yaml"
 exit $LASTEXITCODE

@@ -1,0 +1,96 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
+
+/// <summary>
+/// An image in a manifest, with the repo and group it belongs to.
+/// </summary>
+/// <param name="Manifest">The manifest containing the image.</param>
+/// <param name="RepoKey">The key of the repo containing the image.</param>
+/// <param name="Repo">The repo containing the image.</param>
+/// <param name="GroupKey">The key of the group containing the image, or null if it isn't in a group.</param>
+/// <param name="Group">The group containing the image, or null if it isn't in a group.</param>
+/// <param name="ImageKey">The image's key within its repo or group.</param>
+/// <param name="Image">The image.</param>
+public sealed record ImageEntry(
+    Manifest Manifest,
+    string RepoKey,
+    Repo Repo,
+    string? GroupKey,
+    Group? Group,
+    string ImageKey,
+    Image Image)
+{
+    /// <summary>
+    /// Separates the parts of image and platform keys.
+    /// </summary>
+    public const string KeySeparator = "__";
+
+    /// <summary>
+    /// The image's key, unique within the manifest, like "sdk__10.0__noble".
+    /// </summary>
+    public string Key => GroupKey is null
+        ? string.Join(KeySeparator, RepoKey, ImageKey)
+        : string.Join(KeySeparator, RepoKey, GroupKey, ImageKey);
+
+    /// <summary>
+    /// The image's full reference for <paramref name="tag"/>, like "mcr.microsoft.com/dotnet/sdk:10.0".
+    /// </summary>
+    public string GetReference(string tag) =>
+        Manifest.Registry is null ? $"{Repo.Name}:{tag}" : $"{Manifest.Registry}/{Repo.Name}:{tag}";
+
+    /// <summary>
+    /// Every platform of the image.
+    /// </summary>
+    public IEnumerable<PlatformEntry> GetPlatforms() =>
+        Image.Platforms.Select(platform => new PlatformEntry(this, platform.Key, platform.Value));
+}
+
+/// <summary>
+/// A platform in a manifest, with the image it belongs to.
+/// </summary>
+/// <param name="ImageEntry">The image containing the platform.</param>
+/// <param name="PlatformKey">The platform's key within its image.</param>
+/// <param name="Platform">The platform.</param>
+public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Platform Platform)
+{
+    /// <summary>
+    /// The platform's key, unique within the manifest, like "sdk__10.0__noble__amd64".
+    /// </summary>
+    public string Key => string.Join(ImageEntry.KeySeparator, ImageEntry.Key, PlatformKey);
+}
+
+/// <summary>
+/// Queries over a loaded manifest.
+/// </summary>
+public static class ManifestExtensions
+{
+    /// <summary>
+    /// Every image in the manifest, in repo order, with ungrouped images before grouped ones.
+    /// </summary>
+    public static IEnumerable<ImageEntry> GetImages(this Manifest manifest)
+    {
+        foreach ((string repoKey, Repo repo) in manifest.Repos)
+        {
+            foreach ((string imageKey, Image image) in repo.Images)
+            {
+                yield return new ImageEntry(manifest, repoKey, repo, null, null, imageKey, image);
+            }
+
+            foreach ((string groupKey, Group group) in repo.Groups)
+            {
+                foreach ((string imageKey, Image image) in group.Images)
+                {
+                    yield return new ImageEntry(manifest, repoKey, repo, groupKey, group, imageKey, image);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every platform in the manifest, in the same order as <see cref="GetImages"/>.
+    /// </summary>
+    public static IEnumerable<PlatformEntry> GetPlatforms(this Manifest manifest) =>
+        manifest.GetImages().SelectMany(image => image.GetPlatforms());
+}

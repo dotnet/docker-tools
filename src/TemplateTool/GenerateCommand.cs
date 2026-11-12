@@ -25,10 +25,11 @@ internal static class GenerateCommand
             foreach (ImageEntry entry in manifest.GetImages())
             {
                 Console.WriteLine(entry.Key);
-                foreach ((string platformKey, Platform platform) in entry.Image.Platforms)
+                foreach (PlatformEntry platformEntry in entry.GetPlatforms())
                 {
+                    Platform platform = platformEntry.Platform;
                     string template = platform.DockerfileTemplate ?? "(no template)";
-                    Console.WriteLine($"  {platformKey}: {template} -> {platform.Dockerfile}");
+                    Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {platform.Dockerfile}");
                 }
             }
         });

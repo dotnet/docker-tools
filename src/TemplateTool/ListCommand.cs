@@ -20,14 +20,13 @@ internal static class ListCommand
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
             Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
-            string registryPrefix = manifest.Registry is null ? "" : $"{manifest.Registry}/";
 
             foreach (ImageEntry entry in manifest.GetImages())
             {
                 Console.WriteLine(entry.Key);
                 foreach ((string name, Tag tag) in entry.Image.Tags ?? [])
                 {
-                    string reference = $"{registryPrefix}{entry.Repo.Name}:{name}";
+                    string reference = entry.GetReference(name);
                     Console.WriteLine(tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}");
                 }
             }

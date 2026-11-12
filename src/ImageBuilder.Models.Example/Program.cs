@@ -16,7 +16,5 @@ if (args.Length > 1)
 string inputPath = args.Length == 1 ? args[0] : "manifest.yaml";
 
 Manifest resolved = await ManifestLoader.LoadAsync(inputPath);
-Image[] images = [.. resolved.Repos.Values.SelectMany(repo => repo.Images.Values.Concat(
-    repo.Groups.Values.SelectMany(group => group.Images.Values)))];
 Console.WriteLine(
-    $"Resolved {inputPath}: {images.Length} images, {images.Sum(image => image.Platforms.Count)} platforms");
+    $"Resolved {inputPath}: {resolved.GetImages().Count()} images, {resolved.GetPlatforms().Count()} platforms");

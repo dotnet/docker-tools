@@ -370,7 +370,7 @@ definitions:
         amd64: &noble-amd64-platform
           targetPlatform: *noble-amd64
           metadata: *packageTarget-linux-amd64
-        arm32v7: &noble-arm32v7-platform
+        arm32v7:
           targetPlatform: *noble-arm32v7
           metadata: *packageTarget-linux-arm32v7
         arm64v8: &noble-arm64v8-platform
@@ -399,7 +399,7 @@ definitions:
         amd64: &resolute-amd64-platform
           targetPlatform: *resolute-amd64
           metadata: *packageTarget-linux-amd64
-        arm32v7: &resolute-arm32v7-platform
+        arm32v7:
           targetPlatform: *resolute-arm32v7
           metadata: *packageTarget-linux-arm32v7
         arm64v8: &resolute-arm64v8-platform
@@ -428,7 +428,7 @@ definitions:
         amd64: &alpine3.24-amd64-platform
           targetPlatform: *alpine3.24-amd64
           metadata: *packageTarget-linux-musl-amd64
-        arm32v7: &alpine3.24-arm32v7-platform
+        arm32v7:
           targetPlatform: *alpine3.24-arm32v7
           metadata: *packageTarget-linux-musl-arm32v7
         arm64v8: &alpine3.24-arm64v8-platform
@@ -451,10 +451,10 @@ definitions:
         <<: *azurelinux3.0-os
         arch: arm64v8
       all: &azurelinux3.0
-        amd64: &azurelinux3.0-amd64-platform
+        amd64:
           targetPlatform: *azurelinux3.0-amd64
           metadata: *packageTarget-linux-amd64
-        arm64v8: &azurelinux3.0-arm64v8-platform
+        arm64v8:
           targetPlatform: *azurelinux3.0-arm64v8
           metadata: *packageTarget-linux-arm64v8
 
@@ -471,10 +471,10 @@ definitions:
         <<: *azurelinux4.0-os
         arch: arm64v8
       all: &azurelinux4.0
-        amd64: &azurelinux4.0-amd64-platform
+        amd64:
           targetPlatform: *azurelinux4.0-amd64
           metadata: *packageTarget-linux-amd64
-        arm64v8: &azurelinux4.0-arm64v8-platform
+        arm64v8:
           targetPlatform: *azurelinux4.0-arm64v8
           metadata: *packageTarget-linux-arm64v8
 
@@ -489,7 +489,7 @@ definitions:
         <<: *nanoserver-ltsc2022-os
         arch: amd64
       all: &nanoserver-ltsc2022
-        amd64: &nanoserver-ltsc2022-amd64-platform
+        amd64:
           targetPlatform: *nanoserver-ltsc2022-amd64
           metadata: *packageTarget-windows-amd64
 
@@ -503,7 +503,7 @@ definitions:
         <<: *nanoserver-ltsc2025-os
         arch: amd64
       all: &nanoserver-ltsc2025
-        amd64: &nanoserver-ltsc2025-amd64-platform
+        amd64:
           targetPlatform: *nanoserver-ltsc2025-amd64
           metadata: *packageTarget-windows-amd64
 
@@ -517,7 +517,7 @@ definitions:
         <<: *windowsservercore-ltsc2022-os
         arch: amd64
       all: &windowsservercore-ltsc2022
-        amd64: &windowsservercore-ltsc2022-amd64-platform
+        amd64:
           targetPlatform: *windowsservercore-ltsc2022-amd64
           metadata: *packageTarget-windows-amd64
 
@@ -531,7 +531,7 @@ definitions:
         <<: *windowsservercore-ltsc2025-os
         arch: amd64
       all: &windowsservercore-ltsc2025
-        amd64: &windowsservercore-ltsc2025-amd64-platform
+        amd64:
           targetPlatform: *windowsservercore-ltsc2025-amd64
           metadata: *packageTarget-windows-amd64
 

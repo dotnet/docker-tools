@@ -29,7 +29,7 @@
               },
               "metadata": {
                 "variant": "-distroless",
-                "product": {
+                "version": {
                   "major": "10",
                   "minor": "10.0",
                   "patch": "10.0.5"
@@ -60,7 +60,7 @@
               },
               "metadata": {
                 "variant": "-distroless",
-                "product": {
+                "version": {
                   "major": "10",
                   "minor": "10.0",
                   "patch": "10.0.5"
@@ -81,13 +81,13 @@
           },
           "metadata": {
             "variant": "-distroless",
-            "product": {
+            "version": {
               "major": "10",
               "minor": "10.0",
               "patch": "10.0.5"
             },
             "baseTag": "10.0.14-azurelinux3.0-distroless-{arch}",
-            "monitorUrl": "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-base-{product.patch}-{dotnetRid}.tar.gz",
+            "monitorUrl": "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patch}/dotnet-monitor-base-{version.patch}-{dotnetRid}.tar.gz",
             "monitorChecksumUrl": "{monitorUrl}.sha512"
           }
         }
@@ -136,7 +136,7 @@
               },
               "metadata": {
                 "variant": "-distroless",
-                "product": {
+                "version": {
                   "major": "10",
                   "minor": "10.0",
                   "patch": "10.0.5"
@@ -173,7 +173,7 @@
               },
               "metadata": {
                 "variant": "-distroless",
-                "product": {
+                "version": {
                   "major": "10",
                   "minor": "10.0",
                   "patch": "10.0.5"
@@ -196,15 +196,15 @@
           },
           "metadata": {
             "variant": "-distroless",
-            "product": {
+            "version": {
               "major": "10",
               "minor": "10.0",
               "patch": "10.0.5"
             },
-            "baseTag": "{product.patch}-{arch}",
-            "azureBlobStorageUrl": "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-egress-azureblobstorage-{product.patch}-{dotnetRid}.tar.gz",
+            "baseTag": "{version.patch}-{arch}",
+            "azureBlobStorageUrl": "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patch}/dotnet-monitor-egress-azureblobstorage-{version.patch}-{dotnetRid}.tar.gz",
             "azureBlobStorageChecksumUrl": "{azureBlobStorageUrl}.sha512",
-            "s3StorageUrl": "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-egress-s3storage-{product.patch}-{dotnetRid}.tar.gz",
+            "s3StorageUrl": "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patch}/dotnet-monitor-egress-s3storage-{version.patch}-{dotnetRid}.tar.gz",
             "s3StorageChecksumUrl": "{s3StorageUrl}.sha512"
           }
         }
@@ -257,7 +257,7 @@
               },
               "metadata": {
                 "variant": "-distroless",
-                "product": {
+                "version": {
                   "major": "13",
                   "minor": "13.6",
                   "patch": "13.6.2",
@@ -303,7 +303,7 @@
               },
               "metadata": {
                 "variant": "-distroless",
-                "product": {
+                "version": {
                   "major": "13",
                   "minor": "13.6",
                   "patch": "13.6.2",
@@ -332,7 +332,7 @@
           },
           "metadata": {
             "variant": "-distroless",
-            "product": {
+            "version": {
               "major": "13",
               "minor": "13.6",
               "patch": "13.6.2",

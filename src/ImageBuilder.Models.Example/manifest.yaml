@@ -2,238 +2,236 @@
 # Source matrix: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
 # Versions: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.versions.json
 # Anchors hold the facts that change together on a release, and each platform.
-# Placeholders like {product.minor}, {os.name}, {os.family} and {arch} keep repeated values from drifting apart.
+# Placeholders like {version.minor}, {os.name}, {os.family} and {arch} keep repeated values from drifting apart.
 metadata:
   variant: ""
   # Images with their own template, like extra and AOT, override this.
   templateFile: "Dockerfile.{os.family}"
+  # Each .NET release: every product's version and downloads. Update a release together.
+  # Templates know their own product, so they read dotnet[version.minor].<product>.downloads[downloadKey].
+  dotnet:
+    "10.0":
+      runtime: &dotnet-runtime-10.0
+        minor: "10.0"
+        patch: "10.0.14"
+        build: "10.0.14"
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm64.tar.gz.sha512"
+          windows-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-win-x64.zip"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-win-x64.zip.sha512-bare"
+      aspnet: &dotnet-aspnet-10.0
+        minor: "10.0"
+        patch: "10.0.14"
+        build: "10.0.14"
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm64.tar.gz.sha512"
+          windows-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-win-x64.zip"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-win-x64.zip.sha512-bare"
+      aspnet-composite:
+        <<: *dotnet-aspnet-10.0
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm64.tar.gz.sha512"
+      sdk: &dotnet-sdk-10.0
+        minor: "10.0"
+        patch: "10.0.403"
+        build: "10.0.403"
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm64.tar.gz.sha512"
+          windows-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip.sha512-bare"
+
+    "11.0":
+      runtime: &dotnet-runtime-11.0
+        minor: "11.0"
+        patch: "11.0.0-rc.3"
+        build: "11.0.0-rc.3.26522.148"
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
+          windows-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-win-x64.zip"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-win-x64.zip.sha512-bare"
+      aspnet: &dotnet-aspnet-11.0
+        minor: "11.0"
+        patch: "11.0.0-rc.3"
+        build: "11.0.0-rc.3.26522.148"
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
+          windows-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-win-x64.zip"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-win-x64.zip.sha512-bare"
+      aspnet-composite:
+        <<: *dotnet-aspnet-11.0
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
+      sdk: &dotnet-sdk-11.0
+        minor: "11.0"
+        patch: "11.0.100-rc.3"
+        build: "11.0.100-rc.3.26522.148"
+        downloads:
+          linux-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-x64.tar.gz.sha512"
+          linux-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm.tar.gz.sha512"
+          linux-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm64.tar.gz.sha512"
+          linux-musl-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-x64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
+          linux-musl-arm32:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
+          linux-musl-arm64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm64.tar.gz"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
+          windows-x64:
+            url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-win-x64.zip"
+            checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-win-x64.zip.sha512-bare"
 
 defaults:
   platform:
-    dockerfile: "src/{repoKey}/{product.minor}/{os.name}{variant}/{arch}/Dockerfile"
+    dockerfile: "src/{repoKey}/{version.minor}/{os.name}{variant}/{arch}/Dockerfile"
     dockerfileTemplate: "eng/dockerfile-templates/{repoKey}/{templateFile}"
     tags: &defaultPlatformTags
-      "{product.patch}-{os.name}{variant}-{arch}": {}
-      "{product.minor}-{os.name}{variant}-{arch}": {}
+      "{version.patch}-{os.name}{variant}-{arch}": {}
+      "{version.minor}-{os.name}{variant}-{arch}": {}
 
 definitions:
   tags:
     sharedTags: &sharedTags
-      "{product.patch}-{os.name}{variant}": {}
-      "{product.minor}-{os.name}{variant}": {}
+      "{version.patch}-{os.name}{variant}": {}
+      "{version.minor}-{os.name}{variant}": {}
     convenienceTags: &convenienceTags
-      "{product.patch}{variant}": {}
-      "{product.minor}{variant}": {}
+      "{version.patch}{variant}": {}
+      "{version.minor}{variant}": {}
     alpineFloatingTags: &alpineFloatingTags
-      "{product.minor}-alpine{variant}": {}
+      "{version.minor}-alpine{variant}": {}
     alpineFloatingPlatformTags: &alpineFloatingPlatformTags
-      "{product.minor}-alpine{variant}-{arch}": {}
-
-  # .NET 10.0: each product's version and downloads. Update them together.
-  # Downloads are keyed by the downloadKey of each platform. Dockerfile templates pick one.
-  # Repo groups set product to what their images ship, and dotnet to the whole release.
-  dotnet-10.0: &dotnet-10.0
-    runtime: &dotnet-runtime-10.0
-      minor: "10.0"
-      patch: "10.0.14"
-      build: "10.0.14"
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm64.tar.gz.sha512"
-        windows-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-win-x64.zip"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-win-x64.zip.sha512-bare"
-    aspnet: &dotnet-aspnet-10.0
-      minor: "10.0"
-      patch: "10.0.14"
-      build: "10.0.14"
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm64.tar.gz.sha512"
-        windows-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-win-x64.zip"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-win-x64.zip.sha512-bare"
-    aspnet-composite: &dotnet-aspnet-composite-10.0
-      <<: *dotnet-aspnet-10.0
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm64.tar.gz.sha512"
-    sdk: &dotnet-sdk-10.0
-      minor: "10.0"
-      patch: "10.0.403"
-      build: "10.0.403"
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm64.tar.gz.sha512"
-        windows-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip.sha512-bare"
-
-  # .NET 11.0: each product's version and downloads. Update them together.
-  dotnet-11.0: &dotnet-11.0
-    runtime: &dotnet-runtime-11.0
-      minor: "11.0"
-      patch: "11.0.0-rc.3"
-      build: "11.0.0-rc.3.26522.148"
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-        windows-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-win-x64.zip"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-win-x64.zip.sha512-bare"
-    aspnet: &dotnet-aspnet-11.0
-      minor: "11.0"
-      patch: "11.0.0-rc.3"
-      build: "11.0.0-rc.3.26522.148"
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-        windows-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-win-x64.zip"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-win-x64.zip.sha512-bare"
-    aspnet-composite: &dotnet-aspnet-composite-11.0
-      <<: *dotnet-aspnet-11.0
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-    sdk: &dotnet-sdk-11.0
-      minor: "11.0"
-      patch: "11.0.100-rc.3"
-      build: "11.0.100-rc.3.26522.148"
-      downloads:
-        linux-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-x64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm32:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm64.tar.gz"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-        windows-x64:
-          url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-win-x64.zip"
-          checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-win-x64.zip.sha512-bare"
+      "{version.minor}-alpine{variant}-{arch}": {}
 
   # PowerShell versions and downloads, keyed by the downloadKey of each platform.
   # PowerShell has no linux-musl (Alpine) packages for Arm, so templates must allow a missing key.
@@ -496,14 +494,14 @@ repos:
       - path: .portal-docs/mar/README.runtime-deps.portal.md
         templatePath: eng/readme-templates/README.mcr.md
     mcrTagsMetadataTemplate: eng/mcr-tags-metadata-templates/runtime-deps-tags.yml
-    # runtime-deps images take the runtime's version and download nothing.
+    # runtime-deps images take the runtime's version.
     # runtime-deps's base template is named Dockerfile, not Dockerfile.linux.
     metadata:
       templateFile: Dockerfile
     groups:
       "10.0":
         metadata:
-          product: *dotnet-runtime-10.0
+          version: *dotnet-runtime-10.0
         images:
           noble:
             tags:
@@ -570,7 +568,7 @@ repos:
 
       "11.0":
         metadata:
-          product: *dotnet-runtime-11.0
+          version: *dotnet-runtime-11.0
         images:
           resolute:
             tags:
@@ -647,8 +645,7 @@ repos:
     groups:
       "10.0":
         metadata:
-          product: *dotnet-runtime-10.0
-          dotnet: *dotnet-10.0
+          version: *dotnet-runtime-10.0
         images:
           noble:
             tags:
@@ -739,8 +736,7 @@ repos:
 
       "11.0":
         metadata:
-          product: *dotnet-runtime-11.0
-          dotnet: *dotnet-11.0
+          version: *dotnet-runtime-11.0
         images:
           resolute:
             tags:
@@ -829,8 +825,7 @@ repos:
     groups:
       "10.0":
         metadata:
-          product: *dotnet-aspnet-10.0
-          dotnet: *dotnet-10.0
+          version: *dotnet-aspnet-10.0
         images:
           noble:
             tags:
@@ -858,16 +853,12 @@ repos:
             platforms: *alpine3.24
 
           alpine3.24-composite:
-            metadata:
-              <<: *variant-composite
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-composite
             tags: *sharedTags
             platforms: *alpine3.24
 
           alpine3.24-composite-extra:
-            metadata:
-              <<: *variant-composite-extra
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-composite-extra
             tags: *sharedTags
             platforms: *alpine3.24
 
@@ -886,16 +877,12 @@ repos:
             platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite:
-            metadata:
-              <<: *variant-distroless-composite
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-distroless-composite
             tags: *sharedTags
             platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite-extra:
-            metadata:
-              <<: *variant-distroless-composite-extra
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-distroless-composite-extra
             tags: *sharedTags
             platforms: *azurelinux3.0
 
@@ -910,16 +897,12 @@ repos:
             platforms: *noble
 
           noble-chiseled-composite-extra:
-            metadata:
-              <<: *variant-chiseled-composite-extra
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-chiseled-composite-extra
             tags: *sharedTags
             platforms: *noble
 
           noble-chiseled-composite:
-            metadata:
-              <<: *variant-chiseled-composite
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-chiseled-composite
             tags: *sharedTags
             platforms: *noble
 
@@ -938,16 +921,12 @@ repos:
             platforms: *resolute
 
           resolute-chiseled-composite-extra:
-            metadata:
-              <<: *variant-chiseled-composite-extra
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-chiseled-composite-extra
             tags: *sharedTags
             platforms: *resolute
 
           resolute-chiseled-composite:
-            metadata:
-              <<: *variant-chiseled-composite
-              product: *dotnet-aspnet-composite-10.0
+            metadata: *variant-chiseled-composite
             tags: *sharedTags
             platforms: *resolute
 
@@ -977,8 +956,7 @@ repos:
 
       "11.0":
         metadata:
-          product: *dotnet-aspnet-11.0
-          dotnet: *dotnet-11.0
+          version: *dotnet-aspnet-11.0
         images:
           resolute:
             tags:
@@ -1005,9 +983,7 @@ repos:
             platforms: *alpine3.24
 
           alpine3.24-composite:
-            metadata:
-              <<: *variant-composite
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-composite
             tags:
               <<: [*sharedTags, *alpineFloatingTags]
             defaults:
@@ -1017,9 +993,7 @@ repos:
             platforms: *alpine3.24
 
           alpine3.24-composite-extra:
-            metadata:
-              <<: *variant-composite-extra
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-composite-extra
             tags:
               <<: [*sharedTags, *alpineFloatingTags]
             defaults:
@@ -1043,16 +1017,12 @@ repos:
             platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite:
-            metadata:
-              <<: *variant-distroless-composite
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-distroless-composite
             tags: *sharedTags
             platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite-extra:
-            metadata:
-              <<: *variant-distroless-composite-extra
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-distroless-composite-extra
             tags: *sharedTags
             platforms: *azurelinux3.0
 
@@ -1071,16 +1041,12 @@ repos:
             platforms: *azurelinux4.0
 
           azurelinux4.0-distroless-composite:
-            metadata:
-              <<: *variant-distroless-composite
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-distroless-composite
             tags: *sharedTags
             platforms: *azurelinux4.0
 
           azurelinux4.0-distroless-composite-extra:
-            metadata:
-              <<: *variant-distroless-composite-extra
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-distroless-composite-extra
             tags: *sharedTags
             platforms: *azurelinux4.0
 
@@ -1095,16 +1061,12 @@ repos:
             platforms: *resolute
 
           resolute-chiseled-composite-extra:
-            metadata:
-              <<: *variant-chiseled-composite-extra
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-chiseled-composite-extra
             tags: *sharedTags
             platforms: *resolute
 
           resolute-chiseled-composite:
-            metadata:
-              <<: *variant-chiseled-composite
-              product: *dotnet-aspnet-composite-11.0
+            metadata: *variant-chiseled-composite
             tags: *sharedTags
             platforms: *resolute
 
@@ -1133,8 +1095,7 @@ repos:
     groups:
       "10.0":
         metadata:
-          product: *dotnet-sdk-10.0
-          dotnet: *dotnet-10.0
+          version: *dotnet-sdk-10.0
           powershell: *powershell-7.6
         images:
           noble:
@@ -1213,8 +1174,7 @@ repos:
 
       "11.0":
         metadata:
-          product: *dotnet-sdk-11.0
-          dotnet: *dotnet-11.0
+          version: *dotnet-sdk-11.0
           powershell: *powershell-7.7
         images:
           resolute:

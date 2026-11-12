@@ -1,6 +1,6 @@
 # .NET Monitor 10 and Aspire Dashboard.
 # Anchors hold the facts that change together on a release, and each Azure Linux platform.
-# Placeholders like {product.patch} and {arch} keep repeated values from drifting apart.
+# Placeholders like {version.patch} and {arch} keep repeated values from drifting apart.
 # Values come from https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
 # and the Dockerfiles generated at that commit.
 readme:
@@ -15,7 +15,7 @@ definitions:
     patch: "10.0.5"
 
   # Aspire Dashboard: the version used in tags, and each platform's download. Update them together.
-  # Downloads are keyed by the downloadKey of each platform. The Dockerfile template picks one.
+  # The Dockerfile template reads version.downloads[downloadKey].
   aspire-13.6: &aspire-13.6
     major: "13"
     minor: "13.6"
@@ -53,12 +53,12 @@ definitions:
 defaults:
   image:
     tags:
-      "{product.patch}": {}
-      "{product.minor}": {}
-      "{product.major}": {}
+      "{version.patch}": {}
+      "{version.minor}": {}
+      "{version.major}": {}
       "latest": {}
   platform:
-    dockerfile: "src/{repoKey}/{product.minor}/{os.name}{variant}/{arch}/Dockerfile"
+    dockerfile: "src/{repoKey}/{version.minor}/{os.name}{variant}/{arch}/Dockerfile"
     dockerfileTemplate: "eng/dockerfile-templates/{repoKey}/Dockerfile.linux"
 
 repos:
@@ -76,17 +76,17 @@ repos:
       10.0-azurelinux-distroless:
         metadata:
           variant: -distroless
-          product: *monitor-10.0
+          version: *monitor-10.0
           baseTag: "10.0.14-azurelinux3.0-distroless-{arch}"
-          monitorUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-base-{product.patch}-{dotnetRid}.tar.gz"
+          monitorUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patch}/dotnet-monitor-base-{version.patch}-{dotnetRid}.tar.gz"
           monitorChecksumUrl: "{monitorUrl}.sha512"
         defaults:
           platform:
             buildArgs:
               REPO: mcr.microsoft.com/dotnet/aspnet
             tags:
-              "{product.patch}-{arch}": {}
-              "{product.minor}-{arch}": {}
+              "{version.patch}-{arch}": {}
+              "{version.minor}-{arch}": {}
         platforms: *azurelinux3.0-platforms
 
   monitor:
@@ -103,20 +103,20 @@ repos:
       10.0-azurelinux-distroless:
         metadata:
           variant: -distroless
-          product: *monitor-10.0
+          version: *monitor-10.0
           # The monitor-base platform tag this image builds on.
-          baseTag: "{product.patch}-{arch}"
-          azureBlobStorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-egress-azureblobstorage-{product.patch}-{dotnetRid}.tar.gz"
+          baseTag: "{version.patch}-{arch}"
+          azureBlobStorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patch}/dotnet-monitor-egress-azureblobstorage-{version.patch}-{dotnetRid}.tar.gz"
           azureBlobStorageChecksumUrl: "{azureBlobStorageUrl}.sha512"
-          s3StorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-egress-s3storage-{product.patch}-{dotnetRid}.tar.gz"
+          s3StorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patch}/dotnet-monitor-egress-s3storage-{version.patch}-{dotnetRid}.tar.gz"
           s3StorageChecksumUrl: "{s3StorageUrl}.sha512"
         defaults:
           platform:
             buildArgs:
               REPO: mcr.microsoft.com/dotnet/monitor/base
             tags:
-              "{product.patch}-{arch}": { undocumented: true }
-              "{product.minor}-{arch}": { undocumented: true }
+              "{version.patch}-{arch}": { undocumented: true }
+              "{version.minor}-{arch}": { undocumented: true }
         platforms: *azurelinux3.0-platforms
 
   aspire-dashboard:
@@ -138,14 +138,14 @@ repos:
         syndication: dotnet/aspire-dashboard
         metadata:
           variant: -distroless
-          product: *aspire-13.6
+          version: *aspire-13.6
           baseTag: "11.0.0-rc.3-azurelinux3.0-distroless-extra-{arch}"
         defaults:
           platform:
             buildArgs:
               REPO: mcr.microsoft.com/dotnet/runtime-deps
             tags:
-              "{product.patch}-{arch}": { undocumented: true }
-              "{product.minor}-{arch}": { undocumented: true }
-              "{product.major}-{arch}": { undocumented: true }
+              "{version.patch}-{arch}": { undocumented: true }
+              "{version.minor}-{arch}": { undocumented: true }
+              "{version.major}-{arch}": { undocumented: true }
         platforms: *azurelinux3.0-platforms

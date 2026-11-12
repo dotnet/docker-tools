@@ -14,11 +14,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 /// </summary>
 public static class ManifestLoader
 {
-    private static readonly IDeserializer s_yamlDeserializer = new DeserializerBuilder()
+    private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder()
         .WithAttemptingUnquotedStringTypeDeserialization()
         .Build();
 
-    private static readonly JsonSerializerOptions s_jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         RespectNullableAnnotations = true,
@@ -49,12 +49,12 @@ public static class ManifestLoader
     {
         using StringReader reader = new(yaml);
         MergingParser parser = new(new Parser(reader));
-        Dictionary<string, object?> document = s_yamlDeserializer.Deserialize<Dictionary<string, object?>>(parser)
+        Dictionary<string, object?> document = YamlDeserializer.Deserialize<Dictionary<string, object?>>(parser)
             ?? throw new InvalidDataException("The manifest must not be null.");
 
         // Expand YAML reuse before removing authoring-only definitions and validating the model.
         document.Remove("definitions");
-        return JsonSerializer.SerializeToElement(document).Deserialize<Manifest>(s_jsonOptions)
+        return JsonSerializer.SerializeToElement(document).Deserialize<Manifest>(JsonOptions)
             ?? throw new InvalidDataException("The manifest must not be null.");
     }
 

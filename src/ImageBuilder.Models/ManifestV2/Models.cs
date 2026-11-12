@@ -43,7 +43,8 @@ public sealed record Image
 
 public sealed record Platform
 {
-    public required TargetPlatform TargetPlatform { get; set; }
+    public required OSRelease OS { get; set; }
+    public required Arch Arch { get; set; }
     public string? Dockerfile { get; set; }
     public string? DockerfileTemplate { get; set; }
     public Dictionary<string, string> BuildArgs { get; set; } = [];
@@ -70,11 +71,10 @@ public sealed record PlatformDefaults
     public Dictionary<string, Tag>? Tags { get; set; }
 }
 
-public sealed record TargetPlatform
+public sealed record OSRelease
 {
     // Docker platform and OS-specific build behavior.
-    public required OS OS { get; set; }
-    public required Arch Arch { get; set; }
+    public required OSFamily Family { get; set; }
     // Identifies the OS in image info, filters, tags and paths, like "noble".
     public required string Name { get; set; }
     // Shown in readmes and MCR tag metadata, like "Ubuntu 24.04".
@@ -103,7 +103,7 @@ public enum Arch
     Amd64,
 }
 
-public enum OS
+public enum OSFamily
 {
     Linux,
     Windows,

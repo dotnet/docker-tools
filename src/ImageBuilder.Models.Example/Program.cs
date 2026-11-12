@@ -84,8 +84,7 @@ file sealed class ManifestResolver(Manifest manifest)
     {
         Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, image.Metadata);
         ManifestDefaults defaults = InheritDefaults(parentDefaults, image.Defaults);
-        TargetPlatform[] targets = image.Platforms.Values.Select(platform => platform.TargetPlatform).ToArray();
-        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, targets);
+        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, [.. image.Platforms.Values]);
         Dictionary<string, Tag> tags = evaluator.ResolveTags(image.Tags ?? defaults.Image.Tags ?? []);
         Dictionary<string, Platform> platforms = image.Platforms.ToDictionary(
             platformEntry => platformEntry.Key,
@@ -106,7 +105,7 @@ file sealed class ManifestResolver(Manifest manifest)
         Dictionary<string, JsonElement> parentMetadata, PlatformDefaults defaults)
     {
         Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, platform.Metadata);
-        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, [platform.TargetPlatform]);
+        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, [platform]);
         Dictionary<string, Tag> tags = evaluator.ResolveTags(platform.Tags ?? defaults.Tags ?? []);
         string dockerfile = platform.Dockerfile ?? defaults.Dockerfile
             ?? throw new InvalidDataException($"{scopeKey}: dockerfile must be specified explicitly or in defaults.platform.");
@@ -147,21 +146,13 @@ file sealed class ManifestResolver(Manifest manifest)
         };
 
     // Replace entire values by top-level key, without changing parent or sibling metadata.
-    // A null value removes the inherited key.
     private static Dictionary<string, JsonElement> InheritMetadata(
         Dictionary<string, JsonElement> parentMetadata, Dictionary<string, JsonElement> metadata)
     {
         Dictionary<string, JsonElement> inheritedMetadata = new(parentMetadata, StringComparer.Ordinal);
         foreach ((string name, JsonElement value) in metadata)
         {
-            if (value.ValueKind == JsonValueKind.Null)
-            {
-                inheritedMetadata.Remove(name);
-            }
-            else
-            {
-                inheritedMetadata[name] = value;
-            }
+            inheritedMetadata[name] = value;
         }
 
         return inheritedMetadata;
@@ -203,7 +194,7 @@ file sealed class PatternEvaluator(
     string repoKey,
     string scopeKey,
     Dictionary<string, JsonElement> metadata,
-    TargetPlatform[] targets)
+    Platform[] platforms)
 {
     // Placeholders being expanded, to reject metadata values that refer to themselves.
     private readonly HashSet<string> _activePlaceholders = new(StringComparer.Ordinal);
@@ -268,10 +259,11 @@ file sealed class PatternEvaluator(
         string? modelValue = placeholder switch
         {
             "repoKey" => repoKey,
-            "os" => ResolveTargetValue(placeholder, target => target.OS.ToString().ToLowerInvariant()),
-            "osName" => ResolveTargetValue(placeholder, target => target.Name),
-            "arch" => ResolveTargetValue(
-                placeholder, target => JsonNamingPolicy.CamelCase.ConvertName(target.Arch.ToString())),
+            "os.family" => ResolvePlatformValue(
+                placeholder, platform => platform.OS.Family.ToString().ToLowerInvariant()),
+            "os.name" => ResolvePlatformValue(placeholder, platform => platform.OS.Name),
+            "arch" => ResolvePlatformValue(
+                placeholder, platform => JsonNamingPolicy.CamelCase.ConvertName(platform.Arch.ToString())),
             _ => null
         };
         if (modelValue is not null)
@@ -319,15 +311,15 @@ file sealed class PatternEvaluator(
         }
     }
 
-    private string? ResolveTargetValue(string placeholder, Func<TargetPlatform, string> selector)
+    private string? ResolvePlatformValue(string placeholder, Func<Platform, string> selector)
     {
-        string[] values = targets.Select(selector).Distinct(StringComparer.Ordinal).Take(2).ToArray();
+        string[] values = platforms.Select(selector).Distinct(StringComparer.Ordinal).Take(2).ToArray();
         return values.Length switch
         {
             0 => null,
             1 => values[0],
             _ => throw new InvalidDataException(
-                $"{scopeKey}: pattern variable '{placeholder}' is ambiguous across platform targets.")
+                $"{scopeKey}: pattern variable '{placeholder}' is ambiguous across platforms.")
         };
     }
 }

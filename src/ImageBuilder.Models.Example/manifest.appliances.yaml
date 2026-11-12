@@ -1,6 +1,6 @@
 # .NET Monitor 10 and Aspire Dashboard.
-# Anchors hold the facts that change together on a release, and each Azure Linux target platform.
-# Placeholders like {version.patchVersion} and {arch} keep repeated values from drifting apart.
+# Anchors hold the facts that change together on a release, and each Azure Linux platform.
+# Placeholders like {product.patch} and {arch} keep repeated values from drifting apart.
 # Values come from https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
 # and the Dockerfiles generated at that commit.
 readme:
@@ -9,61 +9,56 @@ readme:
 
 definitions:
   # .NET Monitor: monitor-base and monitor share one version.
-  monitor-version: &monitor-version
-    majorVersion: "10"
-    minorVersion: "10.0"
-    patchVersion: "10.0.5"
+  monitor-10.0: &monitor-10.0
+    major: "10"
+    minor: "10.0"
+    patch: "10.0.5"
 
   # Aspire Dashboard: the version used in tags, and each platform's download. Update them together.
-  # Downloads are keyed by the packageTarget of each target platform. The Dockerfile template picks one.
-  aspire-version: &aspire-version
-    majorVersion: "13"
-    minorVersion: "13.6"
-    patchVersion: "13.6.2"
-  aspire-downloads: &aspire-downloads
-    linux-amd64:
-      url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-x64.zip
-      sha512: 4021f8b00b4d456d3d9b8e9231ae7c5ba454665d5d0b2fb3f3870261accd48a37cbf840c8b354cb2c50e3ff41d2438c0e6ebb7ce43e1352c93c34aae19acdeb5
-    linux-arm64v8:
-      url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-arm64.zip
-      sha512: 555c346bed107b81539325e2b47e4d17ca615bf4993ec53dac16c3a1c9e23fb4b98bbeab628b3d7655752cc0ccfe81313925c0e709d9b75d3691cd18dd3f7fce
+  # Downloads are keyed by the downloadKey of each platform. The Dockerfile template picks one.
+  aspire-13.6: &aspire-13.6
+    major: "13"
+    minor: "13.6"
+    patch: "13.6.2"
+    downloads:
+      linux-amd64:
+        url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-x64.zip
+        sha512: 4021f8b00b4d456d3d9b8e9231ae7c5ba454665d5d0b2fb3f3870261accd48a37cbf840c8b354cb2c50e3ff41d2438c0e6ebb7ce43e1352c93c34aae19acdeb5
+      linux-arm64v8:
+        url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-arm64.zip
+        sha512: 555c346bed107b81539325e2b47e4d17ca615bf4993ec53dac16c3a1c9e23fb4b98bbeab628b3d7655752cc0ccfe81313925c0e709d9b75d3691cd18dd3f7fce
 
-  azurelinux3.0: &azurelinux3.0
-    os: linux
+  azurelinux3.0-os: &azurelinux3.0-os
+    family: linux
     name: azurelinux
     displayName: "Azure Linux 3.0"
     version: "3.0"
 
-  azurelinux3.0-amd64: &azurelinux3.0-amd64
-    <<: *azurelinux3.0
-    arch: amd64
-  azurelinux3.0-arm64v8: &azurelinux3.0-arm64v8
-    <<: *azurelinux3.0
-    arch: arm64v8
-
-  # Each platform carries the packageTarget its Dockerfile template uses to pick downloads.
+  # Each platform carries the downloadKey its Dockerfile template uses to pick downloads.
   # dotnetRid is the .NET runtime identifier that .NET Monitor download URLs use.
   azurelinux3.0-platforms: &azurelinux3.0-platforms
     amd64:
-      targetPlatform: *azurelinux3.0-amd64
+      os: *azurelinux3.0-os
+      arch: amd64
       metadata:
-        packageTarget: linux-amd64
+        downloadKey: linux-amd64
         dotnetRid: linux-x64
     arm64v8:
-      targetPlatform: *azurelinux3.0-arm64v8
+      os: *azurelinux3.0-os
+      arch: arm64v8
       metadata:
-        packageTarget: linux-arm64v8
+        downloadKey: linux-arm64v8
         dotnetRid: linux-arm64
 
 defaults:
   image:
     tags:
-      "{version.patchVersion}": {}
-      "{version.minorVersion}": {}
-      "{version.majorVersion}": {}
+      "{product.patch}": {}
+      "{product.minor}": {}
+      "{product.major}": {}
       "latest": {}
   platform:
-    dockerfile: "src/{repoKey}/{version.minorVersion}/{osName}{variant}/{arch}/Dockerfile"
+    dockerfile: "src/{repoKey}/{product.minor}/{os.name}{variant}/{arch}/Dockerfile"
     dockerfileTemplate: "eng/dockerfile-templates/{repoKey}/Dockerfile.linux"
 
 repos:
@@ -81,17 +76,17 @@ repos:
       10.0-azurelinux-distroless:
         metadata:
           variant: -distroless
-          version: *monitor-version
+          product: *monitor-10.0
           baseTag: "10.0.14-azurelinux3.0-distroless-{arch}"
-          monitorUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patchVersion}/dotnet-monitor-base-{version.patchVersion}-{dotnetRid}.tar.gz"
+          monitorUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-base-{product.patch}-{dotnetRid}.tar.gz"
           monitorChecksumUrl: "{monitorUrl}.sha512"
         defaults:
           platform:
             buildArgs:
               REPO: mcr.microsoft.com/dotnet/aspnet
             tags:
-              "{version.patchVersion}-{arch}": {}
-              "{version.minorVersion}-{arch}": {}
+              "{product.patch}-{arch}": {}
+              "{product.minor}-{arch}": {}
         platforms: *azurelinux3.0-platforms
 
   monitor:
@@ -108,20 +103,20 @@ repos:
       10.0-azurelinux-distroless:
         metadata:
           variant: -distroless
-          version: *monitor-version
+          product: *monitor-10.0
           # The monitor-base platform tag this image builds on.
-          baseTag: "{version.patchVersion}-{arch}"
-          azureBlobStorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patchVersion}/dotnet-monitor-egress-azureblobstorage-{version.patchVersion}-{dotnetRid}.tar.gz"
+          baseTag: "{product.patch}-{arch}"
+          azureBlobStorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-egress-azureblobstorage-{product.patch}-{dotnetRid}.tar.gz"
           azureBlobStorageChecksumUrl: "{azureBlobStorageUrl}.sha512"
-          s3StorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{version.patchVersion}/dotnet-monitor-egress-s3storage-{version.patchVersion}-{dotnetRid}.tar.gz"
+          s3StorageUrl: "https://builds.dotnet.microsoft.com/dotnet/diagnostics/monitor/{product.patch}/dotnet-monitor-egress-s3storage-{product.patch}-{dotnetRid}.tar.gz"
           s3StorageChecksumUrl: "{s3StorageUrl}.sha512"
         defaults:
           platform:
             buildArgs:
               REPO: mcr.microsoft.com/dotnet/monitor/base
             tags:
-              "{version.patchVersion}-{arch}": { undocumented: true }
-              "{version.minorVersion}-{arch}": { undocumented: true }
+              "{product.patch}-{arch}": { undocumented: true }
+              "{product.minor}-{arch}": { undocumented: true }
         platforms: *azurelinux3.0-platforms
 
   aspire-dashboard:
@@ -143,15 +138,14 @@ repos:
         syndication: dotnet/aspire-dashboard
         metadata:
           variant: -distroless
-          version: *aspire-version
-          aspire: *aspire-downloads
+          product: *aspire-13.6
           baseTag: "11.0.0-rc.3-azurelinux3.0-distroless-extra-{arch}"
         defaults:
           platform:
             buildArgs:
               REPO: mcr.microsoft.com/dotnet/runtime-deps
             tags:
-              "{version.patchVersion}-{arch}": { undocumented: true }
-              "{version.minorVersion}-{arch}": { undocumented: true }
-              "{version.majorVersion}-{arch}": { undocumented: true }
+              "{product.patch}-{arch}": { undocumented: true }
+              "{product.minor}-{arch}": { undocumented: true }
+              "{product.major}-{arch}": { undocumented: true }
         platforms: *azurelinux3.0-platforms

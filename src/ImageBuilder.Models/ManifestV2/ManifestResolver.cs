@@ -110,7 +110,7 @@ internal sealed class ManifestResolver(Manifest manifest)
 
     private static bool HasPlaceholders(JsonElement value) => value.ValueKind switch
     {
-        JsonValueKind.String => value.GetString()!.Contains('{'),
+        JsonValueKind.String => value.ToString().Contains('{'),
         JsonValueKind.Object => value.EnumerateObject().Any(property => HasPlaceholders(property.Value)),
         JsonValueKind.Array => value.EnumerateArray().Any(HasPlaceholders),
         _ => false
@@ -155,16 +155,21 @@ internal sealed class ManifestResolver(Manifest manifest)
             foreach ((string imageKey, Image image) in images)
             {
                 string imageScope = $"{scopeKey}__{imageKey}";
-                ClaimTags(image.Tags!, imageScope);
+                ClaimTags(image.Tags, imageScope);
                 foreach ((string platformKey, Platform platform) in image.Platforms)
                 {
-                    ClaimTags(platform.Tags!, $"{imageScope}__{platformKey}");
+                    ClaimTags(platform.Tags, $"{imageScope}__{platformKey}");
                 }
             }
         }
 
-        void ClaimTags(Dictionary<string, Tag> tags, string scopeKey)
+        void ClaimTags(Dictionary<string, Tag>? tags, string scopeKey)
         {
+            if (tags is null)
+            {
+                return;
+            }
+
             foreach (string tag in tags.Keys)
             {
                 if (!tagOwners.TryAdd(tag, scopeKey))

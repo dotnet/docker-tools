@@ -20,7 +20,8 @@ internal static class GenerateCommand
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
             Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
-            string baseDirectory = manifestFile.DirectoryName!;
+            string baseDirectory = manifestFile.DirectoryName
+                ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
             TemplateRenderer renderer = new(baseDirectory);
 
             foreach (ImageEntry entry in manifest.GetImages())
@@ -28,19 +29,17 @@ internal static class GenerateCommand
                 Console.WriteLine(entry.Key);
                 foreach (PlatformEntry platformEntry in entry.GetPlatforms())
                 {
-                    Platform platform = platformEntry.Platform;
-                    if (platform.DockerfileTemplate is null)
+                    if (platformEntry.Platform is not { DockerfileTemplate: { } template, Dockerfile: { } dockerfile })
                     {
                         Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
                         continue;
                     }
 
-                    string dockerfile = await renderer.RenderAsync(
-                        platform.DockerfileTemplate, platformEntry.GetVariables(), cancellationToken);
-                    string dockerfilePath = Path.Combine(baseDirectory, platform.Dockerfile!);
-                    Directory.CreateDirectory(Path.GetDirectoryName(dockerfilePath)!);
-                    await File.WriteAllTextAsync(dockerfilePath, dockerfile, cancellationToken);
-                    Console.WriteLine($"  {platformEntry.PlatformKey}: {platform.DockerfileTemplate} -> {platform.Dockerfile}");
+                    string content = await renderer.RenderAsync(template, platformEntry.GetVariables(), cancellationToken);
+                    FileInfo output = new(Path.Combine(baseDirectory, dockerfile));
+                    output.Directory?.Create();
+                    await File.WriteAllTextAsync(output.FullName, content, cancellationToken);
+                    Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {dockerfile}");
                 }
             }
         });

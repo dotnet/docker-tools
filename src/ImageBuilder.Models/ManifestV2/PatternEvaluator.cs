@@ -61,7 +61,7 @@ internal sealed partial class PatternEvaluator
 
     private JsonElement ExpandValue(JsonElement value) => value.ValueKind switch
     {
-        JsonValueKind.String => JsonSerializer.SerializeToElement(Expand(value.GetString()!)),
+        JsonValueKind.String => JsonSerializer.SerializeToElement(Expand(value.ToString())),
         JsonValueKind.Object => JsonSerializer.SerializeToElement(
             value.EnumerateObject().ToDictionary(property => property.Name, property => ExpandValue(property.Value))),
         JsonValueKind.Array => JsonSerializer.SerializeToElement(value.EnumerateArray().Select(ExpandValue).ToArray()),
@@ -118,7 +118,7 @@ internal sealed partial class PatternEvaluator
 
         return value.ValueKind switch
         {
-            JsonValueKind.String => ExpandNested(placeholder, value.GetString()!),
+            JsonValueKind.String => ExpandNested(placeholder, value.ToString()),
             JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => value.GetRawText(),
             _ => throw new InvalidDataException($"{_scopeKey}: pattern variable '{placeholder}' must be a non-null scalar.")
         };

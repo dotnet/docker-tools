@@ -2,6 +2,7 @@
 # .NET 10 runtime-deps, runtime, aspnet and sdk images on Ubuntu 24.04 (noble).
 # Values and the Dockerfiles under src/ come from
 # https://github.com/dotnet/dotnet-docker/tree/c274006e716f5229b81a03b406b5c2e1cc9f0ffe
+registry: mcr.microsoft.com
 metadata:
   # Each .NET release: every product's version and downloads. Update a release together.
   # Templates know their own product, so they read dotnet[version.minor].<product>.downloads[downloadKey].

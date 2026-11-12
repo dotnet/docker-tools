@@ -3,6 +3,7 @@
 # Versions: https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.versions.json
 # Anchors hold the facts that change together on a release, and each platform.
 # Placeholders like {version.minor}, {os.name}, {os.family} and {arch} keep repeated values from drifting apart.
+registry: mcr.microsoft.com
 metadata:
   variant: ""
   # Images with their own template, like extra and AOT, override this.

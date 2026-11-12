@@ -7,6 +7,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
 public sealed record Manifest
 {
+    // The registry images are published to, like "mcr.microsoft.com".
+    public string? Registry { get; set; }
     public Readme? Readme { get; set; }
     public ManifestDefaults? Defaults { get; set; }
     public Dictionary<string, Repo> Repos { get; set; } = [];

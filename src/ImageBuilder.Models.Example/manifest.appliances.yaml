@@ -3,6 +3,7 @@
 # Placeholders like {version.patch} and {arch} keep repeated values from drifting apart.
 # Values come from https://github.com/dotnet/dotnet-docker/blob/c274006e716f5229b81a03b406b5c2e1cc9f0ffe/manifest.json
 # and the Dockerfiles generated at that commit.
+registry: mcr.microsoft.com
 readme:
   path: README.md
   templatePath: eng/readme-templates/README.github.md

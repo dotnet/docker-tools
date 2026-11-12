@@ -22,12 +22,12 @@ internal static class ListCommand
             Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
             string registryPrefix = manifest.Registry is null ? "" : $"{manifest.Registry}/";
 
-            foreach ((string key, Repo repo, Image image) in manifest.GetImages())
+            foreach (ImageEntry entry in manifest.GetImages())
             {
-                Console.WriteLine(key);
-                foreach ((string name, Tag tag) in image.Tags ?? [])
+                Console.WriteLine(entry.Key);
+                foreach ((string name, Tag tag) in entry.Image.Tags ?? [])
                 {
-                    string reference = $"{registryPrefix}{repo.Name}:{name}";
+                    string reference = $"{registryPrefix}{entry.Repo.Name}:{name}";
                     Console.WriteLine(tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}");
                 }
             }

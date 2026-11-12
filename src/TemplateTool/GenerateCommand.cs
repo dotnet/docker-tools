@@ -22,10 +22,10 @@ internal static class GenerateCommand
             Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
 
             // TODO: Render each template with Fluid. For now, this only shows what would be generated.
-            foreach ((string key, _, Image image) in manifest.GetImages())
+            foreach (ImageEntry entry in manifest.GetImages())
             {
-                Console.WriteLine(key);
-                foreach ((string platformKey, Platform platform) in image.Platforms)
+                Console.WriteLine(entry.Key);
+                foreach ((string platformKey, Platform platform) in entry.Image.Platforms)
                 {
                     string template = platform.DockerfileTemplate ?? "(no template)";
                     Console.WriteLine($"  {platformKey}: {template} -> {platform.Dockerfile}");

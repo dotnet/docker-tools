@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
-internal sealed class PatternEvaluator(
+internal sealed partial class PatternEvaluator(
     string repoKey,
     string scopeKey,
     Dictionary<string, JsonElement> metadata,
@@ -17,7 +17,7 @@ internal sealed class PatternEvaluator(
 
     public string Expand(string pattern)
     {
-        string expanded = Regex.Replace(pattern, @"\{([^{}]+)\}", match => ResolvePlaceholder(match.Groups[1].Value));
+        string expanded = PlaceholderRegex.Replace(pattern, match => ResolvePlaceholder(match.Groups[1].Value));
         if (expanded.Contains('{') || expanded.Contains('}'))
         {
             throw new InvalidDataException($"{scopeKey}: pattern '{pattern}' contains malformed placeholders.");
@@ -62,7 +62,7 @@ internal sealed class PatternEvaluator(
     private string ExpandTagName(string pattern)
     {
         string name = Expand(pattern);
-        if (!Regex.IsMatch(name, @"\A[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}\z"))
+        if (!DockerTagRegex.IsMatch(name))
         {
             throw new InvalidDataException($"{scopeKey}: resolved tag '{name}' is not a valid Docker tag.");
         }
@@ -138,4 +138,10 @@ internal sealed class PatternEvaluator(
                 $"{scopeKey}: pattern variable '{placeholder}' is ambiguous across platforms.")
         };
     }
+
+    [GeneratedRegex(@"\{([^{}]+)\}")]
+    private static partial Regex PlaceholderRegex { get; }
+
+    [GeneratedRegex(@"\A[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}\z")]
+    private static partial Regex DockerTagRegex { get; }
 }

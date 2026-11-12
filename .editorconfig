@@ -313,6 +313,9 @@ csharp_preserve_single_line_statements = true
 #### Naming styles ####
 [*.{cs,vb}]
 
+# Enforce naming rules in builds, not just the IDE.
+dotnet_diagnostic.IDE1006.severity = warning
+
 # Naming rules
 
 dotnet_naming_rule.types_and_namespaces_should_be_pascalcase.severity = warning

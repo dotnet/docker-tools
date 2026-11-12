@@ -6,21 +6,55 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
-internal sealed partial class PatternEvaluator(
-    string repoKey,
-    string scopeKey,
-    Dictionary<string, JsonElement> metadata,
-    Platform[] platforms)
+internal sealed partial class PatternEvaluator
 {
+    private readonly string _scopeKey;
+
+    // Everything a placeholder can refer to: the inherited metadata and the built-in model values.
+    private readonly Dictionary<string, JsonElement> _variables;
+
+    // Paths to built-in values that differ between the platforms in scope, like "arch" for an image.
+    private readonly HashSet<string> _platformSpecificPaths = new(StringComparer.Ordinal);
+
     // Placeholders being expanded, to reject metadata values that refer to themselves.
     private readonly HashSet<string> _activePlaceholders = new(StringComparer.Ordinal);
+
+    public PatternEvaluator(string repoKey, string scopeKey, Dictionary<string, JsonElement> metadata, Platform[] platforms)
+    {
+        _scopeKey = scopeKey;
+        _variables = new(metadata, StringComparer.Ordinal);
+
+        JsonElement[] builtIns = [.. platforms.Select(platform => JsonSerializer.SerializeToElement(
+            new BuiltInVariables(repoKey, platform.OS, platform.Arch), ManifestLoader.JsonOptions))];
+        if (builtIns.Length == 0)
+        {
+            return;
+        }
+
+        foreach (JsonProperty builtIn in builtIns[0].EnumerateObject())
+        {
+            if (metadata.ContainsKey(builtIn.Name))
+            {
+                throw new InvalidDataException(
+                    $"{_scopeKey}: metadata key '{builtIn.Name}' is reserved for a built-in placeholder.");
+            }
+        }
+
+        foreach ((string name, JsonElement value) in GetCommonProperties(builtIns, pathPrefix: ""))
+        {
+            _variables.Add(name, value);
+        }
+    }
+
+    // The model values that placeholders can refer to, like {repoKey}, {os.name} and {arch}.
+    private sealed record BuiltInVariables(string RepoKey, OSRelease OS, Arch Arch);
 
     public string Expand(string pattern)
     {
         string expanded = PlaceholderRegex.Replace(pattern, match => ResolvePlaceholder(match.Groups[1].Value));
         if (expanded.Contains('{') || expanded.Contains('}'))
         {
-            throw new InvalidDataException($"{scopeKey}: pattern '{pattern}' contains malformed placeholders.");
+            throw new InvalidDataException($"{_scopeKey}: pattern '{pattern}' contains malformed placeholders.");
         }
 
         return expanded;
@@ -46,13 +80,13 @@ internal sealed partial class PatternEvaluator(
             if (tag is null)
             {
                 throw new InvalidDataException(
-                    $"{scopeKey}: tag '{pattern}' must have an options mapping; use '{{}}' for default options.");
+                    $"{_scopeKey}: tag '{pattern}' must have an options mapping; use '{{}}' for default options.");
             }
 
             string name = ExpandTagName(pattern);
             if (!resolvedTags.TryAdd(name, tag))
             {
-                throw new InvalidDataException($"{scopeKey}: multiple tag declarations resolve to '{name}'.");
+                throw new InvalidDataException($"{_scopeKey}: multiple tag declarations resolve to '{name}'.");
             }
         }
 
@@ -64,7 +98,7 @@ internal sealed partial class PatternEvaluator(
         string name = Expand(pattern);
         if (!DockerTagRegex.IsMatch(name))
         {
-            throw new InvalidDataException($"{scopeKey}: resolved tag '{name}' is not a valid Docker tag.");
+            throw new InvalidDataException($"{_scopeKey}: resolved tag '{name}' is not a valid Docker tag.");
         }
 
         return name;
@@ -72,32 +106,17 @@ internal sealed partial class PatternEvaluator(
 
     private string ResolvePlaceholder(string placeholder)
     {
-        string? modelValue = placeholder switch
-        {
-            "repoKey" => repoKey,
-            "os.family" => ResolvePlatformValue(
-                placeholder, platform => platform.OS.Family.ToString().ToLowerInvariant()),
-            "os.name" => ResolvePlatformValue(placeholder, platform => platform.OS.Name),
-            "arch" => ResolvePlatformValue(
-                placeholder, platform => JsonNamingPolicy.CamelCase.ConvertName(platform.Arch.ToString())),
-            _ => null
-        };
-        if (modelValue is not null)
-        {
-            return modelValue;
-        }
-
         string[] segments = placeholder.Split('.');
-        if (!metadata.TryGetValue(segments[0], out JsonElement value))
+        if (!_variables.TryGetValue(segments[0], out JsonElement value))
         {
-            throw new InvalidDataException($"{scopeKey}: unknown pattern variable '{placeholder}'.");
+            throw UnresolvedPlaceholder(placeholder, segments[0]);
         }
 
-        foreach (string segment in segments.Skip(1))
+        for (int i = 1; i < segments.Length; i++)
         {
-            if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segment, out value))
+            if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segments[i], out value))
             {
-                throw new InvalidDataException($"{scopeKey}: unknown pattern variable '{placeholder}'.");
+                throw UnresolvedPlaceholder(placeholder, string.Join('.', segments[..(i + 1)]));
             }
         }
 
@@ -105,16 +124,21 @@ internal sealed partial class PatternEvaluator(
         {
             JsonValueKind.String => ExpandNested(placeholder, value.GetString()!),
             JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => value.GetRawText(),
-            _ => throw new InvalidDataException($"{scopeKey}: pattern variable '{placeholder}' must be a non-null scalar.")
+            _ => throw new InvalidDataException($"{_scopeKey}: pattern variable '{placeholder}' must be a non-null scalar.")
         };
     }
+
+    private InvalidDataException UnresolvedPlaceholder(string placeholder, string missingPath) =>
+        _platformSpecificPaths.Contains(missingPath)
+            ? new InvalidDataException($"{_scopeKey}: pattern variable '{placeholder}' is ambiguous across platforms.")
+            : new InvalidDataException($"{_scopeKey}: unknown pattern variable '{placeholder}'.");
 
     // A metadata value may itself contain placeholders, such as "{monitorUrl}.sha512".
     private string ExpandNested(string placeholder, string value)
     {
         if (!_activePlaceholders.Add(placeholder))
         {
-            throw new InvalidDataException($"{scopeKey}: pattern variable '{placeholder}' refers to itself.");
+            throw new InvalidDataException($"{_scopeKey}: pattern variable '{placeholder}' refers to itself.");
         }
 
         try
@@ -127,16 +151,30 @@ internal sealed partial class PatternEvaluator(
         }
     }
 
-    private string? ResolvePlatformValue(string placeholder, Func<Platform, string> selector)
+    // The properties that all of the objects agree on. Objects are compared property by property, so an
+    // image whose platforms share an OS but not an arch can still use {os.name}, but not {arch}.
+    private Dictionary<string, JsonElement> GetCommonProperties(JsonElement[] objects, string pathPrefix)
     {
-        string[] values = platforms.Select(selector).Distinct(StringComparer.Ordinal).Take(2).ToArray();
-        return values.Length switch
+        Dictionary<string, JsonElement> common = new(StringComparer.Ordinal);
+        foreach (JsonProperty property in objects[0].EnumerateObject())
         {
-            0 => null,
-            1 => values[0],
-            _ => throw new InvalidDataException(
-                $"{scopeKey}: pattern variable '{placeholder}' is ambiguous across platforms.")
-        };
+            string path = pathPrefix + property.Name;
+            JsonElement[] values = [.. objects.Select(obj => obj.GetProperty(property.Name))];
+            if (values.All(value => value.ValueKind == JsonValueKind.Object))
+            {
+                common.Add(property.Name, JsonSerializer.SerializeToElement(GetCommonProperties(values, path + ".")));
+            }
+            else if (values.All(value => JsonElement.DeepEquals(value, values[0])))
+            {
+                common.Add(property.Name, values[0]);
+            }
+            else
+            {
+                _platformSpecificPaths.Add(path);
+            }
+        }
+
+        return common;
     }
 
     [GeneratedRegex(@"\{([^{}]+)\}")]

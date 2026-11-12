@@ -18,7 +18,8 @@ public static class ManifestLoader
         .WithAttemptingUnquotedStringTypeDeserialization()
         .Build();
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    // Also names and formats the model values that placeholders can refer to.
+    internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         RespectNullableAnnotations = true,

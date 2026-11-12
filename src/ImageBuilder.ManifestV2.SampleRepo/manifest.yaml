@@ -90,15 +90,18 @@ definitions:
     amd64:
       os: *noble-os
       arch: amd64
-      metadata: { downloadKey: linux-x64 }
+      metadata:
+        downloadKey: linux-x64
     arm32v7:
       os: *noble-os
       arch: arm32v7
-      metadata: { downloadKey: linux-arm32 }
+      metadata:
+        downloadKey: linux-arm32
     arm64v8:
       os: *noble-os
       arch: arm64v8
-      metadata: { downloadKey: linux-arm64 }
+      metadata:
+        downloadKey: linux-arm64
 
 repos:
   runtime-deps:

@@ -337,15 +337,18 @@ definitions:
         amd64: &noble-amd64
           os: *noble-os
           arch: amd64
-          metadata: { downloadKey: linux-x64 }
+          metadata:
+            downloadKey: linux-x64
         arm32v7:
           os: *noble-os
           arch: arm32v7
-          metadata: { downloadKey: linux-arm32 }
+          metadata:
+            downloadKey: linux-arm32
         arm64v8: &noble-arm64v8
           os: *noble-os
           arch: arm64v8
-          metadata: { downloadKey: linux-arm64 }
+          metadata:
+            downloadKey: linux-arm64
       no-arm32: &noble-no-arm32
         amd64: *noble-amd64
         arm64v8: *noble-arm64v8
@@ -360,15 +363,18 @@ definitions:
         amd64: &resolute-amd64
           os: *resolute-os
           arch: amd64
-          metadata: { downloadKey: linux-x64 }
+          metadata:
+            downloadKey: linux-x64
         arm32v7:
           os: *resolute-os
           arch: arm32v7
-          metadata: { downloadKey: linux-arm32 }
+          metadata:
+            downloadKey: linux-arm32
         arm64v8: &resolute-arm64v8
           os: *resolute-os
           arch: arm64v8
-          metadata: { downloadKey: linux-arm64 }
+          metadata:
+            downloadKey: linux-arm64
       no-arm32: &resolute-no-arm32
         amd64: *resolute-amd64
         arm64v8: *resolute-arm64v8
@@ -383,15 +389,18 @@ definitions:
         amd64: &alpine3.24-amd64
           os: *alpine3.24-os
           arch: amd64
-          metadata: { downloadKey: linux-musl-x64 }
+          metadata:
+            downloadKey: linux-musl-x64
         arm32v7:
           os: *alpine3.24-os
           arch: arm32v7
-          metadata: { downloadKey: linux-musl-arm32 }
+          metadata:
+            downloadKey: linux-musl-arm32
         arm64v8: &alpine3.24-arm64v8
           os: *alpine3.24-os
           arch: arm64v8
-          metadata: { downloadKey: linux-musl-arm64 }
+          metadata:
+            downloadKey: linux-musl-arm64
       no-arm32: &alpine3.24-no-arm32
         amd64: *alpine3.24-amd64
         arm64v8: *alpine3.24-arm64v8
@@ -406,11 +415,13 @@ definitions:
         amd64:
           os: *azurelinux3.0-os
           arch: amd64
-          metadata: { downloadKey: linux-x64 }
+          metadata:
+            downloadKey: linux-x64
         arm64v8:
           os: *azurelinux3.0-os
           arch: arm64v8
-          metadata: { downloadKey: linux-arm64 }
+          metadata:
+            downloadKey: linux-arm64
 
     azurelinux4.0:
       os: &azurelinux4.0-os
@@ -422,11 +433,13 @@ definitions:
         amd64:
           os: *azurelinux4.0-os
           arch: amd64
-          metadata: { downloadKey: linux-x64 }
+          metadata:
+            downloadKey: linux-x64
         arm64v8:
           os: *azurelinux4.0-os
           arch: arm64v8
-          metadata: { downloadKey: linux-arm64 }
+          metadata:
+            downloadKey: linux-arm64
 
     # Windows images have one arch each.
     nanoserver-ltsc2022:
@@ -439,7 +452,8 @@ definitions:
         amd64:
           os: *nanoserver-ltsc2022-os
           arch: amd64
-          metadata: { downloadKey: windows-x64 }
+          metadata:
+            downloadKey: windows-x64
 
     nanoserver-ltsc2025:
       os: &nanoserver-ltsc2025-os
@@ -451,7 +465,8 @@ definitions:
         amd64:
           os: *nanoserver-ltsc2025-os
           arch: amd64
-          metadata: { downloadKey: windows-x64 }
+          metadata:
+            downloadKey: windows-x64
 
     windowsservercore-ltsc2022:
       os: &windowsservercore-ltsc2022-os
@@ -463,7 +478,8 @@ definitions:
         amd64:
           os: *windowsservercore-ltsc2022-os
           arch: amd64
-          metadata: { downloadKey: windows-x64 }
+          metadata:
+            downloadKey: windows-x64
 
     windowsservercore-ltsc2025:
       os: &windowsservercore-ltsc2025-os
@@ -475,7 +491,8 @@ definitions:
         amd64:
           os: *windowsservercore-ltsc2025-os
           arch: amd64
-          metadata: { downloadKey: windows-x64 }
+          metadata:
+            downloadKey: windows-x64
 
 readme:
   path: README.md

@@ -3,8 +3,6 @@
 # Values and the Dockerfiles under src/ come from
 # https://github.com/dotnet/dotnet-docker/tree/c274006e716f5229b81a03b406b5c2e1cc9f0ffe
 metadata:
-  # Images with their own template override this.
-  templateFile: "Dockerfile.{os.family}"
   # Each .NET release: every product's version and downloads. Update a release together.
   # Templates know their own product, so they read dotnet[version.minor].<product>.downloads[downloadKey].
   dotnet:
@@ -62,7 +60,7 @@ defaults:
       "latest": {}
   platform:
     dockerfile: "src/{repoKey}/{version.minor}/{os.name}/{arch}/Dockerfile"
-    dockerfileTemplate: "eng/dockerfile-templates/{repoKey}/{templateFile}"
+    dockerfileTemplate: "Dockerfile.{repoKey}.template"
     tags:
       "{version.patch}-{os.name}-{arch}": {}
       "{version.minor}-{os.name}-{arch}": {}
@@ -93,9 +91,6 @@ repos:
   runtime-deps:
     name: dotnet/runtime-deps
     # runtime-deps images take the runtime's version.
-    # runtime-deps's base template is named Dockerfile, not Dockerfile.linux.
-    metadata:
-      templateFile: Dockerfile
     groups:
       "10.0":
         metadata:

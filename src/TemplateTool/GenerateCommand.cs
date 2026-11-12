@@ -36,7 +36,7 @@ internal static class GenerateCommand
                     }
 
                     string content = await renderer.RenderAsync(template, platformEntry.GetVariables(), cancellationToken);
-                    FileInfo output = new(Path.Combine(baseDirectory, dockerfile));
+                    FileInfo output = new(Path.Join(baseDirectory, dockerfile));
                     output.Directory?.Create();
                     await File.WriteAllTextAsync(output.FullName, content, cancellationToken);
                     Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {dockerfile}");

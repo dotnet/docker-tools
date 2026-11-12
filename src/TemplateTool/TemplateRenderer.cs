@@ -44,7 +44,7 @@ internal sealed class TemplateRenderer(string baseDirectory)
             return template;
         }
 
-        string source = await File.ReadAllTextAsync(Path.Combine(baseDirectory, templatePath), cancellationToken);
+        string source = await File.ReadAllTextAsync(Path.Join(baseDirectory, templatePath), cancellationToken);
         if (!Parser.TryParse(source, out template, out string error))
         {
             throw new InvalidDataException($"{templatePath}: {error}");

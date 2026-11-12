@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json;
+
 namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
 /// <summary>
@@ -59,4 +61,33 @@ public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Pl
     /// The platform's key, unique within the manifest, like "sdk__10.0__noble__amd64".
     /// </summary>
     public string Key => string.Join(ImageEntry.KeySeparator, ImageEntry.Key, PlatformKey);
+
+    /// <summary>
+    /// The values the platform's placeholders and Dockerfile template can refer to: its metadata merged
+    /// from the manifest down to the platform, where the closest declaration of each key wins, plus the
+    /// built-in "repoKey", "os" and "arch".
+    /// </summary>
+    public Dictionary<string, JsonElement> GetVariables()
+    {
+        Dictionary<string, JsonElement> variables = new(StringComparer.Ordinal);
+        Dictionary<string, JsonElement>[] scopes =
+        [
+            ImageEntry.Manifest.Metadata,
+            ImageEntry.Repo.Metadata,
+            ImageEntry.Group?.Metadata ?? [],
+            ImageEntry.Image.Metadata,
+            Platform.Metadata
+        ];
+        foreach ((string key, JsonElement value) in scopes.SelectMany(scope => scope))
+        {
+            variables[key] = value;
+        }
+
+        foreach (JsonProperty builtIn in BuiltInVariables.Serialize(ImageEntry.RepoKey, Platform).EnumerateObject())
+        {
+            variables.Add(builtIn.Name, builtIn.Value);
+        }
+
+        return variables;
+    }
 }

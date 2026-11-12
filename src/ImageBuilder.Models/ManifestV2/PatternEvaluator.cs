@@ -24,8 +24,7 @@ internal sealed partial class PatternEvaluator
         _scopeKey = scopeKey;
         _variables = new(metadata, StringComparer.Ordinal);
 
-        JsonElement[] builtIns = [.. platforms.Select(platform => JsonSerializer.SerializeToElement(
-            new BuiltInVariables(repoKey, platform.OS, platform.Arch), ManifestLoader.JsonOptions))];
+        JsonElement[] builtIns = [.. platforms.Select(platform => BuiltInVariables.Serialize(repoKey, platform))];
         if (builtIns.Length == 0)
         {
             return;
@@ -45,9 +44,6 @@ internal sealed partial class PatternEvaluator
             _variables.Add(name, value);
         }
     }
-
-    // The model values that placeholders can refer to, like {repoKey}, {os.name} and {arch}.
-    private sealed record BuiltInVariables(string RepoKey, OSRelease OS, Arch Arch);
 
     public string Expand(string pattern)
     {

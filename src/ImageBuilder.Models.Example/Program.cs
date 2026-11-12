@@ -147,13 +147,21 @@ file sealed class ManifestResolver(Manifest manifest)
         };
 
     // Replace entire values by top-level key, without changing parent or sibling metadata.
+    // A null value removes the inherited key.
     private static Dictionary<string, JsonElement> InheritMetadata(
         Dictionary<string, JsonElement> parentMetadata, Dictionary<string, JsonElement> metadata)
     {
         Dictionary<string, JsonElement> inheritedMetadata = new(parentMetadata, StringComparer.Ordinal);
         foreach ((string name, JsonElement value) in metadata)
         {
-            inheritedMetadata[name] = value;
+            if (value.ValueKind == JsonValueKind.Null)
+            {
+                inheritedMetadata.Remove(name);
+            }
+            else
+            {
+                inheritedMetadata[name] = value;
+            }
         }
 
         return inheritedMetadata;

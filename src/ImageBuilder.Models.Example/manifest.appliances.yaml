@@ -15,16 +15,18 @@ definitions:
     patchVersion: "10.0.5"
 
   # Aspire Dashboard: the version used in tags, and each platform's download. Update them together.
+  # Downloads are keyed by the rid of each target platform. The Dockerfile template picks one.
   aspire-version: &aspire-version
     majorVersion: "13"
     minorVersion: "13.6"
     patchVersion: "13.6.2"
-  aspire-amd64: &aspire-amd64
-    aspireUrl: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-x64.zip
-    aspireSha512: 4021f8b00b4d456d3d9b8e9231ae7c5ba454665d5d0b2fb3f3870261accd48a37cbf840c8b354cb2c50e3ff41d2438c0e6ebb7ce43e1352c93c34aae19acdeb5
-  aspire-arm64v8: &aspire-arm64v8
-    aspireUrl: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-arm64.zip
-    aspireSha512: 555c346bed107b81539325e2b47e4d17ca615bf4993ec53dac16c3a1c9e23fb4b98bbeab628b3d7655752cc0ccfe81313925c0e709d9b75d3691cd18dd3f7fce
+  aspire-downloads: &aspire-downloads
+    linux-x64:
+      url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-x64.zip
+      sha512: 4021f8b00b4d456d3d9b8e9231ae7c5ba454665d5d0b2fb3f3870261accd48a37cbf840c8b354cb2c50e3ff41d2438c0e6ebb7ce43e1352c93c34aae19acdeb5
+    linux-arm64:
+      url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-arm64.zip
+      sha512: 555c346bed107b81539325e2b47e4d17ca615bf4993ec53dac16c3a1c9e23fb4b98bbeab628b3d7655752cc0ccfe81313925c0e709d9b75d3691cd18dd3f7fce
 
   azurelinux3.0: &azurelinux3.0
     os: linux
@@ -38,6 +40,17 @@ definitions:
   azurelinux3.0-arm64v8: &azurelinux3.0-arm64v8
     <<: *azurelinux3.0
     arch: arm64v8
+
+  # Each platform carries the rid its Dockerfile template uses to pick downloads.
+  azurelinux3.0-platforms: &azurelinux3.0-platforms
+    amd64:
+      targetPlatform: *azurelinux3.0-amd64
+      metadata:
+        rid: linux-x64
+    arm64v8:
+      targetPlatform: *azurelinux3.0-arm64v8
+      metadata:
+        rid: linux-arm64
 
 defaults:
   image:
@@ -76,15 +89,7 @@ repos:
             tags:
               "{version.patchVersion}-{arch}": {}
               "{version.minorVersion}-{arch}": {}
-        platforms:
-          amd64:
-            targetPlatform: *azurelinux3.0-amd64
-            metadata:
-              rid: linux-x64
-          arm64v8:
-            targetPlatform: *azurelinux3.0-arm64v8
-            metadata:
-              rid: linux-arm64
+        platforms: *azurelinux3.0-platforms
 
   monitor:
     name: dotnet/monitor
@@ -114,15 +119,7 @@ repos:
             tags:
               "{version.patchVersion}-{arch}": { undocumented: true }
               "{version.minorVersion}-{arch}": { undocumented: true }
-        platforms:
-          amd64:
-            targetPlatform: *azurelinux3.0-amd64
-            metadata:
-              rid: linux-x64
-          arm64v8:
-            targetPlatform: *azurelinux3.0-arm64v8
-            metadata:
-              rid: linux-arm64
+        platforms: *azurelinux3.0-platforms
 
   aspire-dashboard:
     name: aspire/dashboard
@@ -144,6 +141,7 @@ repos:
         metadata:
           variant: -distroless
           version: *aspire-version
+          aspire: *aspire-downloads
           baseTag: "11.0.0-rc.3-azurelinux3.0-distroless-extra-{arch}"
         defaults:
           platform:
@@ -153,10 +151,4 @@ repos:
               "{version.patchVersion}-{arch}": { undocumented: true }
               "{version.minorVersion}-{arch}": { undocumented: true }
               "{version.majorVersion}-{arch}": { undocumented: true }
-        platforms:
-          amd64:
-            targetPlatform: *azurelinux3.0-amd64
-            metadata: *aspire-amd64
-          arm64v8:
-            targetPlatform: *azurelinux3.0-arm64v8
-            metadata: *aspire-arm64v8
+        platforms: *azurelinux3.0-platforms

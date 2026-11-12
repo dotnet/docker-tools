@@ -30,6 +30,7 @@ definitions:
       "{version.minorVersion}-alpine{variant}-{arch}": {}
 
   # .NET 10.0: each product's version and downloads. Update them together.
+  # Downloads are keyed by the rid of each target platform. Dockerfile templates pick one.
   dotnet-10.0:
     runtime: &runtime-10.0
       minorVersion: "10.0"
@@ -44,89 +45,89 @@ definitions:
       patchVersion: "10.0.403"
       buildVersion: "10.0.403"
     downloads:
-      runtime:
-        linux-x64: &runtime-10.0-linux-x64
+      runtime: &runtime-10.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-x64.tar.gz.sha512"
-        linux-arm: &runtime-10.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm.tar.gz.sha512"
-        linux-arm64: &runtime-10.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &runtime-10.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &runtime-10.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &runtime-10.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-linux-musl-arm64.tar.gz.sha512"
-        win-x64: &runtime-10.0-win-x64
+        win-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-win-x64.zip"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.14/dotnet-runtime-10.0.14-win-x64.zip.sha512-bare"
-      aspnet:
-        linux-x64: &aspnet-10.0-linux-x64
+      aspnet: &aspnet-10.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-x64.tar.gz.sha512"
-        linux-arm: &aspnet-10.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm.tar.gz.sha512"
-        linux-arm64: &aspnet-10.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &aspnet-10.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &aspnet-10.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &aspnet-10.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-linux-musl-arm64.tar.gz.sha512"
-        win-x64: &aspnet-10.0-win-x64
+        win-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-win-x64.zip"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-10.0.14-win-x64.zip.sha512-bare"
-      aspnet-composite:
-        linux-x64: &aspnet-composite-10.0-linux-x64
+      aspnet-composite: &aspnet-composite-10.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-x64.tar.gz.sha512"
-        linux-arm: &aspnet-composite-10.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm.tar.gz.sha512"
-        linux-arm64: &aspnet-composite-10.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &aspnet-composite-10.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &aspnet-composite-10.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &aspnet-composite-10.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.14/aspnetcore-runtime-composite-10.0.14-linux-musl-arm64.tar.gz.sha512"
-      sdk:
-        linux-x64: &sdk-10.0-linux-x64
+      sdk: &sdk-10.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-x64.tar.gz.sha512"
-        linux-arm: &sdk-10.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm.tar.gz.sha512"
-        linux-arm64: &sdk-10.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &sdk-10.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &sdk-10.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &sdk-10.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-linux-musl-arm64.tar.gz.sha512"
-        win-x64: &sdk-10.0-win-x64
+        win-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip.sha512-bare"
 
@@ -145,135 +146,135 @@ definitions:
       patchVersion: "11.0.100-rc.3"
       buildVersion: "11.0.100-rc.3.26522.148"
     downloads:
-      runtime:
-        linux-x64: &runtime-11.0-linux-x64
+      runtime: &runtime-11.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm: &runtime-11.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64: &runtime-11.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &runtime-11.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &runtime-11.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &runtime-11.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-        win-x64: &runtime-11.0-win-x64
+        win-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-win-x64.zip"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Runtime/11.0.0-rc.3.26522.148/dotnet-runtime-11.0.0-rc.3.26522.148-win-x64.zip.sha512-bare"
-      aspnet:
-        linux-x64: &aspnet-11.0-linux-x64
+      aspnet: &aspnet-11.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm: &aspnet-11.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64: &aspnet-11.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &aspnet-11.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &aspnet-11.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &aspnet-11.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-        win-x64: &aspnet-11.0-win-x64
+        win-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-win-x64.zip"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-11.0.0-rc.3.26522.148-win-x64.zip.sha512-bare"
-      aspnet-composite:
-        linux-x64: &aspnet-composite-11.0-linux-x64
+      aspnet-composite: &aspnet-composite-11.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm: &aspnet-composite-11.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64: &aspnet-composite-11.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &aspnet-composite-11.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &aspnet-composite-11.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &aspnet-composite-11.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/11.0.0-rc.3.26522.148/aspnetcore-runtime-composite-11.0.0-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-      sdk:
-        linux-x64: &sdk-11.0-linux-x64
+      sdk: &sdk-11.0-downloads
+        linux-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-x64.tar.gz.sha512"
-        linux-arm: &sdk-11.0-linux-arm
+        linux-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm.tar.gz.sha512"
-        linux-arm64: &sdk-11.0-linux-arm64
+        linux-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-arm64.tar.gz.sha512"
-        linux-musl-x64: &sdk-11.0-linux-musl-x64
+        linux-musl-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-x64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-x64.tar.gz.sha512"
-        linux-musl-arm: &sdk-11.0-linux-musl-arm
+        linux-musl-arm:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm.tar.gz.sha512"
-        linux-musl-arm64: &sdk-11.0-linux-musl-arm64
+        linux-musl-arm64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm64.tar.gz"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-linux-musl-arm64.tar.gz.sha512"
-        win-x64: &sdk-11.0-win-x64
+        win-x64:
           url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-win-x64.zip"
           checksumUrl: "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100-rc.3.26522.148/dotnet-sdk-11.0.100-rc.3.26522.148-win-x64.zip.sha512-bare"
 
-  # One anchor per PowerShell download. Each SDK image picks the PowerShell it ships.
-  # PowerShell has no linux-musl (Alpine) packages for Arm.
+  # PowerShell downloads, keyed by the psRid of each target platform.
+  # PowerShell has no linux-musl (Alpine) packages for Arm, so templates must allow a missing key.
   powershell:
-    powershell-7.6:
-      linux-amd64: &powershell-7.6-linux-amd64
+    powershell-7.6: &powershell-7.6
+      linux-amd64:
         version: "7.6.9"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.x64.7.6.9.nupkg"
         digest: "sha256:e14ad06e1192ccb221a6bfbc804476dabae792bb5c9c7ad62793e5ff058d826e"
-      linux-arm32v7: &powershell-7.6-linux-arm32v7
+      linux-arm32v7:
         version: "7.6.9"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm32.7.6.9.nupkg"
         digest: "sha256:157b5dc526e2a4664831f308ab3cffd87dcf34123dec03dd6f3e1b7dcd76e0c8"
-      linux-arm64v8: &powershell-7.6-linux-arm64v8
+      linux-arm64v8:
         version: "7.6.9"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm64.7.6.9.nupkg"
         digest: "sha256:9d098cb700f518702a87bbc037dadb6a9d6b34489012431756fb2531503f436b"
-      linux-musl-amd64: &powershell-7.6-linux-musl-amd64
+      linux-musl-amd64:
         version: "7.6.9"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.Alpine.7.6.9.nupkg"
         digest: "sha256:6696a3ad4322209a9ba9dd8156eef65eee7e20bc7a6318439c11598044d83c70"
-      windows-amd64: &powershell-7.6-windows-amd64
+      windows-amd64:
         version: "7.6.9"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Windows.x64.7.6.9.nupkg"
         digest: "sha256:be4c95159889a2930e1b8bd714700e46794b234fe16616f9e89f1c090badab15"
 
-    powershell-7.7:
-      linux-amd64: &powershell-7.7-linux-amd64
+    powershell-7.7: &powershell-7.7
+      linux-amd64:
         version: "7.7.0-preview.5"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.x64.7.7.0-preview.5.nupkg"
         digest: "sha512:d8543590a76c597bb7797497d5b40a695ad741c492ddbf0310831326a1476b37ae97e5bf5709f6afb4a17a7d4585b9394dbdbeb980bc17e5627d40f974296284"
-      linux-arm32v7: &powershell-7.7-linux-arm32v7
+      linux-arm32v7:
         version: "7.7.0-preview.5"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.arm32.7.7.0-preview.5.nupkg"
         digest: "sha512:d45bcb6d129a2bb068b47528ed0ec554e5860d113baeed1e8e28920fcb7d8669bf2d2d9a46f442c53dac6030fbc93c4ee577e7e9f7fd496bf37354cea3a4f6e7"
-      linux-arm64v8: &powershell-7.7-linux-arm64v8
+      linux-arm64v8:
         version: "7.7.0-preview.5"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.arm64.7.7.0-preview.5.nupkg"
         digest: "sha512:0f4cb9bebbdefdfd603676cd91804523b801be593f3253c3bedc15b8d433ad3cd455e76d1447769ac4b9fbcbcfd34d6398e85b362a08e77caef6fe89cdcfaace"
-      linux-musl-amd64: &powershell-7.7-linux-musl-amd64
+      linux-musl-amd64:
         version: "7.7.0-preview.5"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Linux.Alpine.7.7.0-preview.5.nupkg"
         digest: "sha512:e3d3e80b026760f173a268b2ff5630a28741be33f67c6628141d75e854e20299fb89d61e819da32ba988a055baaa049d20ba355b196a0c3297221c2032dd706a"
-      windows-amd64: &powershell-7.7-windows-amd64
+      windows-amd64:
         version: "7.7.0-preview.5"
         url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.7.0-preview.5/PowerShell.Windows.x64.7.7.0-preview.5.nupkg"
         digest: "sha512:4684ec6b7dc49aff2e5b2189512c59c4280dfbdb1ea488000b49372ddbe0435f71e43653d1901f6a26e945684979dd955cce43492435108fa702221bdd59b36e"
@@ -330,8 +331,32 @@ definitions:
         variant: -distroless-extra
         templateFile: Dockerfile.distroless-azurelinux.extra
 
+  # The keys Dockerfile templates use to pick each platform's downloads.
+  rids:
+    linux-amd64: &rids-linux-amd64
+      rid: linux-x64
+      psRid: linux-amd64
+    linux-arm32v7: &rids-linux-arm32v7
+      rid: linux-arm
+      psRid: linux-arm32v7
+    linux-arm64v8: &rids-linux-arm64v8
+      rid: linux-arm64
+      psRid: linux-arm64v8
+    linux-musl-amd64: &rids-linux-musl-amd64
+      rid: linux-musl-x64
+      psRid: linux-musl-amd64
+    linux-musl-arm32v7: &rids-linux-musl-arm32v7
+      rid: linux-musl-arm
+      psRid: linux-musl-arm32v7
+    linux-musl-arm64v8: &rids-linux-musl-arm64v8
+      rid: linux-musl-arm64
+      psRid: linux-musl-arm64v8
+    windows-amd64: &rids-windows-amd64
+      rid: win-x64
+      psRid: windows-amd64
+
   # Each OS, its target platforms, and the platforms for every arch it supports.
-  # Images that use only some arches list their target platforms one by one.
+  # Each platform carries the rids its Dockerfile template uses to pick downloads.
   platforms:
     noble:
       os: &noble-os
@@ -349,12 +374,18 @@ definitions:
         <<: *noble-os
         arch: arm64v8
       all: &noble
-        amd64:
+        amd64: &noble-amd64-platform
           targetPlatform: *noble-amd64
-        arm32v7:
+          metadata: *rids-linux-amd64
+        arm32v7: &noble-arm32v7-platform
           targetPlatform: *noble-arm32v7
-        arm64v8:
+          metadata: *rids-linux-arm32v7
+        arm64v8: &noble-arm64v8-platform
           targetPlatform: *noble-arm64v8
+          metadata: *rids-linux-arm64v8
+      no-arm32: &noble-no-arm32
+        amd64: *noble-amd64-platform
+        arm64v8: *noble-arm64v8-platform
 
     resolute:
       os: &resolute-os
@@ -372,12 +403,18 @@ definitions:
         <<: *resolute-os
         arch: arm64v8
       all: &resolute
-        amd64:
+        amd64: &resolute-amd64-platform
           targetPlatform: *resolute-amd64
-        arm32v7:
+          metadata: *rids-linux-amd64
+        arm32v7: &resolute-arm32v7-platform
           targetPlatform: *resolute-arm32v7
-        arm64v8:
+          metadata: *rids-linux-arm32v7
+        arm64v8: &resolute-arm64v8-platform
           targetPlatform: *resolute-arm64v8
+          metadata: *rids-linux-arm64v8
+      no-arm32: &resolute-no-arm32
+        amd64: *resolute-amd64-platform
+        arm64v8: *resolute-arm64v8-platform
 
     alpine3.24:
       os: &alpine3.24-os
@@ -395,12 +432,18 @@ definitions:
         <<: *alpine3.24-os
         arch: arm64v8
       all: &alpine3.24
-        amd64:
+        amd64: &alpine3.24-amd64-platform
           targetPlatform: *alpine3.24-amd64
-        arm32v7:
+          metadata: *rids-linux-musl-amd64
+        arm32v7: &alpine3.24-arm32v7-platform
           targetPlatform: *alpine3.24-arm32v7
-        arm64v8:
+          metadata: *rids-linux-musl-arm32v7
+        arm64v8: &alpine3.24-arm64v8-platform
           targetPlatform: *alpine3.24-arm64v8
+          metadata: *rids-linux-musl-arm64v8
+      no-arm32: &alpine3.24-no-arm32
+        amd64: *alpine3.24-amd64-platform
+        arm64v8: *alpine3.24-arm64v8-platform
 
     azurelinux3.0:
       os: &azurelinux3.0-os
@@ -415,10 +458,12 @@ definitions:
         <<: *azurelinux3.0-os
         arch: arm64v8
       all: &azurelinux3.0
-        amd64:
+        amd64: &azurelinux3.0-amd64-platform
           targetPlatform: *azurelinux3.0-amd64
-        arm64v8:
+          metadata: *rids-linux-amd64
+        arm64v8: &azurelinux3.0-arm64v8-platform
           targetPlatform: *azurelinux3.0-arm64v8
+          metadata: *rids-linux-arm64v8
 
     azurelinux4.0:
       os: &azurelinux4.0-os
@@ -433,10 +478,12 @@ definitions:
         <<: *azurelinux4.0-os
         arch: arm64v8
       all: &azurelinux4.0
-        amd64:
+        amd64: &azurelinux4.0-amd64-platform
           targetPlatform: *azurelinux4.0-amd64
-        arm64v8:
+          metadata: *rids-linux-amd64
+        arm64v8: &azurelinux4.0-arm64v8-platform
           targetPlatform: *azurelinux4.0-arm64v8
+          metadata: *rids-linux-arm64v8
 
     # Windows images have one arch each.
     nanoserver-ltsc2022:
@@ -448,6 +495,10 @@ definitions:
       amd64: &nanoserver-ltsc2022-amd64
         <<: *nanoserver-ltsc2022-os
         arch: amd64
+      all: &nanoserver-ltsc2022
+        amd64: &nanoserver-ltsc2022-amd64-platform
+          targetPlatform: *nanoserver-ltsc2022-amd64
+          metadata: *rids-windows-amd64
 
     nanoserver-ltsc2025:
       os: &nanoserver-ltsc2025-os
@@ -458,6 +509,10 @@ definitions:
       amd64: &nanoserver-ltsc2025-amd64
         <<: *nanoserver-ltsc2025-os
         arch: amd64
+      all: &nanoserver-ltsc2025
+        amd64: &nanoserver-ltsc2025-amd64-platform
+          targetPlatform: *nanoserver-ltsc2025-amd64
+          metadata: *rids-windows-amd64
 
     windowsservercore-ltsc2022:
       os: &windowsservercore-ltsc2022-os
@@ -468,6 +523,10 @@ definitions:
       amd64: &windowsservercore-ltsc2022-amd64
         <<: *windowsservercore-ltsc2022-os
         arch: amd64
+      all: &windowsservercore-ltsc2022
+        amd64: &windowsservercore-ltsc2022-amd64-platform
+          targetPlatform: *windowsservercore-ltsc2022-amd64
+          metadata: *rids-windows-amd64
 
     windowsservercore-ltsc2025:
       os: &windowsservercore-ltsc2025-os
@@ -478,6 +537,10 @@ definitions:
       amd64: &windowsservercore-ltsc2025-amd64
         <<: *windowsservercore-ltsc2025-os
         arch: amd64
+      all: &windowsservercore-ltsc2025
+        amd64: &windowsservercore-ltsc2025-amd64-platform
+          targetPlatform: *windowsservercore-ltsc2025-amd64
+          metadata: *rids-windows-amd64
 
 readme:
   path: README.md
@@ -646,24 +709,13 @@ repos:
         metadata:
           version: *runtime-10.0
           runtime: *runtime-10.0
+          dotnet: *runtime-10.0-downloads
         images:
           noble:
             tags:
               <<: [*sharedTags, *convenienceTags]
               "latest": {}
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *noble
 
           alpine3.24:
             tags:
@@ -672,19 +724,7 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-extra:
             metadata: *variant-extra
@@ -694,203 +734,80 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           azurelinux3.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless:
             metadata: *variant-distroless
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-extra:
             metadata: *variant-distroless-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           noble-chiseled:
             metadata: *variant-chiseled
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *noble
 
           noble-chiseled-extra:
             metadata: *variant-chiseled-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *noble
 
           resolute:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled:
             metadata: *variant-chiseled
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-extra:
             metadata: *variant-chiseled-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *runtime-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *runtime-10.0-linux-arm64
+            platforms: *resolute
 
           nanoserver-ltsc2022:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2022-amd64
-                metadata:
-                  dotnet: *runtime-10.0-win-x64
+            platforms: *nanoserver-ltsc2022
 
           nanoserver-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2025-amd64
-                metadata:
-                  dotnet: *runtime-10.0-win-x64
+            platforms: *nanoserver-ltsc2025
 
           windowsservercore-ltsc2022:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2022-amd64
-                metadata:
-                  dotnet: *runtime-10.0-win-x64
+            platforms: *windowsservercore-ltsc2022
 
           windowsservercore-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2025-amd64
-                metadata:
-                  dotnet: *runtime-10.0-win-x64
+            platforms: *windowsservercore-ltsc2025
 
       "11.0":
         metadata:
           version: *runtime-11.0
           runtime: *runtime-11.0
+          dotnet: *runtime-11.0-downloads
         images:
           resolute:
             tags:
               <<: [*sharedTags, *convenienceTags]
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *resolute
 
           alpine3.24:
             tags:
@@ -899,19 +816,7 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *runtime-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-extra:
             metadata: *variant-extra
@@ -921,149 +826,57 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *runtime-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           azurelinux3.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless:
             metadata: *variant-distroless
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-extra:
             metadata: *variant-distroless-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux4.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           azurelinux4.0-distroless:
             metadata: *variant-distroless
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           azurelinux4.0-distroless-extra:
             metadata: *variant-distroless-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           resolute-chiseled:
             metadata: *variant-chiseled
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-extra:
             metadata: *variant-chiseled-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *runtime-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *runtime-11.0-linux-arm64
+            platforms: *resolute
 
           nanoserver-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2025-amd64
-                metadata:
-                  dotnet: *runtime-11.0-win-x64
+            platforms: *nanoserver-ltsc2025
 
           windowsservercore-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2025-amd64
-                metadata:
-                  dotnet: *runtime-11.0-win-x64
+            platforms: *windowsservercore-ltsc2025
 
   aspnet:
     name: dotnet/aspnet
@@ -1081,24 +894,13 @@ repos:
           version: *aspnet-10.0
           runtime: *runtime-10.0
           aspnet: *aspnet-10.0
+          dotnet: *aspnet-10.0-downloads
         images:
           noble:
             tags:
               <<: [*sharedTags, *convenienceTags]
               "latest": {}
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *noble
 
           alpine3.24:
             tags:
@@ -1107,19 +909,7 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-extra:
             metadata: *variant-extra
@@ -1129,332 +919,137 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-composite:
-            metadata: *variant-composite
+            metadata:
+              <<: *variant-composite
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-composite-extra:
-            metadata: *variant-composite-extra
+            metadata:
+              <<: *variant-composite-extra
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           azurelinux3.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless:
             metadata: *variant-distroless
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-extra:
             metadata: *variant-distroless-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite:
-            metadata: *variant-distroless-composite
+            metadata:
+              <<: *variant-distroless-composite
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite-extra:
-            metadata: *variant-distroless-composite-extra
+            metadata:
+              <<: *variant-distroless-composite-extra
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm64
+            platforms: *azurelinux3.0
 
           noble-chiseled:
             metadata: *variant-chiseled
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *noble
 
           noble-chiseled-extra:
             metadata: *variant-chiseled-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *noble
 
           noble-chiseled-composite-extra:
-            metadata: *variant-chiseled-composite-extra
+            metadata:
+              <<: *variant-chiseled-composite-extra
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm64
+            platforms: *noble
 
           noble-chiseled-composite:
-            metadata: *variant-chiseled-composite
+            metadata:
+              <<: *variant-chiseled-composite
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm64
+            platforms: *noble
 
           resolute:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled:
             metadata: *variant-chiseled
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-extra:
             metadata: *variant-chiseled-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-10.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-composite-extra:
-            metadata: *variant-chiseled-composite-extra
+            metadata:
+              <<: *variant-chiseled-composite-extra
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-composite:
-            metadata: *variant-chiseled-composite
+            metadata:
+              <<: *variant-chiseled-composite
+              dotnet: *aspnet-composite-10.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-10.0-linux-arm64
+            platforms: *resolute
 
           nanoserver-ltsc2022:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2022-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-win-x64
+            platforms: *nanoserver-ltsc2022
 
           nanoserver-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2025-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-win-x64
+            platforms: *nanoserver-ltsc2025
 
           windowsservercore-ltsc2022:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2022-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-win-x64
+            platforms: *windowsservercore-ltsc2022
 
           windowsservercore-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2025-amd64
-                metadata:
-                  dotnet: *aspnet-10.0-win-x64
+            platforms: *windowsservercore-ltsc2025
 
       "11.0":
         metadata:
           version: *aspnet-11.0
           runtime: *runtime-11.0
           aspnet: *aspnet-11.0
+          dotnet: *aspnet-11.0-downloads
         images:
           resolute:
             tags:
               <<: [*sharedTags, *convenienceTags]
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *resolute
 
           alpine3.24:
             tags:
@@ -1463,19 +1058,7 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-extra:
             metadata: *variant-extra
@@ -1485,279 +1068,123 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-composite:
-            metadata: *variant-composite
+            metadata:
+              <<: *variant-composite
+              dotnet: *aspnet-composite-11.0-downloads
             tags:
               <<: [*sharedTags, *alpineFloatingTags]
             defaults:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-composite-extra:
-            metadata: *variant-composite-extra
+            metadata:
+              <<: *variant-composite-extra
+              dotnet: *aspnet-composite-11.0-downloads
             tags:
               <<: [*sharedTags, *alpineFloatingTags]
             defaults:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-musl-x64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           azurelinux3.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless:
             metadata: *variant-distroless
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-extra:
             metadata: *variant-distroless-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite:
-            metadata: *variant-distroless-composite
+            metadata:
+              <<: *variant-distroless-composite
+              dotnet: *aspnet-composite-11.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux3.0-distroless-composite-extra:
-            metadata: *variant-distroless-composite-extra
+            metadata:
+              <<: *variant-distroless-composite-extra
+              dotnet: *aspnet-composite-11.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm64
+            platforms: *azurelinux3.0
 
           azurelinux4.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           azurelinux4.0-distroless:
             metadata: *variant-distroless
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           azurelinux4.0-distroless-extra:
             metadata: *variant-distroless-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           azurelinux4.0-distroless-composite:
-            metadata: *variant-distroless-composite
+            metadata:
+              <<: *variant-distroless-composite
+              dotnet: *aspnet-composite-11.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           azurelinux4.0-distroless-composite-extra:
-            metadata: *variant-distroless-composite-extra
+            metadata:
+              <<: *variant-distroless-composite-extra
+              dotnet: *aspnet-composite-11.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-x64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm64
+            platforms: *azurelinux4.0
 
           resolute-chiseled:
             metadata: *variant-chiseled
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-extra:
             metadata: *variant-chiseled-extra
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-11.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-composite-extra:
-            metadata: *variant-chiseled-composite-extra
+            metadata:
+              <<: *variant-chiseled-composite-extra
+              dotnet: *aspnet-composite-11.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm64
+            platforms: *resolute
 
           resolute-chiseled-composite:
-            metadata: *variant-chiseled-composite
+            metadata:
+              <<: *variant-chiseled-composite
+              dotnet: *aspnet-composite-11.0-downloads
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-x64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *aspnet-composite-11.0-linux-arm64
+            platforms: *resolute
 
           nanoserver-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2025-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-win-x64
+            platforms: *nanoserver-ltsc2025
 
           windowsservercore-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2025-amd64
-                metadata:
-                  dotnet: *aspnet-11.0-win-x64
+            platforms: *windowsservercore-ltsc2025
 
   sdk:
     name: dotnet/sdk
@@ -1775,74 +1202,34 @@ repos:
           version: *sdk-10.0
           runtime: *runtime-10.0
           aspnet: *aspnet-10.0
+          dotnet: *sdk-10.0-downloads
+          powershell: *powershell-7.6
         images:
           noble:
             tags:
               <<: [*sharedTags, *convenienceTags]
               "latest": {}
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  dotnet: *sdk-10.0-linux-x64
-                  powershell: *powershell-7.6-linux-amd64
-              arm32v7:
-                targetPlatform: *noble-arm32v7
-                metadata:
-                  dotnet: *sdk-10.0-linux-arm
-                  powershell: *powershell-7.6-linux-arm32v7
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  dotnet: *sdk-10.0-linux-arm64
-                  powershell: *powershell-7.6-linux-arm64v8
+            platforms: *noble
 
           # AOT images don't support arm32.
           noble-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags:
               <<: [*sharedTags, *convenienceTags]
-            platforms:
-              amd64:
-                targetPlatform: *noble-amd64
-                metadata:
-                  powershell: *powershell-7.6-linux-amd64
-              arm64v8:
-                targetPlatform: *noble-arm64v8
-                metadata:
-                  powershell: *powershell-7.6-linux-arm64v8
+            platforms: *noble-no-arm32
 
           resolute:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *sdk-10.0-linux-x64
-                  powershell: *powershell-7.6-linux-amd64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *sdk-10.0-linux-arm
-                  powershell: *powershell-7.6-linux-arm32v7
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *sdk-10.0-linux-arm64
-                  powershell: *powershell-7.6-linux-arm64v8
+            platforms: *resolute
 
           resolute-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  powershell: *powershell-7.6-linux-amd64
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  powershell: *powershell-7.6-linux-arm64v8
+            platforms: *resolute-no-arm32
 
           alpine3.24:
             tags:
@@ -1851,148 +1238,76 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *sdk-10.0-linux-musl-x64
-                  powershell: *powershell-7.6-linux-musl-amd64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *sdk-10.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *sdk-10.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags:
               <<: [*sharedTags, *alpineFloatingTags]
             defaults:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  powershell: *powershell-7.6-linux-musl-amd64
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
+            platforms: *alpine3.24-no-arm32
 
           azurelinux3.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *sdk-10.0-linux-x64
-                  powershell: *powershell-7.6-linux-amd64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *sdk-10.0-linux-arm64
-                  powershell: *powershell-7.6-linux-arm64v8
+            platforms: *azurelinux3.0
 
           azurelinux3.0-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  powershell: *powershell-7.6-linux-amd64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  powershell: *powershell-7.6-linux-arm64v8
+            platforms: *azurelinux3.0
 
           nanoserver-ltsc2022:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2022-amd64
-                metadata:
-                  dotnet: *sdk-10.0-win-x64
-                  powershell: *powershell-7.6-windows-amd64
+            platforms: *nanoserver-ltsc2022
 
           nanoserver-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2025-amd64
-                metadata:
-                  dotnet: *sdk-10.0-win-x64
-                  powershell: *powershell-7.6-windows-amd64
+            platforms: *nanoserver-ltsc2025
 
           windowsservercore-ltsc2022:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2022-amd64
-                metadata:
-                  dotnet: *sdk-10.0-win-x64
-                  powershell: *powershell-7.6-windows-amd64
+            platforms: *windowsservercore-ltsc2022
 
           windowsservercore-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2025-amd64
-                metadata:
-                  dotnet: *sdk-10.0-win-x64
-                  powershell: *powershell-7.6-windows-amd64
+            platforms: *windowsservercore-ltsc2025
 
       "11.0":
         metadata:
           version: *sdk-11.0
           runtime: *runtime-11.0
           aspnet: *aspnet-11.0
+          dotnet: *sdk-11.0-downloads
+          powershell: *powershell-7.7
         images:
           resolute:
             tags:
               <<: [*sharedTags, *convenienceTags]
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  dotnet: *sdk-11.0-linux-x64
-                  powershell: *powershell-7.7-linux-amd64
-              arm32v7:
-                targetPlatform: *resolute-arm32v7
-                metadata:
-                  dotnet: *sdk-11.0-linux-arm
-                  powershell: *powershell-7.7-linux-arm32v7
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  dotnet: *sdk-11.0-linux-arm64
-                  powershell: *powershell-7.7-linux-arm64v8
+            platforms: *resolute
 
           # AOT images don't support arm32.
           resolute-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags:
               <<: [*sharedTags, *convenienceTags]
-            platforms:
-              amd64:
-                targetPlatform: *resolute-amd64
-                metadata:
-                  powershell: *powershell-7.7-linux-amd64
-              arm64v8:
-                targetPlatform: *resolute-arm64v8
-                metadata:
-                  powershell: *powershell-7.7-linux-arm64v8
+            platforms: *resolute-no-arm32
 
           alpine3.24:
             tags:
@@ -2001,109 +1316,50 @@ repos:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  dotnet: *sdk-11.0-linux-musl-x64
-                  powershell: *powershell-7.7-linux-musl-amd64
-              arm32v7:
-                targetPlatform: *alpine3.24-arm32v7
-                metadata:
-                  dotnet: *sdk-11.0-linux-musl-arm
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
-                metadata:
-                  dotnet: *sdk-11.0-linux-musl-arm64
+            platforms: *alpine3.24
 
           alpine3.24-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags:
               <<: [*sharedTags, *alpineFloatingTags]
             defaults:
               platform:
                 tags:
                   <<: [*defaultPlatformTags, *alpineFloatingPlatformTags]
-            platforms:
-              amd64:
-                targetPlatform: *alpine3.24-amd64
-                metadata:
-                  powershell: *powershell-7.7-linux-musl-amd64
-              arm64v8:
-                targetPlatform: *alpine3.24-arm64v8
+            platforms: *alpine3.24-no-arm32
 
           azurelinux3.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  dotnet: *sdk-11.0-linux-x64
-                  powershell: *powershell-7.7-linux-amd64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  dotnet: *sdk-11.0-linux-arm64
-                  powershell: *powershell-7.7-linux-arm64v8
+            platforms: *azurelinux3.0
 
           azurelinux3.0-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux3.0-amd64
-                metadata:
-                  powershell: *powershell-7.7-linux-amd64
-              arm64v8:
-                targetPlatform: *azurelinux3.0-arm64v8
-                metadata:
-                  powershell: *powershell-7.7-linux-arm64v8
+            platforms: *azurelinux3.0
 
           azurelinux4.0:
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  dotnet: *sdk-11.0-linux-x64
-                  powershell: *powershell-7.7-linux-amd64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  dotnet: *sdk-11.0-linux-arm64
-                  powershell: *powershell-7.7-linux-arm64v8
+            platforms: *azurelinux4.0
 
           azurelinux4.0-aot:
-            metadata: *variant-aot
+            metadata:
+              <<: *variant-aot
+              dotnet: null
             tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *azurelinux4.0-amd64
-                metadata:
-                  powershell: *powershell-7.7-linux-amd64
-              arm64v8:
-                targetPlatform: *azurelinux4.0-arm64v8
-                metadata:
-                  powershell: *powershell-7.7-linux-arm64v8
+            platforms: *azurelinux4.0
 
           nanoserver-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *nanoserver-ltsc2025-amd64
-                metadata:
-                  dotnet: *sdk-11.0-win-x64
-                  powershell: *powershell-7.7-windows-amd64
+            platforms: *nanoserver-ltsc2025
 
           windowsservercore-ltsc2025:
             defaults:
               platform:
                 tags: *sharedTags
-            platforms:
-              amd64:
-                targetPlatform: *windowsservercore-ltsc2025-amd64
-                metadata:
-                  dotnet: *sdk-11.0-win-x64
-                  powershell: *powershell-7.7-windows-amd64
+            platforms: *windowsservercore-ltsc2025

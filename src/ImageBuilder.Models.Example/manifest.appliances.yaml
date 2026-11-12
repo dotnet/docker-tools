@@ -21,10 +21,10 @@ definitions:
     minor: "13.6"
     patch: "13.6.2"
     downloads:
-      linux-amd64:
+      linux-x64:
         url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-x64.zip
         sha512: 4021f8b00b4d456d3d9b8e9231ae7c5ba454665d5d0b2fb3f3870261accd48a37cbf840c8b354cb2c50e3ff41d2438c0e6ebb7ce43e1352c93c34aae19acdeb5
-      linux-arm64v8:
+      linux-arm64:
         url: https://ci.dot.net/public/aspire/13.6.2-preview.1.26519.11/aspire-dashboard-linux-arm64.zip
         sha512: 555c346bed107b81539325e2b47e4d17ca615bf4993ec53dac16c3a1c9e23fb4b98bbeab628b3d7655752cc0ccfe81313925c0e709d9b75d3691cd18dd3f7fce
 
@@ -41,13 +41,13 @@ definitions:
       os: *azurelinux3.0-os
       arch: amd64
       metadata:
-        downloadKey: linux-amd64
+        downloadKey: linux-x64
         dotnetRid: linux-x64
     arm64v8:
       os: *azurelinux3.0-os
       arch: arm64v8
       metadata:
-        downloadKey: linux-arm64v8
+        downloadKey: linux-arm64
         dotnetRid: linux-arm64
 
 defaults:

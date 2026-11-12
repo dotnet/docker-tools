@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Label="Project Settings">
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Packaging Settings">
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>template-tool</ToolCommandName>
+    <Description>Generates Dockerfiles from templates and a ManifestV2 manifest.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fluid.Core" />
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj" />
+  </ItemGroup>
+
+</Project>

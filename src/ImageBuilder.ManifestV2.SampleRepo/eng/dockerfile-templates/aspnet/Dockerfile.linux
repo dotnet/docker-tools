@@ -1,0 +1,1 @@
+{% comment %} Placeholder: generates src/aspnet/<version>/<os>/<arch>/Dockerfile. {% endcomment %}

@@ -1,0 +1,1 @@
+{% comment %} Placeholder: generates src/sdk/<version>/<os>/<arch>/Dockerfile. {% endcomment %}

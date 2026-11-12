@@ -5,7 +5,6 @@
 #:package YamlDotNet
 #:property PublishAot=false
 
-using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -15,19 +14,21 @@ using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using Group = Microsoft.DotNet.ImageBuilder.Models.ManifestV2.Group;
 
-// Run from this directory: dotnet run --file Program.cs
+// Run from this directory: dotnet run --file Program.cs [manifest path]
+// Reads and resolves a manifest, which validates it.
 if (args.Length > 1)
 {
     throw new ArgumentException("Expected at most one argument: the manifest path.");
 }
 
 string inputPath = args.Length == 1 ? args[0] : "manifest.yaml";
-string outputPath = Path.ChangeExtension(inputPath, ".resolved.json");
 
 Manifest manifest = await ManifestYaml.ReadAsync(inputPath);
 Manifest resolved = new ManifestResolver(manifest).Resolve();
-await ManifestJson.WriteAsync(outputPath, resolved);
-Console.WriteLine($"Wrote {outputPath}");
+Image[] images = [.. resolved.Repos.Values.SelectMany(repo => repo.Images.Values.Concat(
+    repo.Groups.Values.SelectMany(group => group.Images.Values)))];
+Console.WriteLine(
+    $"Resolved {inputPath}: {images.Length} images, {images.Sum(image => image.Platforms.Count)} platforms");
 
 file sealed class ManifestResolver(Manifest manifest)
 {
@@ -360,10 +361,8 @@ file static class ManifestJson
     private static readonly JsonSerializerOptions s_options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
         RespectNullableAnnotations = true,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver
         {
             Modifiers = { ConfigureProperties }
@@ -380,12 +379,6 @@ file static class ManifestJson
         document.Deserialize<Manifest>(s_options)
         ?? throw new InvalidDataException("The manifest must not be null.");
 
-    public static Task WriteAsync(string filePath, Manifest manifest, CancellationToken cancellationToken = default)
-    {
-        string json = JsonSerializer.Serialize(manifest, s_options);
-        return File.WriteAllTextAsync(filePath, json + Environment.NewLine, cancellationToken);
-    }
-
     private static void ConfigureProperties(JsonTypeInfo typeInfo)
     {
         foreach (JsonPropertyInfo property in typeInfo.Properties)
@@ -397,11 +390,6 @@ file static class ManifestJson
             {
                 property.IsSetNullable = false;
             }
-
-            property.ShouldSerialize = (_, value) =>
-                value is not null
-                && value is not ICollection { Count: 0 }
-                && !(typeInfo.Type == typeof(Tag) && property.Name == "undocumented" && value is false);
         }
     }
 }

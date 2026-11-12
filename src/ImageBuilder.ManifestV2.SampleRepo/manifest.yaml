@@ -66,6 +66,21 @@ defaults:
       "{version.minor}-{os.name}-{arch}": {}
 
 definitions:
+  # PowerShell versions and downloads, keyed by the downloadKey of each platform.
+  powershell:
+    powershell-7.6: &powershell-7.6
+      version: "7.6.9"
+      downloads:
+        linux-x64:
+          url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.x64.7.6.9.nupkg"
+          digest: "sha256:e14ad06e1192ccb221a6bfbc804476dabae792bb5c9c7ad62793e5ff058d826e"
+        linux-arm32:
+          url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm32.7.6.9.nupkg"
+          digest: "sha256:157b5dc526e2a4664831f308ab3cffd87dcf34123dec03dd6f3e1b7dcd76e0c8"
+        linux-arm64:
+          url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm64.7.6.9.nupkg"
+          digest: "sha256:9d098cb700f518702a87bbc037dadb6a9d6b34489012431756fb2531503f436b"
+
   # Ubuntu 24.04 and its platform for every arch it supports.
   # Each platform carries the downloadKey its Dockerfile template uses to pick downloads.
   noble-os: &noble-os
@@ -138,19 +153,7 @@ repos:
       "10.0":
         metadata:
           version: *dotnet-sdk-10.0
-          # PowerShell, keyed by the downloadKey of each platform.
-          powershell:
-            version: "7.6.9"
-            downloads:
-              linux-x64:
-                url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.x64.7.6.9.nupkg"
-                digest: "sha256:e14ad06e1192ccb221a6bfbc804476dabae792bb5c9c7ad62793e5ff058d826e"
-              linux-arm32:
-                url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm32.7.6.9.nupkg"
-                digest: "sha256:157b5dc526e2a4664831f308ab3cffd87dcf34123dec03dd6f3e1b7dcd76e0c8"
-              linux-arm64:
-                url: "https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/7.6.9/PowerShell.Linux.arm64.7.6.9.nupkg"
-                digest: "sha256:9d098cb700f518702a87bbc037dadb6a9d6b34489012431756fb2531503f436b"
+          powershell: *powershell-7.6
         images:
           noble:
             platforms: *noble

@@ -37,7 +37,7 @@ internal static class ListCommand
 
             foreach (PlatformEntry platformEntry in imageEntry.GetPlatforms())
             {
-                Console.WriteLine($"  {platformEntry.PlatformKey}");
+                Console.WriteLine($"  {platformEntry.Key}");
                 Dictionary<string, Tag> platformTags = platformEntry.Platform.Tags ?? [];
                 WriteTags(imageEntry, platformTags, indent: "    ");
             }

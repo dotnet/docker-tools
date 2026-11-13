@@ -12,7 +12,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 internal sealed record BuiltInVariables(string RepoKey, OSRelease OS, Arch Arch)
 {
     // Serialized like the manifest, so names and values match what the YAML says.
-    public static JsonElement Serialize(string repoKey, Platform platform) =>
-        JsonSerializer.SerializeToElement(
-            new BuiltInVariables(repoKey, platform.OS, platform.Arch), ManifestLoader.JsonOptions);
+    public static JsonElement Serialize(string repoKey, Platform platform)
+    {
+        BuiltInVariables variables = new(repoKey, platform.OS, platform.Arch);
+        return JsonSerializer.SerializeToElement(variables, ManifestLoader.JsonOptions);
+    }
 }

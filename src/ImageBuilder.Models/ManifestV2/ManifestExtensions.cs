@@ -33,6 +33,14 @@ public static class ManifestExtensions
     /// <summary>
     /// Every platform in the manifest, in the same order as <see cref="GetImages"/>.
     /// </summary>
-    public static IEnumerable<PlatformEntry> GetPlatforms(this Manifest manifest) =>
-        manifest.GetImages().SelectMany(image => image.GetPlatforms());
+    public static IEnumerable<PlatformEntry> GetPlatforms(this Manifest manifest)
+    {
+        foreach (ImageEntry image in manifest.GetImages())
+        {
+            foreach (PlatformEntry platform in image.GetPlatforms())
+            {
+                yield return platform;
+            }
+        }
+    }
 }

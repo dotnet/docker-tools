@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CommandLine;
+using System.Text.Json;
 using Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
 namespace TemplateTool;
@@ -24,19 +25,24 @@ internal static class GenerateCommand
                 ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
             TemplateRenderer renderer = new(baseDirectory);
 
-            foreach (ImageEntry entry in manifest.GetImages())
+            foreach (ImageEntry image in manifest.GetImages())
             {
-                Console.WriteLine(entry.Key);
-                foreach (PlatformEntry platformEntry in entry.GetPlatforms())
+                Console.WriteLine(image.Key);
+
+                foreach (PlatformEntry platformEntry in image.GetPlatforms())
                 {
-                    if (platformEntry.Platform is not { DockerfileTemplate: { } template, Dockerfile: { } dockerfile })
+                    string? template = platformEntry.Platform.DockerfileTemplate;
+                    string? dockerfile = platformEntry.Platform.Dockerfile;
+                    if (template is null || dockerfile is null)
                     {
                         Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
                         continue;
                     }
 
-                    string content = await renderer.RenderAsync(template, platformEntry.GetVariables(), cancellationToken);
-                    FileInfo output = new(Path.Join(baseDirectory, dockerfile));
+                    Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
+                    string content = await renderer.RenderAsync(template, variables, cancellationToken);
+                    string outputPath = Path.Join(baseDirectory, dockerfile);
+                    FileInfo output = new(outputPath);
                     output.Directory?.Create();
                     await File.WriteAllTextAsync(output.FullName, content, cancellationToken);
                     Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {dockerfile}");

@@ -23,14 +23,20 @@ internal sealed partial class PatternEvaluator
     {
         _scopeKey = scopeKey;
         _variables = new(metadata, StringComparer.Ordinal);
-
-        JsonElement[] builtIns = [.. platforms.Select(platform => BuiltInVariables.Serialize(repoKey, platform))];
-        if (builtIns.Length == 0)
+        if (platforms.Length == 0)
         {
             return;
         }
 
-        foreach (JsonProperty builtIn in builtIns[0].EnumerateObject())
+        List<JsonElement> builtIns = [];
+        foreach (Platform platform in platforms)
+        {
+            JsonElement builtIn = BuiltInVariables.Serialize(repoKey, platform);
+            builtIns.Add(builtIn);
+        }
+
+        JsonElement firstBuiltIns = builtIns[0];
+        foreach (JsonProperty builtIn in firstBuiltIns.EnumerateObject())
         {
             if (metadata.ContainsKey(builtIn.Name))
             {
@@ -39,7 +45,8 @@ internal sealed partial class PatternEvaluator
             }
         }
 
-        foreach ((string name, JsonElement value) in GetCommonProperties(builtIns, pathPrefix: ""))
+        Dictionary<string, JsonElement> commonBuiltIns = GetCommonProperties(builtIns, pathPrefix: "");
+        foreach ((string name, JsonElement value) in commonBuiltIns)
         {
             _variables.Add(name, value);
         }
@@ -47,7 +54,7 @@ internal sealed partial class PatternEvaluator
 
     public string Expand(string pattern)
     {
-        string expanded = PlaceholderRegex.Replace(pattern, match => ResolvePlaceholder(match.Groups[1].Value));
+        string expanded = PlaceholderRegex.Replace(pattern, ReplacePlaceholder);
         if (expanded.Contains('{') || expanded.Contains('}'))
         {
             throw new InvalidDataException($"{_scopeKey}: pattern '{pattern}' contains malformed placeholders.");
@@ -56,17 +63,59 @@ internal sealed partial class PatternEvaluator
         return expanded;
     }
 
-    public Dictionary<string, JsonElement> ExpandMetadata(Dictionary<string, JsonElement> metadata) =>
-        metadata.ToDictionary(entry => entry.Key, entry => ExpandValue(entry.Value), StringComparer.Ordinal);
+    private string ReplacePlaceholder(Match match)
+    {
+        string placeholder = match.Groups[1].Value;
+        return ResolvePlaceholder(placeholder);
+    }
+
+    public Dictionary<string, JsonElement> ExpandMetadata(Dictionary<string, JsonElement> metadata)
+    {
+        Dictionary<string, JsonElement> expanded = new(StringComparer.Ordinal);
+        foreach ((string key, JsonElement value) in metadata)
+        {
+            expanded[key] = ExpandValue(value);
+        }
+
+        return expanded;
+    }
 
     private JsonElement ExpandValue(JsonElement value) => value.ValueKind switch
     {
-        JsonValueKind.String => JsonSerializer.SerializeToElement(Expand(value.ToString())),
-        JsonValueKind.Object => JsonSerializer.SerializeToElement(
-            value.EnumerateObject().ToDictionary(property => property.Name, property => ExpandValue(property.Value))),
-        JsonValueKind.Array => JsonSerializer.SerializeToElement(value.EnumerateArray().Select(ExpandValue).ToArray()),
+        JsonValueKind.String => ExpandString(value),
+        JsonValueKind.Object => ExpandObject(value),
+        JsonValueKind.Array => ExpandArray(value),
         _ => value
     };
+
+    private JsonElement ExpandString(JsonElement value)
+    {
+        string pattern = value.ToString();
+        string expanded = Expand(pattern);
+        return JsonSerializer.SerializeToElement(expanded);
+    }
+
+    private JsonElement ExpandObject(JsonElement value)
+    {
+        Dictionary<string, JsonElement> expanded = [];
+        foreach (JsonProperty property in value.EnumerateObject())
+        {
+            expanded[property.Name] = ExpandValue(property.Value);
+        }
+
+        return JsonSerializer.SerializeToElement(expanded);
+    }
+
+    private JsonElement ExpandArray(JsonElement value)
+    {
+        List<JsonElement> expanded = [];
+        foreach (JsonElement item in value.EnumerateArray())
+        {
+            expanded.Add(ExpandValue(item));
+        }
+
+        return JsonSerializer.SerializeToElement(expanded);
+    }
 
     public Dictionary<string, Tag> ResolveTags(Dictionary<string, Tag> tags)
     {
@@ -110,9 +159,11 @@ internal sealed partial class PatternEvaluator
 
         for (int i = 1; i < segments.Length; i++)
         {
-            if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(segments[i], out value))
+            bool found = value.ValueKind == JsonValueKind.Object && value.TryGetProperty(segments[i], out value);
+            if (!found)
             {
-                throw UnresolvedPlaceholder(placeholder, string.Join('.', segments[..(i + 1)]));
+                string missingPath = string.Join('.', segments[..(i + 1)]);
+                throw UnresolvedPlaceholder(placeholder, missingPath);
             }
         }
 
@@ -124,10 +175,15 @@ internal sealed partial class PatternEvaluator
         };
     }
 
-    private InvalidDataException UnresolvedPlaceholder(string placeholder, string missingPath) =>
-        _platformSpecificPaths.Contains(missingPath)
-            ? new InvalidDataException($"{_scopeKey}: pattern variable '{placeholder}' is ambiguous across platforms.")
-            : new InvalidDataException($"{_scopeKey}: unknown pattern variable '{placeholder}'.");
+    private InvalidDataException UnresolvedPlaceholder(string placeholder, string missingPath)
+    {
+        if (_platformSpecificPaths.Contains(missingPath))
+        {
+            return new InvalidDataException($"{_scopeKey}: pattern variable '{placeholder}' is ambiguous across platforms.");
+        }
+
+        return new InvalidDataException($"{_scopeKey}: unknown pattern variable '{placeholder}'.");
+    }
 
     // A metadata value may itself contain placeholders, such as "{monitorUrl}.sha512".
     private string ExpandNested(string placeholder, string value)
@@ -149,20 +205,29 @@ internal sealed partial class PatternEvaluator
 
     // The properties that all of the objects agree on. Objects are compared property by property, so an
     // image whose platforms share an OS but not an arch can still use {os.name}, but not {arch}.
-    private Dictionary<string, JsonElement> GetCommonProperties(JsonElement[] objects, string pathPrefix)
+    private Dictionary<string, JsonElement> GetCommonProperties(List<JsonElement> objects, string pathPrefix)
     {
         Dictionary<string, JsonElement> common = new(StringComparer.Ordinal);
-        foreach (JsonProperty property in objects[0].EnumerateObject())
+        JsonElement firstObject = objects[0];
+        foreach (JsonProperty property in firstObject.EnumerateObject())
         {
             string path = pathPrefix + property.Name;
-            JsonElement[] values = [.. objects.Select(obj => obj.GetProperty(property.Name))];
+            List<JsonElement> values = [];
+            foreach (JsonElement obj in objects)
+            {
+                values.Add(obj.GetProperty(property.Name));
+            }
+
+            JsonElement firstValue = values[0];
             if (values.All(value => value.ValueKind == JsonValueKind.Object))
             {
-                common.Add(property.Name, JsonSerializer.SerializeToElement(GetCommonProperties(values, path + ".")));
+                Dictionary<string, JsonElement> commonChildren = GetCommonProperties(values, path + ".");
+                JsonElement commonObject = JsonSerializer.SerializeToElement(commonChildren);
+                common.Add(property.Name, commonObject);
             }
-            else if (values.All(value => JsonElement.DeepEquals(value, values[0])))
+            else if (values.All(value => JsonElement.DeepEquals(value, firstValue)))
             {
-                common.Add(property.Name, values[0]);
+                common.Add(property.Name, firstValue);
             }
             else
             {

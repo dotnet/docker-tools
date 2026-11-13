@@ -10,4 +10,5 @@ RootCommand rootCommand = new("Generates Dockerfiles from templates and a Manife
     ListCommand.Create()
 };
 
-return await rootCommand.Parse(args).InvokeAsync();
+ParseResult parseResult = rootCommand.Parse(args);
+return await parseResult.InvokeAsync();

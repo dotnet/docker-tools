@@ -19,22 +19,7 @@ public static class ManifestLoader
         .Build();
 
     // Also names and formats the model values that placeholders can refer to.
-    internal static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        RespectNullableAnnotations = true,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver
-        {
-            Modifiers = { ConfigureProperties }
-        },
-        Converters =
-        {
-            new JsonStringEnumConverter(
-                JsonNamingPolicy.CamelCase,
-                allowIntegerValues: false)
-        }
-    };
+    internal static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
     /// <summary>
     /// Reads and resolves the manifest at <paramref name="filePath"/>.
@@ -43,30 +28,53 @@ public static class ManifestLoader
     public static async Task<Manifest> LoadAsync(string filePath, CancellationToken cancellationToken = default)
     {
         string yaml = await File.ReadAllTextAsync(filePath, cancellationToken);
-        return new ManifestResolver(Parse(yaml)).Resolve();
+        Manifest manifest = Parse(yaml);
+        ManifestResolver resolver = new(manifest);
+        return resolver.Resolve();
+    }
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        DefaultJsonTypeInfoResolver typeInfoResolver = new();
+        typeInfoResolver.Modifiers.Add(ConfigureProperties);
+        JsonStringEnumConverter enumConverter = new(JsonNamingPolicy.CamelCase, allowIntegerValues: false);
+
+        JsonSerializerOptions options = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            RespectNullableAnnotations = true,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            TypeInfoResolver = typeInfoResolver
+        };
+        options.Converters.Add(enumConverter);
+        return options;
     }
 
     private static Manifest Parse(string yaml)
     {
         using StringReader reader = new(yaml);
-        MergingParser parser = new(new Parser(reader));
+        Parser yamlParser = new(reader);
+        MergingParser parser = new(yamlParser);
         Dictionary<string, object?> document = YamlDeserializer.Deserialize<Dictionary<string, object?>>(parser)
             ?? throw new InvalidDataException("The manifest must not be null.");
 
         // Expand YAML reuse before removing authoring-only definitions and validating the model.
         document.Remove("definitions");
-        return JsonSerializer.SerializeToElement(document).Deserialize<Manifest>(JsonOptions)
+        JsonElement json = JsonSerializer.SerializeToElement(document);
+        return json.Deserialize<Manifest>(JsonOptions)
             ?? throw new InvalidDataException("The manifest must not be null.");
     }
 
     private static void ConfigureProperties(JsonTypeInfo typeInfo)
     {
+        bool isPlatformType = typeInfo.Type == typeof(Platform) || typeInfo.Type == typeof(PlatformDefaults);
         foreach (JsonPropertyInfo property in typeInfo.Properties)
         {
+            bool isTags = property.PropertyType == typeof(Dictionary<string, Tag>);
+            bool isDockerfilePath = isPlatformType && property.Name is "dockerfile" or "dockerfileTemplate";
+
             // Omission enables inheritance; explicit null is not a valid override.
-            if (property.PropertyType == typeof(Dictionary<string, Tag>)
-                || ((typeInfo.Type == typeof(Platform) || typeInfo.Type == typeof(PlatformDefaults))
-                    && property.Name is "dockerfile" or "dockerfileTemplate"))
+            if (isTags || isDockerfilePath)
             {
                 property.IsSetNullable = false;
             }

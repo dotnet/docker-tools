@@ -45,8 +45,13 @@ public sealed record ImageEntry(
     /// <summary>
     /// Every platform of the image.
     /// </summary>
-    public IEnumerable<PlatformEntry> GetPlatforms() =>
-        Image.Platforms.Select(platform => new PlatformEntry(this, platform.Key, platform.Value));
+    public IEnumerable<PlatformEntry> GetPlatforms()
+    {
+        foreach ((string platformKey, Platform platform) in Image.Platforms)
+        {
+            yield return new PlatformEntry(this, platformKey, platform);
+        }
+    }
 }
 
 /// <summary>
@@ -78,12 +83,16 @@ public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Pl
             ImageEntry.Image.Metadata,
             Platform.Metadata
         ];
-        foreach ((string key, JsonElement value) in scopes.SelectMany(scope => scope))
+        foreach (Dictionary<string, JsonElement> scope in scopes)
         {
-            variables[key] = value;
+            foreach ((string key, JsonElement value) in scope)
+            {
+                variables[key] = value;
+            }
         }
 
-        foreach (JsonProperty builtIn in BuiltInVariables.Serialize(ImageEntry.RepoKey, Platform).EnumerateObject())
+        JsonElement builtIns = BuiltInVariables.Serialize(ImageEntry.RepoKey, Platform);
+        foreach (JsonProperty builtIn in builtIns.EnumerateObject())
         {
             variables.Add(builtIn.Name, builtIn.Value);
         }

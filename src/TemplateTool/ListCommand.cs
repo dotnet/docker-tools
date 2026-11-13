@@ -24,10 +24,12 @@ internal static class ListCommand
             foreach (ImageEntry entry in manifest.GetImages())
             {
                 Console.WriteLine(entry.Key);
-                foreach ((string name, Tag tag) in entry.Image.Tags ?? [])
+                Dictionary<string, Tag> tags = entry.Image.Tags ?? [];
+                foreach ((string name, Tag tag) in tags)
                 {
                     string reference = entry.GetReference(name);
-                    Console.WriteLine(tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}");
+                    string line = tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}";
+                    Console.WriteLine(line);
                 }
             }
         });

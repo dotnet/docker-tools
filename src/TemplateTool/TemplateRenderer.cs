@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Fluid;
 
 namespace TemplateTool;
@@ -30,7 +31,8 @@ internal sealed class TemplateRenderer(string baseDirectory)
         TemplateContext context = new(Options);
         foreach ((string name, JsonElement value) in variables)
         {
-            context.SetValue(name, JsonSerializer.SerializeToNode(value));
+            JsonNode? node = JsonSerializer.SerializeToNode(value);
+            context.SetValue(name, node);
         }
 
         string output = await template.RenderAsync(context);
@@ -44,7 +46,8 @@ internal sealed class TemplateRenderer(string baseDirectory)
             return template;
         }
 
-        string source = await File.ReadAllTextAsync(Path.Join(baseDirectory, templatePath), cancellationToken);
+        string path = Path.Join(baseDirectory, templatePath);
+        string source = await File.ReadAllTextAsync(path, cancellationToken);
         if (!Parser.TryParse(source, out template, out string error))
         {
             throw new InvalidDataException($"{templatePath}: {error}");

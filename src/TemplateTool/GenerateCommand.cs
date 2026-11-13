@@ -42,14 +42,21 @@ internal static class GenerateCommand
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
 
         TemplateRenderer renderer = new(manifestDirectory);
-        DockerfileResult[] dockerfileResults = [.. manifest.GetPlatforms()
-            .Select(platformEntry => RenderDockerfile(renderer, platformEntry))];
+
+        DockerfileResult[] dockerfileResults =
+        [
+            .. manifest.GetPlatforms()
+                .Select(platform => RenderDockerfile(renderer, platform)),
+        ];
 
         // Distinct, because a template that fails to load fails the same way for every platform that uses it.
-        TemplateError[] templateErrors = [.. dockerfileResults
-            .Select(result => result.Value)
-            .OfType<TemplateError>()
-            .Distinct()];
+        TemplateError[] templateErrors =
+        [
+            .. dockerfileResults
+                .Select(result => result.Value)
+                .OfType<TemplateError>()
+                .Distinct(),
+        ];
 
         if (templateErrors.Length > 0)
         {
@@ -61,9 +68,12 @@ internal static class GenerateCommand
             return 1;
         }
 
-        RenderedDockerfile[] dockerfiles = [.. dockerfileResults
-            .Select(result => result.Value)
-            .OfType<RenderedDockerfile>()];
+        RenderedDockerfile[] dockerfiles =
+        [
+            .. dockerfileResults
+                .Select(result => result.Value)
+                .OfType<RenderedDockerfile>(),
+        ];
 
         if (test)
         {
@@ -101,12 +111,12 @@ internal static class GenerateCommand
 
     private static int TestDockerfiles(RenderedDockerfile[] dockerfiles, string manifestDirectory, Stopwatch stopwatch)
     {
-        DockerfileCheck[] dockerfileChecks = [.. dockerfiles
-            .Select(dockerfile => CheckDockerfile(dockerfile, manifestDirectory))];
-
-        string[] mismatches = [.. dockerfileChecks
-            .Select(DescribeMismatch)
-            .OfType<string>()];
+        string[] mismatches =
+        [
+            .. dockerfiles
+                .Select(dockerfile => CheckDockerfile(dockerfile, manifestDirectory))
+                .OfType<string>(),
+        ];
 
         foreach (string mismatch in mismatches)
         {
@@ -117,12 +127,13 @@ internal static class GenerateCommand
         return mismatches.Length > 0 ? 1 : 0;
     }
 
-    private static DockerfileCheck CheckDockerfile(RenderedDockerfile dockerfile, string manifestDirectory)
+    /// <returns>Why the Dockerfile doesn't match its template, or null if it matches.</returns>
+    private static string? CheckDockerfile(RenderedDockerfile dockerfile, string manifestDirectory)
     {
         string dockerfileFullPath = Path.Join(manifestDirectory, dockerfile.DockerfilePath);
         if (!File.Exists(dockerfileFullPath))
         {
-            return new MissingDockerfile(dockerfile.DockerfilePath);
+            return $"{dockerfile.DockerfilePath} doesn't exist";
         }
 
         string existingContent = File.ReadAllText(dockerfileFullPath);
@@ -130,16 +141,9 @@ internal static class GenerateCommand
         // Git may check out Dockerfiles with CRLF line endings, so only compare the text.
         string normalizedContent = existingContent.ReplaceLineEndings("\n");
         return normalizedContent == dockerfile.Content
-            ? new MatchingDockerfile(dockerfile.DockerfilePath)
-            : new MismatchedDockerfile(dockerfile.DockerfilePath);
+            ? null
+            : $"{dockerfile.DockerfilePath} doesn't match its template";
     }
-
-    private static string? DescribeMismatch(DockerfileCheck dockerfileCheck) => dockerfileCheck switch
-    {
-        MatchingDockerfile => null,
-        MismatchedDockerfile mismatched => $"{mismatched.DockerfilePath} doesn't match its template",
-        MissingDockerfile missing => $"{missing.DockerfilePath} doesn't exist",
-    };
 
     private sealed record RenderedDockerfile(string DockerfilePath, string Content);
 
@@ -148,12 +152,4 @@ internal static class GenerateCommand
     private sealed record TemplateError(string Message);
 
     private readonly union DockerfileResult(RenderedDockerfile, NoTemplate, TemplateError);
-
-    private sealed record MatchingDockerfile(string DockerfilePath);
-
-    private sealed record MismatchedDockerfile(string DockerfilePath);
-
-    private sealed record MissingDockerfile(string DockerfilePath);
-
-    private readonly union DockerfileCheck(MatchingDockerfile, MismatchedDockerfile, MissingDockerfile);
 }

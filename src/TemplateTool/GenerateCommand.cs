@@ -33,28 +33,23 @@ internal static class GenerateCommand
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
         TemplateRenderer renderer = new(manifestDirectory);
 
-        foreach (ImageEntry imageEntry in manifest.GetImages())
+        foreach (PlatformEntry platformEntry in manifest.GetPlatforms())
         {
-            Console.WriteLine(imageEntry.Key);
-
-            foreach (PlatformEntry platformEntry in imageEntry.GetPlatforms())
+            string? templatePath = platformEntry.Platform.DockerfileTemplate;
+            string? dockerfilePath = platformEntry.Platform.Dockerfile;
+            if (templatePath is null || dockerfilePath is null)
             {
-                string? templatePath = platformEntry.Platform.DockerfileTemplate;
-                string? dockerfilePath = platformEntry.Platform.Dockerfile;
-                if (templatePath is null || dockerfilePath is null)
-                {
-                    Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
-                    continue;
-                }
-
-                Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
-                string dockerfileContent = await renderer.RenderAsync(templatePath, variables, cancellationToken);
-                string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
-                FileInfo dockerfileFile = new(dockerfileFullPath);
-                dockerfileFile.Directory?.Create();
-                await File.WriteAllTextAsync(dockerfileFile.FullName, dockerfileContent, cancellationToken);
-                Console.WriteLine($"  {platformEntry.PlatformKey}: {templatePath} -> {dockerfilePath}");
+                Console.WriteLine($"{platformEntry.Key}: no template, skipped");
+                continue;
             }
+
+            Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
+            string dockerfileContent = await renderer.RenderAsync(templatePath, variables, cancellationToken);
+            string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
+            FileInfo dockerfileFile = new(dockerfileFullPath);
+            dockerfileFile.Directory?.Create();
+            await File.WriteAllTextAsync(dockerfileFile.FullName, dockerfileContent, cancellationToken);
+            Console.WriteLine($"{platformEntry.Key}: {templatePath} -> {dockerfilePath}");
         }
     }
 }

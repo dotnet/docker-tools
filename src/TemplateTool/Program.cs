@@ -4,11 +4,12 @@
 using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.TemplateTool;
 
-RootCommand rootCommand = new("Generates Dockerfiles from templates and a ManifestV2 manifest.")
-{
+RootCommand rootCommand =
+[
+    with("Generates Dockerfiles from templates and a ManifestV2 manifest."),
     GenerateCommand.Create(),
     ListCommand.Create()
-};
+];
 
 ParseResult parseResult = rootCommand.Parse(args);
 return await parseResult.InvokeAsync();

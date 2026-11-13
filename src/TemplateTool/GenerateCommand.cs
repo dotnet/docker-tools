@@ -31,6 +31,7 @@ internal static class GenerateCommand
         Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
         string manifestDirectory = manifestFile.DirectoryName
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
+
         TemplateRenderer renderer = new(manifestDirectory);
 
         foreach (PlatformEntry platformEntry in manifest.GetPlatforms())
@@ -45,10 +46,12 @@ internal static class GenerateCommand
 
             Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
             string dockerfileContent = await renderer.RenderAsync(templatePath, variables, cancellationToken);
+
             string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
             FileInfo dockerfileFile = new(dockerfileFullPath);
             dockerfileFile.Directory?.Create();
             await File.WriteAllTextAsync(dockerfileFile.FullName, dockerfileContent, cancellationToken);
+
             Console.WriteLine($"{platformEntry.Key}: {templatePath} -> {dockerfilePath}");
         }
     }

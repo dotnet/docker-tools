@@ -11,7 +11,7 @@ internal static class ListCommand
     public static Command Create()
     {
         Argument<FileInfo> manifestArgument = ManifestArgument.Create();
-        Command command = new("list", "Lists each image by its key, with its tags.")
+        Command command = new("list", "Lists each image by its key, with its shared tags and each platform's tags.")
         {
             manifestArgument
         };
@@ -32,13 +32,25 @@ internal static class ListCommand
         foreach (ImageEntry imageEntry in manifest.GetImages())
         {
             Console.WriteLine(imageEntry.Key);
-            Dictionary<string, Tag> tags = imageEntry.Image.Tags ?? [];
-            foreach ((string tagName, Tag tag) in tags)
+            Dictionary<string, Tag> imageTags = imageEntry.Image.Tags ?? [];
+            WriteTags(imageEntry, imageTags, indent: "  ");
+
+            foreach (PlatformEntry platformEntry in imageEntry.GetPlatforms())
             {
-                string reference = imageEntry.GetReference(tagName);
-                string line = tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}";
-                Console.WriteLine(line);
+                Console.WriteLine($"  {platformEntry.PlatformKey}");
+                Dictionary<string, Tag> platformTags = platformEntry.Platform.Tags ?? [];
+                WriteTags(imageEntry, platformTags, indent: "    ");
             }
+        }
+    }
+
+    private static void WriteTags(ImageEntry imageEntry, Dictionary<string, Tag> tags, string indent)
+    {
+        foreach ((string tagName, Tag tag) in tags)
+        {
+            string reference = imageEntry.GetReference(tagName);
+            string line = tag.Undocumented ? $"{indent}{reference} (undocumented)" : $"{indent}{reference}";
+            Console.WriteLine(line);
         }
     }
 }

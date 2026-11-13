@@ -15,8 +15,8 @@ internal sealed class TemplateRenderer(string baseDirectory)
 {
     private static readonly FluidParser Parser = new();
 
-    // Fail on undefined variables instead of rendering them as empty text.
-    private static readonly TemplateOptions Options = new() { StrictVariables = true };
+    // Fail on undefined variables and filters instead of rendering empty text or the unfiltered value.
+    private static readonly TemplateOptions Options = new() { StrictVariables = true, StrictFilters = true };
 
     private readonly Dictionary<string, IFluidTemplate> _parsedTemplates = new(StringComparer.Ordinal);
 

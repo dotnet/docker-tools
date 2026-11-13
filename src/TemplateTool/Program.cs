@@ -12,4 +12,4 @@ RootCommand rootCommand =
 ];
 
 ParseResult parseResult = rootCommand.Parse(args);
-return await parseResult.InvokeAsync();
+return parseResult.Invoke();

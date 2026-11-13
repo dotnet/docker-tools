@@ -25,9 +25,9 @@ public static class ManifestLoader
     /// Reads and resolves the manifest at <paramref name="filePath"/>.
     /// </summary>
     /// <exception cref="InvalidDataException">The manifest is invalid.</exception>
-    public static async Task<Manifest> LoadAsync(string filePath, CancellationToken cancellationToken = default)
+    public static Manifest Load(string filePath)
     {
-        string yaml = await File.ReadAllTextAsync(filePath, cancellationToken);
+        string yaml = File.ReadAllText(filePath);
         Manifest manifest = Parse(yaml);
         ManifestResolver resolver = new(manifest);
         return resolver.Resolve();

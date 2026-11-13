@@ -15,7 +15,7 @@ if (args.Length > 1)
 
 string inputPath = args.Length == 1 ? args[0] : "manifest.yaml";
 
-Manifest resolved = await ManifestLoader.LoadAsync(inputPath);
+Manifest resolved = ManifestLoader.Load(inputPath);
 int imageCount = resolved.GetImages().Count();
 int platformCount = resolved.GetPlatforms().Count();
 Console.WriteLine($"Resolved {inputPath}: {imageCount} images, {platformCount} platforms");

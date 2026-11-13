@@ -43,20 +43,17 @@ internal sealed class TemplateRenderer(string baseDirectory)
     /// Renders the template at <paramref name="templatePath"/>, with each of <paramref name="variables"/> as
     /// a top-level template variable. The output always uses LF line endings.
     /// </summary>
-    public async Task<RenderResult> RenderAsync(
-        string templatePath,
-        Dictionary<string, JsonElement> variables,
-        CancellationToken cancellationToken)
+    public RenderResult Render(string templatePath, Dictionary<string, JsonElement> variables)
     {
-        LoadResult loadResult = await LoadTemplateAsync(templatePath, cancellationToken);
+        LoadResult loadResult = LoadTemplate(templatePath);
         return loadResult switch
         {
-            IFluidTemplate template => await RenderTemplateAsync(templatePath, template, variables),
+            IFluidTemplate template => RenderTemplate(templatePath, template, variables),
             TemplateLoadError error => error,
         };
     }
 
-    private static async Task<RenderResult> RenderTemplateAsync(
+    private static RenderResult RenderTemplate(
         string templatePath,
         IFluidTemplate template,
         Dictionary<string, JsonElement> variables)
@@ -70,7 +67,7 @@ internal sealed class TemplateRenderer(string baseDirectory)
 
         try
         {
-            string renderedTemplate = await template.RenderAsync(context);
+            string renderedTemplate = template.Render(context);
             return new RenderedTemplate(renderedTemplate.ReplaceLineEndings("\n"));
         }
         catch (FluidException exception)
@@ -79,25 +76,25 @@ internal sealed class TemplateRenderer(string baseDirectory)
         }
     }
 
-    private async Task<LoadResult> LoadTemplateAsync(string templatePath, CancellationToken cancellationToken)
+    private LoadResult LoadTemplate(string templatePath)
     {
         if (_loadedTemplates.TryGetValue(templatePath, out LoadResult cachedResult))
         {
             return cachedResult;
         }
 
-        LoadResult loadResult = await ReadAndParseTemplateAsync(templatePath, cancellationToken);
+        LoadResult loadResult = ReadAndParseTemplate(templatePath);
         _loadedTemplates.Add(templatePath, loadResult);
         return loadResult;
     }
 
-    private async Task<LoadResult> ReadAndParseTemplateAsync(string templatePath, CancellationToken cancellationToken)
+    private LoadResult ReadAndParseTemplate(string templatePath)
     {
         string fullTemplatePath = Path.Join(baseDirectory, templatePath);
         string templateSource;
         try
         {
-            templateSource = await File.ReadAllTextAsync(fullTemplatePath, cancellationToken);
+            templateSource = File.ReadAllText(fullTemplatePath);
         }
         catch (IOException exception)
         {

@@ -16,18 +16,18 @@ internal static class ListCommand
             manifestArgument
         };
 
-        command.SetAction((parseResult, cancellationToken) =>
+        command.SetAction(parseResult =>
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
-            return ListAsync(manifestFile, cancellationToken);
+            List(manifestFile);
         });
 
         return command;
     }
 
-    private static async Task ListAsync(FileInfo manifestFile, CancellationToken cancellationToken)
+    private static void List(FileInfo manifestFile)
     {
-        Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
+        Manifest manifest = ManifestLoader.Load(manifestFile.FullName);
 
         foreach (ImageEntry imageEntry in manifest.GetImages())
         {

@@ -24,28 +24,26 @@ internal static class GenerateCommand
             testOption
         };
 
-        command.SetAction((parseResult, cancellationToken) =>
+        command.SetAction(parseResult =>
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
             bool test = parseResult.GetValue(testOption);
-            return GenerateAsync(manifestFile, test, cancellationToken);
+            return Generate(manifestFile, test);
         });
 
         return command;
     }
 
-    private static async Task<int> GenerateAsync(FileInfo manifestFile, bool test, CancellationToken cancellationToken)
+    private static int Generate(FileInfo manifestFile, bool test)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
+        Manifest manifest = ManifestLoader.Load(manifestFile.FullName);
         string manifestDirectory = manifestFile.DirectoryName
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
 
         TemplateRenderer renderer = new(manifestDirectory);
-        List<DockerfileResult> dockerfileResults = await manifest.GetPlatforms()
-            .ToAsyncEnumerable()
-            .Select((platformEntry, token) => RenderDockerfileAsync(renderer, platformEntry, token))
-            .ToListAsync(cancellationToken);
+        DockerfileResult[] dockerfileResults = [.. manifest.GetPlatforms()
+            .Select(platformEntry => RenderDockerfile(renderer, platformEntry))];
 
         // Distinct, because a template that fails to load fails the same way for every platform that uses it.
         TemplateError[] templateErrors = [.. dockerfileResults
@@ -69,7 +67,7 @@ internal static class GenerateCommand
 
         if (test)
         {
-            return await TestDockerfilesAsync(dockerfiles, manifestDirectory, stopwatch, cancellationToken);
+            return TestDockerfiles(dockerfiles, manifestDirectory, stopwatch);
         }
 
         foreach (RenderedDockerfile dockerfile in dockerfiles)
@@ -77,17 +75,14 @@ internal static class GenerateCommand
             string dockerfileFullPath = Path.Join(manifestDirectory, dockerfile.DockerfilePath);
             FileInfo dockerfileFile = new(dockerfileFullPath);
             dockerfileFile.Directory?.Create();
-            await File.WriteAllTextAsync(dockerfileFile.FullName, dockerfile.Content, cancellationToken);
+            File.WriteAllText(dockerfileFile.FullName, dockerfile.Content);
         }
 
         Console.WriteLine($"Generated {dockerfiles.Length} files in {stopwatch.ElapsedMilliseconds}ms");
         return 0;
     }
 
-    private static async ValueTask<DockerfileResult> RenderDockerfileAsync(
-        TemplateRenderer renderer,
-        PlatformEntry platformEntry,
-        CancellationToken cancellationToken)
+    private static DockerfileResult RenderDockerfile(TemplateRenderer renderer, PlatformEntry platformEntry)
     {
         if (platformEntry.Platform is not { DockerfileTemplate: string templatePath, Dockerfile: string dockerfilePath })
         {
@@ -95,7 +90,7 @@ internal static class GenerateCommand
         }
 
         Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
-        RenderResult renderResult = await renderer.RenderAsync(templatePath, variables, cancellationToken);
+        RenderResult renderResult = renderer.Render(templatePath, variables);
         return renderResult switch
         {
             RenderedTemplate renderedTemplate => new RenderedDockerfile(dockerfilePath, renderedTemplate.Content),
@@ -104,16 +99,10 @@ internal static class GenerateCommand
         };
     }
 
-    private static async Task<int> TestDockerfilesAsync(
-        RenderedDockerfile[] dockerfiles,
-        string manifestDirectory,
-        Stopwatch stopwatch,
-        CancellationToken cancellationToken)
+    private static int TestDockerfiles(RenderedDockerfile[] dockerfiles, string manifestDirectory, Stopwatch stopwatch)
     {
-        List<DockerfileCheck> dockerfileChecks = await dockerfiles
-            .ToAsyncEnumerable()
-            .Select((dockerfile, token) => CheckDockerfileAsync(dockerfile, manifestDirectory, token))
-            .ToListAsync(cancellationToken);
+        DockerfileCheck[] dockerfileChecks = [.. dockerfiles
+            .Select(dockerfile => CheckDockerfile(dockerfile, manifestDirectory))];
 
         string[] mismatches = [.. dockerfileChecks
             .Select(DescribeMismatch)
@@ -128,10 +117,7 @@ internal static class GenerateCommand
         return mismatches.Length > 0 ? 1 : 0;
     }
 
-    private static async ValueTask<DockerfileCheck> CheckDockerfileAsync(
-        RenderedDockerfile dockerfile,
-        string manifestDirectory,
-        CancellationToken cancellationToken)
+    private static DockerfileCheck CheckDockerfile(RenderedDockerfile dockerfile, string manifestDirectory)
     {
         string dockerfileFullPath = Path.Join(manifestDirectory, dockerfile.DockerfilePath);
         if (!File.Exists(dockerfileFullPath))
@@ -139,7 +125,7 @@ internal static class GenerateCommand
             return new MissingDockerfile(dockerfile.DockerfilePath);
         }
 
-        string existingContent = await File.ReadAllTextAsync(dockerfileFullPath, cancellationToken);
+        string existingContent = File.ReadAllText(dockerfileFullPath);
 
         // Git may check out Dockerfiles with CRLF line endings, so only compare the text.
         string normalizedContent = existingContent.ReplaceLineEndings("\n");

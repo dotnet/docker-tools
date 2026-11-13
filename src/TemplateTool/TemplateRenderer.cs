@@ -25,7 +25,9 @@ internal sealed class TemplateRenderer(string baseDirectory)
     /// a top-level template variable. The output always uses LF line endings.
     /// </summary>
     public async Task<string> RenderAsync(
-        string templatePath, Dictionary<string, JsonElement> variables, CancellationToken cancellationToken)
+        string templatePath,
+        Dictionary<string, JsonElement> variables,
+        CancellationToken cancellationToken)
     {
         IFluidTemplate template = await GetTemplateAsync(templatePath, cancellationToken);
         TemplateContext context = new(Options);

@@ -33,33 +33,19 @@ public static class ManifestLoader
         return resolver.Resolve();
     }
 
-    private static JsonSerializerOptions CreateJsonOptions()
-    {
-        DefaultJsonTypeInfoResolver typeInfoResolver = new();
-        typeInfoResolver.Modifiers.Add(ConfigureProperties);
-        JsonStringEnumConverter enumConverter = new(JsonNamingPolicy.CamelCase, allowIntegerValues: false);
-
-        JsonSerializerOptions options = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            RespectNullableAnnotations = true,
-            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            TypeInfoResolver = typeInfoResolver
-        };
-        options.Converters.Add(enumConverter);
-        return options;
-    }
-
     private static Manifest Parse(string yaml)
     {
         using StringReader reader = new(yaml);
         Parser yamlParser = new(reader);
         MergingParser mergingParser = new(yamlParser);
-        Dictionary<string, object?> manifestDocument = YamlDeserializer.Deserialize<Dictionary<string, object?>>(mergingParser)
-            ?? throw new InvalidDataException("The manifest must not be null.");
+
+        Dictionary<string, object?> manifestDocument =
+            YamlDeserializer.Deserialize<Dictionary<string, object?>>(mergingParser)
+                ?? throw new InvalidDataException("The manifest must not be null.");
 
         // Expand YAML reuse before removing authoring-only definitions and validating the model.
         manifestDocument.Remove("definitions");
+
         JsonElement manifestJson = JsonSerializer.SerializeToElement(manifestDocument);
         return manifestJson.Deserialize<Manifest>(JsonOptions)
             ?? throw new InvalidDataException("The manifest must not be null.");
@@ -79,5 +65,23 @@ public static class ManifestLoader
                 property.IsSetNullable = false;
             }
         }
+    }
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        DefaultJsonTypeInfoResolver typeInfoResolver = new();
+        typeInfoResolver.Modifiers.Add(ConfigureProperties);
+        JsonStringEnumConverter enumConverter = new(JsonNamingPolicy.CamelCase, allowIntegerValues: false);
+
+        JsonSerializerOptions options = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            RespectNullableAnnotations = true,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            TypeInfoResolver = typeInfoResolver
+        };
+
+        options.Converters.Add(enumConverter);
+        return options;
     }
 }

@@ -28,15 +28,15 @@ internal sealed partial class PatternEvaluator
             return;
         }
 
-        List<JsonElement> builtIns = [];
+        List<JsonElement> platformBuiltIns = [];
         foreach (Platform platform in platforms)
         {
             JsonElement builtIn = BuiltInVariables.Serialize(repoKey, platform);
-            builtIns.Add(builtIn);
+            platformBuiltIns.Add(builtIn);
         }
 
-        JsonElement firstBuiltIns = builtIns[0];
-        foreach (JsonProperty builtIn in firstBuiltIns.EnumerateObject())
+        JsonElement firstPlatformBuiltIns = platformBuiltIns[0];
+        foreach (JsonProperty builtIn in firstPlatformBuiltIns.EnumerateObject())
         {
             if (metadata.ContainsKey(builtIn.Name))
             {
@@ -45,7 +45,7 @@ internal sealed partial class PatternEvaluator
             }
         }
 
-        Dictionary<string, JsonElement> commonBuiltIns = GetCommonProperties(builtIns, pathPrefix: "");
+        Dictionary<string, JsonElement> commonBuiltIns = GetCommonProperties(platformBuiltIns, pathPrefix: "");
         foreach ((string name, JsonElement value) in commonBuiltIns)
         {
             _variables.Add(name, value);
@@ -207,7 +207,7 @@ internal sealed partial class PatternEvaluator
     // image whose platforms share an OS but not an arch can still use {os.name}, but not {arch}.
     private Dictionary<string, JsonElement> GetCommonProperties(List<JsonElement> objects, string pathPrefix)
     {
-        Dictionary<string, JsonElement> common = new(StringComparer.Ordinal);
+        Dictionary<string, JsonElement> commonProperties = new(StringComparer.Ordinal);
         JsonElement firstObject = objects[0];
         foreach (JsonProperty property in firstObject.EnumerateObject())
         {
@@ -223,11 +223,11 @@ internal sealed partial class PatternEvaluator
             {
                 Dictionary<string, JsonElement> commonChildren = GetCommonProperties(values, path + ".");
                 JsonElement commonObject = JsonSerializer.SerializeToElement(commonChildren);
-                common.Add(property.Name, commonObject);
+                commonProperties.Add(property.Name, commonObject);
             }
             else if (values.All(value => JsonElement.DeepEquals(value, firstValue)))
             {
-                common.Add(property.Name, firstValue);
+                commonProperties.Add(property.Name, firstValue);
             }
             else
             {
@@ -235,7 +235,7 @@ internal sealed partial class PatternEvaluator
             }
         }
 
-        return common;
+        return commonProperties;
     }
 
     [GeneratedRegex(@"\{([^{}]+)\}")]

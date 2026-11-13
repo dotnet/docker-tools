@@ -21,16 +21,16 @@ internal sealed class ManifestResolver(Manifest manifest)
     private static Repo ResolveRepo(
         string repoKey, Repo repo, Dictionary<string, JsonElement> parentMetadata, ManifestDefaults? parentDefaults)
     {
-        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, repo.Metadata);
-        ManifestDefaults defaults = InheritDefaults(parentDefaults, repo.Defaults);
-        Dictionary<string, Image> images = ResolveImages(repoKey, repoKey, repo.Images, metadata, defaults);
+        Dictionary<string, JsonElement> inheritedMetadata = InheritMetadata(parentMetadata, repo.Metadata);
+        ManifestDefaults inheritedDefaults = InheritDefaults(parentDefaults, repo.Defaults);
+        Dictionary<string, Image> images = ResolveImages(repoKey, repoKey, repo.Images, inheritedMetadata, inheritedDefaults);
         List<(string ScopeKey, Dictionary<string, Image> Images)> imageSets = [(repoKey, images)];
 
         Dictionary<string, Group> groups = [];
         foreach ((string groupKey, Group group) in repo.Groups)
         {
             string scopeKey = $"{repoKey}__{groupKey}";
-            Group resolvedGroup = ResolveGroup(repoKey, scopeKey, group, metadata, defaults);
+            Group resolvedGroup = ResolveGroup(repoKey, scopeKey, group, inheritedMetadata, inheritedDefaults);
             groups[groupKey] = resolvedGroup;
             imageSets.Add((scopeKey, resolvedGroup.Images));
         }
@@ -43,9 +43,9 @@ internal sealed class ManifestResolver(Manifest manifest)
         string repoKey, string scopeKey, Group group,
         Dictionary<string, JsonElement> parentMetadata, ManifestDefaults parentDefaults)
     {
-        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, group.Metadata);
-        ManifestDefaults defaults = InheritDefaults(parentDefaults, group.Defaults);
-        Dictionary<string, Image> images = ResolveImages(repoKey, scopeKey, group.Images, metadata, defaults);
+        Dictionary<string, JsonElement> inheritedMetadata = InheritMetadata(parentMetadata, group.Metadata);
+        ManifestDefaults inheritedDefaults = InheritDefaults(parentDefaults, group.Defaults);
+        Dictionary<string, Image> images = ResolveImages(repoKey, scopeKey, group.Images, inheritedMetadata, inheritedDefaults);
         return group with { Images = images, Defaults = null };
     }
 
@@ -67,18 +67,18 @@ internal sealed class ManifestResolver(Manifest manifest)
         string repoKey, string scopeKey, Image image,
         Dictionary<string, JsonElement> parentMetadata, ManifestDefaults parentDefaults)
     {
-        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, image.Metadata);
-        ManifestDefaults defaults = InheritDefaults(parentDefaults, image.Defaults);
+        Dictionary<string, JsonElement> inheritedMetadata = InheritMetadata(parentMetadata, image.Metadata);
+        ManifestDefaults inheritedDefaults = InheritDefaults(parentDefaults, image.Defaults);
         Platform[] imagePlatforms = [.. image.Platforms.Values];
-        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, imagePlatforms);
-        Dictionary<string, Tag> tagPatterns = image.Tags ?? defaults.Image.Tags ?? [];
+        PatternEvaluator evaluator = new(repoKey, scopeKey, inheritedMetadata, imagePlatforms);
+        Dictionary<string, Tag> tagPatterns = image.Tags ?? inheritedDefaults.Image.Tags ?? [];
         Dictionary<string, Tag> tags = evaluator.ResolveTags(tagPatterns);
 
         Dictionary<string, Platform> platforms = [];
         foreach ((string platformKey, Platform platform) in image.Platforms)
         {
             string platformScopeKey = $"{scopeKey}__{platformKey}";
-            platforms[platformKey] = ResolvePlatform(repoKey, platformScopeKey, platform, metadata, defaults.Platform);
+            platforms[platformKey] = ResolvePlatform(repoKey, platformScopeKey, platform, inheritedMetadata, inheritedDefaults.Platform);
         }
 
         return image with
@@ -91,28 +91,28 @@ internal sealed class ManifestResolver(Manifest manifest)
 
     private static Platform ResolvePlatform(
         string repoKey, string scopeKey, Platform platform,
-        Dictionary<string, JsonElement> parentMetadata, PlatformDefaults defaults)
+        Dictionary<string, JsonElement> parentMetadata, PlatformDefaults inheritedDefaults)
     {
-        Dictionary<string, JsonElement> metadata = InheritMetadata(parentMetadata, platform.Metadata);
-        PatternEvaluator evaluator = new(repoKey, scopeKey, metadata, [platform]);
-        Dictionary<string, Tag> tagPatterns = platform.Tags ?? defaults.Tags ?? [];
+        Dictionary<string, JsonElement> inheritedMetadata = InheritMetadata(parentMetadata, platform.Metadata);
+        PatternEvaluator evaluator = new(repoKey, scopeKey, inheritedMetadata, [platform]);
+        Dictionary<string, Tag> tagPatterns = platform.Tags ?? inheritedDefaults.Tags ?? [];
         Dictionary<string, Tag> tags = evaluator.ResolveTags(tagPatterns);
 
         string dockerfilePattern = platform.Dockerfile
-            ?? defaults.Dockerfile
+            ?? inheritedDefaults.Dockerfile
             ?? throw new InvalidDataException(
                 $"{scopeKey}: dockerfile must be specified explicitly or in defaults.platform.");
-        string dockerfile = evaluator.Expand(dockerfilePattern);
+        string dockerfilePath = evaluator.Expand(dockerfilePattern);
 
-        string? dockerfileTemplatePattern = platform.DockerfileTemplate ?? defaults.DockerfileTemplate;
-        string? dockerfileTemplate = null;
+        string? dockerfileTemplatePattern = platform.DockerfileTemplate ?? inheritedDefaults.DockerfileTemplate;
+        string? dockerfileTemplatePath = null;
         if (dockerfileTemplatePattern is not null)
         {
-            dockerfileTemplate = evaluator.Expand(dockerfileTemplatePattern);
+            dockerfileTemplatePath = evaluator.Expand(dockerfileTemplatePattern);
         }
 
         // Build args are independent of each other, so a platform overrides default args one at a time.
-        Dictionary<string, string> defaultBuildArgs = defaults.BuildArgs ?? [];
+        Dictionary<string, string> defaultBuildArgs = inheritedDefaults.BuildArgs ?? [];
         Dictionary<string, string> buildArgs = new(defaultBuildArgs, StringComparer.Ordinal);
         foreach ((string name, string value) in platform.BuildArgs)
         {
@@ -123,7 +123,7 @@ internal sealed class ManifestResolver(Manifest manifest)
         // and platform metadata merged by key. A platform also gets each inherited value that has
         // placeholders, expanded for that platform.
         Dictionary<string, JsonElement> platformMetadata = new(StringComparer.Ordinal);
-        foreach ((string key, JsonElement value) in metadata)
+        foreach ((string key, JsonElement value) in inheritedMetadata)
         {
             if (platform.Metadata.ContainsKey(key) || HasPlaceholders(value))
             {
@@ -136,8 +136,8 @@ internal sealed class ManifestResolver(Manifest manifest)
         return platform with
         {
             BuildArgs = buildArgs,
-            Dockerfile = dockerfile,
-            DockerfileTemplate = dockerfileTemplate,
+            Dockerfile = dockerfilePath,
+            DockerfileTemplate = dockerfileTemplatePath,
             Tags = tags,
             Metadata = expandedMetadata
         };
@@ -202,17 +202,17 @@ internal sealed class ManifestResolver(Manifest manifest)
         {
             foreach ((string imageKey, Image image) in images)
             {
-                string imageScope = $"{scopeKey}__{imageKey}";
-                ClaimTags(image.Tags, imageScope);
+                string imageScopeKey = $"{scopeKey}__{imageKey}";
+                ClaimTags(image.Tags, imageScopeKey);
                 foreach ((string platformKey, Platform platform) in image.Platforms)
                 {
-                    string platformScope = $"{imageScope}__{platformKey}";
-                    ClaimTags(platform.Tags, platformScope);
+                    string platformScopeKey = $"{imageScopeKey}__{platformKey}";
+                    ClaimTags(platform.Tags, platformScopeKey);
                 }
             }
         }
 
-        void ClaimTags(Dictionary<string, Tag>? tags, string scopeKey)
+        void ClaimTags(Dictionary<string, Tag>? tags, string ownerKey)
         {
             if (tags is null)
             {
@@ -221,10 +221,10 @@ internal sealed class ManifestResolver(Manifest manifest)
 
             foreach (string tag in tags.Keys)
             {
-                if (!tagOwners.TryAdd(tag, scopeKey))
+                if (!tagOwners.TryAdd(tag, ownerKey))
                 {
                     throw new InvalidDataException(
-                        $"{repoKey}: tag '{tag}' is declared by both {tagOwners[tag]} and {scopeKey}.");
+                        $"{repoKey}: tag '{tag}' is declared by both {tagOwners[tag]} and {ownerKey}.");
                 }
             }
         }

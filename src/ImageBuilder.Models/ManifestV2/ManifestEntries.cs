@@ -75,7 +75,7 @@ public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Pl
     public Dictionary<string, JsonElement> GetVariables()
     {
         Dictionary<string, JsonElement> variables = new(StringComparer.Ordinal);
-        Dictionary<string, JsonElement>[] scopes =
+        Dictionary<string, JsonElement>[] metadataScopes =
         [
             ImageEntry.Manifest.Metadata,
             ImageEntry.Repo.Metadata,
@@ -83,7 +83,7 @@ public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Pl
             ImageEntry.Image.Metadata,
             Platform.Metadata
         ];
-        foreach (Dictionary<string, JsonElement> scope in scopes)
+        foreach (Dictionary<string, JsonElement> scope in metadataScopes)
         {
             foreach ((string key, JsonElement value) in scope)
             {
@@ -91,8 +91,8 @@ public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Pl
             }
         }
 
-        JsonElement builtIns = BuiltInVariables.Serialize(ImageEntry.RepoKey, Platform);
-        foreach (JsonProperty builtIn in builtIns.EnumerateObject())
+        JsonElement builtInVariables = BuiltInVariables.Serialize(ImageEntry.RepoKey, Platform);
+        foreach (JsonProperty builtIn in builtInVariables.EnumerateObject())
         {
             variables.Add(builtIn.Name, builtIn.Value);
         }

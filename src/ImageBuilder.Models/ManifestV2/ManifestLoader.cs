@@ -54,14 +54,14 @@ public static class ManifestLoader
     {
         using StringReader reader = new(yaml);
         Parser yamlParser = new(reader);
-        MergingParser parser = new(yamlParser);
-        Dictionary<string, object?> document = YamlDeserializer.Deserialize<Dictionary<string, object?>>(parser)
+        MergingParser mergingParser = new(yamlParser);
+        Dictionary<string, object?> manifestDocument = YamlDeserializer.Deserialize<Dictionary<string, object?>>(mergingParser)
             ?? throw new InvalidDataException("The manifest must not be null.");
 
         // Expand YAML reuse before removing authoring-only definitions and validating the model.
-        document.Remove("definitions");
-        JsonElement json = JsonSerializer.SerializeToElement(document);
-        return json.Deserialize<Manifest>(JsonOptions)
+        manifestDocument.Remove("definitions");
+        JsonElement manifestJson = JsonSerializer.SerializeToElement(manifestDocument);
+        return manifestJson.Deserialize<Manifest>(JsonOptions)
             ?? throw new InvalidDataException("The manifest must not be null.");
     }
 

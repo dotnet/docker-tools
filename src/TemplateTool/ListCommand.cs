@@ -29,13 +29,13 @@ internal static class ListCommand
     {
         Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
 
-        foreach (ImageEntry entry in manifest.GetImages())
+        foreach (ImageEntry imageEntry in manifest.GetImages())
         {
-            Console.WriteLine(entry.Key);
-            Dictionary<string, Tag> tags = entry.Image.Tags ?? [];
-            foreach ((string name, Tag tag) in tags)
+            Console.WriteLine(imageEntry.Key);
+            Dictionary<string, Tag> tags = imageEntry.Image.Tags ?? [];
+            foreach ((string tagName, Tag tag) in tags)
             {
-                string reference = entry.GetReference(name);
+                string reference = imageEntry.GetReference(tagName);
                 string line = tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}";
                 Console.WriteLine(line);
             }

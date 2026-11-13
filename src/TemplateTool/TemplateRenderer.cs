@@ -18,7 +18,7 @@ internal sealed class TemplateRenderer(string baseDirectory)
     // Fail on undefined variables instead of rendering them as empty text.
     private static readonly TemplateOptions Options = new() { StrictVariables = true };
 
-    private readonly Dictionary<string, IFluidTemplate> _templates = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IFluidTemplate> _parsedTemplates = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Renders the template at <paramref name="templatePath"/>, with each of <paramref name="variables"/> as
@@ -35,25 +35,25 @@ internal sealed class TemplateRenderer(string baseDirectory)
             context.SetValue(name, node);
         }
 
-        string output = await template.RenderAsync(context);
-        return output.ReplaceLineEndings("\n");
+        string renderedTemplate = await template.RenderAsync(context);
+        return renderedTemplate.ReplaceLineEndings("\n");
     }
 
     private async Task<IFluidTemplate> GetTemplateAsync(string templatePath, CancellationToken cancellationToken)
     {
-        if (_templates.TryGetValue(templatePath, out IFluidTemplate? template))
+        if (_parsedTemplates.TryGetValue(templatePath, out IFluidTemplate? template))
         {
             return template;
         }
 
-        string path = Path.Join(baseDirectory, templatePath);
-        string source = await File.ReadAllTextAsync(path, cancellationToken);
-        if (!Parser.TryParse(source, out template, out string error))
+        string fullTemplatePath = Path.Join(baseDirectory, templatePath);
+        string templateSource = await File.ReadAllTextAsync(fullTemplatePath, cancellationToken);
+        if (!Parser.TryParse(templateSource, out template, out string error))
         {
             throw new InvalidDataException($"{templatePath}: {error}");
         }
 
-        _templates.Add(templatePath, template);
+        _parsedTemplates.Add(templatePath, template);
         return template;
     }
 }

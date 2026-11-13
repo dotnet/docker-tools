@@ -29,31 +29,31 @@ internal static class GenerateCommand
     private static async Task GenerateAsync(FileInfo manifestFile, CancellationToken cancellationToken)
     {
         Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
-        string baseDirectory = manifestFile.DirectoryName
+        string manifestDirectory = manifestFile.DirectoryName
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
-        TemplateRenderer renderer = new(baseDirectory);
+        TemplateRenderer renderer = new(manifestDirectory);
 
-        foreach (ImageEntry image in manifest.GetImages())
+        foreach (ImageEntry imageEntry in manifest.GetImages())
         {
-            Console.WriteLine(image.Key);
+            Console.WriteLine(imageEntry.Key);
 
-            foreach (PlatformEntry platformEntry in image.GetPlatforms())
+            foreach (PlatformEntry platformEntry in imageEntry.GetPlatforms())
             {
-                string? template = platformEntry.Platform.DockerfileTemplate;
-                string? dockerfile = platformEntry.Platform.Dockerfile;
-                if (template is null || dockerfile is null)
+                string? templatePath = platformEntry.Platform.DockerfileTemplate;
+                string? dockerfilePath = platformEntry.Platform.Dockerfile;
+                if (templatePath is null || dockerfilePath is null)
                 {
                     Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
                     continue;
                 }
 
                 Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
-                string content = await renderer.RenderAsync(template, variables, cancellationToken);
-                string outputPath = Path.Join(baseDirectory, dockerfile);
-                FileInfo output = new(outputPath);
-                output.Directory?.Create();
-                await File.WriteAllTextAsync(output.FullName, content, cancellationToken);
-                Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {dockerfile}");
+                string dockerfileContent = await renderer.RenderAsync(templatePath, variables, cancellationToken);
+                string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
+                FileInfo dockerfileFile = new(dockerfileFullPath);
+                dockerfileFile.Directory?.Create();
+                await File.WriteAllTextAsync(dockerfileFile.FullName, dockerfileContent, cancellationToken);
+                Console.WriteLine($"  {platformEntry.PlatformKey}: {templatePath} -> {dockerfilePath}");
             }
         }
     }

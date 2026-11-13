@@ -3,7 +3,7 @@
 
 using System.CommandLine;
 
-namespace TemplateTool;
+namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 internal static class ManifestArgument
 {

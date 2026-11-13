@@ -4,7 +4,7 @@
 using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
-namespace TemplateTool;
+namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 internal static class ListCommand
 {

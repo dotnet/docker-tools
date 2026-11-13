@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CommandLine;
-using TemplateTool;
+using Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 RootCommand rootCommand = new("Generates Dockerfiles from templates and a ManifestV2 manifest.")
 {

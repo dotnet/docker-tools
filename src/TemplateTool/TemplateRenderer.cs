@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Fluid;
 
-namespace TemplateTool;
+namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 /// <summary>
 /// Renders Dockerfile templates with Fluid, parsing each template file once.

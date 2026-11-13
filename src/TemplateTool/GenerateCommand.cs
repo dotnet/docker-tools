@@ -5,7 +5,7 @@ using System.CommandLine;
 using System.Text.Json;
 using Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
-namespace TemplateTool;
+namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 internal static class GenerateCommand
 {

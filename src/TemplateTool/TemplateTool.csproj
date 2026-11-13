@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Microsoft.DotNet.ImageBuilder.TemplateTool</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Label="Packaging Settings">

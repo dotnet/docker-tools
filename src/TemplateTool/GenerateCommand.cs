@@ -17,39 +17,44 @@ internal static class GenerateCommand
             manifestArgument
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
-            Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
-            string baseDirectory = manifestFile.DirectoryName
-                ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
-            TemplateRenderer renderer = new(baseDirectory);
-
-            foreach (ImageEntry image in manifest.GetImages())
-            {
-                Console.WriteLine(image.Key);
-
-                foreach (PlatformEntry platformEntry in image.GetPlatforms())
-                {
-                    string? template = platformEntry.Platform.DockerfileTemplate;
-                    string? dockerfile = platformEntry.Platform.Dockerfile;
-                    if (template is null || dockerfile is null)
-                    {
-                        Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
-                        continue;
-                    }
-
-                    Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
-                    string content = await renderer.RenderAsync(template, variables, cancellationToken);
-                    string outputPath = Path.Join(baseDirectory, dockerfile);
-                    FileInfo output = new(outputPath);
-                    output.Directory?.Create();
-                    await File.WriteAllTextAsync(output.FullName, content, cancellationToken);
-                    Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {dockerfile}");
-                }
-            }
+            return GenerateAsync(manifestFile, cancellationToken);
         });
 
         return command;
+    }
+
+    private static async Task GenerateAsync(FileInfo manifestFile, CancellationToken cancellationToken)
+    {
+        Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
+        string baseDirectory = manifestFile.DirectoryName
+            ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
+        TemplateRenderer renderer = new(baseDirectory);
+
+        foreach (ImageEntry image in manifest.GetImages())
+        {
+            Console.WriteLine(image.Key);
+
+            foreach (PlatformEntry platformEntry in image.GetPlatforms())
+            {
+                string? template = platformEntry.Platform.DockerfileTemplate;
+                string? dockerfile = platformEntry.Platform.Dockerfile;
+                if (template is null || dockerfile is null)
+                {
+                    Console.WriteLine($"  {platformEntry.PlatformKey}: no template, skipped");
+                    continue;
+                }
+
+                Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
+                string content = await renderer.RenderAsync(template, variables, cancellationToken);
+                string outputPath = Path.Join(baseDirectory, dockerfile);
+                FileInfo output = new(outputPath);
+                output.Directory?.Create();
+                await File.WriteAllTextAsync(output.FullName, content, cancellationToken);
+                Console.WriteLine($"  {platformEntry.PlatformKey}: {template} -> {dockerfile}");
+            }
+        }
     }
 }

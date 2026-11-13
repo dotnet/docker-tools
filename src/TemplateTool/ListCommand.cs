@@ -16,24 +16,29 @@ internal static class ListCommand
             manifestArgument
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             FileInfo manifestFile = parseResult.GetRequiredValue(manifestArgument);
-            Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
-
-            foreach (ImageEntry entry in manifest.GetImages())
-            {
-                Console.WriteLine(entry.Key);
-                Dictionary<string, Tag> tags = entry.Image.Tags ?? [];
-                foreach ((string name, Tag tag) in tags)
-                {
-                    string reference = entry.GetReference(name);
-                    string line = tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}";
-                    Console.WriteLine(line);
-                }
-            }
+            return ListAsync(manifestFile, cancellationToken);
         });
 
         return command;
+    }
+
+    private static async Task ListAsync(FileInfo manifestFile, CancellationToken cancellationToken)
+    {
+        Manifest manifest = await ManifestLoader.LoadAsync(manifestFile.FullName, cancellationToken);
+
+        foreach (ImageEntry entry in manifest.GetImages())
+        {
+            Console.WriteLine(entry.Key);
+            Dictionary<string, Tag> tags = entry.Image.Tags ?? [];
+            foreach ((string name, Tag tag) in tags)
+            {
+                string reference = entry.GetReference(name);
+                string line = tag.Undocumented ? $"  {reference} (undocumented)" : $"  {reference}";
+                Console.WriteLine(line);
+            }
+        }
     }
 }

@@ -44,13 +44,30 @@ internal static class ListCommand
         }
     }
 
+    // Writes the first tag as a full reference and the rest as tag names, like
+    // "mcr.microsoft.com/dotnet/sdk:10.0.403-noble-amd64 [10.0-noble-amd64]".
     private static void WriteTags(ImageEntry imageEntry, Dictionary<string, Tag> tags, string indent)
     {
+        List<string> labels = [];
         foreach ((string tagName, Tag tag) in tags)
         {
-            string reference = imageEntry.GetReference(tagName);
-            string line = tag.Undocumented ? $"{indent}{reference} (undocumented)" : $"{indent}{reference}";
-            Console.WriteLine(line);
+            string reference = labels.Count == 0 ? imageEntry.GetReference(tagName) : tagName;
+            string label = tag.Undocumented ? $"{reference} (undocumented)" : reference;
+            labels.Add(label);
         }
+
+        if (labels.Count == 0)
+        {
+            return;
+        }
+
+        if (labels.Count == 1)
+        {
+            Console.WriteLine($"{indent}{labels[0]}");
+            return;
+        }
+
+        string otherTags = string.Join(", ", labels.Skip(1));
+        Console.WriteLine($"{indent}{labels[0]} [{otherTags}]");
     }
 }

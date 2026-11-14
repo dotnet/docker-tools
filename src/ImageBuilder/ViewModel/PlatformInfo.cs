@@ -123,9 +123,9 @@ public partial class PlatformInfo
     private void InitializeFromImages()
     {
         string dockerfile = File.ReadAllText(DockerfilePath);
-        IList<Match> fromMatches = FromRegex.Matches(dockerfile);
+        MatchCollection fromMatches = FromRegex.Matches(dockerfile);
 
-        if (!fromMatches.Any())
+        if (fromMatches.Count == 0)
         {
             throw new InvalidOperationException($"Unable to find a FROM image in {DockerfilePath}.");
         }
@@ -260,7 +260,7 @@ public partial class PlatformInfo
         }
     }
 
-    private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
+    private static bool IsStageReference(string fromImage, MatchCollection fromMatches)
     {
         bool isStageReference = false;
 

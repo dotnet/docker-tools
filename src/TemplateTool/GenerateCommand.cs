@@ -67,33 +67,34 @@ internal static class GenerateCommand
             return null;
         }
 
-        ManifestFile template = new(templatePath, Path.Join(manifestDirectory, templatePath));
-        ManifestFile dockerfile = new(dockerfilePath, Path.Join(manifestDirectory, dockerfilePath));
-        return new DockerfileTemplate(platformEntry, template, dockerfile);
+        string templateFullPath = Path.GetFullPath(Path.Join(manifestDirectory, templatePath));
+        string dockerfileFullPath = Path.GetFullPath(Path.Join(manifestDirectory, dockerfilePath));
+        return new DockerfileTemplate(platformEntry, templateFullPath, dockerfileFullPath);
     }
 
     private static Result<RenderedDockerfile> RenderDockerfile(
         TemplateRenderer renderer,
         DockerfileTemplate dockerfileTemplate) =>
-        renderer.Load(dockerfileTemplate.Template.FullPath)
-            .MapErrors(error => $"{dockerfileTemplate.Template.RelativePath}: {error}")
+        renderer.Load(dockerfileTemplate.TemplateFullPath)
+            .MapErrors(error => $"{GetDisplayPath(dockerfileTemplate.TemplateFullPath)}: {error}")
             .Bind(template => RenderTemplate(template, dockerfileTemplate))
-            .Map(content => new RenderedDockerfile(dockerfileTemplate.Dockerfile, content));
+            .Map(content => new RenderedDockerfile(dockerfileTemplate.DockerfileFullPath, content));
 
     // Unlike load errors, render errors depend on the platform's variables, so they name the platform.
     private static Result<string> RenderTemplate(IFluidTemplate template, DockerfileTemplate dockerfileTemplate)
     {
         PlatformEntry platformEntry = dockerfileTemplate.PlatformEntry;
         Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
+        string templateDisplayPath = GetDisplayPath(dockerfileTemplate.TemplateFullPath);
         return TemplateRenderer.Render(template, variables)
-            .MapErrors(error => $"{dockerfileTemplate.Template.RelativePath} ({platformEntry.Key}): {error}");
+            .MapErrors(error => $"{templateDisplayPath} ({platformEntry.Key}): {error}");
     }
 
     private static Result<FileCount> WriteDockerfiles(RenderedDockerfile[] dockerfiles)
     {
         foreach (RenderedDockerfile dockerfile in dockerfiles)
         {
-            FileInfo dockerfileFile = new(dockerfile.File.FullPath);
+            FileInfo dockerfileFile = new(dockerfile.DockerfileFullPath);
             dockerfileFile.Directory?.Create();
             File.WriteAllText(dockerfileFile.FullName, dockerfile.Content);
         }
@@ -109,18 +110,18 @@ internal static class GenerateCommand
 
     private static Result<RenderedDockerfile> CheckDockerfile(RenderedDockerfile dockerfile)
     {
-        if (!File.Exists(dockerfile.File.FullPath))
+        if (!File.Exists(dockerfile.DockerfileFullPath))
         {
-            return new Failure($"{dockerfile.File.RelativePath} doesn't exist");
+            return new Failure($"{GetDisplayPath(dockerfile.DockerfileFullPath)} doesn't exist");
         }
 
-        string existingContent = File.ReadAllText(dockerfile.File.FullPath);
+        string existingContent = File.ReadAllText(dockerfile.DockerfileFullPath);
 
         // Git may check out Dockerfiles with CRLF line endings, so only compare the text.
         string normalizedContent = existingContent.ReplaceLineEndings("\n");
         return normalizedContent == dockerfile.Content
             ? dockerfile
-            : new Failure($"{dockerfile.File.RelativePath} doesn't match its template");
+            : new Failure($"{GetDisplayPath(dockerfile.DockerfileFullPath)} doesn't match its template");
     }
 
     private static int ReportSuccess(bool test, FileCount fileCount, Stopwatch stopwatch)
@@ -141,15 +142,21 @@ internal static class GenerateCommand
     }
 
     /// <summary>
-    /// A file that the manifest refers to by a path relative to its directory.
+    /// Gets the path to show users: relative to the current directory if the file is under it, otherwise full.
     /// </summary>
-    /// <param name="RelativePath">The path as written in the manifest, for messages.</param>
-    /// <param name="FullPath">The path to read or write the file at.</param>
-    private sealed record ManifestFile(string RelativePath, string FullPath);
+    private static string GetDisplayPath(string fullPath)
+    {
+        string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, fullPath);
+        bool isOutsideCurrentDirectory = relativePath == ".."
+            || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+            || Path.IsPathRooted(relativePath);
 
-    private sealed record DockerfileTemplate(PlatformEntry PlatformEntry, ManifestFile Template, ManifestFile Dockerfile);
+        return isOutsideCurrentDirectory ? fullPath : relativePath;
+    }
 
-    private sealed record RenderedDockerfile(ManifestFile File, string Content);
+    private sealed record DockerfileTemplate(PlatformEntry PlatformEntry, string TemplateFullPath, string DockerfileFullPath);
+
+    private sealed record RenderedDockerfile(string DockerfileFullPath, string Content);
 
     private readonly record struct FileCount(int Value);
 }

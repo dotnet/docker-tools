@@ -10,8 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 /// <summary>
 /// Loads and renders Dockerfile templates with Fluid, loading each template file once.
 /// </summary>
-/// <param name="baseDirectory">The directory that template paths are relative to.</param>
-internal sealed class TemplateRenderer(string baseDirectory)
+internal sealed class TemplateRenderer
 {
     private static readonly FluidParser Parser = new();
 
@@ -21,7 +20,7 @@ internal sealed class TemplateRenderer(string baseDirectory)
     private readonly Dictionary<string, Result<IFluidTemplate>> _loadedTemplates = [with(StringComparer.Ordinal)];
 
     /// <summary>
-    /// Reads and parses the template at <paramref name="templatePath"/>. Each error starts with the template path.
+    /// Reads and parses the template at <paramref name="templatePath"/>.
     /// </summary>
     public Result<IFluidTemplate> Load(string templatePath)
     {
@@ -59,22 +58,21 @@ internal sealed class TemplateRenderer(string baseDirectory)
         }
     }
 
-    private Result<IFluidTemplate> ReadAndParse(string templatePath)
+    private static Result<IFluidTemplate> ReadAndParse(string templatePath)
     {
-        string fullTemplatePath = Path.Join(baseDirectory, templatePath);
         string templateSource;
         try
         {
-            templateSource = File.ReadAllText(fullTemplatePath);
+            templateSource = File.ReadAllText(templatePath);
         }
         catch (IOException exception)
         {
-            return new Failure($"{templatePath}: {exception.Message}");
+            return new Failure(exception.Message);
         }
 
         if (!Parser.TryParse(templateSource, out IFluidTemplate template, out string error))
         {
-            return new Failure($"{templatePath}: {error}");
+            return new Failure(error);
         }
 
         return template;

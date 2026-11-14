@@ -63,29 +63,38 @@ internal static class ResultExtensions
     public static Result<T[]> Sequence<T>(this IEnumerable<Result<T>> results)
         where T : notnull
     {
-        Result<T>[] allResults = [.. results];
+        (T[] values, Failure[] failures) = results.Partition();
 
         string[] errors =
         [
-            .. allResults
-                .Select(result => result.Value)
-                .OfType<Failure>()
+            .. failures
                 .SelectMany(failure => failure.Errors)
                 .Distinct(),
         ];
 
-        if (errors.Length > 0)
-        {
-            return new Failure(errors);
-        }
+        return errors.Length > 0
+            ? new Failure(errors)
+            : values;
+    }
 
-        T[] values =
+    /// <summary>
+    /// Splits <paramref name="results"/> into their values and their failures, keeping the order of each.
+    /// </summary>
+    public static PartitionedResults<T> Partition<T>(this IEnumerable<Result<T>> results)
+        where T : notnull
+    {
+        object?[] contents =
         [
-            .. allResults
-                .Select(result => result.Value)
-                .OfType<T>(),
+            .. results.Select(result => result.Value),
         ];
 
-        return values;
+        T[] values = [.. contents.OfType<T>()];
+        Failure[] failures = [.. contents.OfType<Failure>()];
+        return new PartitionedResults<T>(values, failures);
     }
 }
+
+/// <summary>
+/// The values and failures of a set of <see cref="Result{T}"/>s.
+/// </summary>
+internal sealed record PartitionedResults<T>(T[] Values, Failure[] Failures);

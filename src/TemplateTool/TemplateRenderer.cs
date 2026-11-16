@@ -17,19 +17,19 @@ internal sealed class TemplateRenderer
     // Fail on undefined variables and filters instead of rendering empty text or the unfiltered value.
     private static readonly TemplateOptions Options = new() { StrictVariables = true, StrictFilters = true };
 
-    private readonly Dictionary<string, Result<IFluidTemplate>> _loadedTemplates = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<string, Result<IFluidTemplate, string>> _loadedTemplates = [with(StringComparer.Ordinal)];
 
     /// <summary>
     /// Reads and parses the template at <paramref name="templatePath"/>.
     /// </summary>
-    public Result<IFluidTemplate> Load(string templatePath)
+    public Result<IFluidTemplate, string> Load(string templatePath)
     {
-        if (_loadedTemplates.TryGetValue(templatePath, out Result<IFluidTemplate> cachedResult))
+        if (_loadedTemplates.TryGetValue(templatePath, out Result<IFluidTemplate, string> cachedResult))
         {
             return cachedResult;
         }
 
-        Result<IFluidTemplate> loadResult = ReadAndParse(templatePath);
+        Result<IFluidTemplate, string> loadResult = ReadAndParse(templatePath);
         _loadedTemplates.Add(templatePath, loadResult);
         return loadResult;
     }
@@ -38,7 +38,7 @@ internal sealed class TemplateRenderer
     /// Renders <paramref name="template"/> with each of <paramref name="variables"/> as a top-level template
     /// variable. The output always uses LF line endings.
     /// </summary>
-    public static Result<string> Render(IFluidTemplate template, Dictionary<string, JsonElement> variables)
+    public static Result<string, string> Render(IFluidTemplate template, Dictionary<string, JsonElement> variables)
     {
         TemplateContext context = new(Options);
         foreach ((string name, JsonElement value) in variables)
@@ -50,15 +50,15 @@ internal sealed class TemplateRenderer
         try
         {
             string renderedTemplate = template.Render(context);
-            return renderedTemplate.ReplaceLineEndings("\n");
+            return new Ok<string>(renderedTemplate.ReplaceLineEndings("\n"));
         }
         catch (FluidException exception)
         {
-            return new Failure(exception.Message);
+            return new Error<string>(exception.Message);
         }
     }
 
-    private static Result<IFluidTemplate> ReadAndParse(string templatePath)
+    private static Result<IFluidTemplate, string> ReadAndParse(string templatePath)
     {
         string templateSource;
         try
@@ -67,14 +67,14 @@ internal sealed class TemplateRenderer
         }
         catch (IOException exception)
         {
-            return new Failure(exception.Message);
+            return new Error<string>(exception.Message);
         }
 
         if (!Parser.TryParse(templateSource, out IFluidTemplate template, out string error))
         {
-            return new Failure(error);
+            return new Error<string>(error);
         }
 
-        return template;
+        return new Ok<IFluidTemplate>(template);
     }
 }

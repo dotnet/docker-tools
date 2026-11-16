@@ -44,7 +44,7 @@ internal static class GenerateCommand
 
         TemplateRenderer renderer = new();
 
-        Result<FileCount> result = manifest.GetPlatforms()
+        Result<FileCount, string[]> result = manifest.GetPlatforms()
             .Select(platformEntry => GetDockerfileTemplate(platformEntry, manifestDirectory))
             .OfType<DockerfileTemplate>()
             .Select(dockerfileTemplate => RenderDockerfile(renderer, dockerfileTemplate))
@@ -55,8 +55,8 @@ internal static class GenerateCommand
 
         return result switch
         {
-            FileCount fileCount => ReportSuccess(test, fileCount, stopwatch),
-            Failure failure => ReportFailure(failure),
+            Ok<FileCount> fileCount => ReportSuccess(test, fileCount.Value, stopwatch),
+            Error<string[]> errors => ReportErrors(errors.Value),
         };
     }
 
@@ -72,24 +72,24 @@ internal static class GenerateCommand
         return new DockerfileTemplate(platformEntry, templateFullPath, dockerfileFullPath);
     }
 
-    private static Result<RenderedDockerfile> RenderDockerfile(
+    private static Result<RenderedDockerfile, string> RenderDockerfile(
         TemplateRenderer renderer,
         DockerfileTemplate dockerfileTemplate) =>
         renderer.Load(dockerfileTemplate.TemplateFullPath)
-            .MapErrors(error => $"{dockerfileTemplate.TemplateFullPath}: {error}")
+            .MapError(error => $"{dockerfileTemplate.TemplateFullPath}: {error}")
             .Bind(template => RenderTemplate(template, dockerfileTemplate))
             .Map(content => new RenderedDockerfile(dockerfileTemplate.DockerfileFullPath, content));
 
     // Unlike load errors, render errors depend on the platform's variables, so they name the platform.
-    private static Result<string> RenderTemplate(IFluidTemplate template, DockerfileTemplate dockerfileTemplate)
+    private static Result<string, string> RenderTemplate(IFluidTemplate template, DockerfileTemplate dockerfileTemplate)
     {
         PlatformEntry platformEntry = dockerfileTemplate.PlatformEntry;
         Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
         return TemplateRenderer.Render(template, variables)
-            .MapErrors(error => $"{dockerfileTemplate.TemplateFullPath} ({platformEntry.Key}): {error}");
+            .MapError(error => $"{dockerfileTemplate.TemplateFullPath} ({platformEntry.Key}): {error}");
     }
 
-    private static Result<FileCount> WriteDockerfiles(RenderedDockerfile[] dockerfiles)
+    private static Result<FileCount, string[]> WriteDockerfiles(RenderedDockerfile[] dockerfiles)
     {
         foreach (RenderedDockerfile dockerfile in dockerfiles)
         {
@@ -98,20 +98,20 @@ internal static class GenerateCommand
             File.WriteAllText(dockerfileFile.FullName, dockerfile.Content);
         }
 
-        return new FileCount(dockerfiles.Length);
+        return new Ok<FileCount>(new FileCount(dockerfiles.Length));
     }
 
-    private static Result<FileCount> CheckDockerfiles(RenderedDockerfile[] dockerfiles) =>
+    private static Result<FileCount, string[]> CheckDockerfiles(RenderedDockerfile[] dockerfiles) =>
         dockerfiles
             .Select(CheckDockerfile)
             .Sequence()
             .Map(checkedDockerfiles => new FileCount(checkedDockerfiles.Length));
 
-    private static Result<RenderedDockerfile> CheckDockerfile(RenderedDockerfile dockerfile)
+    private static Result<RenderedDockerfile, string> CheckDockerfile(RenderedDockerfile dockerfile)
     {
         if (!File.Exists(dockerfile.DockerfileFullPath))
         {
-            return new Failure($"{dockerfile.DockerfileFullPath} doesn't exist");
+            return new Error<string>($"{dockerfile.DockerfileFullPath} doesn't exist");
         }
 
         string existingContent = File.ReadAllText(dockerfile.DockerfileFullPath);
@@ -119,8 +119,8 @@ internal static class GenerateCommand
         // Git may check out Dockerfiles with CRLF line endings, so only compare the text.
         string normalizedContent = existingContent.ReplaceLineEndings("\n");
         return normalizedContent == dockerfile.Content
-            ? dockerfile
-            : new Failure($"{dockerfile.DockerfileFullPath} doesn't match its template");
+            ? new Ok<RenderedDockerfile>(dockerfile)
+            : new Error<string>($"{dockerfile.DockerfileFullPath} doesn't match its template");
     }
 
     private static int ReportSuccess(bool test, FileCount fileCount, Stopwatch stopwatch)
@@ -130,9 +130,10 @@ internal static class GenerateCommand
         return 0;
     }
 
-    private static int ReportFailure(Failure failure)
+    // Distinct, because a template that fails to load fails the same way for every platform that uses it.
+    private static int ReportErrors(string[] errors)
     {
-        foreach (string error in failure.Errors)
+        foreach (string error in errors.Distinct())
         {
             Console.Error.WriteLine($"error: {error}");
         }

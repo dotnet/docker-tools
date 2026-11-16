@@ -16,7 +16,7 @@ internal static class ResultExtensions
         /// <summary>
         /// Continues with <paramref name="f"/> if the result succeeded. Otherwise, passes its error through.
         /// </summary>
-        public Result<TNew, TError> Bind<TNew>(Func<T, Result<TNew, TError>> f) => result switch
+        public Result<U, TError> Bind<U>(Func<T, Result<U, TError>> f) => result switch
         {
             Ok<T> ok => f(ok.Value),
             Error<TError> error => error,
@@ -25,19 +25,19 @@ internal static class ResultExtensions
         /// <summary>
         /// Transforms the value if the result succeeded. Otherwise, passes its error through.
         /// </summary>
-        public Result<TNew, TError> Map<TNew>(Func<T, TNew> f) => result switch
+        public Result<U, TError> Map<U>(Func<T, U> f) => result switch
         {
-            Ok<T> ok => new Ok<TNew>(f(ok.Value)),
+            Ok<T> ok => new Ok<U>(f(ok.Value)),
             Error<TError> error => error,
         };
 
         /// <summary>
         /// Transforms the error if the result failed. Otherwise, passes its value through.
         /// </summary>
-        public Result<T, TNewError> MapError<TNewError>(Func<TError, TNewError> f) => result switch
+        public Result<T, UError> MapError<UError>(Func<TError, UError> f) => result switch
         {
             Ok<T> ok => ok,
-            Error<TError> error => new Error<TNewError>(f(error.Value)),
+            Error<TError> error => new Error<UError>(f(error.Value)),
         };
     }
 

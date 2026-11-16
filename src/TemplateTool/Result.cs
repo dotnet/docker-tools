@@ -9,34 +9,28 @@ internal readonly union Result<T, E>(T, Error<E>) where T : notnull;
 
 internal static class ResultExtensions
 {
-    extension<TIn, E>(Result<TIn, E> result)
-        where TIn : notnull
+    extension<TIn, E>(Result<TIn, E> result) where TIn : notnull
     {
         /// <summary>
         /// Continues with <paramref name="f"/> if the result succeeded. Otherwise, passes its error through.
         /// </summary>
-        public Result<TOut, E> Bind<TOut>(Func<TIn, Result<TOut, E>> f)
-            where TOut : notnull
-            => result switch
-            {
-                TIn value => f(value),
-                Error<E> error => error,
-            };
+        public Result<TOut, E> Bind<TOut>(Func<TIn, Result<TOut, E>> f) where TOut : notnull => result switch
+        {
+            TIn value => f(value),
+            Error<E> error => error,
+        };
 
         /// <summary>
         /// Transforms the value if the result succeeded. Otherwise, passes its error through.
         /// </summary>
-        public Result<TOut, E> Map<TOut>(Func<TIn, TOut> f)
-            where TOut : notnull
-            => result switch
-            {
-                TIn value => f(value),
-                Error<E> error => error,
-            };
+        public Result<TOut, E> Map<TOut>(Func<TIn, TOut> f) where TOut : notnull => result switch
+        {
+            TIn value => f(value),
+            Error<E> error => error,
+        };
     }
 
-    extension<T, EIn>(Result<T, EIn> result)
-        where T : notnull
+    extension<T, EIn>(Result<T, EIn> result) where T : notnull
     {
         /// <summary>
         /// Transforms the error if the result failed. Otherwise, passes its value through.
@@ -48,8 +42,7 @@ internal static class ResultExtensions
         };
     }
 
-    extension<T, E>(IEnumerable<Result<T, E>> results)
-        where T : notnull
+    extension<T, E>(IEnumerable<Result<T, E>> results) where T : notnull
     {
         /// <summary>
         /// Splits the results into the successful values and the errors, keeping the order of each.

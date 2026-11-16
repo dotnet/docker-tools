@@ -53,7 +53,7 @@ internal static class GenerateCommand
 
         return result switch
         {
-            Ok<FileCount> fileCount => ReportSuccess(test, fileCount.Value, stopwatch),
+            FileCount fileCount => ReportSuccess(test, fileCount, stopwatch),
             Error<string[]> errors => ReportErrors(errors.Value),
         };
     }
@@ -94,7 +94,7 @@ internal static class GenerateCommand
             File.WriteAllText(dockerfileFile.FullName, dockerfile.Content);
         }
 
-        return new Ok<FileCount>(new FileCount(dockerfiles.Length));
+        return new FileCount(dockerfiles.Length);
     }
 
     private static Result<FileCount, string[]> CheckDockerfiles(RenderedDockerfile[] dockerfiles) =>
@@ -115,7 +115,7 @@ internal static class GenerateCommand
         // Git may check out Dockerfiles with CRLF line endings, so only compare the text.
         string normalizedContent = existingContent.ReplaceLineEndings("\n");
         return normalizedContent == dockerfile.Content
-            ? new Ok<RenderedDockerfile>(dockerfile)
+            ? dockerfile
             : new Error<string>($"{dockerfile.DockerfileFullPath} doesn't match its template");
     }
 

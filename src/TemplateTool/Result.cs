@@ -3,45 +3,53 @@
 
 namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
-internal sealed record Ok<T>(T Value);
-
 internal sealed record Error<E>(E Value);
 
-internal readonly union Result<T, E>(Ok<T>, Error<E>);
+internal readonly union Result<T, E>(T, Error<E>) where T : notnull;
 
 internal static class ResultExtensions
 {
-    extension<T, E>(Result<T, E> result)
+    extension<TIn, E>(Result<TIn, E> result)
+        where TIn : notnull
     {
         /// <summary>
         /// Continues with <paramref name="f"/> if the result succeeded. Otherwise, passes its error through.
         /// </summary>
-        public Result<U, E> Bind<U>(Func<T, Result<U, E>> f) => result switch
-        {
-            Ok<T> ok => f(ok.Value),
-            Error<E> error => error,
-        };
+        public Result<TOut, E> Bind<TOut>(Func<TIn, Result<TOut, E>> f)
+            where TOut : notnull
+            => result switch
+            {
+                TIn value => f(value),
+                Error<E> error => error,
+            };
 
         /// <summary>
         /// Transforms the value if the result succeeded. Otherwise, passes its error through.
         /// </summary>
-        public Result<U, E> Map<U>(Func<T, U> f) => result switch
-        {
-            Ok<T> ok => new Ok<U>(f(ok.Value)),
-            Error<E> error => error,
-        };
+        public Result<TOut, E> Map<TOut>(Func<TIn, TOut> f)
+            where TOut : notnull
+            => result switch
+            {
+                TIn value => f(value),
+                Error<E> error => error,
+            };
+    }
 
+    extension<T, EIn>(Result<T, EIn> result)
+        where T : notnull
+    {
         /// <summary>
         /// Transforms the error if the result failed. Otherwise, passes its value through.
         /// </summary>
-        public Result<T, F> MapError<F>(Func<E, F> f) => result switch
+        public Result<T, EOut> MapError<EOut>(Func<EIn, EOut> f) => result switch
         {
-            Ok<T> ok => ok,
-            Error<E> error => new Error<F>(f(error.Value)),
+            T value => value,
+            Error<EIn> error => new Error<EOut>(f(error.Value)),
         };
     }
 
     extension<T, E>(IEnumerable<Result<T, E>> results)
+        where T : notnull
     {
         /// <summary>
         /// Splits the results into the successful values and the errors, keeping the order of each.
@@ -54,8 +62,8 @@ internal static class ResultExtensions
             {
                 switch (result)
                 {
-                    case Ok<T> value:
-                        ok.Add(value.Value);
+                    case T value:
+                        ok.Add(value);
                         break;
                     case Error<E> error:
                         failed.Add(error.Value);
@@ -74,7 +82,7 @@ internal static class ResultExtensions
             (List<T> ok, List<E> failed) = results.Partition();
             return failed.Count > 0
                 ? new Error<E[]>([.. failed])
-                : new Ok<T[]>([.. ok]);
+                : ok.ToArray();
         }
     }
 }

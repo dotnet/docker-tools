@@ -33,7 +33,7 @@ internal static class TemplateRenderer
         try
         {
             string renderedTemplate = template.Render(context);
-            return new Ok<string>(renderedTemplate.ReplaceLineEndings("\n"));
+            return renderedTemplate.ReplaceLineEndings("\n");
         }
         catch (FluidException exception)
         {
@@ -61,6 +61,6 @@ internal static class TemplateRenderer
             return new Error<string>(error);
         }
 
-        return new Ok<IFluidTemplate>(template);
+        return template;
     }
 }

@@ -11,6 +11,11 @@ namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 internal static class GenerateCommand
 {
+    private static readonly FluidParser Parser = new();
+
+    // Fail on undefined variables and filters instead of rendering empty text or the unfiltered value.
+    private static readonly TemplateOptions Options = new() { StrictVariables = true, StrictFilters = true };
+
     public static Command Create()
     {
         Argument<FileInfo> manifestArgument = ManifestArgument.Create();
@@ -42,87 +47,99 @@ internal static class GenerateCommand
         string manifestDirectory = manifestFile.DirectoryName
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
 
-        Result<FileCount, string[]> result = manifest.GetPlatforms()
-            .Select(platformEntry => GetDockerfileTemplate(platformEntry, manifestDirectory))
-            .OfType<DockerfileTemplate>()
-            .Select(RenderDockerfile)
+        Result<Dockerfile[], string[]> result = RenderDockerfiles(manifest, manifestDirectory)
             .Sequence()
-            .Bind(dockerfiles => test
-                ? CheckDockerfiles(dockerfiles)
-                : WriteDockerfiles(dockerfiles));
+            .Bind(dockerfiles => test ? CheckDockerfiles(dockerfiles) : WriteDockerfiles(dockerfiles));
 
         return result switch
         {
-            FileCount fileCount => ReportSuccess(test, fileCount, stopwatch),
+            Dockerfile[] dockerfiles => ReportSuccess(test, dockerfiles, stopwatch),
             Error<string[]> errors => ReportErrors(errors.Value),
         };
     }
 
-    private static DockerfileTemplate? GetDockerfileTemplate(PlatformEntry platformEntry, string manifestDirectory)
+    private static IEnumerable<Result<Dockerfile, string>> RenderDockerfiles(Manifest manifest, string manifestDirectory)
     {
-        if (platformEntry.Platform is not { DockerfileTemplate: string templatePath, Dockerfile: string dockerfilePath })
+        foreach (PlatformEntry platformEntry in manifest.GetPlatforms())
         {
-            return null;
+            if (platformEntry.Platform is { DockerfileTemplate: string templatePath, Dockerfile: string dockerfilePath })
+            {
+                string templateFullPath = Path.Join(manifestDirectory, templatePath);
+                string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
+                yield return RenderDockerfile(platformEntry, templateFullPath, dockerfileFullPath);
+            }
         }
-
-        string templateFullPath = Path.Join(manifestDirectory, templatePath);
-        string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
-        return new DockerfileTemplate(platformEntry, templateFullPath, dockerfileFullPath);
     }
 
-    private static Result<RenderedDockerfile, string> RenderDockerfile(DockerfileTemplate dockerfileTemplate) =>
-        TemplateRenderer.Load(dockerfileTemplate.TemplateFullPath)
-            .MapError(error => $"{dockerfileTemplate.TemplateFullPath}: {error}")
-            .Bind(template => RenderTemplate(template, dockerfileTemplate))
-            .Map(content => new RenderedDockerfile(dockerfileTemplate.DockerfileFullPath, content));
-
-    // Unlike load errors, render errors depend on the platform's variables, so they name the platform.
-    private static Result<string, string> RenderTemplate(IFluidTemplate template, DockerfileTemplate dockerfileTemplate)
+    private static Result<Dockerfile, string> RenderDockerfile(
+        PlatformEntry platformEntry,
+        string templatePath,
+        string dockerfilePath)
     {
-        PlatformEntry platformEntry = dockerfileTemplate.PlatformEntry;
-        Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
-        return TemplateRenderer.Render(template, variables)
-            .MapError(error => $"{dockerfileTemplate.TemplateFullPath} ({platformEntry.Key}): {error}");
-    }
-
-    private static Result<FileCount, string[]> WriteDockerfiles(RenderedDockerfile[] dockerfiles)
-    {
-        foreach (RenderedDockerfile dockerfile in dockerfiles)
+        string templateSource;
+        try
         {
-            FileInfo dockerfileFile = new(dockerfile.DockerfileFullPath);
-            dockerfileFile.Directory?.Create();
-            File.WriteAllText(dockerfileFile.FullName, dockerfile.Content);
+            templateSource = File.ReadAllText(templatePath);
+        }
+        catch (IOException exception)
+        {
+            return new Error<string>($"{templatePath}: {exception.Message}");
         }
 
-        return new FileCount(dockerfiles.Length);
-    }
-
-    private static Result<FileCount, string[]> CheckDockerfiles(RenderedDockerfile[] dockerfiles) =>
-        dockerfiles
-            .Select(CheckDockerfile)
-            .Sequence()
-            .Map(checkedDockerfiles => new FileCount(checkedDockerfiles.Length));
-
-    private static Result<RenderedDockerfile, string> CheckDockerfile(RenderedDockerfile dockerfile)
-    {
-        if (!File.Exists(dockerfile.DockerfileFullPath))
+        if (!Parser.TryParse(templateSource, out IFluidTemplate template, out string parseError))
         {
-            return new Error<string>($"{dockerfile.DockerfileFullPath} doesn't exist");
+            return new Error<string>($"{templatePath}: {parseError}");
         }
 
-        string existingContent = File.ReadAllText(dockerfile.DockerfileFullPath);
+        TemplateContext context = new(Options);
+        foreach ((string name, JsonElement value) in platformEntry.GetVariables())
+        {
+            context.SetValue(name, JsonSerializer.SerializeToNode(value));
+        }
+
+        try
+        {
+            string content = template.Render(context).ReplaceLineEndings("\n");
+            return new Dockerfile(dockerfilePath, content);
+        }
+        catch (FluidException exception)
+        {
+            return new Error<string>($"{templatePath} ({platformEntry.Key}): {exception.Message}");
+        }
+    }
+
+    private static Result<Dockerfile[], string[]> WriteDockerfiles(Dockerfile[] dockerfiles)
+    {
+        foreach (Dockerfile dockerfile in dockerfiles)
+        {
+            new FileInfo(dockerfile.Path).Directory?.Create();
+            File.WriteAllText(dockerfile.Path, dockerfile.Content);
+        }
+
+        return dockerfiles;
+    }
+
+    private static Result<Dockerfile[], string[]> CheckDockerfiles(Dockerfile[] dockerfiles) =>
+        dockerfiles.Select(CheckDockerfile).Sequence();
+
+    private static Result<Dockerfile, string> CheckDockerfile(Dockerfile dockerfile)
+    {
+        if (!File.Exists(dockerfile.Path))
+        {
+            return new Error<string>($"{dockerfile.Path} doesn't exist");
+        }
 
         // Git may check out Dockerfiles with CRLF line endings, so only compare the text.
-        string normalizedContent = existingContent.ReplaceLineEndings("\n");
-        return normalizedContent == dockerfile.Content
+        string existingContent = File.ReadAllText(dockerfile.Path).ReplaceLineEndings("\n");
+        return existingContent == dockerfile.Content
             ? dockerfile
-            : new Error<string>($"{dockerfile.DockerfileFullPath} doesn't match its template");
+            : new Error<string>($"{dockerfile.Path} doesn't match its template");
     }
 
-    private static int ReportSuccess(bool test, FileCount fileCount, Stopwatch stopwatch)
+    private static int ReportSuccess(bool test, Dockerfile[] dockerfiles, Stopwatch stopwatch)
     {
         string verb = test ? "Checked" : "Generated";
-        Console.WriteLine($"{verb} {fileCount.Value} files in {stopwatch.ElapsedMilliseconds}ms");
+        Console.WriteLine($"{verb} {dockerfiles.Length} files in {stopwatch.ElapsedMilliseconds}ms");
         return 0;
     }
 
@@ -137,9 +154,5 @@ internal static class GenerateCommand
         return 1;
     }
 
-    private sealed record DockerfileTemplate(PlatformEntry PlatformEntry, string TemplateFullPath, string DockerfileFullPath);
-
-    private sealed record RenderedDockerfile(string DockerfileFullPath, string Content);
-
-    private readonly record struct FileCount(int Value);
+    private sealed record Dockerfile(string Path, string Content);
 }

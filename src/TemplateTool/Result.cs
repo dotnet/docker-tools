@@ -19,63 +19,33 @@ internal static class ResultExtensions
             TIn value => f(value),
             Error<E> error => error,
         };
-
-        /// <summary>
-        /// Transforms the value if the result succeeded. Otherwise, passes its error through.
-        /// </summary>
-        public Result<TOut, E> Map<TOut>(Func<TIn, TOut> f) where TOut : notnull => result switch
-        {
-            TIn value => f(value),
-            Error<E> error => error,
-        };
-    }
-
-    extension<T, EIn>(Result<T, EIn> result) where T : notnull
-    {
-        /// <summary>
-        /// Transforms the error if the result failed. Otherwise, passes its value through.
-        /// </summary>
-        public Result<T, EOut> MapError<EOut>(Func<EIn, EOut> f) => result switch
-        {
-            T value => value,
-            Error<EIn> error => new Error<EOut>(f(error.Value)),
-        };
     }
 
     extension<T, E>(IEnumerable<Result<T, E>> results) where T : notnull
     {
         /// <summary>
-        /// Splits the results into the successful values and the errors, keeping the order of each.
+        /// Succeeds with every value if all the results succeeded. Otherwise, fails with every error.
         /// </summary>
-        public (List<T> Ok, List<E> Failed) Partition()
+        public Result<T[], E[]> Sequence()
         {
-            List<T> ok = [];
-            List<E> failed = [];
+            List<T> values = [];
+            List<E> errors = [];
             foreach (Result<T, E> result in results)
             {
                 switch (result)
                 {
                     case T value:
-                        ok.Add(value);
+                        values.Add(value);
                         break;
                     case Error<E> error:
-                        failed.Add(error.Value);
+                        errors.Add(error.Value);
                         break;
                 }
             }
 
-            return (ok, failed);
-        }
-
-        /// <summary>
-        /// Succeeds with every value if all the results succeeded. Otherwise, fails with every error.
-        /// </summary>
-        public Result<T[], E[]> Sequence()
-        {
-            (List<T> ok, List<E> failed) = results.Partition();
-            return failed.Count > 0
-                ? new Error<E[]>([.. failed])
-                : ok.ToArray();
+            return errors.Count > 0
+                ? new Error<E[]>([.. errors])
+                : values.ToArray();
         }
     }
 }

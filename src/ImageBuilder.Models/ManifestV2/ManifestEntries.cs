@@ -83,6 +83,7 @@ public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Pl
             ImageEntry.Image.Metadata,
             Platform.Metadata
         ];
+
         foreach (Dictionary<string, JsonElement> scope in metadataScopes)
         {
             foreach ((string key, JsonElement value) in scope)

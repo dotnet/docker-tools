@@ -76,16 +76,7 @@ internal static class GenerateCommand
         string templatePath,
         string dockerfilePath)
     {
-        string templateSource;
-        try
-        {
-            templateSource = File.ReadAllText(templatePath);
-        }
-        catch (IOException exception)
-        {
-            return new Error<string>($"{templatePath}: {exception.Message}");
-        }
-
+        string templateSource = File.ReadAllText(templatePath);
         if (!Parser.TryParse(templateSource, out IFluidTemplate template, out string parseError))
         {
             return new Error<string>($"{templatePath}: {parseError}");

@@ -42,12 +42,10 @@ internal static class GenerateCommand
         string manifestDirectory = manifestFile.DirectoryName
             ?? throw new ArgumentException($"'{manifestFile}' is not a file path.");
 
-        TemplateRenderer renderer = new();
-
         Result<FileCount, string[]> result = manifest.GetPlatforms()
             .Select(platformEntry => GetDockerfileTemplate(platformEntry, manifestDirectory))
             .OfType<DockerfileTemplate>()
-            .Select(dockerfileTemplate => RenderDockerfile(renderer, dockerfileTemplate))
+            .Select(RenderDockerfile)
             .Sequence()
             .Bind(dockerfiles => test
                 ? CheckDockerfiles(dockerfiles)
@@ -72,10 +70,8 @@ internal static class GenerateCommand
         return new DockerfileTemplate(platformEntry, templateFullPath, dockerfileFullPath);
     }
 
-    private static Result<RenderedDockerfile, string> RenderDockerfile(
-        TemplateRenderer renderer,
-        DockerfileTemplate dockerfileTemplate) =>
-        renderer.Load(dockerfileTemplate.TemplateFullPath)
+    private static Result<RenderedDockerfile, string> RenderDockerfile(DockerfileTemplate dockerfileTemplate) =>
+        TemplateRenderer.Load(dockerfileTemplate.TemplateFullPath)
             .MapError(error => $"{dockerfileTemplate.TemplateFullPath}: {error}")
             .Bind(template => RenderTemplate(template, dockerfileTemplate))
             .Map(content => new RenderedDockerfile(dockerfileTemplate.DockerfileFullPath, content));

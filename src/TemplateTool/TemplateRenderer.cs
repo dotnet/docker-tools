@@ -8,31 +8,14 @@ using Fluid;
 namespace Microsoft.DotNet.ImageBuilder.TemplateTool;
 
 /// <summary>
-/// Loads and renders Dockerfile templates with Fluid, loading each template file once.
+/// Loads and renders Dockerfile templates with Fluid.
 /// </summary>
-internal sealed class TemplateRenderer
+internal static class TemplateRenderer
 {
     private static readonly FluidParser Parser = new();
 
     // Fail on undefined variables and filters instead of rendering empty text or the unfiltered value.
     private static readonly TemplateOptions Options = new() { StrictVariables = true, StrictFilters = true };
-
-    private readonly Dictionary<string, Result<IFluidTemplate, string>> _loadedTemplates = [with(StringComparer.Ordinal)];
-
-    /// <summary>
-    /// Reads and parses the template at <paramref name="templatePath"/>.
-    /// </summary>
-    public Result<IFluidTemplate, string> Load(string templatePath)
-    {
-        if (_loadedTemplates.TryGetValue(templatePath, out Result<IFluidTemplate, string> cachedResult))
-        {
-            return cachedResult;
-        }
-
-        Result<IFluidTemplate, string> loadResult = ReadAndParse(templatePath);
-        _loadedTemplates.Add(templatePath, loadResult);
-        return loadResult;
-    }
 
     /// <summary>
     /// Renders <paramref name="template"/> with each of <paramref name="variables"/> as a top-level template
@@ -58,7 +41,10 @@ internal sealed class TemplateRenderer
         }
     }
 
-    private static Result<IFluidTemplate, string> ReadAndParse(string templatePath)
+    /// <summary>
+    /// Reads and parses the template at <paramref name="templatePath"/>.
+    /// </summary>
+    public static Result<IFluidTemplate, string> Load(string templatePath)
     {
         string templateSource;
         try

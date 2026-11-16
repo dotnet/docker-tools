@@ -67,8 +67,8 @@ internal static class GenerateCommand
             return null;
         }
 
-        string templateFullPath = Path.GetFullPath(Path.Join(manifestDirectory, templatePath));
-        string dockerfileFullPath = Path.GetFullPath(Path.Join(manifestDirectory, dockerfilePath));
+        string templateFullPath = Path.Join(manifestDirectory, templatePath);
+        string dockerfileFullPath = Path.Join(manifestDirectory, dockerfilePath);
         return new DockerfileTemplate(platformEntry, templateFullPath, dockerfileFullPath);
     }
 
@@ -76,7 +76,7 @@ internal static class GenerateCommand
         TemplateRenderer renderer,
         DockerfileTemplate dockerfileTemplate) =>
         renderer.Load(dockerfileTemplate.TemplateFullPath)
-            .MapErrors(error => $"{GetDisplayPath(dockerfileTemplate.TemplateFullPath)}: {error}")
+            .MapErrors(error => $"{dockerfileTemplate.TemplateFullPath}: {error}")
             .Bind(template => RenderTemplate(template, dockerfileTemplate))
             .Map(content => new RenderedDockerfile(dockerfileTemplate.DockerfileFullPath, content));
 
@@ -85,9 +85,8 @@ internal static class GenerateCommand
     {
         PlatformEntry platformEntry = dockerfileTemplate.PlatformEntry;
         Dictionary<string, JsonElement> variables = platformEntry.GetVariables();
-        string templateDisplayPath = GetDisplayPath(dockerfileTemplate.TemplateFullPath);
         return TemplateRenderer.Render(template, variables)
-            .MapErrors(error => $"{templateDisplayPath} ({platformEntry.Key}): {error}");
+            .MapErrors(error => $"{dockerfileTemplate.TemplateFullPath} ({platformEntry.Key}): {error}");
     }
 
     private static Result<FileCount> WriteDockerfiles(RenderedDockerfile[] dockerfiles)
@@ -112,7 +111,7 @@ internal static class GenerateCommand
     {
         if (!File.Exists(dockerfile.DockerfileFullPath))
         {
-            return new Failure($"{GetDisplayPath(dockerfile.DockerfileFullPath)} doesn't exist");
+            return new Failure($"{dockerfile.DockerfileFullPath} doesn't exist");
         }
 
         string existingContent = File.ReadAllText(dockerfile.DockerfileFullPath);
@@ -121,7 +120,7 @@ internal static class GenerateCommand
         string normalizedContent = existingContent.ReplaceLineEndings("\n");
         return normalizedContent == dockerfile.Content
             ? dockerfile
-            : new Failure($"{GetDisplayPath(dockerfile.DockerfileFullPath)} doesn't match its template");
+            : new Failure($"{dockerfile.DockerfileFullPath} doesn't match its template");
     }
 
     private static int ReportSuccess(bool test, FileCount fileCount, Stopwatch stopwatch)
@@ -139,19 +138,6 @@ internal static class GenerateCommand
         }
 
         return 1;
-    }
-
-    /// <summary>
-    /// Gets the path to show users: relative to the current directory if the file is under it, otherwise full.
-    /// </summary>
-    private static string GetDisplayPath(string fullPath)
-    {
-        string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, fullPath);
-        bool isOutsideCurrentDirectory = relativePath == ".."
-            || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-            || Path.IsPathRooted(relativePath);
-
-        return isOutsideCurrentDirectory ? fullPath : relativePath;
     }
 
     private sealed record DockerfileTemplate(PlatformEntry PlatformEntry, string TemplateFullPath, string DockerfileFullPath);

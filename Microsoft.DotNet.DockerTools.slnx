@@ -12,5 +12,4 @@
   <Project Path="src/ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj" />
   <Project Path="src/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj" />
   <Project Path="src/Infrastructure/Microsoft.DotNet.DockerTools.Infrastructure.csproj" />
-  <Project Path="src/TemplateTool/TemplateTool.csproj" />
 </Solution>

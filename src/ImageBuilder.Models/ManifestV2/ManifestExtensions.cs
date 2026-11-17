@@ -9,7 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 public static class ManifestExtensions
 {
     /// <summary>
-    /// Every image in the manifest, in repo order, with ungrouped images before grouped ones.
+    /// Every image in the manifest, in manifest order.
     /// </summary>
     public static IEnumerable<ImageEntry> GetImages(this Manifest manifest)
     {
@@ -17,15 +17,7 @@ public static class ManifestExtensions
         {
             foreach ((string imageKey, Image image) in repo.Images)
             {
-                yield return new ImageEntry(manifest, repoKey, repo, null, null, imageKey, image);
-            }
-
-            foreach ((string groupKey, Group group) in repo.Groups)
-            {
-                foreach ((string imageKey, Image image) in group.Images)
-                {
-                    yield return new ImageEntry(manifest, repoKey, repo, groupKey, group, imageKey, image);
-                }
+                yield return new ImageEntry(manifest, repoKey, repo, imageKey, image);
             }
         }
     }

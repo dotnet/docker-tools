@@ -1,0 +1,14 @@
+{
+  "productVersion": "17.1.0",
+  "buildVersion": "17.1.0-preview.1.26566.9",
+  "downloads": {
+    "linux-x64": {
+      "downloadUrl": "https://ci.dot.net/public/aspire/17.1.0-preview.1.26566.9/aspire-dashboard-linux-x64.zip",
+      "sha512": "fa8142a32bf95fbdfd19d96e5a3c86baa200e0c53e76927cf33ff79b007322dbce08ad1c7e97914c5342e2d425143568df1408370e601d7225fba459c1bc9ae5"
+    },
+    "linux-arm64": {
+      "downloadUrl": "https://ci.dot.net/public/aspire/17.1.0-preview.1.26566.9/aspire-dashboard-linux-arm64.zip",
+      "sha512": "4255b26d0aa159ec929b6d2af3dedd5b56f816b39bcdd900ce8528c27a2bb14a06a981a15d22c8197043a7ea91f155af27253852985600ced655eaaf749106ae"
+    }
+  }
+}

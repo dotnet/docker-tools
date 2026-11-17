@@ -1,0 +1,16 @@
+{
+  "2.3": {
+    "productVersion": "2.3.0-preview.5",
+    "buildVersion": "3.0.0-preview.1.25375.1",
+    "downloads": {
+      "linux-x64": {
+        "downloadUrl": "https://ci.dot.net/public/reverse-proxy/3.0.0-preview.1.25375.1/reverse-proxy-linux-x64.tar.gz",
+        "sha512Url": "https://ci.dot.net/public-checksums/reverse-proxy/3.0.0-preview.1.25375.1/reverse-proxy-linux-x64.tar.gz.sha512"
+      },
+      "linux-arm64": {
+        "downloadUrl": "https://ci.dot.net/public/reverse-proxy/3.0.0-preview.1.25375.1/reverse-proxy-linux-arm64.tar.gz",
+        "sha512Url": "https://ci.dot.net/public-checksums/reverse-proxy/3.0.0-preview.1.25375.1/reverse-proxy-linux-arm64.tar.gz.sha512"
+      }
+    }
+  }
+}

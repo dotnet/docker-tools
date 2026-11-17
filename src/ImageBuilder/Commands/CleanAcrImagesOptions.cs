@@ -87,7 +87,8 @@ public class CleanAcrImagesOptions : Options
 public enum CleanAcrImagesAction
 {
     /// <summary>
-    /// Deletes untagged images in a repo.
+    /// Deletes untagged images not referenced by other manifests in a repo.
+    /// Does not independently delete referrer artifacts.
     /// </summary>
     PruneDangling,
 

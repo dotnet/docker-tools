@@ -1,14 +1,18 @@
-{% assign aspnet = dotnet[version.minor].aspnet -%}
-{% assign download = aspnet.downloads[downloadKey] -%}
-{% assign file = download.url | split: "/" | last -%}
-{% assign checksumFile = download.checksumUrl | split: "/" | last -%}
+{% assign aspnet = release.aspnet -%}
+{% assign url = aspnet.downloads[rid].downloadUrl | replace: aspnet.buildVersion, "$aspnetcore_version" -%}
+{% assign checksumUrl = aspnet.downloads[rid].sha512Url | replace: aspnet.buildVersion, "$aspnetcore_version" -%}
+{% assign file = url | split: "/" | last -%}
+{% assign checksumFile = checksumUrl | split: "/" | last -%}
+ARG REPO=mcr.microsoft.com/dotnet/runtime
+
 # Installer image
-FROM {{ arch }}/buildpack-deps:{{ os.name }}-curl AS installer
+FROM {{ arch }}/buildpack-deps:{{ installerOs }}-curl AS installer
 
 # Retrieve ASP.NET Core
-RUN curl --fail --show-error --location \
-        --remote-name {{ download.url }} \
-        --remote-name {{ download.checksumUrl }} \
+RUN aspnetcore_version={{ aspnet.buildVersion }} \
+    && curl --fail --show-error --location \
+        --remote-name {{ url }} \
+        --remote-name {{ checksumUrl }} \
     && sha512sum -c {{ checksumFile }} \
     && mkdir --parents /dotnet \
     && tar --gzip --extract --no-same-owner --file {{ file }} --directory /dotnet ./shared/Microsoft.AspNetCore.App \
@@ -18,9 +22,9 @@ RUN curl --fail --show-error --location \
 
 
 # ASP.NET Core image
-FROM mcr.microsoft.com/dotnet/runtime:{{ dotnet[version.minor].runtime.patch }}-{{ os.name }}-{{ arch }}
+FROM $REPO:{{ release.runtime.productVersion }}-{{ os.name }}-{{ arch }}
 
 # ASP.NET Core version
-ENV ASPNET_VERSION={{ aspnet.patch }}
+ENV ASPNET_VERSION={{ aspnet.buildVersion }}
 
 COPY --from=installer ["/dotnet", "/usr/share/dotnet"]

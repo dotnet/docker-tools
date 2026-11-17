@@ -1,14 +1,18 @@
-{% assign runtime = dotnet[version.minor].runtime -%}
-{% assign download = runtime.downloads[downloadKey] -%}
-{% assign file = download.url | split: "/" | last -%}
-{% assign checksumFile = download.checksumUrl | split: "/" | last -%}
+{% assign runtime = release.runtime -%}
+{% assign url = runtime.downloads[rid].downloadUrl | replace: runtime.buildVersion, "$dotnet_version" -%}
+{% assign checksumUrl = runtime.downloads[rid].sha512Url | replace: runtime.buildVersion, "$dotnet_version" -%}
+{% assign file = url | split: "/" | last -%}
+{% assign checksumFile = checksumUrl | split: "/" | last -%}
+ARG REPO=mcr.microsoft.com/dotnet/runtime-deps
+
 # Installer image
-FROM {{ arch }}/buildpack-deps:{{ os.name }}-curl AS installer
+FROM {{ arch }}/buildpack-deps:{{ installerOs }}-curl AS installer
 
 # Retrieve .NET Runtime
-RUN curl --fail --show-error --location \
-        --remote-name {{ download.url }} \
-        --remote-name {{ download.checksumUrl }} \
+RUN dotnet_version={{ runtime.buildVersion }} \
+    && curl --fail --show-error --location \
+        --remote-name {{ url }} \
+        --remote-name {{ checksumUrl }} \
     && sha512sum -c {{ checksumFile }} \
     && mkdir --parents /dotnet \
     && tar --gzip --extract --no-same-owner --file {{ file }} --directory /dotnet \
@@ -18,10 +22,10 @@ RUN curl --fail --show-error --location \
 
 
 # .NET runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:{{ runtime.patch }}-{{ os.name }}-{{ arch }}
+FROM $REPO:{{ runtime.productVersion }}-{{ os.name }}-{{ arch }}
 
 # .NET Runtime version
-ENV DOTNET_VERSION={{ runtime.patch }}
+ENV DOTNET_VERSION={{ runtime.buildVersion }}
 
 COPY --from=installer ["/dotnet", "/usr/share/dotnet"]
 

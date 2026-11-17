@@ -1,19 +1,28 @@
-{% assign sdk = dotnet[version.minor].sdk -%}
-{% assign download = sdk.downloads[downloadKey] -%}
-{% assign file = download.url | split: "/" | last -%}
-{% assign checksumFile = download.checksumUrl | split: "/" | last -%}
-{% assign powershell = dotnet[version.minor].powershell -%}
-{% assign powershellDownload = powershell.downloads[downloadKey] -%}
-{% assign powershellFile = powershellDownload.url | split: "/" | last -%}
-{% assign powershellFileSuffix = "." | append: powershell.version | append: ".nupkg" -%}
-{% assign powershellPackage = powershellFile | remove: powershellFileSuffix -%}
+{% assign sdk = release.sdk -%}
+{% assign url = sdk.downloads[rid].downloadUrl | replace: sdk.buildVersion, "$dotnet_sdk_version" -%}
+{% assign checksumUrl = sdk.downloads[rid].sha512Url | replace: sdk.buildVersion, "$dotnet_sdk_version" -%}
+{% assign file = url | split: "/" | last -%}
+{% assign checksumFile = checksumUrl | split: "/" | last -%}
+{% assign powershell = release.powershell -%}
+{% assign powershellDownload = powershell.downloads[rid] -%}
+{% assign powershellUrl = powershellDownload.downloadUrl | replace: powershell.version, "$powershell_version" -%}
+{% assign powershellNupkg = powershellDownload.downloadUrl | split: "/" | last -%}
+{% assign powershellFile = powershellUrl | split: "/" | last -%}
+{% assign powershellPackage = powershellFile | remove: ".$powershell_version.nupkg" -%}
+{% case arch -%}
+{% when "arm32v7" %}{% assign powershellChannelSuffix = "-arm32" -%}
+{% when "arm64v8" %}{% assign powershellChannelSuffix = "-arm64" -%}
+{% else %}{% assign powershellChannelSuffix = "" -%}
+{% endcase -%}
+ARG REPO=mcr.microsoft.com/dotnet/aspnet
 # Installer image
-FROM {{ arch }}/buildpack-deps:{{ os.name }}-curl AS installer
+FROM {{ arch }}/buildpack-deps:{{ installerOs }}-curl AS installer
 
 # Install .NET SDK
-RUN curl --fail --show-error --location \
-        --remote-name {{ download.url }} \
-        --remote-name {{ download.checksumUrl }} \
+RUN dotnet_sdk_version={{ sdk.buildVersion }} \
+    && curl --fail --show-error --location \
+        --remote-name {{ url }} \
+        --remote-name {{ checksumUrl }} \
     && sha512sum -c {{ checksumFile }} \
     && mkdir --parents /dotnet \
     && tar --gzip --extract --no-same-owner --file {{ file }} --directory /dotnet ./dnx ./packs ./sdk ./sdk-manifests ./templates ./LICENSE.txt ./ThirdPartyNotices.txt \
@@ -22,12 +31,14 @@ RUN curl --fail --show-error --location \
         {{ checksumFile }}
 
 # Download PowerShell
-RUN curl --fail --show-error --location --output {{ powershellFile }} {{ powershellDownload.url }} \
-    && echo "{{ powershellDownload.digest | remove: "sha256:" }}  {{ powershellFile }}" | sha256sum -c -
+RUN powershell_version={{ powershell.version }} \
+    && curl --fail --show-error --location --output {{ powershellFile }} {{ powershellUrl }} \
+    && powershell_sha256='{{ powershellDownload.sha256 }}' \
+    && echo "$powershell_sha256  {{ powershellFile }}" | sha256sum -c -
 
 
 # .NET SDK image
-FROM mcr.microsoft.com/dotnet/aspnet:{{ dotnet[version.minor].aspnet.patch }}-{{ os.name }}-{{ arch }}
+FROM $REPO:{{ release.aspnet.productVersion }}-{{ os.name }}-{{ arch }}
 
 ENV \
     # Do not generate certificate
@@ -35,13 +46,15 @@ ENV \
     # Do not show first run text
     DOTNET_NOLOGO=true \
     # SDK version
-    DOTNET_SDK_VERSION={{ sdk.patch }} \
+    DOTNET_SDK_VERSION={{ sdk.buildVersion }} \
     # Enable correct mode for dotnet watch (only mode supported in a container)
     DOTNET_USE_POLLING_FILE_WATCHER=true \
+    # Use /tmp for private VSTest artifacts directories in containers
+    VSTEST_ARTIFACTS_BASE_DIRECTORY=/tmp \
     # Skip extraction of XML docs - generally not useful within an image/container - helps performance
     NUGET_XMLDOC_MODE=skip \
     # PowerShell telemetry for docker image usage
-    POWERSHELL_DISTRIBUTION_CHANNEL=PSDocker-DotnetSDK-{{ os.displayName | replace: " ", "-" }}
+    POWERSHELL_DISTRIBUTION_CHANNEL=PSDocker-DotnetSDK-{{ os.displayName | replace: " ", "-" }}{{ powershellChannelSuffix }}
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -53,19 +66,20 @@ RUN apt-get update \
 
 COPY --from=installer ["/dotnet", "/usr/share/dotnet"]
 
-COPY --from=installer ["/{{ powershellFile }}", "/"]
+COPY --from=installer ["/{{ powershellNupkg }}", "/"]
 
 RUN ln -s /usr/share/dotnet/dnx /usr/bin/dnx \
     # Trigger first run experience by running arbitrary cmd
     && dotnet help
 
 # Install PowerShell global tool
-RUN mkdir --parents /usr/share/powershell \
-    && dotnet tool install --add-source / --tool-path /usr/share/powershell --version {{ powershell.version }} {{ powershellPackage }} \
+RUN powershell_version={{ powershell.version }} \
+    && mkdir --parents /usr/share/powershell \
+    && dotnet tool install --add-source / --tool-path /usr/share/powershell --version $powershell_version {{ powershellPackage }} \
     && dotnet nuget locals all --clear \
     && rm {{ powershellFile }} \
     && ln -s /usr/share/powershell/pwsh /usr/bin/pwsh \
     && chmod 755 /usr/share/powershell/pwsh \
-    && chmod 755 /usr/share/powershell/.store/{{ powershellPackage | downcase }}/{{ powershell.version }}/{{ powershellPackage | downcase }}/{{ powershell.version }}/tools/*/any/pwsh \
+    && chmod 755 /usr/share/powershell/.store/{{ powershellPackage | downcase }}/$powershell_version/{{ powershellPackage | downcase }}/$powershell_version/tools/*/any/pwsh \
     # To reduce image size, remove the copy nupkg that nuget keeps.
     && find /usr/share/powershell -print | grep -i '.*[.]nupkg$' | xargs rm

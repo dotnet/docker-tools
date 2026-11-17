@@ -39,8 +39,8 @@ parameters:
 - name: enableSbom
   type: boolean
   default: false
-# Network isolation policies that will be enabled for jobs. The default matches
-# the policies that 1ES actually applies.
+# Network isolation policies that we will try to request.
+# Some policies will always be enforced whether or not you put them here.
 # See the network isolation documentation for more details:
 # https://eng.ms/docs/coreai/devdiv/one-engineering-system-1es/1es-build/cloudbuild/security/1espt-network-isolation
 - name: networkIsolationPolicy

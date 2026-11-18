@@ -15,7 +15,7 @@ public sealed record ImageManifest
     public required string Digest { get; set; }
     public string[] Tags { get; set; } = [];
     public required string CommitUrl { get; set; }
-    public string? BaseImage { get; set; }
+    public BaseImage? BaseImage { get; set; }
 }
 
 public sealed record ImageIndex
@@ -24,4 +24,10 @@ public sealed record ImageIndex
     public required string Digest { get; set; }
     public string[] Tags { get; set; } = [];
     public required string[] Manifests { get; set; }
+}
+
+public sealed record BaseImage
+{
+    public required string Image { get; set; }
+    public required string Digest { get; set; }
 }

@@ -49,10 +49,9 @@ public static partial class ImageArtifactDetailsSerializer
             }
 
             ValidateDigests(manifest.Key, [manifest.Digest]);
-            if (manifest.BaseImage is not null && !BaseImageRegex.IsMatch(manifest.BaseImage))
+            if (manifest.BaseImage is not null)
             {
-                throw new InvalidDataException(
-                    $"{manifest.Key}: base image '{manifest.BaseImage}' is not a reference like 'name@sha256:<hex>'.");
+                ValidateDigests(manifest.Key, [manifest.BaseImage.Digest]);
             }
         }
 
@@ -93,7 +92,4 @@ public static partial class ImageArtifactDetailsSerializer
 
     [GeneratedRegex(@"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$")]
     private static partial Regex DigestRegex { get; }
-
-    [GeneratedRegex(@"^[^@\s]+@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$")]
-    private static partial Regex BaseImageRegex { get; }
 }

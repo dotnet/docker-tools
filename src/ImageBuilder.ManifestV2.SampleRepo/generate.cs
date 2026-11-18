@@ -27,9 +27,9 @@ Distro noble = new("noble", "Ubuntu 24.04", Libicu: "74", Libssl: "3t64");
 
 Arch[] arches =
 [
-    new(new() { OS = OS.Linux, Architecture = Architecture.Amd64 }, "amd64", "linux-x64"),
-    new(new() { OS = OS.Linux, Architecture = Architecture.Arm, Variant = Variant.V7 }, "arm32v7", "linux-arm"),
-    new(new() { OS = OS.Linux, Architecture = Architecture.Arm64, Variant = Variant.V8 }, "arm64v8", "linux-arm64"),
+    new("linux/amd64", "amd64", "linux-x64"),
+    new("linux/arm/v7", "arm32v7", "linux-arm"),
+    new("linux/arm64/v8", "arm64v8", "linux-arm64"),
 ];
 
 RepoRule[] repoRules =
@@ -51,14 +51,14 @@ foreach (RepoRule repoRule in repoRules)
         ?? throw new InvalidDataException($"versions.json has no {repoRule.VersionProduct} productVersion.");
     string templatePath = $"Dockerfile.{repoRule.Key}.template";
 
-    Dictionary<string, Platform> platforms = [];
+    Dictionary<string, ImagePlatform> platforms = [];
     foreach (Arch arch in arches)
     {
         string dockerfilePath = $"src/{repoRule.Key}/{DotnetVersion}/{noble.Name}/{arch.Name}/Dockerfile";
         files.Add(new(dockerfilePath, RenderDockerfile(templatePath, noble, arch)));
-        platforms[arch.Name] = new Platform
+        platforms[arch.Name] = new ImagePlatform
         {
-            TargetPlatform = arch.TargetPlatform,
+            Platform = arch.Platform,
             DockerfilePath = dockerfilePath,
             Tags = [$"{version}-{noble.Name}-{arch.Name}", $"{DotnetVersion}-{noble.Name}-{arch.Name}"],
         };
@@ -142,7 +142,7 @@ int CheckFiles()
 
 record Distro(string Name, string DisplayName, string Libicu, string Libssl);
 
-record Arch(OciPlatform TargetPlatform, string Name, string Rid);
+record Arch(string Platform, string Name, string Rid);
 
 record RepoRule(string Key, string Name, string VersionProduct);
 

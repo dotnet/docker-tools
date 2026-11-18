@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -12,18 +13,16 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 /// <summary>
 /// Reads and writes YAML manifests.
 /// </summary>
-public static class ManifestSerializer
+public static partial class ManifestSerializer
 {
     private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .WithEnumNamingConvention(LowerCaseNamingConvention.Instance)
         .WithEnforceRequiredMembers()
         .WithEnforceNullability()
         .Build();
 
     private static readonly ISerializer YamlSerializer = new SerializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .WithEnumNamingConvention(LowerCaseNamingConvention.Instance)
         .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
         .DisableAliases()
         .WithQuotingNecessaryStrings()
@@ -72,14 +71,20 @@ public static class ManifestSerializer
                 }
 
                 ClaimTags(image.SharedTags, imageId);
-                HashSet<OciPlatform> targetPlatforms = [];
-                foreach ((string platformKey, Platform platform) in image.Platforms)
+                HashSet<string> platforms = [];
+                foreach ((string platformKey, ImagePlatform platform) in image.Platforms)
                 {
                     string platformId = $"{imageId}{ImageEntry.KeySeparator}{platformKey}";
-                    if (!targetPlatforms.Add(platform.TargetPlatform))
+                    if (!PlatformRegex.IsMatch(platform.Platform))
                     {
                         throw new InvalidDataException(
-                            $"{imageId}: more than one platform targets {platform.TargetPlatform}.");
+                            $"{platformId}: platform '{platform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
+                    }
+
+                    if (!platforms.Add(platform.Platform))
+                    {
+                        throw new InvalidDataException(
+                            $"{imageId}: more than one platform is {platform.Platform}.");
                     }
 
                     ClaimTags([.. platform.Tags, .. platform.UndocumentedTags], platformId);
@@ -100,6 +105,9 @@ public static class ManifestSerializer
         }
     }
 
+    [GeneratedRegex(@"^[a-z0-9]+/[a-z0-9]+(/[a-z0-9]+)?$")]
+    private static partial Regex PlatformRegex { get; }
+
     private sealed class FlowStyleEmitter(IEventEmitter next) : ChainedEventEmitter(next)
     {
         public override void Emit(SequenceStartEventInfo eventInfo, IEmitter emitter)
@@ -107,16 +115,6 @@ public static class ManifestSerializer
             if (eventInfo.Source.Type == typeof(string[]))
             {
                 eventInfo.Style = SequenceStyle.Flow;
-            }
-
-            base.Emit(eventInfo, emitter);
-        }
-
-        public override void Emit(MappingStartEventInfo eventInfo, IEmitter emitter)
-        {
-            if (eventInfo.Source.Type == typeof(OciPlatform))
-            {
-                eventInfo.Style = MappingStyle.Flow;
             }
 
             base.Emit(eventInfo, emitter);

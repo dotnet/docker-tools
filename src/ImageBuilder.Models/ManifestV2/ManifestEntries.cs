@@ -34,7 +34,7 @@ public sealed record ImageEntry(Manifest Manifest, string RepoKey, Repo Repo, st
     /// </summary>
     public IEnumerable<PlatformEntry> GetPlatforms()
     {
-        foreach ((string platformKey, Platform platform) in Image.Platforms)
+        foreach ((string platformKey, ImagePlatform platform) in Image.Platforms)
         {
             yield return new PlatformEntry(this, platformKey, platform);
         }
@@ -47,7 +47,7 @@ public sealed record ImageEntry(Manifest Manifest, string RepoKey, Repo Repo, st
 /// <param name="ImageEntry">The image containing the platform.</param>
 /// <param name="PlatformKey">The platform's key within its image.</param>
 /// <param name="Platform">The platform.</param>
-public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Platform Platform)
+public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, ImagePlatform Platform)
 {
     /// <summary>
     /// The platform's key, unique within the manifest and stable across version updates,

@@ -33,7 +33,7 @@ public static partial class ManifestSerializer
         .WithEventEmitter(next => new FlowStyleEmitter(next))
         .Build();
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         RespectNullableAnnotations = true,

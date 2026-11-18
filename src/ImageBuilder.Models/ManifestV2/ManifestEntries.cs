@@ -45,13 +45,13 @@ public sealed record ImageEntry(Manifest Manifest, string RepoKey, Repo Repo, st
 /// A platform in a manifest, with the image it belongs to.
 /// </summary>
 /// <param name="ImageEntry">The image containing the platform.</param>
-/// <param name="PlatformKey">The platform's OCI platform within its image, like "linux/amd64".</param>
+/// <param name="PlatformKey">The platform's key within its image.</param>
 /// <param name="Platform">The platform.</param>
 public sealed record PlatformEntry(ImageEntry ImageEntry, string PlatformKey, Platform Platform)
 {
     /// <summary>
     /// The platform's key, unique within the manifest and stable across version updates,
-    /// like "sdk__10.0-noble__linux/amd64".
+    /// like "sdk__10.0-noble__amd64".
     /// </summary>
     public string Key => string.Join(ImageEntry.KeySeparator, ImageEntry.Key, PlatformKey);
 }

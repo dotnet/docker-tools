@@ -1,6 +1,5 @@
 #!/usr/bin/env dotnet
 // Generates this repo's Dockerfiles and manifest.yaml from versions.json and the Dockerfile templates.
-// The repo owns these rules; ImageBuilder only reads the generated manifest.
 //
 // Usage: dotnet run generate.cs           Writes every generated file.
 //        dotnet run generate.cs -- --test  Fails if any generated file is out of date.
@@ -24,13 +23,13 @@ JsonNode versions = JsonNode.Parse(File.ReadAllText(Path.Join(root, "versions.js
 JsonNode release = versions["dotnet"]?[DotnetVersion]
     ?? throw new InvalidDataException($"versions.json has no .NET {DotnetVersion} release.");
 
-OS noble = new("noble", "Ubuntu 24.04", Libicu: "74", Libssl: "3t64");
+Distro noble = new("noble", "Ubuntu 24.04", Libicu: "74", Libssl: "3t64");
 
 Arch[] arches =
 [
-    new("linux/amd64", "amd64", "linux-x64"),
-    new("linux/arm/v7", "arm32v7", "linux-arm"),
-    new("linux/arm64/v8", "arm64v8", "linux-arm64"),
+    new(new() { OS = OS.Linux, Architecture = Architecture.Amd64 }, "amd64", "linux-x64"),
+    new(new() { OS = OS.Linux, Architecture = Architecture.Arm, Variant = Variant.V7 }, "arm32v7", "linux-arm"),
+    new(new() { OS = OS.Linux, Architecture = Architecture.Arm64, Variant = Variant.V8 }, "arm64v8", "linux-arm64"),
 ];
 
 RepoRule[] repoRules =
@@ -57,8 +56,9 @@ foreach (RepoRule repoRule in repoRules)
     {
         string dockerfilePath = $"src/{repoRule.Key}/{DotnetVersion}/{noble.Name}/{arch.Name}/Dockerfile";
         files.Add(new(dockerfilePath, RenderDockerfile(templatePath, noble, arch)));
-        platforms[arch.Platform] = new Platform
+        platforms[arch.Name] = new Platform
         {
+            TargetPlatform = arch.TargetPlatform,
             DockerfilePath = dockerfilePath,
             BuildArgs = repoRule.BaseRepo is null ? [] : new() { ["REPO"] = $"$(Repo:{repoRule.BaseRepo})" },
             Tags = [$"{version}-{noble.Name}-{arch.Name}", $"{DotnetVersion}-{noble.Name}-{arch.Name}"],
@@ -84,7 +84,7 @@ files.Add(new("manifest.yaml", manifestYaml.ReplaceLineEndings("\n")));
 
 return test ? CheckFiles() : WriteFiles();
 
-string RenderDockerfile(string templatePath, OS os, Arch arch)
+string RenderDockerfile(string templatePath, Distro distro, Arch arch)
 {
     string source = File.ReadAllText(Path.Join(root, templatePath));
     if (!parser.TryParse(source, out IFluidTemplate template, out string error))
@@ -96,15 +96,15 @@ string RenderDockerfile(string templatePath, OS os, Arch arch)
     context.SetValue("release", release);
     context.SetValue("os", new JsonObject
     {
-        ["name"] = os.Name,
-        ["displayName"] = os.DisplayName,
-        ["libicu"] = os.Libicu,
-        ["libssl"] = os.Libssl,
+        ["name"] = distro.Name,
+        ["displayName"] = distro.DisplayName,
+        ["libicu"] = distro.Libicu,
+        ["libssl"] = distro.Libssl,
     });
     context.SetValue("arch", arch.Name);
     context.SetValue("rid", arch.Rid);
     // dotnet-docker installs arm32 noble images from Ubuntu 22.04's buildpack-deps image.
-    context.SetValue("installerOs", os.Name == "noble" && arch.Name == "arm32v7" ? "jammy" : os.Name);
+    context.SetValue("installerOs", distro.Name == "noble" && arch.Name == "arm32v7" ? "jammy" : distro.Name);
     return template.Render(context).ReplaceLineEndings("\n");
 }
 
@@ -141,14 +141,10 @@ int CheckFiles()
     return outdated.Length == 0 ? 0 : 1;
 }
 
-// An OS the repo's images are based on, with the package versions its Dockerfiles install.
-record OS(string Name, string DisplayName, string Libicu, string Libssl);
+record Distro(string Name, string DisplayName, string Libicu, string Libssl);
 
-// An architecture: its OCI platform, its name in tags and paths, and the .NET RID of its downloads.
-record Arch(string Platform, string Name, string Rid);
+record Arch(OciPlatform TargetPlatform, string Name, string Rid);
 
-// A repo: its key, its published name, the product whose version it's tagged with,
-// and the repo whose images it builds on.
 record RepoRule(string Key, string Name, string VersionProduct, string? BaseRepo);
 
 record GeneratedFile(string Path, string Content);

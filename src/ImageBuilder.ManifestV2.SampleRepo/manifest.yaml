@@ -7,13 +7,16 @@ repos:
       10.0-noble:
         sharedTags: [10.0.15-noble, 10.0-noble, 10.0.15, "10.0"]
         platforms:
-          linux/amd64:
+          amd64:
+            targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/runtime-deps/10.0/noble/amd64/Dockerfile
             tags: [10.0.15-noble-amd64, 10.0-noble-amd64]
-          linux/arm/v7:
+          arm32v7:
+            targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/runtime-deps/10.0/noble/arm32v7/Dockerfile
             tags: [10.0.15-noble-arm32v7, 10.0-noble-arm32v7]
-          linux/arm64/v8:
+          arm64v8:
+            targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/runtime-deps/10.0/noble/arm64v8/Dockerfile
             tags: [10.0.15-noble-arm64v8, 10.0-noble-arm64v8]
   runtime:
@@ -22,17 +25,20 @@ repos:
       10.0-noble:
         sharedTags: [10.0.15-noble, 10.0-noble, 10.0.15, "10.0"]
         platforms:
-          linux/amd64:
+          amd64:
+            targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/runtime/10.0/noble/amd64/Dockerfile
             buildArgs:
               REPO: $(Repo:runtime-deps)
             tags: [10.0.15-noble-amd64, 10.0-noble-amd64]
-          linux/arm/v7:
+          arm32v7:
+            targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/runtime/10.0/noble/arm32v7/Dockerfile
             buildArgs:
               REPO: $(Repo:runtime-deps)
             tags: [10.0.15-noble-arm32v7, 10.0-noble-arm32v7]
-          linux/arm64/v8:
+          arm64v8:
+            targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/runtime/10.0/noble/arm64v8/Dockerfile
             buildArgs:
               REPO: $(Repo:runtime-deps)
@@ -43,17 +49,20 @@ repos:
       10.0-noble:
         sharedTags: [10.0.15-noble, 10.0-noble, 10.0.15, "10.0"]
         platforms:
-          linux/amd64:
+          amd64:
+            targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/aspnet/10.0/noble/amd64/Dockerfile
             buildArgs:
               REPO: $(Repo:runtime)
             tags: [10.0.15-noble-amd64, 10.0-noble-amd64]
-          linux/arm/v7:
+          arm32v7:
+            targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/aspnet/10.0/noble/arm32v7/Dockerfile
             buildArgs:
               REPO: $(Repo:runtime)
             tags: [10.0.15-noble-arm32v7, 10.0-noble-arm32v7]
-          linux/arm64/v8:
+          arm64v8:
+            targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/aspnet/10.0/noble/arm64v8/Dockerfile
             buildArgs:
               REPO: $(Repo:runtime)
@@ -64,17 +73,20 @@ repos:
       10.0-noble:
         sharedTags: [10.0.404-noble, 10.0-noble, 10.0.404, "10.0"]
         platforms:
-          linux/amd64:
+          amd64:
+            targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/sdk/10.0/noble/amd64/Dockerfile
             buildArgs:
               REPO: $(Repo:aspnet)
             tags: [10.0.404-noble-amd64, 10.0-noble-amd64]
-          linux/arm/v7:
+          arm32v7:
+            targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/sdk/10.0/noble/arm32v7/Dockerfile
             buildArgs:
               REPO: $(Repo:aspnet)
             tags: [10.0.404-noble-arm32v7, 10.0-noble-arm32v7]
-          linux/arm64/v8:
+          arm64v8:
+            targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/sdk/10.0/noble/arm64v8/Dockerfile
             buildArgs:
               REPO: $(Repo:aspnet)

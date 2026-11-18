@@ -3,8 +3,6 @@
 {% assign checksumUrl = aspnet.downloads[rid].sha512Url | replace: aspnet.buildVersion, "$aspnetcore_version" -%}
 {% assign file = url | split: "/" | last -%}
 {% assign checksumFile = checksumUrl | split: "/" | last -%}
-ARG REPO=mcr.microsoft.com/dotnet/runtime
-
 # Installer image
 FROM {{ arch }}/buildpack-deps:{{ installerOs }}-curl AS installer
 
@@ -22,7 +20,7 @@ RUN aspnetcore_version={{ aspnet.buildVersion }} \
 
 
 # ASP.NET Core image
-FROM $REPO:{{ release.runtime.productVersion }}-{{ os.name }}-{{ arch }}
+FROM mcr.microsoft.com/dotnet/runtime:{{ release.runtime.productVersion }}-{{ os.name }}-{{ arch }}
 
 # ASP.NET Core version
 ENV ASPNET_VERSION={{ aspnet.buildVersion }}

@@ -1,4 +1,3 @@
-ARG REPO=mcr.microsoft.com/dotnet/aspnet
 # Installer image
 FROM arm32v7/buildpack-deps:jammy-curl AS installer
 
@@ -22,7 +21,7 @@ RUN powershell_version=7.6.10 \
 
 
 # .NET SDK image
-FROM $REPO:10.0.15-noble-arm32v7
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.15-noble-arm32v7
 
 ENV \
     # Do not generate certificate

@@ -1,4 +1,3 @@
-ARG REPO=mcr.microsoft.com/dotnet/aspnet
 # Installer image
 FROM arm64v8/buildpack-deps:noble-curl AS installer
 
@@ -22,7 +21,7 @@ RUN powershell_version=7.6.10 \
 
 
 # .NET SDK image
-FROM $REPO:10.0.15-noble-arm64v8
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.15-noble-arm64v8
 
 ENV \
     # Do not generate certificate

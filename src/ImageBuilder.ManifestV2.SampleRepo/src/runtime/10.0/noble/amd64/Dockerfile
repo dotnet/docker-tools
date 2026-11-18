@@ -1,5 +1,3 @@
-ARG REPO=mcr.microsoft.com/dotnet/runtime-deps
-
 # Installer image
 FROM amd64/buildpack-deps:noble-curl AS installer
 
@@ -17,7 +15,7 @@ RUN dotnet_version=10.0.15 \
 
 
 # .NET runtime image
-FROM $REPO:10.0.15-noble-amd64
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0.15-noble-amd64
 
 # .NET Runtime version
 ENV DOTNET_VERSION=10.0.15

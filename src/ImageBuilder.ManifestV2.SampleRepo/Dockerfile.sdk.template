@@ -14,7 +14,6 @@
 {% when "arm64v8" %}{% assign powershellChannelSuffix = "-arm64" -%}
 {% else %}{% assign powershellChannelSuffix = "" -%}
 {% endcase -%}
-ARG REPO=mcr.microsoft.com/dotnet/aspnet
 # Installer image
 FROM {{ arch }}/buildpack-deps:{{ installerOs }}-curl AS installer
 
@@ -38,7 +37,7 @@ RUN powershell_version={{ powershell.version }} \
 
 
 # .NET SDK image
-FROM $REPO:{{ release.aspnet.productVersion }}-{{ os.name }}-{{ arch }}
+FROM mcr.microsoft.com/dotnet/aspnet:{{ release.aspnet.productVersion }}-{{ os.name }}-{{ arch }}
 
 ENV \
     # Do not generate certificate

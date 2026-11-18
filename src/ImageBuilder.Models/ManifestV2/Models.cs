@@ -30,7 +30,6 @@ public sealed record Platform
 {
     public required OciPlatform TargetPlatform { get; set; }
     public required string DockerfilePath { get; set; }
-    public Dictionary<string, string> BuildArgs { get; set; } = [];
     public string[] Tags { get; set; } = [];
     public string[] UndocumentedTags { get; set; } = [];
 }

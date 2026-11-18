@@ -28,20 +28,14 @@ repos:
           amd64:
             targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/runtime/10.0/noble/amd64/Dockerfile
-            buildArgs:
-              REPO: $(Repo:runtime-deps)
             tags: [10.0.15-noble-amd64, 10.0-noble-amd64]
           arm32v7:
             targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/runtime/10.0/noble/arm32v7/Dockerfile
-            buildArgs:
-              REPO: $(Repo:runtime-deps)
             tags: [10.0.15-noble-arm32v7, 10.0-noble-arm32v7]
           arm64v8:
             targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/runtime/10.0/noble/arm64v8/Dockerfile
-            buildArgs:
-              REPO: $(Repo:runtime-deps)
             tags: [10.0.15-noble-arm64v8, 10.0-noble-arm64v8]
   aspnet:
     name: dotnet/aspnet
@@ -52,20 +46,14 @@ repos:
           amd64:
             targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/aspnet/10.0/noble/amd64/Dockerfile
-            buildArgs:
-              REPO: $(Repo:runtime)
             tags: [10.0.15-noble-amd64, 10.0-noble-amd64]
           arm32v7:
             targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/aspnet/10.0/noble/arm32v7/Dockerfile
-            buildArgs:
-              REPO: $(Repo:runtime)
             tags: [10.0.15-noble-arm32v7, 10.0-noble-arm32v7]
           arm64v8:
             targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/aspnet/10.0/noble/arm64v8/Dockerfile
-            buildArgs:
-              REPO: $(Repo:runtime)
             tags: [10.0.15-noble-arm64v8, 10.0-noble-arm64v8]
   sdk:
     name: dotnet/sdk
@@ -76,18 +64,12 @@ repos:
           amd64:
             targetPlatform: {os: linux, architecture: amd64}
             dockerfilePath: src/sdk/10.0/noble/amd64/Dockerfile
-            buildArgs:
-              REPO: $(Repo:aspnet)
             tags: [10.0.404-noble-amd64, 10.0-noble-amd64]
           arm32v7:
             targetPlatform: {os: linux, architecture: arm, variant: v7}
             dockerfilePath: src/sdk/10.0/noble/arm32v7/Dockerfile
-            buildArgs:
-              REPO: $(Repo:aspnet)
             tags: [10.0.404-noble-arm32v7, 10.0-noble-arm32v7]
           arm64v8:
             targetPlatform: {os: linux, architecture: arm64, variant: v8}
             dockerfilePath: src/sdk/10.0/noble/arm64v8/Dockerfile
-            buildArgs:
-              REPO: $(Repo:aspnet)
             tags: [10.0.404-noble-arm64v8, 10.0-noble-arm64v8]

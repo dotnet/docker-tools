@@ -1,5 +1,3 @@
-ARG REPO=mcr.microsoft.com/dotnet/runtime
-
 # Installer image
 FROM amd64/buildpack-deps:noble-curl AS installer
 
@@ -17,7 +15,7 @@ RUN aspnetcore_version=10.0.15 \
 
 
 # ASP.NET Core image
-FROM $REPO:10.0.15-noble-amd64
+FROM mcr.microsoft.com/dotnet/runtime:10.0.15-noble-amd64
 
 # ASP.NET Core version
 ENV ASPNET_VERSION=10.0.15

@@ -34,10 +34,10 @@ Arch[] arches =
 
 RepoRule[] repoRules =
 [
-    new("runtime-deps", "dotnet/runtime-deps", VersionProduct: "runtime", BaseRepo: null),
-    new("runtime", "dotnet/runtime", VersionProduct: "runtime", BaseRepo: "runtime-deps"),
-    new("aspnet", "dotnet/aspnet", VersionProduct: "aspnet", BaseRepo: "runtime"),
-    new("sdk", "dotnet/sdk", VersionProduct: "sdk", BaseRepo: "aspnet"),
+    new("runtime-deps", "dotnet/runtime-deps", VersionProduct: "runtime"),
+    new("runtime", "dotnet/runtime", VersionProduct: "runtime"),
+    new("aspnet", "dotnet/aspnet", VersionProduct: "aspnet"),
+    new("sdk", "dotnet/sdk", VersionProduct: "sdk"),
 ];
 
 FluidParser parser = new();
@@ -60,7 +60,6 @@ foreach (RepoRule repoRule in repoRules)
         {
             TargetPlatform = arch.TargetPlatform,
             DockerfilePath = dockerfilePath,
-            BuildArgs = repoRule.BaseRepo is null ? [] : new() { ["REPO"] = $"$(Repo:{repoRule.BaseRepo})" },
             Tags = [$"{version}-{noble.Name}-{arch.Name}", $"{DotnetVersion}-{noble.Name}-{arch.Name}"],
         };
     }
@@ -145,6 +144,6 @@ record Distro(string Name, string DisplayName, string Libicu, string Libssl);
 
 record Arch(OciPlatform TargetPlatform, string Name, string Rid);
 
-record RepoRule(string Key, string Name, string VersionProduct, string? BaseRepo);
+record RepoRule(string Key, string Name, string VersionProduct);
 
 record GeneratedFile(string Path, string Content);

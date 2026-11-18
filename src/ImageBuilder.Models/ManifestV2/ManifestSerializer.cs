@@ -72,22 +72,22 @@ public static partial class ManifestSerializer
 
                 ClaimTags(image.SharedTags, imageId);
                 HashSet<string> platforms = [];
-                foreach ((string platformKey, ImagePlatform platform) in image.Platforms)
+                foreach ((string platformKey, ImagePlatform imagePlatform) in image.Platforms)
                 {
                     string platformId = $"{imageId}{ImageEntry.KeySeparator}{platformKey}";
-                    if (!PlatformRegex.IsMatch(platform.Platform))
+                    if (!PlatformRegex.IsMatch(imagePlatform.Platform))
                     {
                         throw new InvalidDataException(
-                            $"{platformId}: platform '{platform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
+                            $"{platformId}: platform '{imagePlatform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
                     }
 
-                    if (!platforms.Add(platform.Platform))
+                    if (!platforms.Add(imagePlatform.Platform))
                     {
                         throw new InvalidDataException(
-                            $"{imageId}: more than one platform is {platform.Platform}.");
+                            $"{imageId}: more than one platform is {imagePlatform.Platform}.");
                     }
 
-                    ClaimTags([.. platform.Tags, .. platform.UndocumentedTags], platformId);
+                    ClaimTags([.. imagePlatform.Tags, .. imagePlatform.UndocumentedTags], platformId);
                 }
             }
 

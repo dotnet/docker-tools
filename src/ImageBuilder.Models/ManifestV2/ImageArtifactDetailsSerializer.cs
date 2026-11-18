@@ -48,9 +48,12 @@ public static partial class ImageArtifactDetailsSerializer
                 throw new InvalidDataException($"{manifest.Key}: more than one manifest has this key.");
             }
 
-            ValidateDigests(
-                manifest.Key,
-                [manifest.Digest, .. manifest.BaseImages.Values, .. manifest.Layers.Select(layer => layer.Digest)]);
+            ValidateDigests(manifest.Key, [manifest.Digest]);
+            if (manifest.BaseImage is not null && !BaseImageRegex.IsMatch(manifest.BaseImage))
+            {
+                throw new InvalidDataException(
+                    $"{manifest.Key}: base image '{manifest.BaseImage}' is not a reference like 'name@sha256:<hex>'.");
+            }
         }
 
         HashSet<string> indexKeys = new(StringComparer.Ordinal);
@@ -90,4 +93,7 @@ public static partial class ImageArtifactDetailsSerializer
 
     [GeneratedRegex(@"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$")]
     private static partial Regex DigestRegex { get; }
+
+    [GeneratedRegex(@"^[^@\s]+@[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$")]
+    private static partial Regex BaseImageRegex { get; }
 }

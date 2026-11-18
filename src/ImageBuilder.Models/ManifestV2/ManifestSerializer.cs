@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
@@ -17,21 +15,19 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 /// </summary>
 public static partial class ManifestSerializer
 {
-    // Without type inference, every scalar stays a string, so "10.0" isn't read as a number.
-    private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder().Build();
+    // Unknown properties are errors by default.
+    private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder()
+        .WithNamingConvention(CamelCaseNamingConvention.Instance)
+        .WithEnforceRequiredMembers()
+        .WithEnforceNullability()
+        .Build();
 
     private static readonly ISerializer YamlSerializer = new SerializerBuilder()
+        .WithNamingConvention(CamelCaseNamingConvention.Instance)
+        .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
         .WithQuotingNecessaryStrings()
         .WithEventEmitter(next => new FlowStringListEmitter(next))
         .Build();
-
-    // YAML goes through JSON so that both directions share one set of names and rules.
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        RespectNullableAnnotations = true,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-    };
 
     /// <summary>
     /// Reads and validates the manifest at <paramref name="filePath"/>.
@@ -40,16 +36,13 @@ public static partial class ManifestSerializer
     public static Manifest Load(string filePath)
     {
         string yaml = File.ReadAllText(filePath);
-        object document = YamlDeserializer.Deserialize<object>(yaml)
-            ?? throw new InvalidDataException("The manifest must not be empty.");
-
         Manifest manifest;
         try
         {
-            manifest = JsonSerializer.SerializeToElement(document).Deserialize<Manifest>(JsonOptions)
-                ?? throw new InvalidDataException("The manifest must not be null.");
+            manifest = YamlDeserializer.Deserialize<Manifest?>(yaml)
+                ?? throw new InvalidDataException($"{filePath}: the manifest must not be empty.");
         }
-        catch (JsonException exception)
+        catch (YamlException exception)
         {
             throw new InvalidDataException($"{filePath}: {exception.Message}", exception);
         }
@@ -61,14 +54,7 @@ public static partial class ManifestSerializer
     /// <summary>
     /// Writes <paramref name="manifest"/> as YAML, leaving out empty and unset values.
     /// </summary>
-    public static string Serialize(Manifest manifest)
-    {
-        JsonNode manifestJson = JsonSerializer.SerializeToNode(manifest, JsonOptions)
-            ?? throw new ArgumentException("The manifest must not be null.", nameof(manifest));
-        object document = ToYamlValue(manifestJson)
-            ?? throw new ArgumentException("The manifest must not be empty.", nameof(manifest));
-        return YamlSerializer.Serialize(document);
-    }
+    public static string Serialize(Manifest manifest) => YamlSerializer.Serialize(manifest);
 
     private static void Validate(Manifest manifest)
     {
@@ -111,20 +97,6 @@ public static partial class ManifestSerializer
         }
     }
 
-    // Converts JSON to the plain dictionaries, lists and strings YamlDotNet writes, dropping empty values.
-    private static object? ToYamlValue(JsonNode? node) => node switch
-    {
-        JsonObject jsonObject => EmptyToNull(jsonObject
-            .Select(property => (property.Key, Value: ToYamlValue(property.Value)))
-            .Where(property => property.Value is not null)
-            .ToDictionary(property => property.Key, property => property.Value)),
-        JsonArray jsonArray => EmptyToNull(jsonArray.Select(ToYamlValue).OfType<object>().ToList()),
-        JsonValue jsonValue => jsonValue.ToString(),
-        _ => null,
-    };
-
-    private static object? EmptyToNull<T>(ICollection<T> collection) => collection.Count == 0 ? null : collection;
-
     [GeneratedRegex(@"^[a-z0-9]+/[a-z0-9]+(/[a-z0-9]+)?$")]
     private static partial Regex OciPlatformRegex();
 
@@ -133,7 +105,7 @@ public static partial class ManifestSerializer
     {
         public override void Emit(SequenceStartEventInfo eventInfo, IEmitter emitter)
         {
-            if (eventInfo.Source.Value is List<object> items && items.All(item => item is string))
+            if (eventInfo.Source.Type == typeof(string[]))
             {
                 eventInfo.Style = SequenceStyle.Flow;
             }

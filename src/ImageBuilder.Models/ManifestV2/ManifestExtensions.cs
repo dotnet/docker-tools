@@ -5,39 +5,28 @@ namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
 
 public static class ManifestExtensions
 {
-    private const string KeySeparator = "__";
-
     extension(Manifest manifest)
     {
-        public IEnumerable<ImageEntry> GetImages()
+        public IEnumerable<ImageKey> GetImageKeys() =>
+            manifest.Repos.SelectMany(repo => repo.Value.Images.Keys.Select(image => new ImageKey(repo.Key, image)));
+
+        public IEnumerable<PlatformKey> GetPlatformKeys() =>
+            manifest.GetImageKeys().SelectMany(imageKey =>
+                manifest.Get(imageKey).Platforms.Keys.Select(platform => new PlatformKey(imageKey.Repo, imageKey.Image, platform)));
+
+        public Image Get(ImageKey key) => manifest.Repos[key.Repo].Images[key.Image];
+
+        public ImagePlatform Get(PlatformKey key) => manifest.Get(key.ImageKey).Platforms[key.Platform];
+
+        public string GetReference(ImageKey key, string tag)
         {
-            foreach ((string repoKey, Repo repo) in manifest.Repos)
-            {
-                foreach ((string imageKey, Image image) in repo.Images)
-                {
-                    yield return new ImageEntry(manifest, repoKey, repo, imageKey, image);
-                }
-            }
+            string repoName = manifest.Repos[key.Repo].Name;
+            return manifest.Registry is null ? $"{repoName}:{tag}" : $"{manifest.Registry}/{repoName}:{tag}";
         }
-
-        public IEnumerable<PlatformEntry> GetPlatforms() =>
-            manifest.GetImages().SelectMany(imageEntry => imageEntry.GetPlatforms());
     }
 
-    extension(ImageEntry imageEntry)
+    extension(PlatformKey key)
     {
-        public string Key => string.Join(KeySeparator, imageEntry.RepoKey, imageEntry.ImageKey);
-
-        public string GetReference(string tag) => imageEntry.Manifest.Registry is null
-            ? $"{imageEntry.Repo.Name}:{tag}"
-            : $"{imageEntry.Manifest.Registry}/{imageEntry.Repo.Name}:{tag}";
-
-        public IEnumerable<PlatformEntry> GetPlatforms() =>
-            imageEntry.Image.Platforms.Select(platform => new PlatformEntry(imageEntry, platform.Key, platform.Value));
-    }
-
-    extension(PlatformEntry platformEntry)
-    {
-        public string Key => string.Join(KeySeparator, platformEntry.ImageEntry.Key, platformEntry.PlatformKey);
+        public ImageKey ImageKey => new(key.Repo, key.Image);
     }
 }

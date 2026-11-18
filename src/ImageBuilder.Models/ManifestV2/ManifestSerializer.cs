@@ -113,44 +113,45 @@ public static partial class ManifestSerializer
 
     private static void Validate(Manifest manifest)
     {
-        foreach (IGrouping<string, ImageEntry> repoImages in manifest.GetImages().GroupBy(image => image.RepoKey))
+        foreach (IGrouping<string, ImageKey> repoImageKeys in manifest.GetImageKeys().GroupBy(imageKey => imageKey.Repo))
         {
             Dictionary<string, string> tagOwners = new(StringComparer.Ordinal);
-            foreach (ImageEntry imageEntry in repoImages)
+            foreach (ImageKey imageKey in repoImageKeys)
             {
-                if (imageEntry.Image.Platforms.Count == 0)
+                Image image = manifest.Get(imageKey);
+                if (image.Platforms.Count == 0)
                 {
-                    throw new InvalidDataException($"{imageEntry.Key}: an image must have at least one platform.");
+                    throw new InvalidDataException($"{imageKey}: an image must have at least one platform.");
                 }
 
-                ClaimTags(imageEntry.Image.SharedTags, imageEntry.Key);
+                ClaimTags(image.SharedTags, imageKey.ToString());
                 HashSet<string> platforms = [];
-                foreach (PlatformEntry platformEntry in imageEntry.GetPlatforms())
+                foreach ((string platformName, ImagePlatform imagePlatform) in image.Platforms)
                 {
-                    ImagePlatform imagePlatform = platformEntry.ImagePlatform;
+                    PlatformKey platformKey = new(imageKey.Repo, imageKey.Image, platformName);
                     if (!PlatformRegex.IsMatch(imagePlatform.Platform))
                     {
                         throw new InvalidDataException(
-                            $"{platformEntry.Key}: platform '{imagePlatform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
+                            $"{platformKey}: platform '{imagePlatform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
                     }
 
                     if (!platforms.Add(imagePlatform.Platform))
                     {
-                        throw new InvalidDataException($"{imageEntry.Key}: more than one platform is {imagePlatform.Platform}.");
+                        throw new InvalidDataException($"{imageKey}: more than one platform is {imagePlatform.Platform}.");
                     }
 
-                    ClaimTags([.. imagePlatform.Tags, .. imagePlatform.UndocumentedTags], platformEntry.Key);
+                    ClaimTags([.. imagePlatform.Tags, .. imagePlatform.UndocumentedTags], platformKey.ToString());
                 }
             }
 
-            void ClaimTags(string[] tags, string ownerKey)
+            void ClaimTags(string[] tags, string owner)
             {
                 foreach (string tag in tags)
                 {
-                    if (!tagOwners.TryAdd(tag, ownerKey))
+                    if (!tagOwners.TryAdd(tag, owner))
                     {
                         throw new InvalidDataException(
-                            $"{repoImages.Key}: tag '{tag}' is declared by both {tagOwners[tag]} and {ownerKey}.");
+                            $"{repoImageKeys.Key}: tag '{tag}' is declared by both {tagOwners[tag]} and {owner}.");
                     }
                 }
             }

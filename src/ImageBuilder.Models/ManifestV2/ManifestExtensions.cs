@@ -8,21 +8,18 @@ public static class ManifestExtensions
     extension(Manifest manifest)
     {
         public IEnumerable<ImageKey> GetImageKeys() =>
-            manifest.Repos.SelectMany(repo => repo.Value.Images.Keys.Select(image => new ImageKey(repo.Key, image)));
+            manifest.Repos.SelectMany(repo =>
+                repo.Value.Images.Keys.Select(image => new ImageKey(repo.Key, image)));
 
         public IEnumerable<PlatformKey> GetPlatformKeys() =>
-            manifest.GetImageKeys().SelectMany(imageKey =>
-                manifest.Get(imageKey).Platforms.Keys.Select(platform => new PlatformKey(imageKey.Repo, imageKey.Image, platform)));
+            manifest
+                .GetImageKeys()
+                .SelectMany(imageKey => manifest.GetImage(imageKey).Platforms.Keys
+                    .Select(platform => new PlatformKey(imageKey.Repo, imageKey.Image, platform)));
 
-        public Image Get(ImageKey key) => manifest.Repos[key.Repo].Images[key.Image];
+        public Image GetImage(ImageKey key) => manifest.Repos[key.Repo].Images[key.Image];
 
-        public ImagePlatform Get(PlatformKey key) => manifest.Get(key.ImageKey).Platforms[key.Platform];
-
-        public string GetReference(ImageKey key, string tag)
-        {
-            string repoName = manifest.Repos[key.Repo].Name;
-            return manifest.Registry is null ? $"{repoName}:{tag}" : $"{manifest.Registry}/{repoName}:{tag}";
-        }
+        public ImagePlatform GetPlatform(PlatformKey key) => manifest.GetImage(key.ImageKey).Platforms[key.Platform];
     }
 
     extension(PlatformKey key)

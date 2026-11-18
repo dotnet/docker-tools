@@ -118,7 +118,7 @@ public static partial class ManifestSerializer
             Dictionary<string, string> tagOwners = new(StringComparer.Ordinal);
             foreach (ImageKey imageKey in repoImageKeys)
             {
-                Image image = manifest.Get(imageKey);
+                Image image = manifest.GetImage(imageKey);
                 if (image.Platforms.Count == 0)
                 {
                     throw new InvalidDataException($"{imageKey}: an image must have at least one platform.");

@@ -26,6 +26,9 @@ public sealed record Image
 
 public sealed record ImagePlatform
 {
+    /// <summary>
+    /// The platform to build the image for, e.g. <c>linux/arm64</c>. ImageBuilder passes it to the build tool's <c>--platform</c> option.
+    /// </summary>
     public required string Platform { get; set; }
     public required string DockerfilePath { get; set; }
     public string[] Tags { get; set; } = [];
@@ -34,6 +37,5 @@ public sealed record ImagePlatform
 
 public sealed record Readme
 {
-    public required string Path { get; set; }
-    public string? TemplatePath { get; set; }
+    public required string FilePath { get; set; }
 }

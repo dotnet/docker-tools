@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
 /// <summary>
 /// Reads and writes JSON manifests.
 /// </summary>
-public static partial class ManifestSerializer
+public static class ManifestSerializer
 {
     internal static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -22,7 +19,6 @@ public static partial class ManifestSerializer
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { OmitEmptyCollections } },
     };
 
     /// <summary>
@@ -47,91 +43,52 @@ public static partial class ManifestSerializer
     }
 
     /// <summary>
-    /// Writes <paramref name="manifest"/> as JSON, leaving out empty and unset values.
+    /// Writes <paramref name="manifest"/> as JSON, leaving out unset values.
     /// </summary>
     public static string Serialize(Manifest manifest) => JsonSerializer.Serialize(manifest, JsonOptions);
-
-    private static void OmitEmptyCollections(JsonTypeInfo typeInfo)
-    {
-        foreach (JsonPropertyInfo property in typeInfo.Properties)
-        {
-            if (property.PropertyType.IsAssignableTo(typeof(ICollection)))
-            {
-                property.ShouldSerialize = (_, value) => value is ICollection { Count: > 0 };
-            }
-        }
-    }
 
     private static List<string> Validate(Manifest manifest)
     {
         List<string> errors = [];
 
-        foreach (IGrouping<string, ImageKey> repoImageKeys in manifest.GetImageKeys().GroupBy(imageKey => imageKey.Repo))
+        IEnumerable<Image> images = manifest.Repos.Values.SelectMany(repo => repo.Images.Values);
+
+        IEnumerable<string> keyParts = manifest.Repos.Keys
+            .Concat(manifest.Repos.Values.SelectMany(repo => repo.Images.Keys))
+            .Concat(images.SelectMany(image => image.Platforms.Keys));
+
+        IEnumerable<string> invalidKeyParts = keyParts
+            .Where(keyPart => !KeyPatterns.Part.IsMatch(keyPart))
+            .Distinct();
+
+        foreach (string keyPart in invalidKeyParts)
         {
-            List<(string Tag, string DeclaredBy)> tagDeclarations = [];
+            errors.Add($"Key '{keyPart}' must be {KeyPatterns.Description}.");
+        }
 
-            foreach (ImageKey imageKey in repoImageKeys)
+        IEnumerable<IGrouping<string, Repo>> reposByName = manifest.Repos.Values
+            .GroupBy(repo => repo.Name);
+
+        foreach (IGrouping<string, Repo> reposWithName in reposByName)
+        {
+            IEnumerable<string> duplicateTags = reposWithName
+                .SelectMany(repo => repo.Images.Values)
+                .SelectMany(GetTags)
+                .GroupBy(tag => tag)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key);
+
+            foreach (string tag in duplicateTags)
             {
-                Image image = manifest.GetImage(imageKey);
-
-                if (!KeyPatterns.ImageKey.IsMatch(imageKey.ToString()))
-                {
-                    errors.Add($"{nameof(Image)} '{imageKey}': repo and image keys must be {KeyPatterns.Description}.");
-                }
-
-                if (image.Platforms.Count == 0)
-                {
-                    errors.Add($"{nameof(Image)} '{imageKey}': an image must have at least one platform.");
-                }
-
-                tagDeclarations.AddRange(image.SharedTags.Select(tag => (tag, $"{nameof(Image)} '{imageKey}'")));
-
-                foreach ((string platformName, ImagePlatform imagePlatform) in image.Platforms)
-                {
-                    PlatformKey platformKey = new(imageKey.Repo, imageKey.Image, platformName);
-
-                    if (!KeyPatterns.PlatformKey.IsMatch(platformKey.ToString()))
-                    {
-                        errors.Add($"{nameof(ImagePlatform)} '{platformKey}': platform keys must be {KeyPatterns.Description}.");
-                    }
-
-                    if (!PlatformRegex.IsMatch(imagePlatform.Platform))
-                    {
-                        errors.Add(
-                            $"{nameof(ImagePlatform)} '{platformKey}': platform '{imagePlatform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
-                    }
-
-                    tagDeclarations.AddRange(
-                        imagePlatform.Tags
-                            .Concat(imagePlatform.UndocumentedTags)
-                            .Select(tag => (tag, $"{nameof(ImagePlatform)} '{platformKey}'")));
-                }
-
-                IEnumerable<IGrouping<string, string>> duplicatePlatforms = image.Platforms
-                    .GroupBy(platform => platform.Value.Platform, platform => platform.Key)
-                    .Where(group => group.Count() > 1);
-
-                foreach (IGrouping<string, string> duplicatePlatform in duplicatePlatforms)
-                {
-                    errors.Add(
-                        $"{nameof(Image)} '{imageKey}': platforms {string.Join(", ", duplicatePlatform.Select(name => $"'{name}'"))}"
-                        + $" are all '{duplicatePlatform.Key}'.");
-                }
-            }
-
-            IEnumerable<IGrouping<string, string>> duplicateTags = tagDeclarations
-                .GroupBy(declaration => declaration.Tag, declaration => declaration.DeclaredBy, StringComparer.Ordinal)
-                .Where(group => group.Count() > 1);
-
-            foreach (IGrouping<string, string> duplicateTag in duplicateTags)
-            {
-                errors.Add($"{nameof(Repo)} '{repoImageKeys.Key}': tag '{duplicateTag.Key}' is declared by {string.Join(", ", duplicateTag)}.");
+                errors.Add($"Tag '{reposWithName.Key}:{tag}' is listed more than once.");
             }
         }
 
         return errors;
     }
 
-    [GeneratedRegex(@"^[a-z0-9]+/[a-z0-9]+(/[a-z0-9]+)?$")]
-    private static partial Regex PlatformRegex { get; }
+    private static IEnumerable<string> GetTags(Image image) =>
+        image.Platforms.Values
+            .SelectMany(platform => platform.Tags.Concat(platform.UndocumentedTags))
+            .Concat(image.SharedTags);
 }

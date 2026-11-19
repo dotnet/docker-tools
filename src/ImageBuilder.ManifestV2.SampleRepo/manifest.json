@@ -3,6 +3,7 @@
   "repos": {
     "runtime-deps": {
       "name": "dotnet/runtime-deps",
+      "readmes": [],
       "images": {
         "10.0-noble": {
           "sharedTags": [
@@ -18,7 +19,8 @@
               "tags": [
                 "10.0.15-noble-amd64",
                 "10.0-noble-amd64"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm32v7": {
               "platform": "linux/arm/v7",
@@ -26,7 +28,8 @@
               "tags": [
                 "10.0.15-noble-arm32v7",
                 "10.0-noble-arm32v7"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm64v8": {
               "platform": "linux/arm64/v8",
@@ -34,7 +37,8 @@
               "tags": [
                 "10.0.15-noble-arm64v8",
                 "10.0-noble-arm64v8"
-              ]
+              ],
+              "undocumentedTags": []
             }
           }
         }
@@ -42,6 +46,7 @@
     },
     "runtime": {
       "name": "dotnet/runtime",
+      "readmes": [],
       "images": {
         "10.0-noble": {
           "sharedTags": [
@@ -57,7 +62,8 @@
               "tags": [
                 "10.0.15-noble-amd64",
                 "10.0-noble-amd64"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm32v7": {
               "platform": "linux/arm/v7",
@@ -65,7 +71,8 @@
               "tags": [
                 "10.0.15-noble-arm32v7",
                 "10.0-noble-arm32v7"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm64v8": {
               "platform": "linux/arm64/v8",
@@ -73,7 +80,8 @@
               "tags": [
                 "10.0.15-noble-arm64v8",
                 "10.0-noble-arm64v8"
-              ]
+              ],
+              "undocumentedTags": []
             }
           }
         }
@@ -81,6 +89,7 @@
     },
     "aspnet": {
       "name": "dotnet/aspnet",
+      "readmes": [],
       "images": {
         "10.0-noble": {
           "sharedTags": [
@@ -96,7 +105,8 @@
               "tags": [
                 "10.0.15-noble-amd64",
                 "10.0-noble-amd64"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm32v7": {
               "platform": "linux/arm/v7",
@@ -104,7 +114,8 @@
               "tags": [
                 "10.0.15-noble-arm32v7",
                 "10.0-noble-arm32v7"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm64v8": {
               "platform": "linux/arm64/v8",
@@ -112,7 +123,8 @@
               "tags": [
                 "10.0.15-noble-arm64v8",
                 "10.0-noble-arm64v8"
-              ]
+              ],
+              "undocumentedTags": []
             }
           }
         }
@@ -120,6 +132,7 @@
     },
     "sdk": {
       "name": "dotnet/sdk",
+      "readmes": [],
       "images": {
         "10.0-noble": {
           "sharedTags": [
@@ -135,7 +148,8 @@
               "tags": [
                 "10.0.404-noble-amd64",
                 "10.0-noble-amd64"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm32v7": {
               "platform": "linux/arm/v7",
@@ -143,7 +157,8 @@
               "tags": [
                 "10.0.404-noble-arm32v7",
                 "10.0-noble-arm32v7"
-              ]
+              ],
+              "undocumentedTags": []
             },
             "arm64v8": {
               "platform": "linux/arm64/v8",
@@ -151,7 +166,8 @@
               "tags": [
                 "10.0.404-noble-arm64v8",
                 "10.0-noble-arm64v8"
-              ]
+              ],
+              "undocumentedTags": []
             }
           }
         }

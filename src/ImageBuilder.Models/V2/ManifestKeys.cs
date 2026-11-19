@@ -21,11 +21,8 @@ internal static partial class KeyPatterns
 
     public const string Description = "letters and digits separated by single '.', '_' or '-'";
 
-    private const string Part = "[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*";
+    private const string PartPattern = "[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*";
 
-    [GeneratedRegex($"^(?<repo>{Part}){Separator}(?<image>{Part})$")]
-    public static partial Regex ImageKey { get; }
-
-    [GeneratedRegex($"^{Part}{Separator}{Part}{Separator}{Part}$")]
-    public static partial Regex PlatformKey { get; }
+    [GeneratedRegex($@"^{PartPattern}\z")]
+    public static partial Regex Part { get; }
 }

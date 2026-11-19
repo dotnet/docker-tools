@@ -263,7 +263,7 @@ public static class ImageInfoHelper
         // Multiple manifest platforms can share a Dockerfile and differ only by build args, which aren't stored
         // in image info. Pick the candidate whose tags overlap the most with the image info platform's tags.
         // Ties (including no overlap) fall back to the first candidate in manifest order.
-        HashSet<string> simpleTags = [.. platformData.SimpleTags];
+        HashSet<string> simpleTags = [.. platformData.SimpleTags ?? []];
         return candidates
             .OrderByDescending(candidate => candidate.Platform.Tags.Count(tag => simpleTags.Contains(tag.Name)))
             .First();

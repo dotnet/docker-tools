@@ -119,6 +119,12 @@ public static partial class ManifestSerializer
             foreach (ImageKey imageKey in repoImageKeys)
             {
                 Image image = manifest.GetImage(imageKey);
+                if (!KeyPatterns.ImageKey.IsMatch(imageKey.ToString()))
+                {
+                    throw new InvalidDataException(
+                        $"{imageKey}: repo and image keys must be {KeyPatterns.Description}.");
+                }
+
                 if (image.Platforms.Count == 0)
                 {
                     throw new InvalidDataException($"{imageKey}: an image must have at least one platform.");
@@ -129,6 +135,12 @@ public static partial class ManifestSerializer
                 foreach ((string platformName, ImagePlatform imagePlatform) in image.Platforms)
                 {
                     PlatformKey platformKey = new(imageKey.Repo, imageKey.Image, platformName);
+                    if (!KeyPatterns.PlatformKey.IsMatch(platformKey.ToString()))
+                    {
+                        throw new InvalidDataException(
+                            $"{platformKey}: platform keys must be {KeyPatterns.Description}.");
+                    }
+
                     if (!PlatformRegex.IsMatch(imagePlatform.Platform))
                     {
                         throw new InvalidDataException(

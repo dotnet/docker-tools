@@ -48,6 +48,12 @@ public static partial class ImageArtifactDetailsSerializer
                 throw new InvalidDataException($"{manifest.Key}: more than one manifest has this key.");
             }
 
+            if (!KeyPatterns.PlatformKey.IsMatch(manifest.Key))
+            {
+                throw new InvalidDataException(
+                    $"{manifest.Key}: a manifest key must be 'repo__image__platform', each part {KeyPatterns.Description}.");
+            }
+
             ValidateDigests(manifest.Key, [manifest.Digest]);
             if (manifest.BaseImage is not null)
             {
@@ -61,6 +67,12 @@ public static partial class ImageArtifactDetailsSerializer
             if (!indexKeys.Add(index.Key))
             {
                 throw new InvalidDataException($"{index.Key}: more than one index has this key.");
+            }
+
+            if (!KeyPatterns.ImageKey.IsMatch(index.Key))
+            {
+                throw new InvalidDataException(
+                    $"{index.Key}: an index key must be 'repo__image', each part {KeyPatterns.Description}.");
             }
 
             ValidateDigests(index.Key, [index.Digest, .. index.Manifests]);

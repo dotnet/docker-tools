@@ -5,13 +5,12 @@ namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
 public sealed record ImageArtifactDetails
 {
-    public ImageManifest[] Manifests { get; set; } = [];
-    public ImageIndex[] Indexes { get; set; } = [];
+    public Dictionary<string, ImageManifest> Manifests { get; set; } = [];
+    public Dictionary<string, ImageIndex> Indexes { get; set; } = [];
 }
 
 public sealed record ImageManifest
 {
-    public required string Key { get; set; }
     public required string Digest { get; set; }
     public string[] Tags { get; set; } = [];
     public required string CommitUrl { get; set; }
@@ -20,7 +19,6 @@ public sealed record ImageManifest
 
 public sealed record ImageIndex
 {
-    public required string Key { get; set; }
     public required string Digest { get; set; }
     public string[] Tags { get; set; } = [];
     public required string[] Manifests { get; set; }

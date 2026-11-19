@@ -18,6 +18,7 @@ public static partial class ManifestSerializer
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         RespectNullableAnnotations = true,
+        AllowDuplicateProperties = false,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,

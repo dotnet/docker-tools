@@ -34,54 +34,42 @@ public static partial class ImageArtifactDetailsSerializer
 
     private static void Validate(ImageArtifactDetails details)
     {
-        HashSet<string> manifestKeys = new(StringComparer.Ordinal);
-        foreach (ImageManifest manifest in details.Manifests)
+        foreach ((string key, ImageManifest manifest) in details.Manifests)
         {
-            if (!manifestKeys.Add(manifest.Key))
-            {
-                throw new InvalidDataException($"{manifest.Key}: more than one manifest has this key.");
-            }
-
-            if (!KeyPatterns.PlatformKey.IsMatch(manifest.Key))
+            if (!KeyPatterns.PlatformKey.IsMatch(key))
             {
                 throw new InvalidDataException(
-                    $"{manifest.Key}: a manifest key must be 'repo{KeyPatterns.Separator}image{KeyPatterns.Separator}platform', each part {KeyPatterns.Description}.");
+                    $"{key}: a manifest key must be 'repo{KeyPatterns.Separator}image{KeyPatterns.Separator}platform', each part {KeyPatterns.Description}.");
             }
 
-            ValidateDigests(manifest.Key, [manifest.Digest]);
+            ValidateDigests(key, [manifest.Digest]);
             if (manifest.BaseImage is not null)
             {
-                ValidateDigests(manifest.Key, [manifest.BaseImage.Digest]);
+                ValidateDigests(key, [manifest.BaseImage.Digest]);
             }
         }
 
-        HashSet<string> indexKeys = new(StringComparer.Ordinal);
-        foreach (ImageIndex index in details.Indexes)
+        foreach ((string key, ImageIndex index) in details.Indexes)
         {
-            if (!indexKeys.Add(index.Key))
-            {
-                throw new InvalidDataException($"{index.Key}: more than one index has this key.");
-            }
-
-            if (!KeyPatterns.ImageKey.IsMatch(index.Key))
+            if (!KeyPatterns.ImageKey.IsMatch(key))
             {
                 throw new InvalidDataException(
-                    $"{index.Key}: an index key must be 'repo{KeyPatterns.Separator}image', each part {KeyPatterns.Description}.");
+                    $"{key}: an index key must be 'repo{KeyPatterns.Separator}image', each part {KeyPatterns.Description}.");
             }
 
-            ValidateDigests(index.Key, [index.Digest, .. index.Manifests]);
+            ValidateDigests(key, [index.Digest, .. index.Manifests]);
 
             string[] manifestDigests = details
-                .GetManifests(index)
-                .Select(manifest => manifest.Digest)
+                .GetManifests(key)
+                .Select(manifest => manifest.Value.Digest)
                 .Order(StringComparer.Ordinal)
                 .ToArray();
 
             if (!index.Manifests.Order(StringComparer.Ordinal).SequenceEqual(manifestDigests))
             {
                 throw new InvalidDataException(
-                    $"{index.Key}: the index lists [{string.Join(", ", index.Manifests)}]"
-                    + $" but the manifests for {index.Key} are [{string.Join(", ", manifestDigests)}].");
+                    $"{key}: the index lists [{string.Join(", ", index.Manifests)}]"
+                    + $" but the manifests for {key} are [{string.Join(", ", manifestDigests)}].");
             }
         }
     }

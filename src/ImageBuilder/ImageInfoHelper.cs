@@ -180,22 +180,19 @@ public static class ImageInfoHelper
 
                 foreach (PlatformData platformData in imageData.Platforms)
                 {
-                    foreach (ImageInfo manifestImage in useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages)
+                    (PlatformInfo Platform, ImageInfo Image)? match = FindMatchingManifestPlatform(
+                        platformData, imageData, useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages, useFilteredManifest);
+                    if (match is not null)
                     {
-                        PlatformInfo matchingManifestPlatform = (useFilteredManifest ? manifestImage.FilteredPlatforms : manifestImage.AllPlatforms)
-                            .FirstOrDefault(platform => ArePlatformsEqual(platformData, imageData, platform, manifestImage));
-                        if (matchingManifestPlatform != null)
+                        ImageInfo manifestImage = match.Value.Image;
+                        if (imageData.ManifestImage is null)
                         {
-                            if (imageData.ManifestImage is null)
-                            {
-                                imageData.ManifestImage = manifestImage;
-                                imageData.SyndicatedRepo = manifestImage.SyndicatedRepo;
-                            }
-
-                            platformData.PlatformInfo = matchingManifestPlatform;
-                            platformData.ImageInfo = manifestImage;
-                            break;
+                            imageData.ManifestImage = manifestImage;
+                            imageData.SyndicatedRepo = manifestImage.SyndicatedRepo;
                         }
+
+                        platformData.PlatformInfo = match.Value.Platform;
+                        platformData.ImageInfo = manifestImage;
                     }
                 }
 
@@ -249,13 +246,38 @@ public static class ImageInfoHelper
         return null;
     }
 
+    private static (PlatformInfo Platform, ImageInfo Image)? FindMatchingManifestPlatform(
+        PlatformData platformData, ImageData imageData, IEnumerable<ImageInfo> manifestImages, bool useFilteredManifest)
+    {
+        List<(PlatformInfo Platform, ImageInfo Image)> candidates = manifestImages
+            .SelectMany(manifestImage => (useFilteredManifest ? manifestImage.FilteredPlatforms : manifestImage.AllPlatforms)
+                .Where(platform => ArePlatformsEqual(platformData, imageData, platform, manifestImage))
+                .Select(platform => (platform, manifestImage)))
+            .ToList();
+
+        if (candidates.Count <= 1)
+        {
+            return candidates.Count == 0 ? null : candidates[0];
+        }
+
+        // Multiple manifest platforms can share a Dockerfile and differ only by build args, which aren't stored
+        // in image info. Pick the candidate whose tags overlap the most with the image info platform's tags.
+        // Ties (including no overlap) fall back to the first candidate in manifest order.
+        HashSet<string> simpleTags = [.. platformData.SimpleTags];
+        return candidates
+            .OrderByDescending(candidate => candidate.Platform.Tags.Count(tag => simpleTags.Contains(tag.Name)))
+            .First();
+    }
+
     private static bool ArePlatformsEqual(PlatformData platformData, ImageData imageData, PlatformInfo platform, ImageInfo manifestImage)
     {
         PlatformData otherPlatform = PlatformData.FromPlatformInfo(platform, manifestImage);
         // We can't use PlatformData.CompareTo here because it relies on having its PlatformInfo and ImageInfo values fully populated
-        // which is what this class is trying to make happen.
+        // which is what this class is trying to make happen. Build args are excluded because the image info platform
+        // doesn't have an associated PlatformInfo yet; FindMatchingManifestPlatform disambiguates by tags instead.
         return !platformData.HasDifferentTagState(otherPlatform) &&
-            platformData.GetIdentifier(excludeProductVersion: true) == otherPlatform.GetIdentifier(excludeProductVersion: true) &&
+            platformData.GetIdentifier(excludeProductVersion: true, excludeBuildArgs: true) ==
+                otherPlatform.GetIdentifier(excludeProductVersion: true, excludeBuildArgs: true) &&
             AreProductVersionsEquivalent(imageData.ProductVersion, manifestImage.ProductVersion);
     }
 

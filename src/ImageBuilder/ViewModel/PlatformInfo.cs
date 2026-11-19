@@ -216,18 +216,25 @@ public partial class PlatformInfo
     {
         string key = $"{DockerfilePathRelativeToManifest}-{Model.OS}-{Model.OsVersion}-{Model.Architecture}-{parentImageInfo.ProductVersion}";
 
+        string? buildArgsSegment = GetBuildArgsSegment();
+        return buildArgsSegment is null ? key : $"{key}-{buildArgsSegment}";
+    }
+
+    /// <summary>
+    /// Gets a stable representation of the platform's build args, used to distinguish platforms
+    /// that share a Dockerfile and only vary by build arg values. Returns null if there are no build args.
+    /// </summary>
+    public string? GetBuildArgsSegment()
+    {
         if (BuildArgs == null || BuildArgs.Count == 0)
         {
-            return key;
+            return null;
         }
 
-        // Append build args to distinguish platforms that only vary by arg values.
         // Order by key to guarantee stable output.
-        string buildArgsSegment = string.Join(',', BuildArgs
+        return string.Join(',', BuildArgs
             .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
             .Select(kvp => $"{kvp.Key}={kvp.Value ?? string.Empty}"));
-
-        return $"{key}-{buildArgsSegment}";
     }
 
     private static string FormatVersionableOsName(string os, Func<string, string> formatName)

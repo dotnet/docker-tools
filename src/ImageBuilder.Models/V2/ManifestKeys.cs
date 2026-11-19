@@ -23,7 +23,7 @@ internal static partial class KeyPatterns
 
     private const string Part = "[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*";
 
-    [GeneratedRegex($"^{Part}{Separator}{Part}$")]
+    [GeneratedRegex($"^(?<repo>{Part}){Separator}(?<image>{Part})$")]
     public static partial Regex ImageKey { get; }
 
     [GeneratedRegex($"^{Part}{Separator}{Part}{Separator}{Part}$")]

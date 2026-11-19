@@ -51,7 +51,8 @@ public static partial class ImageArtifactDetailsSerializer
 
         foreach ((string key, ImageIndex index) in details.Indexes)
         {
-            if (!KeyPatterns.ImageKey.IsMatch(key))
+            Match match = KeyPatterns.ImageKey.Match(key);
+            if (!match.Success)
             {
                 throw new InvalidDataException(
                     $"{key}: an index key must be 'repo{KeyPatterns.Separator}image', each part {KeyPatterns.Description}.");
@@ -60,7 +61,7 @@ public static partial class ImageArtifactDetailsSerializer
             ValidateDigests(key, [index.Digest, .. index.Manifests]);
 
             string[] manifestDigests = details
-                .GetManifests(key)
+                .GetManifests(new ImageKey(match.Groups["repo"].Value, match.Groups["image"].Value))
                 .Select(manifest => manifest.Value.Digest)
                 .Order(StringComparer.Ordinal)
                 .ToArray();

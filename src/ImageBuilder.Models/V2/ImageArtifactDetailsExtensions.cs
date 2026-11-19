@@ -7,7 +7,7 @@ public static class ImageArtifactDetailsExtensions
 {
     extension(ImageArtifactDetails details)
     {
-        public IEnumerable<KeyValuePair<string, ImageManifest>> GetManifests(string indexKey) =>
-            details.Manifests.Where(manifest => manifest.Key.StartsWith($"{indexKey}{KeyPatterns.Separator}", StringComparison.Ordinal));
+        public IEnumerable<KeyValuePair<string, ImageManifest>> GetManifests(ImageKey imageKey) =>
+            details.Manifests.Where(manifest => manifest.Key.StartsWith($"{imageKey}{KeyPatterns.Separator}", StringComparison.Ordinal));
     }
 }

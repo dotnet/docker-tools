@@ -78,6 +78,6 @@ public static class ManifestSerializer
 
     private static IEnumerable<string> GetTags(Image image) =>
         image.Platforms.Values
-            .SelectMany(platform => platform.Tags.Concat(platform.UndocumentedTags))
+            .SelectMany(platform => platform.Tags)
             .Concat(image.SharedTags);
 }

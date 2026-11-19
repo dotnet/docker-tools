@@ -38,10 +38,7 @@ public static class ProjectionExtensions
 
     extension(PlatformEntry entry)
     {
-        public IEnumerable<ImageReference> GetPlatformReferences()
-        {
-            string[] tags = [.. entry.ImagePlatform.Tags, .. entry.ImagePlatform.UndocumentedTags];
-            return tags.Select(tag => new ImageReference(entry.Registry, entry.Repo.Name, tag));
-        }
+        public IEnumerable<ImageReference> GetPlatformReferences() =>
+            entry.ImagePlatform.Tags.Select(tag => new ImageReference(entry.Registry, entry.Repo.Name, tag));
     }
 }

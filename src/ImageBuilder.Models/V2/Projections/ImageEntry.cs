@@ -3,8 +3,4 @@
 
 namespace Microsoft.DotNet.ImageBuilder.Models.V2.Projections;
 
-public sealed record ImageEntry(
-    ImageKey Key,
-    string? Registry,
-    Repo Repo,
-    Image Image);
+public sealed record ImageEntry(ImageKey Key, string? Registry, Repo Repo, Image Image);

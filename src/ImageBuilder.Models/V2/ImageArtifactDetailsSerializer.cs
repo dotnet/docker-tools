@@ -4,7 +4,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
+namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
 /// <summary>
 /// Reads and writes JSON image artifact details.

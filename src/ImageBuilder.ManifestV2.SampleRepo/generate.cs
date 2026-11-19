@@ -10,7 +10,7 @@
 
 using System.Text.Json.Nodes;
 using Fluid;
-using Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
+using Microsoft.DotNet.ImageBuilder.Models.V2;
 
 const string DotnetVersion = "10.0";
 

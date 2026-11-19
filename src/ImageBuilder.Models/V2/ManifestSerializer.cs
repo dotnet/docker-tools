@@ -12,7 +12,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.ManifestV2;
+namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
 /// <summary>
 /// Reads and writes YAML and JSON manifests.

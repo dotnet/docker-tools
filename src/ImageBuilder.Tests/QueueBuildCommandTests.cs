@@ -589,7 +589,7 @@ public class QueueBuildCommandTests
 
                 foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
                 {
-                    if (kvp.Value.Any())
+                    if (kvp.Value.Count > 0)
                     {
                         _buildHttpClientMock
                             .Verify(o =>

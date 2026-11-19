@@ -33,8 +33,7 @@ try {
     $dotnetInstallDir = ($output | Select-Object -Last 1).Trim()
 
     # Install additional runtimes from global.json. InitializeToolset resolves the Arcade
-    # SDK but doesn't trigger restore. Build.proj delegates to Tools.proj for restore, which
-    # imports InstallDotNetCore.targets to install additional runtimes from global.json.
+    # SDK but doesn't run its Restore target, which installs the configured runtimes.
     $globalJson = Get-Content (Join-Path $repoRoot 'global.json') | ConvertFrom-Json
     $arcadeSdkVersion = $globalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
     # Need to use nested Join-Path calls to support Windows PowerShell, which doesn't support multiple paths in a single Join-Path call
@@ -57,7 +56,7 @@ try {
     }
 
     $dotnet = Join-Path $dotnetInstallDir 'dotnet'
-    & $dotnet msbuild $buildProj /p:Restore=true /p:Build=false /p:RepoRoot="$repoRoot/" /clp:NoSummary
+    & $dotnet msbuild $buildProj -restore /p:Restore=true /p:Build=false /p:RepoRoot="$repoRoot/" /clp:NoSummary
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to restore toolset"
     }

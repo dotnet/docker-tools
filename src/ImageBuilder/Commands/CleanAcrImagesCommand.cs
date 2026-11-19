@@ -111,7 +111,7 @@ public class CleanAcrImagesCommand(
                     acrContentClient,
                     repository,
                     (manifest, _) => Task.FromResult(
-                        !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age)),
+                        manifest.Tags.Count == 0 && IsExpired(manifest.LastUpdatedOn, Options.Age)),
                     cancellationToken);
                 break;
 

@@ -1126,6 +1126,79 @@ public class ImageInfoHelperTests
     }
 
     /// <summary>
+    /// Tests that platforms sharing a Dockerfile and differing only by build args are kept distinct when
+    /// image info is loaded and merged, rather than collapsing into a single platform.
+    /// </summary>
+    [TestMethod]
+    public void Merge_SharedDockerfile_DistinctBuildArgs()
+    {
+        static ImageArtifactDetails CreateAndroidImageInfo(string tag, string digest) => new()
+        {
+            Repos =
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    OsType = "Linux",
+                                    OsVersion = "noble",
+                                    Architecture = "amd64",
+                                    Dockerfile = "android/Dockerfile",
+                                    Digest = digest,
+                                    SimpleTags = [tag]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        using TempFolderContext tempFolderContext = new TempFolderContext();
+
+        string dockerfile = CreateDockerfile("android", tempFolderContext);
+        Platform CreateAndroidPlatform(string apiLevel)
+        {
+            Platform platform = CreatePlatform(dockerfile, [$"android-{apiLevel}"]);
+            platform.BuildArgs = new Dictionary<string, string> { { "ANDROID_API_LEVEL", apiLevel } };
+            return platform;
+        }
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(CreateAndroidPlatform("24")),
+                CreateImage(CreateAndroidPlatform("35"))));
+
+        string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+        File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+        ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
+
+        ImageArtifactDetails source = ImageInfoHelper.LoadFromContent(
+            JsonHelper.SerializeObject(CreateAndroidImageInfo("android-35", "digest35")), manifestInfo);
+        ImageArtifactDetails target = ImageInfoHelper.LoadFromContent(
+            JsonHelper.SerializeObject(CreateAndroidImageInfo("android-24", "digest24")), manifestInfo);
+
+        ImageInfo[] manifestImages = manifestInfo.AllRepos.First().AllImages.ToArray();
+        source.Repos[0].Images[0].Platforms[0].PlatformInfo.ShouldBeSameAs(manifestImages[1].AllPlatforms.First());
+        target.Repos[0].Images[0].Platforms[0].PlatformInfo.ShouldBeSameAs(manifestImages[0].AllPlatforms.First());
+
+        source.MergeInto(target);
+
+        List<PlatformData> platforms = target.Repos[0].Images.SelectMany(image => image.Platforms).ToList();
+        platforms.Count.ShouldBe(2);
+        platforms.Single(platform => platform.Digest == "digest24").SimpleTags.ShouldBe(["android-24"]);
+        platforms.Single(platform => platform.Digest == "digest35").SimpleTags.ShouldBe(["android-35"]);
+    }
+
+    /// <summary>
     /// Tests the scenario where a source image defines a manifest that the target doesn't have.
     /// </summary>
     [TestMethod]

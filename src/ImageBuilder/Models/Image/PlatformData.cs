@@ -86,8 +86,15 @@ public class PlatformData : IComparable<PlatformData>
 
     // Product versions are considered equivalent if the major and minor segments are the same
     // See https://github.com/dotnet/docker-tools/issues/688
-    public string GetIdentifier(bool excludeProductVersion = false) =>
-        $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}{(excludeProductVersion ? "" : "-" + GetMajorMinorVersion())}";
+    // Build args come from the associated manifest platform (they aren't serialized in image info) and
+    // distinguish platforms that share a Dockerfile but are built with different build arg values.
+    public string GetIdentifier(bool excludeProductVersion = false, bool excludeBuildArgs = false)
+    {
+        string identifier = $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}{(excludeProductVersion ? "" : "-" + GetMajorMinorVersion())}";
+
+        string? buildArgsSegment = excludeBuildArgs ? null : PlatformInfo?.GetBuildArgsSegment();
+        return buildArgsSegment is null ? identifier : $"{identifier}-{buildArgsSegment}";
+    }
 
     public bool HasDifferentTagState(PlatformData other) =>
         // If either of the platforms has no simple tags while the other does have simple tags, they are not equal

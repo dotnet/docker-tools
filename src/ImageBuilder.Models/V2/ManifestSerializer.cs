@@ -6,9 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
-/// <summary>
-/// Reads and writes JSON manifests.
-/// </summary>
 public static class ManifestSerializer
 {
     internal static readonly JsonSerializerOptions JsonOptions = new()
@@ -21,11 +18,6 @@ public static class ManifestSerializer
         WriteIndented = true,
     };
 
-    /// <summary>
-    /// Reads and validates the manifest at <paramref name="filePath"/>.
-    /// </summary>
-    /// <exception cref="JsonException">The manifest is not valid JSON or does not match the model.</exception>
-    /// <exception cref="InvalidDataException">The manifest is invalid. The message lists every problem.</exception>
     public static Manifest Load(string filePath)
     {
         string json = File.ReadAllText(filePath);
@@ -42,9 +34,6 @@ public static class ManifestSerializer
         return manifest;
     }
 
-    /// <summary>
-    /// Writes <paramref name="manifest"/> as JSON, leaving out unset values.
-    /// </summary>
     public static string Serialize(Manifest manifest) => JsonSerializer.Serialize(manifest, JsonOptions);
 
     private static List<string> Validate(Manifest manifest)

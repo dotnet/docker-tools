@@ -5,18 +5,10 @@ using System.Text.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
-/// <summary>
-/// Reads and writes JSON image artifact details.
-/// </summary>
 public static class ImageArtifactDetailsSerializer
 {
     private static readonly JsonSerializerOptions JsonOptions = ManifestSerializer.JsonOptions;
 
-    /// <summary>
-    /// Reads and validates the image artifact details at <paramref name="filePath"/>.
-    /// </summary>
-    /// <exception cref="JsonException">The image artifact details are not valid JSON or do not match the model.</exception>
-    /// <exception cref="InvalidDataException">The image artifact details are invalid. The message lists every problem.</exception>
     public static ImageArtifactDetails Load(string filePath)
     {
         string json = File.ReadAllText(filePath);
@@ -33,9 +25,6 @@ public static class ImageArtifactDetailsSerializer
         return details;
     }
 
-    /// <summary>
-    /// Writes <paramref name="details"/> as JSON, leaving out unset values.
-    /// </summary>
     public static string Serialize(ImageArtifactDetails details) => JsonSerializer.Serialize(details, JsonOptions);
 
     private static List<string> Validate(ImageArtifactDetails details)

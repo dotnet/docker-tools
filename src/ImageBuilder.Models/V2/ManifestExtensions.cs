@@ -13,9 +13,4 @@ public static class ManifestExtensions
 
         public Image GetImage(ImageKey key) => manifest.Repos[key.Repo].Images[key.Image];
     }
-
-    extension(PlatformKey key)
-    {
-        public ImageKey ImageKey => new(key.Repo, key.Image);
-    }
 }

@@ -11,79 +11,116 @@ namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 /// </summary>
 public static partial class ImageArtifactDetailsSerializer
 {
+    private const string DigestDescription = "an OCI digest like 'algorithm:encoded'";
+
+    private static readonly JsonSerializerOptions JsonOptions = ManifestSerializer.JsonOptions;
+
     /// <summary>
     /// Reads and validates the image artifact details at <paramref name="filePath"/>.
     /// </summary>
     /// <exception cref="JsonException">The image artifact details are not valid JSON or do not match the model.</exception>
-    /// <exception cref="InvalidDataException">The image artifact details are invalid.</exception>
+    /// <exception cref="InvalidDataException">The image artifact details are invalid. The message lists every problem.</exception>
     public static ImageArtifactDetails Load(string filePath)
     {
         string json = File.ReadAllText(filePath);
-        ImageArtifactDetails details = JsonSerializer.Deserialize<ImageArtifactDetails>(json, ManifestSerializer.JsonOptions)
+        ImageArtifactDetails details = JsonSerializer.Deserialize<ImageArtifactDetails>(json, JsonOptions)
             ?? throw new InvalidDataException($"{filePath}: the image artifact details must not be null.");
 
-        Validate(details);
+        List<string> errors = Validate(details);
+        if (errors.Count > 0)
+        {
+            throw new InvalidDataException(
+                $"{filePath} has {errors.Count} error(s):{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+        }
+
         return details;
     }
 
     /// <summary>
     /// Writes <paramref name="details"/> as JSON, leaving out empty and unset values.
     /// </summary>
-    public static string Serialize(ImageArtifactDetails details) =>
-        JsonSerializer.Serialize(details, ManifestSerializer.JsonOptions);
+    public static string Serialize(ImageArtifactDetails details) => JsonSerializer.Serialize(details, JsonOptions);
 
-    private static void Validate(ImageArtifactDetails details)
+    private static List<string> Validate(ImageArtifactDetails details)
     {
+        List<string> errors = [];
+
         foreach ((string key, ImageManifest manifest) in details.Manifests)
         {
             if (!KeyPatterns.PlatformKey.IsMatch(key))
             {
-                throw new InvalidDataException(
-                    $"{key}: a manifest key must be 'repo{KeyPatterns.Separator}image{KeyPatterns.Separator}platform', each part {KeyPatterns.Description}.");
+                errors.Add(
+                    $"{nameof(ImageManifest)} '{key}': the key must be 'repo{KeyPatterns.Separator}image{KeyPatterns.Separator}platform',"
+                    + $" each part {KeyPatterns.Description}.");
             }
 
-            ValidateDigests(key, [manifest.Digest]);
-            if (manifest.BaseImage is not null)
+            if (!DigestRegex.IsMatch(manifest.Digest))
             {
-                ValidateDigests(key, [manifest.BaseImage.Digest]);
+                errors.Add($"{nameof(ImageManifest)} '{key}': digest '{manifest.Digest}' is not {DigestDescription}.");
+            }
+
+            if (manifest.BaseImage is not null && !DigestRegex.IsMatch(manifest.BaseImage.Digest))
+            {
+                errors.Add($"{nameof(ImageManifest)} '{key}': base image digest '{manifest.BaseImage.Digest}' is not {DigestDescription}.");
             }
         }
 
         foreach ((string key, ImageIndex index) in details.Indexes)
         {
+            if (!DigestRegex.IsMatch(index.Digest))
+            {
+                errors.Add($"{nameof(ImageIndex)} '{key}': digest '{index.Digest}' is not {DigestDescription}.");
+            }
+
+            foreach (string digest in index.Manifests.Where(digest => !DigestRegex.IsMatch(digest)))
+            {
+                errors.Add($"{nameof(ImageIndex)} '{key}': manifest digest '{digest}' is not {DigestDescription}.");
+            }
+
+            IEnumerable<string> repeatedDigests = index.Manifests
+                .GroupBy(digest => digest, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key);
+
+            foreach (string digest in repeatedDigests)
+            {
+                errors.Add($"{nameof(ImageIndex)} '{key}': manifest digest '{digest}' is listed more than once.");
+            }
+
             Match match = KeyPatterns.ImageKey.Match(key);
             if (!match.Success)
             {
-                throw new InvalidDataException(
-                    $"{key}: an index key must be 'repo{KeyPatterns.Separator}image', each part {KeyPatterns.Description}.");
+                errors.Add(
+                    $"{nameof(ImageIndex)} '{key}': the key must be 'repo{KeyPatterns.Separator}image', each part {KeyPatterns.Description}.");
+                continue;
             }
 
-            ValidateDigests(key, [index.Digest, .. index.Manifests]);
+            ImageKey imageKey = new(match.Groups["repo"].Value, match.Groups["image"].Value);
+            KeyValuePair<string, ImageManifest>[] imageManifests = details.GetManifests(imageKey).ToArray();
 
-            string[] manifestDigests = details
-                .GetManifests(new ImageKey(match.Groups["repo"].Value, match.Groups["image"].Value))
-                .Select(manifest => manifest.Value.Digest)
-                .Order(StringComparer.Ordinal)
-                .ToArray();
+            IEnumerable<KeyValuePair<string, ImageManifest>> unlistedManifests = imageManifests
+                .Where(pair => !index.Manifests.Contains(pair.Value.Digest, StringComparer.Ordinal));
 
-            if (!index.Manifests.Order(StringComparer.Ordinal).SequenceEqual(manifestDigests))
+            foreach ((string manifestKey, ImageManifest manifest) in unlistedManifests)
             {
-                throw new InvalidDataException(
-                    $"{key}: the index lists [{string.Join(", ", index.Manifests)}]"
-                    + $" but the manifests for {key} are [{string.Join(", ", manifestDigests)}].");
+                errors.Add($"{nameof(ImageIndex)} '{key}': does not list manifest '{manifestKey}' ({manifest.Digest}).");
+            }
+
+            HashSet<string> imageManifestDigests = imageManifests
+                .Select(pair => pair.Value.Digest)
+                .ToHashSet(StringComparer.Ordinal);
+
+            IEnumerable<string> unknownDigests = index.Manifests
+                .Where(digest => !imageManifestDigests.Contains(digest))
+                .Distinct(StringComparer.Ordinal);
+
+            foreach (string digest in unknownDigests)
+            {
+                errors.Add($"{nameof(ImageIndex)} '{key}': lists '{digest}', which is not the digest of any manifest of image '{imageKey}'.");
             }
         }
-    }
 
-    private static void ValidateDigests(string owner, IEnumerable<string> digests)
-    {
-        foreach (string digest in digests)
-        {
-            if (!DigestRegex.IsMatch(digest))
-            {
-                throw new InvalidDataException($"{owner}: '{digest}' is not a digest like 'algorithm:encoded'.");
-            }
-        }
+        return errors;
     }
 
     [GeneratedRegex(@"^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$")]

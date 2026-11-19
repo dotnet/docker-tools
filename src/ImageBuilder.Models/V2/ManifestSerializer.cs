@@ -29,14 +29,20 @@ public static partial class ManifestSerializer
     /// Reads and validates the manifest at <paramref name="filePath"/>.
     /// </summary>
     /// <exception cref="JsonException">The manifest is not valid JSON or does not match the model.</exception>
-    /// <exception cref="InvalidDataException">The manifest is invalid.</exception>
+    /// <exception cref="InvalidDataException">The manifest is invalid. The message lists every problem.</exception>
     public static Manifest Load(string filePath)
     {
         string json = File.ReadAllText(filePath);
         Manifest manifest = JsonSerializer.Deserialize<Manifest>(json, JsonOptions)
             ?? throw new InvalidDataException($"{filePath}: the manifest must not be null.");
 
-        Validate(manifest);
+        List<string> errors = Validate(manifest);
+        if (errors.Count > 0)
+        {
+            throw new InvalidDataException(
+                $"{filePath} has {errors.Count} error(s):{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+        }
+
         return manifest;
     }
 
@@ -56,63 +62,74 @@ public static partial class ManifestSerializer
         }
     }
 
-    private static void Validate(Manifest manifest)
+    private static List<string> Validate(Manifest manifest)
     {
+        List<string> errors = [];
+
         foreach (IGrouping<string, ImageKey> repoImageKeys in manifest.GetImageKeys().GroupBy(imageKey => imageKey.Repo))
         {
-            Dictionary<string, string> tagOwners = new(StringComparer.Ordinal);
+            List<(string Tag, string DeclaredBy)> tagDeclarations = [];
+
             foreach (ImageKey imageKey in repoImageKeys)
             {
                 Image image = manifest.GetImage(imageKey);
+
                 if (!KeyPatterns.ImageKey.IsMatch(imageKey.ToString()))
                 {
-                    throw new InvalidDataException(
-                        $"{imageKey}: repo and image keys must be {KeyPatterns.Description}.");
+                    errors.Add($"{nameof(Image)} '{imageKey}': repo and image keys must be {KeyPatterns.Description}.");
                 }
 
                 if (image.Platforms.Count == 0)
                 {
-                    throw new InvalidDataException($"{imageKey}: an image must have at least one platform.");
+                    errors.Add($"{nameof(Image)} '{imageKey}': an image must have at least one platform.");
                 }
 
-                ClaimTags(image.SharedTags, imageKey.ToString());
-                HashSet<string> platforms = [];
+                tagDeclarations.AddRange(image.SharedTags.Select(tag => (tag, $"{nameof(Image)} '{imageKey}'")));
+
                 foreach ((string platformName, ImagePlatform imagePlatform) in image.Platforms)
                 {
                     PlatformKey platformKey = new(imageKey.Repo, imageKey.Image, platformName);
+
                     if (!KeyPatterns.PlatformKey.IsMatch(platformKey.ToString()))
                     {
-                        throw new InvalidDataException(
-                            $"{platformKey}: platform keys must be {KeyPatterns.Description}.");
+                        errors.Add($"{nameof(ImagePlatform)} '{platformKey}': platform keys must be {KeyPatterns.Description}.");
                     }
 
                     if (!PlatformRegex.IsMatch(imagePlatform.Platform))
                     {
-                        throw new InvalidDataException(
-                            $"{platformKey}: platform '{imagePlatform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
+                        errors.Add(
+                            $"{nameof(ImagePlatform)} '{platformKey}': platform '{imagePlatform.Platform}' must look like 'linux/amd64' or 'linux/arm/v7'.");
                     }
 
-                    if (!platforms.Add(imagePlatform.Platform))
-                    {
-                        throw new InvalidDataException($"{imageKey}: more than one platform is {imagePlatform.Platform}.");
-                    }
+                    tagDeclarations.AddRange(
+                        imagePlatform.Tags
+                            .Concat(imagePlatform.UndocumentedTags)
+                            .Select(tag => (tag, $"{nameof(ImagePlatform)} '{platformKey}'")));
+                }
 
-                    ClaimTags([.. imagePlatform.Tags, .. imagePlatform.UndocumentedTags], platformKey.ToString());
+                IEnumerable<IGrouping<string, string>> duplicatePlatforms = image.Platforms
+                    .GroupBy(platform => platform.Value.Platform, platform => platform.Key)
+                    .Where(group => group.Count() > 1);
+
+                foreach (IGrouping<string, string> duplicatePlatform in duplicatePlatforms)
+                {
+                    errors.Add(
+                        $"{nameof(Image)} '{imageKey}': platforms {string.Join(", ", duplicatePlatform.Select(name => $"'{name}'"))}"
+                        + $" are all '{duplicatePlatform.Key}'.");
                 }
             }
 
-            void ClaimTags(string[] tags, string owner)
+            IEnumerable<IGrouping<string, string>> duplicateTags = tagDeclarations
+                .GroupBy(declaration => declaration.Tag, declaration => declaration.DeclaredBy, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1);
+
+            foreach (IGrouping<string, string> duplicateTag in duplicateTags)
             {
-                foreach (string tag in tags)
-                {
-                    if (!tagOwners.TryAdd(tag, owner))
-                    {
-                        throw new InvalidDataException(
-                            $"{repoImageKeys.Key}: tag '{tag}' is declared by both {tagOwners[tag]} and {owner}.");
-                    }
-                }
+                errors.Add($"{nameof(Repo)} '{repoImageKeys.Key}': tag '{duplicateTag.Key}' is declared by {string.Join(", ", duplicateTag)}.");
             }
         }
+
+        return errors;
     }
 
     [GeneratedRegex(@"^[a-z0-9]+/[a-z0-9]+(/[a-z0-9]+)?$")]

@@ -11,6 +11,8 @@ public sealed record ImageArtifactDetails
 
 public sealed record ImageManifest
 {
+    public required string Registry { get; set; }
+    public required string Repository { get; set; }
     public required string Digest { get; set; }
     public string[] Tags { get; set; } = [];
     public required string CommitUrl { get; set; }
@@ -19,6 +21,8 @@ public sealed record ImageManifest
 
 public sealed record ImageIndex
 {
+    public required string Registry { get; set; }
+    public required string Repository { get; set; }
     public required string Digest { get; set; }
     public string[] Tags { get; set; } = [];
     public required string[] Manifests { get; set; }

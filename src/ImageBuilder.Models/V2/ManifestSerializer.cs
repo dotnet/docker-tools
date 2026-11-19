@@ -6,33 +6,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.EventEmitters;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
 /// <summary>
-/// Reads and writes YAML and JSON manifests.
+/// Reads and writes JSON manifests.
 /// </summary>
 public static partial class ManifestSerializer
 {
-    private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder()
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .WithEnforceRequiredMembers()
-        .WithEnforceNullability()
-        .Build();
-
-    private static readonly ISerializer YamlSerializer = new SerializerBuilder()
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-        .DisableAliases()
-        .WithQuotingNecessaryStrings()
-        .WithEventEmitter(next => new FlowStyleEmitter(next))
-        .Build();
-
     internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -44,61 +25,24 @@ public static partial class ManifestSerializer
     };
 
     /// <summary>
-    /// Reads and validates the manifest at <paramref name="filePath"/>, as JSON if it ends in ".json"
-    /// and as YAML if it ends in ".yaml" or ".yml".
+    /// Reads and validates the manifest at <paramref name="filePath"/>.
     /// </summary>
+    /// <exception cref="JsonException">The manifest is not valid JSON or does not match the model.</exception>
     /// <exception cref="InvalidDataException">The manifest is invalid.</exception>
     public static Manifest Load(string filePath)
     {
-        string content = File.ReadAllText(filePath);
-        Manifest manifest = Path.GetExtension(filePath).ToLowerInvariant() switch
-        {
-            ".json" => DeserializeJson(content, filePath),
-            ".yaml" or ".yml" => DeserializeYaml(content, filePath),
-            string extension => throw new ArgumentException(
-                $"{filePath}: '{extension}' is not a manifest extension. Use .json, .yaml or .yml.", nameof(filePath)),
-        };
+        string json = File.ReadAllText(filePath);
+        Manifest manifest = JsonSerializer.Deserialize<Manifest>(json, JsonOptions)
+            ?? throw new InvalidDataException($"{filePath}: the manifest must not be null.");
 
         Validate(manifest);
         return manifest;
     }
 
     /// <summary>
-    /// Writes <paramref name="manifest"/> as YAML, leaving out empty and unset values.
-    /// </summary>
-    public static string SerializeYaml(Manifest manifest) => YamlSerializer.Serialize(manifest);
-
-    /// <summary>
     /// Writes <paramref name="manifest"/> as JSON, leaving out empty and unset values.
     /// </summary>
-    public static string SerializeJson(Manifest manifest) => JsonSerializer.Serialize(manifest, JsonOptions) + "\n";
-
-    private static Manifest DeserializeYaml(string yaml, string filePath)
-    {
-        try
-        {
-            return YamlDeserializer.Deserialize<Manifest?>(yaml)
-                ?? throw new InvalidDataException($"{filePath}: the manifest must not be empty.");
-        }
-        catch (YamlException exception)
-        {
-            string detail = exception.InnerException is null ? "" : $" {exception.InnerException.Message}";
-            throw new InvalidDataException($"{filePath}: {exception.Message}{detail}", exception);
-        }
-    }
-
-    private static Manifest DeserializeJson(string json, string filePath)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<Manifest>(json, JsonOptions)
-                ?? throw new InvalidDataException($"{filePath}: the manifest must not be null.");
-        }
-        catch (JsonException exception)
-        {
-            throw new InvalidDataException($"{filePath}: {exception.Message}", exception);
-        }
-    }
+    public static string Serialize(Manifest manifest) => JsonSerializer.Serialize(manifest, JsonOptions);
 
     private static void OmitEmptyCollections(JsonTypeInfo typeInfo)
     {
@@ -172,17 +116,4 @@ public static partial class ManifestSerializer
 
     [GeneratedRegex(@"^[a-z0-9]+/[a-z0-9]+(/[a-z0-9]+)?$")]
     private static partial Regex PlatformRegex { get; }
-
-    private sealed class FlowStyleEmitter(IEventEmitter next) : ChainedEventEmitter(next)
-    {
-        public override void Emit(SequenceStartEventInfo eventInfo, IEmitter emitter)
-        {
-            if (eventInfo.Source.Type == typeof(string[]))
-            {
-                eventInfo.Style = SequenceStyle.Flow;
-            }
-
-            base.Emit(eventInfo, emitter);
-        }
-    }
 }

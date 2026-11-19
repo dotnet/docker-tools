@@ -14,19 +14,13 @@ public static partial class ImageArtifactDetailsSerializer
     /// <summary>
     /// Reads and validates the image artifact details at <paramref name="filePath"/>.
     /// </summary>
+    /// <exception cref="JsonException">The image artifact details are not valid JSON or do not match the model.</exception>
     /// <exception cref="InvalidDataException">The image artifact details are invalid.</exception>
     public static ImageArtifactDetails Load(string filePath)
     {
-        ImageArtifactDetails details;
-        try
-        {
-            details = JsonSerializer.Deserialize<ImageArtifactDetails>(File.ReadAllText(filePath), ManifestSerializer.JsonOptions)
-                ?? throw new InvalidDataException($"{filePath}: the image artifact details must not be null.");
-        }
-        catch (JsonException exception)
-        {
-            throw new InvalidDataException($"{filePath}: {exception.Message}", exception);
-        }
+        string json = File.ReadAllText(filePath);
+        ImageArtifactDetails details = JsonSerializer.Deserialize<ImageArtifactDetails>(json, ManifestSerializer.JsonOptions)
+            ?? throw new InvalidDataException($"{filePath}: the image artifact details must not be null.");
 
         Validate(details);
         return details;
@@ -36,7 +30,7 @@ public static partial class ImageArtifactDetailsSerializer
     /// Writes <paramref name="details"/> as JSON, leaving out empty and unset values.
     /// </summary>
     public static string Serialize(ImageArtifactDetails details) =>
-        JsonSerializer.Serialize(details, ManifestSerializer.JsonOptions) + "\n";
+        JsonSerializer.Serialize(details, ManifestSerializer.JsonOptions);
 
     private static void Validate(ImageArtifactDetails details)
     {
@@ -51,7 +45,7 @@ public static partial class ImageArtifactDetailsSerializer
             if (!KeyPatterns.PlatformKey.IsMatch(manifest.Key))
             {
                 throw new InvalidDataException(
-                    $"{manifest.Key}: a manifest key must be 'repo__image__platform', each part {KeyPatterns.Description}.");
+                    $"{manifest.Key}: a manifest key must be 'repo{KeyPatterns.Separator}image{KeyPatterns.Separator}platform', each part {KeyPatterns.Description}.");
             }
 
             ValidateDigests(manifest.Key, [manifest.Digest]);
@@ -72,7 +66,7 @@ public static partial class ImageArtifactDetailsSerializer
             if (!KeyPatterns.ImageKey.IsMatch(index.Key))
             {
                 throw new InvalidDataException(
-                    $"{index.Key}: an index key must be 'repo__image', each part {KeyPatterns.Description}.");
+                    $"{index.Key}: an index key must be 'repo{KeyPatterns.Separator}image', each part {KeyPatterns.Description}.");
             }
 
             ValidateDigests(index.Key, [index.Digest, .. index.Manifests]);
@@ -82,6 +76,7 @@ public static partial class ImageArtifactDetailsSerializer
                 .Select(manifest => manifest.Digest)
                 .Order(StringComparer.Ordinal)
                 .ToArray();
+
             if (!index.Manifests.Order(StringComparer.Ordinal).SequenceEqual(manifestDigests))
             {
                 throw new InvalidDataException(
@@ -97,7 +92,7 @@ public static partial class ImageArtifactDetailsSerializer
         {
             if (!DigestRegex.IsMatch(digest))
             {
-                throw new InvalidDataException($"{owner}: '{digest}' is not a digest like 'sha256:<hex>'.");
+                throw new InvalidDataException($"{owner}: '{digest}' is not a digest like 'algorithm:encoded'.");
             }
         }
     }

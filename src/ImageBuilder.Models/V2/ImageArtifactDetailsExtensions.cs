@@ -8,6 +8,6 @@ public static class ImageArtifactDetailsExtensions
     extension(ImageArtifactDetails details)
     {
         public IEnumerable<ImageManifest> GetManifests(ImageIndex index) =>
-            details.Manifests.Where(manifest => manifest.Key.StartsWith($"{index.Key}__", StringComparison.Ordinal));
+            details.Manifests.Where(manifest => manifest.Key.StartsWith($"{index.Key}{KeyPatterns.Separator}", StringComparison.Ordinal));
     }
 }

@@ -7,23 +7,25 @@ namespace Microsoft.DotNet.ImageBuilder.Models.V2;
 
 public readonly record struct ImageKey(string Repo, string Image)
 {
-    public override string ToString() => $"{Repo}__{Image}";
+    public override string ToString() => $"{Repo}{KeyPatterns.Separator}{Image}";
 }
 
 public readonly record struct PlatformKey(string Repo, string Image, string Platform)
 {
-    public override string ToString() => $"{Repo}__{Image}__{Platform}";
+    public override string ToString() => $"{Repo}{KeyPatterns.Separator}{Image}{KeyPatterns.Separator}{Platform}";
 }
 
 internal static partial class KeyPatterns
 {
-    public const string Description = "lowercase letters and digits separated by single '.', '_' or '-'";
+    public const string Separator = "__";
 
-    private const string Part = "[a-z0-9]+(?:[._-][a-z0-9]+)*";
+    public const string Description = "letters and digits separated by single '.', '_' or '-'";
 
-    [GeneratedRegex($"^{Part}__{Part}$")]
+    private const string Part = "[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*";
+
+    [GeneratedRegex($"^{Part}{Separator}{Part}$")]
     public static partial Regex ImageKey { get; }
 
-    [GeneratedRegex($"^{Part}__{Part}__{Part}$")]
+    [GeneratedRegex($"^{Part}{Separator}{Part}{Separator}{Part}$")]
     public static partial Regex PlatformKey { get; }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Commands.Preview;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Oras;
@@ -140,6 +141,12 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();
+
+        if (builder.Configuration["IMAGEBUILDER_PREVIEW"] == "1")
+        {
+            builder.Services.AddSingleton(Console.Out);
+            builder.Services.AddSingleton<ICommand, ListCommand>();
+        }
 
         return builder.Build();
     }

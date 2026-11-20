@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="Moq" />
     <PackageReference Include="Shouldly" />
   </ItemGroup>

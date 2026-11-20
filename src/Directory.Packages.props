@@ -19,7 +19,7 @@
     <PackageVersion Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
     <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
-    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageVersion Include="Octokit" Version="14.0.0" />

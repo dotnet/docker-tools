@@ -146,6 +146,7 @@ public static class ImageBuilder
         {
             builder.Services.AddSingleton(Console.Out);
             builder.Services.AddSingleton<ICommand, ListCommand>();
+            builder.Services.AddSingleton<ICommand, MergeCommand>();
         }
 
         return builder.Build();
